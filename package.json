@@ -1,0 +1,46 @@
+{
+  "name": "to-kirha",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist",
+    "compile": "npx hardhat compile",
+    "deploy:sepolia": "npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/deploy.js --network base-sepolia",
+    "deploy:mainnet": "npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/deploy.js --network base-mainnet",
+    "test:contracts": "npx hardhat test",
+    "remove-bg": "npx ts-node --project tsconfig.hardhat.json scripts/remove-background.ts",
+    "flush-nonces": "npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/flush-nonces.js --network base-sepolia",
+    "deploy:step": "npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/deploy-step.js --network base-sepolia"
+  },
+  "dependencies": {
+    "@rainbow-me/rainbowkit": "^2.2.4",
+    "@tanstack/react-query": "^5.62.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "viem": "^2.21.53",
+    "wagmi": "^2.14.10",
+    "zustand": "^5.0.3"
+  },
+  "ts-node": {
+    "project": "tsconfig.hardhat.json",
+    "transpileOnly": true
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.1.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "dotenv": "^16.4.7",
+    "gh-pages": "^6.2.0",
+    "hardhat": "^2.22.17",
+    "sharp": "^0.34.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "vite": "^6.0.11"
+  }
+}

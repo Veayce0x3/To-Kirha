@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm show:*)",
+      "Bash(npm start:*)",
+      "Bash(node --version && npx expo --version 2>&1)",
+      "Bash(command -v nvm)",
+      "Read(//Users/elianlozano/.nvm/versions/**)",
+      "Bash(command -v brew && brew list | grep node 2>&1)",
+      "Bash(NODE_OPTIONS=\"--no-experimental-detect-module\" npx expo start 2>&1 | head -30)",
+      "Bash(source ~/.zshrc 2>/dev/null; source ~/.nvm/nvm.sh 2>/dev/null; command -v nvm && nvm --version 2>&1 || echo \"nvm pas disponible dans ce shell\")",
+      "Bash(cat /Users/elianlozano/Desktop/To-Kirha/node_modules/expo-modules-core/package.json | python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); print\\('version:', p.get\\('version',''\\)\\); print\\('main:', p.get\\('main',''\\)\\)\")",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm show \"expo@52.0.28\" peerDependencies 2>&1 | python3 -c \"import sys; print\\(sys.stdin.read\\(\\)\\)\")",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm show \"expo@52.0.28\" dependencies 2>&1 | python3 -c \"import sys,json; d=eval\\(sys.stdin.read\\(\\).replace\\('undefined','null'\\)\\); print\\('expo-modules-core:', d.get\\('expo-modules-core','?'\\)\\)\" 2>/dev/null || npm show \"expo@52.0.28\" --json 2>&1 | python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('expo-modules-core:', d.get\\('dependencies',{}\\).get\\('expo-modules-core','?'\\)\\)\")",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm start 2>&1)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm install react-native@0.76.9 @react-native-async-storage/async-storage@1.23.1 --legacy-peer-deps 2>&1 | tail -5)",
+      "Bash(mkdir -p /Users/elianlozano/Desktop/To-Kirha/public/assets && cp -r /Users/elianlozano/Desktop/To-Kirha/assets/* /Users/elianlozano/Desktop/To-Kirha/public/assets/ && echo \"Assets déplacés vers public/\")",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm install 2>&1 | tail -8)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm run build 2>&1)",
+      "Bash(npm run:*)",
+      "Bash(node --version && npx ts-node --version 2>&1)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && node --version && npm run compile 2>&1)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npx hardhat compile --show-stack-traces 2>&1 | head -50)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm run compile 2>&1)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && node -e \"\nconst { privateKeyToAccount } = require\\('viem/accounts'\\);\nconst account = privateKeyToAccount\\('0xe6bff73df2bdc055d1a8098a544b8fc381c537342ffba845f6959c128d2ac2c1'\\);\nconsole.log\\('Adresse:', account.address\\);\n\" 2>&1)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm run deploy:sepolia 2>&1)",
+      "Bash(sleep 10 && source ~/.nvm/nvm.sh && nvm use 20 && npm run deploy:sepolia 2>&1)",
+      "Bash(sleep 15 && source ~/.nvm/nvm.sh && nvm use 20 && npm run deploy:sepolia 2>&1)",
+      "Bash(sleep 5 && source ~/.nvm/nvm.sh && nvm use 20 && npm run deploy:sepolia 2>&1)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm install sharp --save-dev 2>&1 | tail -5)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm run remove-bg 2>&1)",
+      "Bash(source ~/.nvm/nvm.sh && nvm alias default 20)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm run flush-nonces 2>&1)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/flush-nonces.js --network base-sepolia 2>&1)",
+      "Bash(source ~/.nvm/nvm.sh && nvm use 20 && npm run deploy:step 2>&1)"
+    ]
+  }
+}

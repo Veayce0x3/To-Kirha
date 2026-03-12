@@ -1,0 +1,73 @@
+/* ============================================================
+   To-Kirha — Thème sakura/forêt
+   ============================================================ */
+
+:root {
+  --bg-base:        #080f08;
+  --bg-card:        #0d1a0d;
+  --bg-card-hover:  #112011;
+  --color-primary:  #6abf44;
+  --color-text:     #c8e6a0;
+  --color-muted:    #6a9a50;
+  --color-dim:      #3a5a2a;
+  --color-border:   #1e3a1e;
+  --color-common:   #8bc34a;
+  --color-rare:     #4fc3f7;
+  --color-epic:     #ce93d8;
+  --color-legend:   #ffca28;
+  --radius:         12px;
+  --transition:     0.18s ease;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* Scrollbar custom */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+
+/* Utilitaires */
+.page {
+  min-height: 100vh;
+  background: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
