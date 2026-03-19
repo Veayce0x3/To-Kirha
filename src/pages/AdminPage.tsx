@@ -23,6 +23,7 @@ interface PlayerData {
   xp:        number[];   // 0-4 = 5 métiers
   xpTotal:   number[];   // 0-4 = 5 métiers
   isBanned:  boolean;
+  pepites:   number;
 }
 
 const ALL_RESOURCE_IDS = Array.from({ length: 50 }, (_, i) => BigInt(i + 1));
@@ -62,6 +63,10 @@ export function AdminPage() {
   const [giveXpAmt, setGiveXpAmt]       = useState<Record<number, string>>({});
   const [giveStatus, setGiveStatus]     = useState<Record<string, 'idle'|'pending'|'ok'|'err'>>({});
 
+  const [search, setSearch] = useState('');
+  const [snapshots, setSnapshots] = useState<Record<number, PlayerData>>({});
+  const [retirerStatus, setRetirerStatus] = useState<Record<number, 'idle'|'pending'|'ok'|'err'>>({});
+
   const isAdmin = !!address && ADMIN_WALLETS.includes(address.toLowerCase());
 
   // ── Chargement des données ─────────────────────────────
@@ -85,13 +90,14 @@ export function AdminPage() {
       const list: PlayerData[] = [];
       for (let cityId = 1; cityId <= n; cityId++) {
         const cid = BigInt(cityId);
-        const [wallet, pseudo, resourcesRaw, metiersRaw, kirhaWei, isBanned] = await Promise.all([
+        const [wallet, pseudo, resourcesRaw, metiersRaw, kirhaWei, isBanned, pepitesBn] = await Promise.all([
           publicClient.readContract({ address: KIRHA_CITY_ADDRESS, abi: KirhaCityAbi, functionName: 'ownerOf', args: [cid] }),
           publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPseudo', args: [cid] }),
           publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityResources', args: [cid, ALL_RESOURCE_IDS] }),
           publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityMetiers', args: [cid] }),
           publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityKirha', args: [cid] }),
           publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'bannedCities', args: [cid] }),
+          publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPepites', args: [cid] }),
         ]);
         // resourcesRaw[0] = resource #1, ..., resourcesRaw[49] = resource #50
         const resources = [0, ...(resourcesRaw as bigint[]).map(r => Number(r) / 1e4)];
@@ -102,7 +108,7 @@ export function AdminPage() {
         list.push({
           cityId, pseudo: pseudo as string, wallet: wallet as string,
           kirhaWei: kirhaWei as bigint, resources, levels, xp, xpTotal,
-          isBanned: isBanned as boolean,
+          isBanned: isBanned as boolean, pepites: Number(pepitesBn as bigint),
         });
       }
       setPlayers(list);
@@ -178,6 +184,55 @@ export function AdminPage() {
     }
   }
 
+  async function retirerDons(p: PlayerData) {
+    const snap = snapshots[p.cityId];
+    if (!snap || !adminToken) { setError('Snapshot introuvable ou token manquant'); return; }
+    setRetirerStatus(prev => ({ ...prev, [p.cityId]: 'pending' }));
+    try {
+      // 1. Reset
+      const res1 = await fetch(`${ADMIN_WORKER_URL}/admin/reset-city`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({ cityId: String(p.cityId) }),
+      });
+      if (!res1.ok) throw new Error('Reset échoué');
+      // 2. Restore kirha (in wei)
+      if (snap.kirhaWei > 0n) {
+        const res2 = await fetch(`${ADMIN_WORKER_URL}/admin/give-kirha`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+          body: JSON.stringify({ cityId: String(p.cityId), amount: snap.kirhaWei.toString() }),
+        });
+        if (!res2.ok) throw new Error('Restore kirha échoué');
+      }
+      // 3. Restore pepites
+      if (snap.pepites > 0) {
+        const res3 = await fetch(`${ADMIN_WORKER_URL}/admin/give-pepites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+          body: JSON.stringify({ cityId: String(p.cityId), amount: String(snap.pepites) }),
+        });
+        if (!res3.ok) throw new Error('Restore pepites échoué');
+      }
+      // 4. Restore resources
+      for (let rid = 1; rid <= 50; rid++) {
+        const qty = Math.floor(snap.resources[rid] ?? 0);
+        if (qty >= 1) {
+          await fetch(`${ADMIN_WORKER_URL}/admin/give-resource`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+            body: JSON.stringify({ cityId: String(p.cityId), resourceId: String(rid), amount: String(qty) }),
+          });
+        }
+      }
+      setRetirerStatus(prev => ({ ...prev, [p.cityId]: 'ok' }));
+      setTimeout(() => setRetirerStatus(prev => ({ ...prev, [p.cityId]: 'idle' })), 3000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur retirer');
+      setRetirerStatus(prev => ({ ...prev, [p.cityId]: 'err' }));
+    }
+  }
+
   // ── Stats globales des ressources ──────────────────────
   const resourceTotals: number[] = Array(51).fill(0);
   for (const p of players) {
@@ -202,7 +257,7 @@ export function AdminPage() {
   }
 
   return (
-    <div style={{ position:'absolute', inset:0, overflowY:'auto', background:'#0a0010', color:'#e0c8d8', fontFamily:'monospace', padding:'20px', paddingBottom:60 }}>
+    <div style={{ position:'absolute', inset:0, overflowY:'auto', background:'#0a0010', color:'#e0c8d8', fontFamily:'monospace', padding:'20px', paddingBottom:100 }}>
 
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, borderBottom:'1px solid rgba(196,48,112,0.3)', paddingBottom:12 }}>
@@ -265,10 +320,21 @@ export function AdminPage() {
 
       {players.length > 0 && (
         <>
+          {/* Barre de recherche */}
+          <div style={{ marginBottom:12 }}>
+            <input
+              type="text"
+              placeholder="🔍 Rechercher par pseudo ou #cityId…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ width:'100%', padding:'8px 12px', borderRadius:10, border:'1px solid rgba(196,48,112,0.3)', background:'rgba(0,0,0,0.3)', color:'#e0c8d8', fontSize:12, fontFamily:'monospace', boxSizing:'border-box' as const }}
+            />
+          </div>
+
           {/* Liste des joueurs */}
-          <h2 style={{ color:'#ff6b9d', fontSize:14, fontWeight:700, margin:'0 0 10px' }}>👥 Joueurs</h2>
+          <h2 style={{ color:'#ff6b9d', fontSize:14, fontWeight:700, margin:'0 0 10px' }}>👥 Joueurs ({players.filter(p => !search || p.pseudo.toLowerCase().includes(search.toLowerCase()) || String(p.cityId).includes(search)).length})</h2>
           <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:24 }}>
-            {players.map(p => {
+            {players.filter(p => !search || p.pseudo.toLowerCase().includes(search.toLowerCase()) || String(p.cityId).includes(search)).map(p => {
               const totalRes = p.resources.reduce((a, b) => a + b, 0);
               const kirha    = parseFloat(formatEther(p.kirhaWei));
               const expanded = expandedCity === p.cityId;
@@ -278,7 +344,12 @@ export function AdminPage() {
                   {/* Ligne principale */}
                   <div
                     style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer' }}
-                    onClick={() => setExpandedCity(expanded ? null : p.cityId)}
+                    onClick={() => {
+                      if (!expanded && !snapshots[p.cityId]) {
+                        setSnapshots(prev => ({ ...prev, [p.cityId]: { ...p, resources: [...p.resources], levels: [...p.levels], xp: [...p.xp], xpTotal: [...p.xpTotal] } }));
+                      }
+                      setExpandedCity(expanded ? null : p.cityId);
+                    }}
                   >
                     <span style={{ color:'#ff6b9d', fontSize:13, fontWeight:900, minWidth:28 }}>#{p.cityId}</span>
                     <div style={{ flex:1 }}>
@@ -391,7 +462,11 @@ export function AdminPage() {
                                 />
                                 <button style={giveBtnStyle}
                                   disabled={!giveKirha[p.cityId]}
-                                  onClick={() => adminWorkerCall(p.cityId, `kirha_${p.cityId}`, 'give-kirha', { amount: giveKirha[p.cityId] || '0' })}
+                                  onClick={() => {
+                                    const amtEther = parseFloat(giveKirha[p.cityId] || '0');
+                                    const amtWei = BigInt(Math.round(amtEther * 1e18));
+                                    adminWorkerCall(p.cityId, `kirha_${p.cityId}`, 'give-kirha', { amount: amtWei.toString() });
+                                  }}
                                 >
                                   {giveStatus[`kirha_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`kirha_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
                                 </button>
@@ -498,6 +573,17 @@ export function AdminPage() {
                             </div>
 
                           </div>
+                        )}
+
+                        {/* Retirer les dons */}
+                        {snapshots[p.cityId] && (
+                          <button
+                            style={{ padding:'6px 12px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:'1px solid rgba(255,100,0,0.4)', background:'transparent', color:'#ff6400', alignSelf:'flex-start' }}
+                            onClick={() => retirerDons(p)}
+                            disabled={retirerStatus[p.cityId] === 'pending'}
+                          >
+                            {retirerStatus[p.cityId] === 'pending' ? '⏳ Retrait…' : retirerStatus[p.cityId] === 'ok' ? '✅ Retiré' : '↩️ Retirer les dons'}
+                          </button>
                         )}
 
                         {/* Suppression en 3 étapes */}

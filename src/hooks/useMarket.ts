@@ -263,6 +263,27 @@ export function useMarket() {
     }
   }, [cityIdBn, villeId, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource]);
 
+  // ── Activer le relayer (8h) ────────────────────────────────
+  const activerRelayer = useCallback(async () => {
+    if (!cityIdBn) return;
+    setStatus('listing');
+    setError(null);
+    try {
+      const hash = await writeContractAsync({
+        address: KIRHA_GAME_ADDRESS,
+        abi: KirhaGameAbi,
+        functionName: 'authorizeRelayer',
+        args: [cityIdBn, 28800n],
+      });
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      setStatus('success');
+      setTimeout(() => setStatus('idle'), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur');
+      setStatus('error');
+    }
+  }, [cityIdBn, writeContractAsync, publicClient]);
+
   // ── Annuler un listing ─────────────────────────────────────
   const annulerListing = useCallback(async (listingId: bigint) => {
     setError(null);
@@ -303,6 +324,7 @@ export function useMarket() {
     acheter,
     batchAcheter,
     annulerListing,
+    activerRelayer,
     refetchListings,
   };
 }

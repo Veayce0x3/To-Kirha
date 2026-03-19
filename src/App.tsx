@@ -85,7 +85,8 @@ function VilleIdGuard() {
 
   useEffect(() => {
     if (!isConnected || !address || !publicClient) return;
-    if (villeId && villeId !== '0') return;
+    // Toujours synchroniser depuis la chaîne à chaque connexion/rechargement
+    // (suppression du early return sur villeId — nécessaire pour recevoir les dons admin)
     (async () => {
       try {
         const cityId = await publicClient.readContract({
@@ -94,14 +95,12 @@ function VilleIdGuard() {
         }) as bigint;
         if (cityId > 0n) {
           setVilleId(cityId.toString());
-          // Lire le pseudo via cityPseudo (lié au NFT) plutôt que playerPseudo (lié à l'adresse)
           const pseudo = await publicClient.readContract({
             address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
             functionName: 'cityPseudo', args: [cityId],
           }) as string;
           if (pseudo) setPseudo(pseudo);
 
-          // Sync balances from chain
           const [kirhaWei, pepites, vipExp] = await Promise.all([
             publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityKirha', args: [cityId] }),
             publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPepites', args: [cityId] }),
@@ -114,7 +113,6 @@ function VilleIdGuard() {
             Number(vipExp)
           );
 
-          // Sync metiers
           const metiersChain = await publicClient.readContract({
             address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
             functionName: 'getCityMetiers', args: [cityId],
@@ -125,7 +123,6 @@ function VilleIdGuard() {
             if (mid) setMetierFromChain(mid, Number(m.level), Number(m.xp), Number(m.xpTotal));
           }
 
-          // Sync resources
           const allIds = Array.from({ length: 50 }, (_, i) => BigInt(i + 1));
           const resourcesChain = await publicClient.readContract({
             address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
@@ -140,7 +137,7 @@ function VilleIdGuard() {
       } catch {}
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, address, villeId, publicClient]);
+  }, [isConnected, address, publicClient]);
   return null;
 }
 

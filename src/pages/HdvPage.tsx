@@ -1,83 +1,169 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { usePublicClient } from 'wagmi';
+import { parseAbiItem, formatEther } from 'viem';
 import { useGameStore } from '../store/gameStore';
 import { getResourceById } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
 import { useMarket } from '../hooks/useMarket';
 import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
+import { KIRHA_MARKET_ADDRESS, KIRHA_GAME_ADDRESS } from '../contracts/addresses';
+import KirhaMarketAbi from '../contracts/abis/KirhaMarket.json';
+import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
 
-// ── Onglet PNJ (off-chain) ──────────────────────────────────
+// ── Historique des ventes ────────────────────────────────────
 
-const PNJ_PRICES: Partial<Record<ResourceId, number>> = {};
+interface SaleRecord {
+  listingId: bigint;
+  sellerCityId: bigint;
+  sellerPseudo: string;
+  buyerCityId: bigint;
+  buyerPseudo: string;
+  resourceId: number;
+  quantity: number;
+  totalPaid: number;
+  txHash: string;
+}
 
-function TabPnj() {
-  const inventaire  = useGameStore(s => s.inventaire);
-  const vendreAuPnj = useGameStore(s => s.vendreAuPnj);
-  const soldeKirha  = useGameStore(s => s.soldeKirha);
-  const [venduIds, setVenduIds] = useState<ResourceId[]>([]);
-  const { t, lang } = useT();
+function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
+  const [history, setHistory] = useState<SaleRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState<'all'|'mine'>('all');
+  const { lang } = useT();
+  const publicClient = usePublicClient();
 
-  const items = (Object.entries(inventaire) as [string, number][])
-    .filter(([, qty]) => Math.floor(qty) >= 1)
-    .map(([id, qty]) => {
-      const rid = Number(id) as ResourceId;
-      const res = getResourceById(rid);
-      if (!res) return null;
-      const price = PNJ_PRICES[rid] ?? 0.01;
-      return { id: rid, qty, res, price };
-    })
-    .filter(Boolean) as { id: ResourceId; qty: number; res: NonNullable<ReturnType<typeof getResourceById>>; price: number }[];
+  const fetchHistory = useCallback(async () => {
+    if (!publicClient) return;
+    setLoading(true);
+    try {
+      const latestBlock = await publicClient.getBlockNumber();
+      const fromBlock = latestBlock > 100000n ? latestBlock - 100000n : 0n;
 
-  const navigate = useNavigate();
+      const logs = await publicClient.getLogs({
+        address: KIRHA_MARKET_ADDRESS,
+        event: parseAbiItem('event ResourceSold(uint256 indexed listingId, uint256 indexed buyerCityId, uint256 quantity, uint256 totalPaid, uint256 sellerReceives)'),
+        fromBlock,
+        toBlock: latestBlock,
+      });
+
+      if (logs.length === 0) { setHistory([]); setLoading(false); return; }
+
+      const uniqueListingIds = [...new Set(logs.map(l => l.args.listingId!))];
+      const listingDetails = await Promise.all(
+        uniqueListingIds.map(async (lid) => {
+          try {
+            const listing = await publicClient.readContract({
+              address: KIRHA_MARKET_ADDRESS,
+              abi: KirhaMarketAbi,
+              functionName: 'getListing',
+              args: [lid],
+            }) as { sellerCityId: bigint; resourceId: bigint; quantity: bigint; pricePerUnit: bigint; active: boolean };
+            return { listingId: lid, sellerCityId: listing.sellerCityId, resourceId: Number(listing.resourceId) };
+          } catch { return { listingId: lid, sellerCityId: 0n, resourceId: 0 }; }
+        })
+      );
+
+      const listingMap = new Map(listingDetails.map(l => [l.listingId, l]));
+
+      const allCityIds = [...new Set([
+        ...logs.map(l => l.args.buyerCityId!),
+        ...listingDetails.map(l => l.sellerCityId).filter(id => id > 0n),
+      ])];
+
+      const pseudos = allCityIds.length > 0
+        ? await publicClient.readContract({
+            address: KIRHA_GAME_ADDRESS,
+            abi: KirhaGameAbi,
+            functionName: 'getCityPseudos',
+            args: [allCityIds],
+          }) as string[]
+        : [];
+
+      const pseudoMap = new Map(allCityIds.map((id, i) => [id, pseudos[i] ?? '?']));
+
+      const records: SaleRecord[] = [...logs].reverse().map(log => {
+        const listing = listingMap.get(log.args.listingId!);
+        const sellerCityId = listing?.sellerCityId ?? 0n;
+        return {
+          listingId:    log.args.listingId!,
+          sellerCityId,
+          sellerPseudo: pseudoMap.get(sellerCityId) ?? '?',
+          buyerCityId:  log.args.buyerCityId!,
+          buyerPseudo:  pseudoMap.get(log.args.buyerCityId!) ?? '?',
+          resourceId:   listing?.resourceId ?? 0,
+          quantity:     Number(log.args.quantity!) / 1e4,
+          totalPaid:    parseFloat(formatEther(log.args.totalPaid!)),
+          txHash:       log.transactionHash ?? '',
+        };
+      });
+
+      setHistory(records);
+    } catch (e) {
+      console.error('History fetch error:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [publicClient]);
+
+  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+  const displayed = filter === 'mine' && myCityId
+    ? history.filter(r => r.buyerCityId === myCityId || r.sellerCityId === myCityId)
+    : history;
 
   return (
-    <div style={{ padding:'16px', paddingBottom:90 }}>
-      <div style={s.pnjCard}>
-        <span style={{ fontSize:'32px' }}>🧙</span>
-        <div>
-          <p style={{ color:'#1e0a16', fontSize:'14px', fontWeight:700, margin:0 }}>{t('hdv.pnj_name')}</p>
-          <p style={{ color:'#7a4060', fontSize:'11px', margin:'3px 0 0' }}>{t('hdv.pnj_subtitle')}</p>
+    <div style={{ padding: '14px', paddingBottom: 90 }}>
+      {/* Filtre */}
+      <div style={{ display:'flex', gap:8, marginBottom:12, alignItems:'center' }}>
+        <div style={{ display:'flex', gap:6, flex:1 }}>
+          {(['all','mine'] as const).map(f => (
+            <button key={f} style={{ flex:1, padding:'7px', background: filter===f ? 'rgba(196,48,112,0.15)' : 'rgba(212,100,138,0.06)', border: filter===f ? '1px solid rgba(196,48,112,0.5)' : '1px solid rgba(212,100,138,0.13)', borderRadius:10, color: filter===f ? '#c43070' : '#7a4060', fontSize:11, fontWeight:700, cursor:'pointer' }}
+              onClick={() => setFilter(f)}>
+              {f === 'all' ? '🌐 Toutes' : '👤 Mes transactions'}
+            </button>
+          ))}
         </div>
-        <span style={{ color:'#f9a825', fontSize:'11px', fontWeight:700, marginLeft:'auto' }}>{t('hdv.open')}</span>
+        <button onClick={fetchHistory} disabled={loading} style={{ padding:'7px 12px', background:'rgba(212,100,138,0.08)', border:'1px solid rgba(212,100,138,0.2)', borderRadius:10, color:'#7a4060', fontSize:11, cursor:'pointer' }}>
+          {loading ? '⏳' : '🔄'}
+        </button>
       </div>
-      <p style={{ color:'#7a4060', fontSize:'10px', marginBottom:6 }}>
-        Solde : {soldeKirha.toFixed(2)} $KIRHA
-      </p>
 
-      {items.length === 0 ? (
+      {loading && (
+        <div style={{ textAlign:'center', padding:'30px 0', color:'#7a4060', fontSize:12 }}>Chargement de l'historique…</div>
+      )}
+
+      {!loading && displayed.length === 0 && (
         <div style={s.empty}>
-          <span style={{ fontSize:'40px' }}>📦</span>
-          <p style={{ color:'#7a4060', fontSize:'14px', marginTop:12 }}>{t('hdv.empty')}</p>
-          <button style={s.goBtn} onClick={() => navigate('/recolte')}>{t('hdv.go_harvest')}</button>
+          <span style={{ fontSize:36 }}>📋</span>
+          <p style={{ color:'#7a4060', fontSize:13, marginTop:10 }}>
+            {filter === 'mine' ? 'Aucune transaction personnelle.' : 'Aucune vente enregistrée.'}
+          </p>
         </div>
-      ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-          {items.map(({ id, qty, res, price }) => {
-            const vendu = venduIds.includes(id);
+      )}
+
+      {!loading && displayed.length > 0 && (
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {displayed.map((r, i) => {
+            const isMySale = !!(myCityId && r.sellerCityId === myCityId);
+            const isMyBuy  = !!(myCityId && r.buyerCityId === myCityId);
             return (
-              <div key={id} style={s.itemRow}>
-                <div style={s.itemIcon}>
-                  <span style={{ fontSize:'20px' }}>{emojiByResourceId(id)}</span>
+              <div key={i} style={{ ...s.itemRow, borderColor: isMySale ? 'rgba(106,191,68,0.3)' : isMyBuy ? 'rgba(41,182,246,0.3)' : 'rgba(212,100,138,0.15)' }}>
+                <div style={{ ...s.itemIcon, borderColor: 'rgba(212,100,138,0.2)' }}>
+                  <span style={{ fontSize:18 }}>{emojiByResourceId(r.resourceId)}</span>
                 </div>
                 <div style={{ flex:1 }}>
-                  <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:700 }}>
-                    {getNomRessource(id, lang)}
-                  </span>
-                  <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>
-                    ×{Math.floor(qty)} {t('hdv.in_stock')} · {price} {t('hdv.per_unit')}
+                  <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>{getNomRessource(r.resourceId, lang)}</span>
+                  <span style={{ color:'#7a4060', fontSize:10, display:'block' }}>
+                    ×{r.quantity.toFixed(1)} · {r.sellerPseudo} → {r.buyerPseudo}
                   </span>
                 </div>
                 <div style={{ textAlign:'right' }}>
-                  <p style={{ color:'#f9a825', fontSize:'13px', fontWeight:800, margin:0 }}>
-                    {(price * Math.floor(qty)).toFixed(0)} $K
-                  </p>
-                  {vendu ? (
-                    <span style={{ color:'#6abf44', fontSize:'10px', fontWeight:700 }}>{t('hdv.sold')}</span>
-                  ) : (
-                    <button style={s.sellBtn} onClick={() => { vendreAuPnj(id, Math.floor(qty), price); setVenduIds(v => [...v, id]); }}>
-                      {t('hdv.sell_all')}
-                    </button>
+                  <span style={{ color:'#f9a825', fontSize:12, fontWeight:800, display:'block' }}>{r.totalPaid.toFixed(4)} $K</span>
+                  {(isMySale || isMyBuy) && (
+                    <span style={{ fontSize:9, fontWeight:700, color: isMySale ? '#6abf44' : '#29b6f6' }}>
+                      {isMySale ? '💰 Vendu' : '🛒 Acheté'}
+                    </span>
                   )}
                 </div>
               </div>
@@ -95,47 +181,38 @@ function TabOnchain() {
   const inventaire  = useGameStore(s => s.inventaire);
   const villeId     = useGameStore(s => s.villeId);
   const vipExpiry   = useGameStore(s => s.vipExpiry);
-  const { t, lang } = useT();
+  const { lang } = useT();
   const villeIdBn   = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
   const taxRate = isVip ? 0.25 : 0.5;
   const taxLabel = isVip ? 'Taxe: 25% (VIP)' : 'Taxe: 50%';
   const {
-    listings, myListings, isApproved, status, error,
-    approveMarket, batchMettrEnVente, batchAcheter, annulerListing,
+    listings, myListings, status, error, isRelayerActive,
+    activerRelayer, batchMettrEnVente, batchAcheter, annulerListing,
   } = useMarket();
 
-  const [tab, setTab]               = useState<'acheter'|'vendre'|'mesVentes'>('acheter');
+  const [tab, setTab]               = useState<'acheter'|'vendre'|'mesVentes'|'historique'>('acheter');
   const [sellResourceId, setSellResourceId] = useState('');
   const [sellQty, setSellQty]       = useState('');
   const [sellPrice, setSellPrice]   = useState('');
   const [buyResourceId, setBuyResourceId] = useState('');
 
-  // Quantités d'achat par listing et panier
   const [buyQty, setBuyQty]         = useState<Record<string, string>>({});
   type BuyCartItem = { listingId: bigint; resourceId: number; quantity: number; pricePerUnit: number; maxQty: number };
   const [buyCart, setBuyCart]       = useState<BuyCartItem[]>([]);
 
-  // Panier de vente (pending avant publication)
   type CartItem = { resourceId: number; quantity: number; pricePerUnit: number };
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  // Ressources dispo en inventaire
   const inventaireItems = (Object.entries(inventaire) as [string, number][])
     .filter(([, qty]) => Math.floor(qty) >= 1)
     .map(([id, qty]) => ({ id: Number(id) as ResourceId, qty: Math.floor(qty) }));
 
-  // Quantité max pour la ressource sélectionnée
   const selectedItem = inventaireItems.find(i => i.id === parseInt(sellResourceId));
   const maxQty = selectedItem?.qty ?? 0;
 
-  // Reset qty + prix quand la ressource change
-  useEffect(() => {
-    setSellQty('');
-    setSellPrice('');
-  }, [sellResourceId]);
+  useEffect(() => { setSellQty(''); setSellPrice(''); }, [sellResourceId]);
 
-  // Auto-remplir le prix uniquement quand le prix est vide (première sélection ou changement de ressource)
   useEffect(() => {
     if (!sellResourceId || sellPrice !== '') return;
     const rid = parseInt(sellResourceId);
@@ -149,13 +226,12 @@ function TabOnchain() {
   }, [sellResourceId, listings, sellPrice]);
 
   const busy = status === 'listing' || status === 'buying' || status === 'cancelling';
+  const relayerActivating = status === 'listing' && !isRelayerActive;
 
   const priceNum = parseFloat(sellPrice || '0');
   const qtyNum   = parseInt(sellQty || '0');
-  const totalBrut = priceNum * qtyNum;
-  const totalNet  = totalBrut * (1 - taxRate);
+  const totalNet  = priceNum * qtyNum * (1 - taxRate);
 
-  // Prix du marché auto-rempli ?
   const marketPrice = (() => {
     if (!sellResourceId) return null;
     const rid = parseInt(sellResourceId);
@@ -164,21 +240,37 @@ function TabOnchain() {
     return Math.min(...rl.map(l => l.pricePerUnit));
   })();
 
-  // Ressources uniques présentes dans les listings
   const buyResourceIds = [...new Set(listings.map(l => l.resourceId))].sort((a, b) => a - b);
 
-  // Listings pour la ressource sélectionnée, triés par prix croissant
   const listingsSorted = [...listings]
     .filter(l => buyResourceId !== '' && l.resourceId === parseInt(buyResourceId))
     .sort((a, b) => a.pricePerUnit - b.pricePerUnit);
 
   return (
     <div style={{ paddingBottom:90 }}>
+      {/* Bannière relayer */}
+      {!isRelayerActive && (
+        <div style={{ margin:'12px 14px 0', padding:'12px 14px', background:'rgba(249,168,37,0.08)', border:'1px solid rgba(249,168,37,0.35)', borderRadius:12, display:'flex', gap:10, alignItems:'center' }}>
+          <span style={{ fontSize:20 }}>⚡</span>
+          <div style={{ flex:1 }}>
+            <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 2px' }}>Mode gasless désactivé</p>
+            <p style={{ color:'#7a4060', fontSize:10, margin:0 }}>Autorise le relayer une fois (8h) pour des transactions sans frais.</p>
+          </div>
+          <button
+            style={{ padding:'7px 12px', background:'#f9a825', color:'#1e0a16', border:'none', borderRadius:10, fontSize:11, fontWeight:700, cursor: relayerActivating ? 'default' : 'pointer', opacity: relayerActivating ? 0.6 : 1 }}
+            onClick={activerRelayer}
+            disabled={relayerActivating}
+          >
+            {relayerActivating ? '⏳…' : 'Activer'}
+          </button>
+        </div>
+      )}
+
       {/* Sous-onglets */}
-      <div style={{ display:'flex', borderBottom:'1px solid rgba(212,100,138,0.15)' }}>
-        {(['acheter','vendre','mesVentes'] as const).map(tid => (
-          <button key={tid} style={{ flex:1, padding:'10px 4px', background:'none', border:'none', borderBottom: tab===tid ? '2px solid #c43070':'2px solid transparent', color: tab===tid ? '#c43070':'#7a4060', fontSize:'11px', fontWeight:700, cursor:'pointer' }} onClick={() => setTab(tid)}>
-            {tid === 'acheter' ? '🛒 Acheter' : tid === 'vendre' ? '💰 Vendre' : '📋 Mes ventes'}
+      <div style={{ display:'flex', borderBottom:'1px solid rgba(212,100,138,0.15)', marginTop:8 }}>
+        {(['acheter','vendre','mesVentes','historique'] as const).map(tid => (
+          <button key={tid} style={{ flex:1, padding:'9px 2px', background:'none', border:'none', borderBottom: tab===tid ? '2px solid #c43070':'2px solid transparent', color: tab===tid ? '#c43070':'#7a4060', fontSize:'10px', fontWeight:700, cursor:'pointer' }} onClick={() => setTab(tid)}>
+            {tid === 'acheter' ? '🛒 Acheter' : tid === 'vendre' ? '💰 Vendre' : tid === 'mesVentes' ? '📋 Mes ventes' : '📜 Historique'}
           </button>
         ))}
       </div>
@@ -188,7 +280,6 @@ function TabOnchain() {
         {/* ── Acheter ── */}
         {tab === 'acheter' && (
           <>
-            {/* Sélecteur de ressource (obligatoire) */}
             <div style={{ marginBottom:12 }}>
               <label style={s.label}>Quelle ressource cherches-tu ?</label>
               <select
@@ -208,7 +299,6 @@ function TabOnchain() {
               )}
             </div>
 
-            {/* Listings pour la ressource sélectionnée */}
             {buyResourceId !== '' && (
               listingsSorted.length === 0 ? (
                 <div style={s.empty}>
@@ -268,7 +358,6 @@ function TabOnchain() {
               )
             )}
 
-            {/* ── Panier d'achat ── */}
             {buyCart.length > 0 && (
               <div style={{ marginTop:16 }}>
                 <p style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700, margin:'0 0 8px' }}>Panier ({buyCart.length})</p>
@@ -303,9 +392,9 @@ function TabOnchain() {
                   disabled={busy}
                   onClick={() => batchAcheter(buyCart).then(() => { setBuyCart([]); setBuyResourceId(''); })}
                 >
-                  {status === 'buying' ? '⏳ Achat en cours…' : `🛒 Acheter le panier (${buyCart.length} article${buyCart.length > 1 ? 's' : ''}, 1 signature)`}
+                  {status === 'buying' ? '⏳ Achat en cours…' : `🛒 Acheter le panier (${buyCart.length} article${buyCart.length > 1 ? 's' : ''})`}
                 </button>
-                {status === 'success' && <p style={{ color:'#6abf44', fontSize:'12px', fontWeight:700, textAlign:'center', marginTop:8 }}>✅ Achat confirmé ! Ressources ajoutées à ton inventaire.</p>}
+                {status === 'success' && <p style={{ color:'#6abf44', fontSize:'12px', fontWeight:700, textAlign:'center', marginTop:8 }}>✅ Achat confirmé !</p>}
                 {error && <p style={{ color:'#c43070', fontSize:'10px', marginTop:4 }}>{error.slice(0,120)}</p>}
               </div>
             )}
@@ -314,155 +403,128 @@ function TabOnchain() {
 
         {/* ── Vendre ── */}
         {tab === 'vendre' && (
-          <>
-            {!isApproved && (
-              <div style={{ background:'rgba(249,168,37,0.08)', border:'1px solid rgba(249,168,37,0.3)', borderRadius:12, padding:'12px 14px', marginBottom:12, display:'flex', gap:10, alignItems:'center' }}>
-                <span>⚠️</span>
-                <div style={{ flex:1 }}>
-                  <p style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700, margin:'0 0 4px' }}>Autorisation requise</p>
-                  <p style={{ color:'#7a4060', fontSize:'11px', margin:0 }}>Le contrat HDV doit être autorisé à transférer vos ressources.</p>
+          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background: isVip ? 'rgba(249,168,37,0.08)' : 'rgba(212,100,138,0.05)', border:'1px solid rgba(212,100,138,0.15)', borderRadius:10 }}>
+              <span style={{ fontSize:'13px' }}>{isVip ? '👑' : 'ℹ️'}</span>
+              <span style={{ color: isVip ? '#f9a825' : '#7a4060', fontSize:'11px', fontWeight:700 }}>{taxLabel}</span>
+            </div>
+
+            <div style={{ background:'rgba(212,100,138,0.04)', border:'1px solid rgba(212,100,138,0.13)', borderRadius:12, padding:'12px' }}>
+              <p style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700, margin:'0 0 10px' }}>Ajouter au panier</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                <div>
+                  <label style={s.label}>Ressource</label>
+                  <select value={sellResourceId} onChange={e => setSellResourceId(e.target.value)} style={s.select}>
+                    <option value="">-- Choisir --</option>
+                    {inventaireItems
+                      .filter(item => !cart.some(c => c.resourceId === item.id))
+                      .map(item => (
+                        <option key={item.id} value={item.id}>
+                          {emojiByResourceId(item.id)} {getNomRessource(item.id, lang)} (×{item.qty})
+                        </option>
+                      ))}
+                  </select>
                 </div>
-                <button style={{ ...s.sellBtn, padding:'7px 12px', fontSize:'11px' }} onClick={approveMarket} disabled={busy}>
-                  Autoriser
+
+                {sellResourceId && (
+                  <>
+                    <div style={{ display:'flex', gap:8 }}>
+                      <div style={{ flex:1 }}>
+                        <label style={s.label}>Quantité (max {maxQty})</label>
+                        <input type="number" min="1" max={maxQty} value={sellQty} onChange={e => setSellQty(e.target.value)} placeholder="1" style={s.input} />
+                      </div>
+                      <div style={{ flex:1 }}>
+                        <label style={s.label}>
+                          Prix/unité ($K)
+                          {marketPrice !== null && <span style={{ color:'#6abf44', fontWeight:400 }}> ↳ marché: {marketPrice.toFixed(4)}</span>}
+                        </label>
+                        <input type="number" min="0.0001" step="0.0001" value={sellPrice} onChange={e => setSellPrice(e.target.value)} style={s.input} />
+                      </div>
+                    </div>
+
+                    {qtyNum > 0 && priceNum > 0 && (
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 8px', background:'rgba(106,191,68,0.07)', borderRadius:8 }}>
+                        <span style={{ color:'#7a4060', fontSize:'11px' }}>{qtyNum} × {priceNum.toFixed(4)} $K → vous recevez</span>
+                        <span style={{ color:'#6abf44', fontSize:'12px', fontWeight:800 }}>{totalNet.toFixed(4)} $K</span>
+                      </div>
+                    )}
+
+                    <button
+                      style={{ ...s.sellBtn, padding:'9px', textAlign:'center', opacity: (qtyNum < 1 || priceNum <= 0) ? 0.5 : 1 }}
+                      disabled={qtyNum < 1 || priceNum <= 0}
+                      onClick={() => {
+                        setCart(prev => [...prev, { resourceId: parseInt(sellResourceId), quantity: qtyNum, pricePerUnit: priceNum }]);
+                        setSellResourceId('');
+                      }}
+                    >
+                      + Ajouter au panier
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {cart.length > 0 && (
+              <div>
+                <p style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700, margin:'0 0 8px' }}>Panier ({cart.length})</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:10 }}>
+                  {cart.map((item, i) => {
+                    const brut = item.quantity * item.pricePerUnit;
+                    return (
+                      <div key={i} style={{ ...s.itemRow, padding:'8px 10px' }}>
+                        <div style={s.itemIcon}>
+                          <span style={{ fontSize:'18px' }}>{emojiByResourceId(item.resourceId)}</span>
+                        </div>
+                        <div style={{ flex:1 }}>
+                          <span style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700 }}>{getNomRessource(item.resourceId, lang)}</span>
+                          <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>×{item.quantity} · {item.pricePerUnit.toFixed(4)} $K/u</span>
+                        </div>
+                        <div style={{ textAlign:'right', marginRight:8 }}>
+                          <span style={{ color:'#6abf44', fontSize:'11px', fontWeight:700, display:'block' }}>{(brut * (1 - taxRate)).toFixed(4)} $K</span>
+                          <span style={{ color:'#9a6080', fontSize:'9px' }}>après taxe</span>
+                        </div>
+                        <button
+                          style={{ color:'#c43070', background:'none', border:'none', cursor:'pointer', fontSize:'14px', padding:'0 4px' }}
+                          onClick={() => setCart(prev => prev.filter((_, j) => j !== i))}
+                        >✕</button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ ...s.summary, marginBottom:10 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between' }}>
+                    <span style={{ color:'#7a4060', fontSize:'12px' }}>Total brut</span>
+                    <span style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700 }}>
+                      {cart.reduce((acc, i) => acc + i.quantity * i.pricePerUnit, 0).toFixed(4)} $K
+                    </span>
+                  </div>
+                  <div style={{ borderTop:'1px solid rgba(212,100,138,0.2)', marginTop:6, paddingTop:6, display:'flex', justifyContent:'space-between' }}>
+                    <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:700 }}>Vous recevez</span>
+                    <span style={{ color:'#6abf44', fontSize:'14px', fontWeight:800 }}>
+                      {(cart.reduce((acc, i) => acc + i.quantity * i.pricePerUnit, 0) * (1 - taxRate)).toFixed(4)} $K
+                    </span>
+                  </div>
+                </div>
+                <button
+                  style={{ ...s.mainBtn, opacity: busy ? 0.5 : 1 }}
+                  disabled={busy}
+                  onClick={() => { batchMettrEnVente(cart).then(() => { setCart([]); setTab('mesVentes'); }); }}
+                >
+                  {status === 'listing' ? '⏳ Confirmation en cours…' : `💰 Publier ${cart.length} vente${cart.length > 1 ? 's' : ''}`}
                 </button>
               </div>
             )}
 
-            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-
-              {/* ── Info taxe ── */}
-              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background: isVip ? 'rgba(249,168,37,0.08)' : 'rgba(212,100,138,0.05)', border:'1px solid rgba(212,100,138,0.15)', borderRadius:10 }}>
-                <span style={{ fontSize:'13px' }}>{isVip ? '👑' : 'ℹ️'}</span>
-                <span style={{ color: isVip ? '#f9a825' : '#7a4060', fontSize:'11px', fontWeight:700 }}>{taxLabel}</span>
+            {cart.length === 0 && inventaireItems.length === 0 && (
+              <div style={s.empty}>
+                <span style={{ fontSize:'36px' }}>📦</span>
+                <p style={{ color:'#7a4060', fontSize:'13px', marginTop:10 }}>Aucune ressource en stock.</p>
               </div>
+            )}
 
-              {/* ── Formulaire d'ajout au panier ── */}
-              <div style={{ background:'rgba(212,100,138,0.04)', border:'1px solid rgba(212,100,138,0.13)', borderRadius:12, padding:'12px' }}>
-                <p style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700, margin:'0 0 10px' }}>Ajouter au panier</p>
-
-                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                  <div>
-                    <label style={s.label}>Ressource</label>
-                    <select value={sellResourceId} onChange={e => setSellResourceId(e.target.value)} style={s.select}>
-                      <option value="">-- Choisir --</option>
-                      {inventaireItems
-                        .filter(item => !cart.some(c => c.resourceId === item.id))
-                        .map(item => (
-                          <option key={item.id} value={item.id}>
-                            {emojiByResourceId(item.id)} {getNomRessource(item.id, lang)} (×{item.qty})
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-
-                  {sellResourceId && (
-                    <>
-                      <div style={{ display:'flex', gap:8 }}>
-                        <div style={{ flex:1 }}>
-                          <label style={s.label}>Quantité (max {maxQty})</label>
-                          <input type="number" min="1" max={maxQty} value={sellQty} onChange={e => setSellQty(e.target.value)} placeholder="1" style={s.input} />
-                        </div>
-                        <div style={{ flex:1 }}>
-                          <label style={s.label}>
-                            Prix/unité ($K)
-                            {marketPrice !== null && <span style={{ color:'#6abf44', fontWeight:400 }}> ↳ marché: {marketPrice.toFixed(4)}</span>}
-                          </label>
-                          <input type="number" min="0.0001" step="0.0001" value={sellPrice} onChange={e => setSellPrice(e.target.value)} style={s.input} />
-                        </div>
-                      </div>
-
-                      {qtyNum > 0 && priceNum > 0 && (
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 8px', background:'rgba(106,191,68,0.07)', borderRadius:8 }}>
-                          <span style={{ color:'#7a4060', fontSize:'11px' }}>{qtyNum} × {priceNum.toFixed(4)} $K → vous recevez</span>
-                          <span style={{ color:'#6abf44', fontSize:'12px', fontWeight:800 }}>{totalNet.toFixed(4)} $K</span>
-                        </div>
-                      )}
-
-                      <button
-                        style={{ ...s.sellBtn, padding:'9px', textAlign:'center', opacity: (qtyNum < 1 || priceNum <= 0) ? 0.5 : 1 }}
-                        disabled={qtyNum < 1 || priceNum <= 0}
-                        onClick={() => {
-                          setCart(prev => [...prev, { resourceId: parseInt(sellResourceId), quantity: qtyNum, pricePerUnit: priceNum }]);
-                          setSellResourceId('');
-                        }}
-                      >
-                        + Ajouter au panier
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* ── Panier ── */}
-              {cart.length > 0 && (
-                <div>
-                  <p style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700, margin:'0 0 8px' }}>Panier ({cart.length})</p>
-                  <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:10 }}>
-                    {cart.map((item, i) => {
-                      const brut = item.quantity * item.pricePerUnit;
-                      return (
-                        <div key={i} style={{ ...s.itemRow, padding:'8px 10px' }}>
-                          <div style={s.itemIcon}>
-                            <span style={{ fontSize:'18px' }}>{emojiByResourceId(item.resourceId)}</span>
-                          </div>
-                          <div style={{ flex:1 }}>
-                            <span style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700 }}>{getNomRessource(item.resourceId, lang)}</span>
-                            <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>×{item.quantity} · {item.pricePerUnit.toFixed(4)} $K/u</span>
-                          </div>
-                          <div style={{ textAlign:'right', marginRight:8 }}>
-                            <span style={{ color:'#6abf44', fontSize:'11px', fontWeight:700, display:'block' }}>{(brut * (1 - taxRate)).toFixed(4)} $K</span>
-                            <span style={{ color:'#9a6080', fontSize:'9px' }}>après taxe</span>
-                          </div>
-                          <button
-                            style={{ color:'#c43070', background:'none', border:'none', cursor:'pointer', fontSize:'14px', padding:'0 4px' }}
-                            onClick={() => setCart(prev => prev.filter((_, j) => j !== i))}
-                          >✕</button>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Total panier */}
-                  <div style={{ ...s.summary, marginBottom:10 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between' }}>
-                      <span style={{ color:'#7a4060', fontSize:'12px' }}>Total brut</span>
-                      <span style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700 }}>
-                        {cart.reduce((acc, i) => acc + i.quantity * i.pricePerUnit, 0).toFixed(4)} $K
-                      </span>
-                    </div>
-                    <div style={{ borderTop:'1px solid rgba(212,100,138,0.2)', marginTop:6, paddingTop:6, display:'flex', justifyContent:'space-between' }}>
-                      <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:700 }}>Vous recevez</span>
-                      <span style={{ color:'#6abf44', fontSize:'14px', fontWeight:800 }}>
-                        {(cart.reduce((acc, i) => acc + i.quantity * i.pricePerUnit, 0) * (1 - taxRate)).toFixed(4)} $K
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    style={{ ...s.mainBtn, opacity: busy ? 0.5 : 1 }}
-                    disabled={busy}
-                    onClick={() => {
-                      batchMettrEnVente(cart).then(() => { setCart([]); setTab('mesVentes'); });
-                    }}
-                  >
-                    {status === 'listing' ? '⏳ Confirmation en cours…' : `💰 Publier ${cart.length} vente${cart.length > 1 ? 's' : ''} (1 signature)`}
-                  </button>
-                </div>
-              )}
-
-              {cart.length === 0 && inventaireItems.length === 0 && (
-                <div style={s.empty}>
-                  <span style={{ fontSize:'36px' }}>📦</span>
-                  <p style={{ color:'#7a4060', fontSize:'13px', marginTop:10 }}>Aucune ressource en stock.</p>
-                </div>
-              )}
-
-              {status === 'success' && (
-                <p style={{ color:'#6abf44', fontSize:'12px', fontWeight:700, textAlign:'center', margin:0 }}>✅ Ventes publiées !</p>
-              )}
-              {error && <p style={{ color:'#c43070', fontSize:'10px', margin:0 }}>{error.slice(0,120)}</p>}
-            </div>
-          </>
+            {status === 'success' && <p style={{ color:'#6abf44', fontSize:'12px', fontWeight:700, textAlign:'center', margin:0 }}>✅ Ventes publiées !</p>}
+            {error && <p style={{ color:'#c43070', fontSize:'10px', margin:0 }}>{error.slice(0,120)}</p>}
+          </div>
         )}
 
         {/* ── Mes ventes ── */}
@@ -507,6 +569,10 @@ function TabOnchain() {
             )}
           </>
         )}
+
+        {/* ── Historique ── */}
+        {tab === 'historique' && <TabHistorique myCityId={villeIdBn} />}
+
       </div>
     </div>
   );
@@ -517,7 +583,6 @@ function TabOnchain() {
 export function HdvPage() {
   const navigate  = useNavigate();
   const { t }     = useT();
-  const [hdvTab, setHdvTab] = useState<'pnj'|'onchain'>('onchain');
 
   return (
     <div style={s.page}>
@@ -526,19 +591,8 @@ export function HdvPage() {
         <span style={s.headerTitle}>{t('hdv.title')}</span>
         <div style={{ width:60 }} />
       </div>
-
-      {/* Onglets principaux */}
-      <div style={{ display:'flex', borderBottom:'2px solid rgba(212,100,138,0.15)', flexShrink:0 }}>
-        <button style={{ flex:1, padding:'11px', background:'none', border:'none', borderBottom: hdvTab==='pnj' ? '2px solid #c43070':'2px solid transparent', color: hdvTab==='pnj' ? '#c43070':'#7a4060', fontSize:'13px', fontWeight:700, cursor:'pointer', marginBottom:-2 }} onClick={() => setHdvTab('pnj')}>
-          🧙 PNJ
-        </button>
-        <button style={{ flex:1, padding:'11px', background:'none', border:'none', borderBottom: hdvTab==='onchain' ? '2px solid #8a25d4':'2px solid transparent', color: hdvTab==='onchain' ? '#8a25d4':'#7a4060', fontSize:'13px', fontWeight:700, cursor:'pointer', marginBottom:-2 }} onClick={() => setHdvTab('onchain')}>
-          🏪 Hôtel des Ventes
-        </button>
-      </div>
-
       <div style={{ flex:1, overflowY:'auto' }}>
-        {hdvTab === 'pnj' ? <TabPnj /> : <TabOnchain />}
+        <TabOnchain />
       </div>
     </div>
   );
@@ -549,9 +603,7 @@ const s: Record<string, React.CSSProperties> = {
   header:  { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', background:'rgba(253,240,245,0.96)', backdropFilter:'blur(8px)', borderBottom:'1px solid rgba(212,100,138,0.15)', flexShrink:0 },
   backBtn: { color:'#7a4060', fontSize:'13px', fontWeight:600, background:'none', border:'none', cursor:'pointer' },
   headerTitle: { color:'#1e0a16', fontSize:'16px', fontWeight:800 },
-  pnjCard: { display:'flex', alignItems:'center', gap:'12px', background:'#ffffff', border:'1px solid rgba(249,168,37,0.2)', borderRadius:14, padding:'14px', marginBottom:16 },
   empty: { display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 0', gap:8 },
-  goBtn: { marginTop:12, padding:'10px 20px', background:'#6abf44', color:'#1e0a16', border:'none', borderRadius:10, fontWeight:700, cursor:'pointer', fontSize:'13px' },
   itemRow: { display:'flex', alignItems:'center', gap:'10px', background:'#ffffff', border:'1px solid rgba(212,100,138,0.15)', borderRadius:12, padding:'10px 12px' },
   itemIcon: { width:40, height:40, borderRadius:8, border:'1.5px solid rgba(212,100,138,0.25)', background:'rgba(212,100,138,0.05)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
   sellBtn: { color:'#f9a825', fontSize:'10px', fontWeight:700, background:'rgba(249,168,37,0.12)', border:'1px solid rgba(249,168,37,0.25)', borderRadius:6, padding:'5px 10px', cursor:'pointer' },

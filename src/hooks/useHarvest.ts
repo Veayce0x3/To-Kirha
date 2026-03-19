@@ -49,6 +49,7 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
 
   const [, setTick] = useState(0);
   const [lastHarvested, setLastHarvested] = useState<{ qty: number; resourceId: ResourceId } | null>(null);
+  const lastHarvestedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Tick 1s — uniquement pour rafraîchir les timers affichés (pas d'auto-collect)
   useEffect(() => {
@@ -96,8 +97,12 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     terminerRecolte(metierId, slotIndex, ratio);
     ajouterXp(metierId, xpFinal);
     ajouterPending(rid, ratio);
-    setLastHarvested({ qty: ratio, resourceId: rid });
-    setTimeout(() => setLastHarvested(null), 2000);
+    setLastHarvested(prev => {
+      if (prev && prev.resourceId === rid) return { qty: prev.qty + ratio, resourceId: rid };
+      return { qty: ratio, resourceId: rid };
+    });
+    if (lastHarvestedTimerRef.current) clearTimeout(lastHarvestedTimerRef.current);
+    lastHarvestedTimerRef.current = setTimeout(() => setLastHarvested(null), 2000);
     // Relancer avec la même ressource
     demarrerRecolte(metierId, slotIndex, rid, 30_000);
   }, [metier.ressources, metierId, terminerRecolte, ajouterXp, ajouterPending, demarrerRecolte]);
