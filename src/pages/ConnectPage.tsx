@@ -205,20 +205,11 @@ export function ConnectPage() {
 
       <div style={s.btnRow}>
         <ConnectButton.Custom>
-          {({ openConnectModal, mounted, authenticationStatus }) => {
-            const ready = mounted && authenticationStatus !== 'loading';
-            return (
-              <div style={{ width:'100%', ...(ready ? {} : { opacity:0, pointerEvents:'none', userSelect:'none' }) }}>
-                <button
-                  onClick={openConnectModal}
-                  type="button"
-                  style={s.btnCreate}
-                >
-                  🏙️ {t('connect.create_city')}
-                </button>
-              </div>
-            );
-          }}
+          {({ openConnectModal }) => (
+            <button onClick={openConnectModal} type="button" style={s.btnCreate}>
+              🏙️ {t('connect.create_city')}
+            </button>
+          )}
         </ConnectButton.Custom>
       </div>
 
