@@ -32,14 +32,16 @@ function LangToggle() {
 
 export function ConnectPage() {
   const { isConnected, address } = useAccount();
-  const { disconnect }       = useDisconnect();
-  const navigate             = useNavigate();
-  const publicClient         = usePublicClient();
-  const { t }                = useT();
+  const { disconnect }           = useDisconnect();
+  const navigate                 = useNavigate();
+  const publicClient             = usePublicClient();
+  const { t }                    = useT();
 
   const setAddress = useGameStore(s => s.setAddress);
   const setPseudo  = useGameStore(s => s.setPseudo);
 
+  // 'login' = joueur existant, 'register' = nouveau joueur
+  const [loginMode, setLoginMode]       = useState<'login' | 'register' | null>(null);
   const [pseudoInput, setPseudoInput]   = useState('');
   const [pseudoError, setPseudoError]   = useState<string | null>(null);
   const [registering, setRegistering]   = useState(false);
@@ -60,18 +62,17 @@ export function ConnectPage() {
     if (!isConnected || !address || pseudoLoading) return;
     const pseudo = onChainPseudo as string | undefined;
     if (pseudo && pseudo.length > 0) {
-      // Joueur déjà enregistré → charger et entrer dans le jeu
+      // Joueur déjà enregistré → entrer dans le jeu
       setPseudo(pseudo);
       setAddress(address);
       navigate('/home', { replace: true });
     }
-    // Sinon : rester sur la page pseudo
+    // Sinon : rester sur la page (login mode ou register mode géré dans le rendu)
   }, [isConnected, address, pseudoLoading, onChainPseudo]);
 
   async function handleConfirmPseudo() {
     if (!address) return;
 
-    // Validation locale
     const val = pseudoInput.trim();
     if (!val || val.length < 3 || val.length > 16 || !PSEUDO_REGEX.test(val)) {
       setPseudoError(t('connect.pseudo_invalid'));
@@ -82,8 +83,6 @@ export function ConnectPage() {
     setPseudoError(null);
 
     try {
-      // Vérifier disponibilité on-chain avant de signer
-      // (lecture directe via le publicClient pour ne pas bloquer le hook)
       const available = await publicClient?.readContract({
         address:      KIRHA_GAME_ADDRESS,
         abi:          KirhaGameAbi,
@@ -97,7 +96,6 @@ export function ConnectPage() {
         return;
       }
 
-      // Enregistrer on-chain
       const hash = await writeContractAsync({
         address:      KIRHA_GAME_ADDRESS,
         abi:          KirhaGameAbi,
@@ -106,7 +104,6 @@ export function ConnectPage() {
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
 
-      // Succès
       assignNewCityId();
       setPseudo(val);
       setAddress(address);
@@ -124,7 +121,14 @@ export function ConnectPage() {
     }
   }
 
-  // ── Écran : wallet connecté + chargement pseudo ────────────
+  function handleDisconnect() {
+    disconnect();
+    setLoginMode(null);
+    setPseudoInput('');
+    setPseudoError(null);
+  }
+
+  // ── Écran : chargement pseudo ──────────────────────────────
   if (isConnected && pseudoLoading) {
     return (
       <div style={{ ...s.page, gap:16 }}>
@@ -134,8 +138,28 @@ export function ConnectPage() {
     );
   }
 
+  // ── Écran : wallet connecté, mode login, pas de compte ─────
+  if (isConnected && address && !(onChainPseudo as string) && loginMode === 'login') {
+    return (
+      <div style={s.page}>
+        <LangToggle />
+        <div style={s.pseudoCard}>
+          <span style={{ fontSize:44 }}>❌</span>
+          <h2 style={{ ...s.pseudoTitle, color:'#c43070' }}>Aucun compte trouvé</h2>
+          <p style={{ ...s.pseudoSub, textAlign:'center' }}>
+            Ce wallet n'a pas encore de compte To-Kirha.{'\n'}
+            Déconnecte-toi et clique sur <strong>Créer une ville</strong> pour t'inscrire.
+          </p>
+          <button onClick={handleDisconnect} style={s.btnConfirm}>
+            ← Retour
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Écran : choix du pseudo (nouveau joueur) ───────────────
-  if (isConnected && address && !(onChainPseudo as string)) {
+  if (isConnected && address && !(onChainPseudo as string) && loginMode === 'register') {
     return (
       <div style={s.page}>
         <LangToggle />
@@ -166,7 +190,7 @@ export function ConnectPage() {
           >
             {registering ? '⏳ Enregistrement…' : t('connect.confirm')}
           </button>
-          <button onClick={() => { disconnect(); setPseudoInput(''); setPseudoError(null); }} style={s.btnBack}>
+          <button onClick={handleDisconnect} style={s.btnBack}>
             {t('connect.back')}
           </button>
         </div>
@@ -203,15 +227,27 @@ export function ConnectPage() {
         ))}
       </div>
 
-      <div style={s.btnRow}>
-        <ConnectButton.Custom>
-          {({ openConnectModal }) => (
-            <button onClick={openConnectModal} type="button" style={s.btnCreate}>
+      {/* Deux boutons : connexion existante vs création */}
+      <ConnectButton.Custom>
+        {({ openConnectModal }) => (
+          <div style={s.btnCol}>
+            <button
+              onClick={() => { setLoginMode('login'); openConnectModal(); }}
+              type="button"
+              style={s.btnLogin}
+            >
+              🔑 Se connecter
+            </button>
+            <button
+              onClick={() => { setLoginMode('register'); openConnectModal(); }}
+              type="button"
+              style={s.btnCreate}
+            >
               🏙️ {t('connect.create_city')}
             </button>
-          )}
-        </ConnectButton.Custom>
-      </div>
+          </div>
+        )}
+      </ConnectButton.Custom>
 
       <p style={s.network}>{t('connect.network')}</p>
     </div>
@@ -230,9 +266,10 @@ const s: Record<string, React.CSSProperties> = {
   feature:      { display:'flex', alignItems:'center', gap:'12px' },
   featureEmoji: { fontSize:'20px', width:'28px' },
   featureLabel: { color:'#7a4060', fontSize:'14px' },
-  btnRow: { width:'100%', display:'flex', gap:'12px' },
-  btnCreate: { flex:1, padding:'14px 0', background:'#c43070', color:'#ffffff', border:'none', borderRadius:'12px', fontSize:'14px', fontWeight:700, cursor:'pointer', letterSpacing:'0.3px' },
-  network:   { color:'rgba(196,48,112,0.4)', fontSize:'11px', marginTop:'14px', letterSpacing:'0.5px' },
+  btnCol:   { width:'100%', display:'flex', flexDirection:'column', gap:'10px' },
+  btnLogin: { width:'100%', padding:'14px 0', background:'rgba(196,48,112,0.08)', color:'#c43070', border:'2px solid rgba(196,48,112,0.3)', borderRadius:'12px', fontSize:'14px', fontWeight:700, cursor:'pointer', letterSpacing:'0.3px' },
+  btnCreate:{ width:'100%', padding:'14px 0', background:'#c43070', color:'#ffffff', border:'none', borderRadius:'12px', fontSize:'14px', fontWeight:700, cursor:'pointer', letterSpacing:'0.3px' },
+  network:  { color:'rgba(196,48,112,0.4)', fontSize:'11px', marginTop:'14px', letterSpacing:'0.5px' },
   pseudoCard: { width:'100%', maxWidth:'360px', background:'#ffffff', border:'1px solid rgba(212,100,138,0.25)', borderRadius:'20px', padding:'32px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:'16px', boxShadow:'0 4px 24px rgba(196,48,112,0.1)' },
   pseudoTitle:    { color:'#1e0a16', fontSize:'22px', fontWeight:800, margin:0 },
   pseudoSub:      { color:'#7a4060', fontSize:'13px', textAlign:'center', lineHeight:'1.6', margin:0 },
