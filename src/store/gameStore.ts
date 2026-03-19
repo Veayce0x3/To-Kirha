@@ -61,6 +61,7 @@ export interface GameState {
   ajouterKirha:             (montant: number) => void;
   retirerRessource:         (resourceId: ResourceId, quantite: number) => void;
   ajouterRessource:         (resourceId: ResourceId, quantite: number) => void;
+  setVilleId:               (villeId: string) => void;
 }
 
 // ============================================================
@@ -243,6 +244,8 @@ export const useGameStore = create<GameState>()(
           inventaire[resourceId] = Math.round((current + quantite) * 1e10) / 1e10;
           return { inventaire };
         }),
+
+      setVilleId: (villeId) => set({ villeId }),
 
       setSlotSelectedResource: (metier, slotIndex, resourceId) =>
         set((state) => {

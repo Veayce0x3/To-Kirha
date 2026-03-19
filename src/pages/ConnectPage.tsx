@@ -36,8 +36,9 @@ export function ConnectPage() {
   const publicClient             = usePublicClient();
   const { t }                    = useT();
 
-  const setAddress = useGameStore(s => s.setAddress);
-  const setPseudo  = useGameStore(s => s.setPseudo);
+  const setAddress  = useGameStore(s => s.setAddress);
+  const setPseudo   = useGameStore(s => s.setPseudo);
+  const setVilleId  = useGameStore(s => s.setVilleId);
 
   // 'login' = joueur existant, 'register' = nouveau joueur
   const [loginMode, setLoginMode]       = useState<'login' | 'register' | null>(null);
@@ -69,8 +70,10 @@ export function ConnectPage() {
           functionName: 'playerCityId',
           args:         [address],
         }) as bigint | undefined;
-        if (cityId !== undefined) {
-          localStorage.setItem('kirha_city_id', cityId.toString());
+        if (cityId !== undefined && cityId > 0n) {
+          const idStr = cityId.toString();
+          localStorage.setItem('kirha_city_id', idStr);
+          setVilleId(idStr);
         }
         setPseudo(pseudo);
         setAddress(address);
@@ -120,8 +123,10 @@ export function ConnectPage() {
         functionName: 'playerCityId',
         args:         [address],
       }) as bigint | undefined;
-      if (cityId !== undefined) {
-        localStorage.setItem('kirha_city_id', cityId.toString());
+      if (cityId !== undefined && cityId > 0n) {
+        const idStr = cityId.toString();
+        localStorage.setItem('kirha_city_id', idStr);
+        setVilleId(idStr);
       }
       setPseudo(val);
       setAddress(address);
