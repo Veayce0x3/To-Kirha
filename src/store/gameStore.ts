@@ -38,6 +38,7 @@ export interface GameState {
   derniere_sauvegarde: number | null;
   equipement:          Equipement;
   soldeKirha:          number;
+  kirhaEarned:         number; // $KIRHA gagné (PNJ) depuis la dernière sauvegarde on-chain
   pepitesOr:           number;
   villeId:             string;
   langue:              'fr' | 'en';
@@ -59,6 +60,7 @@ export interface GameState {
   setPseudo:                (pseudo: string) => void;
   retirerKirha:             (montant: number) => void;
   ajouterKirha:             (montant: number) => void;
+  resetKirhaEarned:         () => void;
   retirerRessource:         (resourceId: ResourceId, quantite: number) => void;
   ajouterRessource:         (resourceId: ResourceId, quantite: number) => void;
   setVilleId:               (villeId: string) => void;
@@ -132,6 +134,7 @@ export const useGameStore = create<GameState>()(
       derniere_sauvegarde: null,
       equipement:          {},
       soldeKirha:          0,
+      kirhaEarned:         0,
       pepitesOr:           0,
       villeId:             getOrCreateCityId(),
       langue:              'fr',
@@ -209,9 +212,11 @@ export const useGameStore = create<GameState>()(
           const vendu = Math.min(current, quantite);
           if (vendu <= 0) return state;
           inventaire[resourceId] = Math.round(((inventaire[resourceId] ?? 0) - vendu) * 1e10) / 1e10;
+          const gain = prix * vendu;
           return {
             inventaire,
-            soldeKirha: state.soldeKirha + prix * vendu,
+            soldeKirha:  Math.round((state.soldeKirha + gain) * 1e10) / 1e10,
+            kirhaEarned: Math.round((state.kirhaEarned + gain) * 1e10) / 1e10,
           };
         }),
 
@@ -247,6 +252,8 @@ export const useGameStore = create<GameState>()(
 
       setVilleId: (villeId) => set({ villeId }),
 
+      resetKirhaEarned: () => set({ kirhaEarned: 0 }),
+
       setSlotSelectedResource: (metier, slotIndex, resourceId) =>
         set((state) => {
           const metierSlots = [...state.slots[metier]];
@@ -279,7 +286,7 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'to-kirha-game',
-      version: 5,
+      version: 6,
       migrate: (_state: unknown, _version: number) => {
         // v5 : reset complet — efface aussi les clés localStorage héritées
         localStorage.removeItem('kirha_city_id');

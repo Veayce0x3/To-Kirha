@@ -1,17 +1,18 @@
 [
   {
     "inputs": [
-      { "internalType": "uint256[]", "name": "resourceIds", "type": "uint256[]" },
-      { "internalType": "uint256[]", "name": "quantities",  "type": "uint256[]" },
-      { "internalType": "uint256[]", "name": "prices",      "type": "uint256[]" }
+      { "internalType": "address", "name": "initialOwner", "type": "address" },
+      { "internalType": "address", "name": "_kirhaToken",  "type": "address" },
+      { "internalType": "address", "name": "_cityNft",     "type": "address" },
+      { "internalType": "address", "name": "_game",        "type": "address" },
+      { "internalType": "address", "name": "_treasury",    "type": "address" }
     ],
-    "name": "batchListResources",
-    "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
+    "type": "constructor"
   },
   {
     "inputs": [
+      { "internalType": "uint256", "name": "cityId",       "type": "uint256" },
       { "internalType": "uint256", "name": "resourceId",   "type": "uint256" },
       { "internalType": "uint256", "name": "quantity",     "type": "uint256" },
       { "internalType": "uint256", "name": "pricePerUnit", "type": "uint256" }
@@ -23,20 +24,34 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256[]", "name": "listingIds",  "type": "uint256[]" },
-      { "internalType": "uint256[]", "name": "quantities",  "type": "uint256[]" }
+      { "internalType": "uint256",   "name": "cityId",      "type": "uint256"   },
+      { "internalType": "uint256[]", "name": "resourceIds", "type": "uint256[]" },
+      { "internalType": "uint256[]", "name": "quantities",  "type": "uint256[]" },
+      { "internalType": "uint256[]", "name": "prices",      "type": "uint256[]" }
     ],
-    "name": "batchBuyResources",
+    "name": "batchListResources",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "listingId", "type": "uint256" },
-      { "internalType": "uint256", "name": "quantity",  "type": "uint256" }
+      { "internalType": "uint256", "name": "listingId",   "type": "uint256" },
+      { "internalType": "uint256", "name": "buyerCityId", "type": "uint256" },
+      { "internalType": "uint256", "name": "quantity",    "type": "uint256" }
     ],
     "name": "buyResource",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256",   "name": "buyerCityId", "type": "uint256"   },
+      { "internalType": "uint256[]", "name": "listingIds",  "type": "uint256[]" },
+      { "internalType": "uint256[]", "name": "quantities",  "type": "uint256[]" }
+    ],
+    "name": "batchBuyResources",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -49,6 +64,26 @@
     "type": "function"
   },
   {
+    "inputs": [{ "internalType": "uint256", "name": "listingId", "type": "uint256" }],
+    "name": "getListing",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "uint256", "name": "sellerCityId",  "type": "uint256" },
+          { "internalType": "uint256", "name": "resourceId",    "type": "uint256" },
+          { "internalType": "uint256", "name": "quantity",      "type": "uint256" },
+          { "internalType": "uint256", "name": "pricePerUnit",  "type": "uint256" },
+          { "internalType": "bool",    "name": "active",        "type": "bool"    }
+        ],
+        "internalType": "struct KirhaMarket.Listing",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       { "internalType": "uint256", "name": "offset", "type": "uint256" },
       { "internalType": "uint256", "name": "limit",  "type": "uint256" }
@@ -57,37 +92,17 @@
     "outputs": [
       {
         "components": [
-          { "internalType": "address", "name": "seller",       "type": "address"  },
-          { "internalType": "uint256", "name": "resourceId",   "type": "uint256"  },
-          { "internalType": "uint256", "name": "quantity",     "type": "uint256"  },
-          { "internalType": "uint256", "name": "pricePerUnit", "type": "uint256"  },
-          { "internalType": "bool",    "name": "active",       "type": "bool"     }
+          { "internalType": "uint256", "name": "sellerCityId",  "type": "uint256" },
+          { "internalType": "uint256", "name": "resourceId",    "type": "uint256" },
+          { "internalType": "uint256", "name": "quantity",      "type": "uint256" },
+          { "internalType": "uint256", "name": "pricePerUnit",  "type": "uint256" },
+          { "internalType": "bool",    "name": "active",        "type": "bool"    }
         ],
         "internalType": "struct KirhaMarket.Listing[]",
         "name": "result",
         "type": "tuple[]"
       },
       { "internalType": "uint256[]", "name": "ids", "type": "uint256[]" }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "uint256", "name": "listingId", "type": "uint256" }],
-    "name": "getListing",
-    "outputs": [
-      {
-        "components": [
-          { "internalType": "address", "name": "seller",       "type": "address"  },
-          { "internalType": "uint256", "name": "resourceId",   "type": "uint256"  },
-          { "internalType": "uint256", "name": "quantity",     "type": "uint256"  },
-          { "internalType": "uint256", "name": "pricePerUnit", "type": "uint256"  },
-          { "internalType": "bool",    "name": "active",       "type": "bool"     }
-        ],
-        "internalType": "struct KirhaMarket.Listing",
-        "name": "",
-        "type": "tuple"
-      }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -102,11 +117,11 @@
   {
     "anonymous": false,
     "inputs": [
-      { "indexed": true,  "internalType": "uint256", "name": "listingId",   "type": "uint256" },
-      { "indexed": true,  "internalType": "address", "name": "seller",      "type": "address" },
-      { "indexed": false, "internalType": "uint256", "name": "resourceId",  "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "quantity",    "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "pricePerUnit","type": "uint256" }
+      { "indexed": true,  "internalType": "uint256", "name": "listingId",    "type": "uint256" },
+      { "indexed": true,  "internalType": "uint256", "name": "sellerCityId", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "resourceId",   "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "quantity",     "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "pricePerUnit", "type": "uint256" }
     ],
     "name": "ResourceListed",
     "type": "event"
@@ -115,7 +130,7 @@
     "anonymous": false,
     "inputs": [
       { "indexed": true,  "internalType": "uint256", "name": "listingId",      "type": "uint256" },
-      { "indexed": true,  "internalType": "address", "name": "buyer",          "type": "address" },
+      { "indexed": true,  "internalType": "uint256", "name": "buyerCityId",    "type": "uint256" },
       { "indexed": false, "internalType": "uint256", "name": "quantity",       "type": "uint256" },
       { "indexed": false, "internalType": "uint256", "name": "totalPaid",      "type": "uint256" },
       { "indexed": false, "internalType": "uint256", "name": "sellerReceives", "type": "uint256" }
@@ -126,8 +141,8 @@
   {
     "anonymous": false,
     "inputs": [
-      { "indexed": true, "internalType": "uint256", "name": "listingId", "type": "uint256" },
-      { "indexed": true, "internalType": "address", "name": "seller",    "type": "address" }
+      { "indexed": true, "internalType": "uint256", "name": "listingId",    "type": "uint256" },
+      { "indexed": true, "internalType": "uint256", "name": "sellerCityId", "type": "uint256" }
     ],
     "name": "ListingCancelled",
     "type": "event"

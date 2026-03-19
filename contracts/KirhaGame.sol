@@ -2,67 +2,120 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./KirhaResources.sol";
 import "./KirhaToken.sol";
+import "./KirhaCity.sol";
 
 /**
  * @title KirhaGame
- * @notice Contrat principal du jeu To-Kirha.
+ * @notice Contrat principal de To-Kirha — v2 City NFT.
  *
- * Flux de sauvegarde :
- *   1. Le joueur appelle batchMintResources depuis le frontend
- *   2. Le contrat mint les ressources récoltées off-chain
+ * Toutes les données de jeu sont indexées par cityId (tokenId du NFT KirhaCity).
+ * Transférer le NFT KirhaCity transfère la propriété de toutes les données.
  *
- * NOTE TESTNET : vérification de signature ECDSA désactivée.
- *   Réactiver avant déploiement mainnet en ajoutant :
- *   - le check ECDSA sur la signature backend
- *   - la gestion des nonces anti-replay
+ * Métiers : bucheron=0  paysan=1  pecheur=2  mineur=3  alchimiste=4
+ *
+ * NOTE TESTNET : batchSave accepte kirhaGained sans vérification de signature.
+ *   Réactiver ECDSA avant mainnet.
  */
-contract KirhaGame is Ownable {
+contract KirhaGame is Ownable, ReentrancyGuard {
 
     KirhaResources public immutable resources;
     KirhaToken     public immutable kirhaToken;
+    KirhaCity      public immutable cityNft;
 
     // ── Pseudos ────────────────────────────────────────────────
     mapping(string  => address) private _pseudoToAddress;
     mapping(address => string)  public  playerPseudo;
 
-    // ── City IDs séquentiels ───────────────────────────────────
+    // ── Compteur séquentiel ────────────────────────────────────
     uint256 public playerCount;
-    mapping(address => uint256) public playerCityId;
 
-    event PseudoRegistered(address indexed player, string pseudo, uint256 cityId);
-    event ResourcesMinted(address indexed player, uint256[] ids, uint256[] amounts);
-    event KirhaWithdrawn(address indexed player, uint256 amount);
-    event KirhaDeposited(address indexed player, uint256 amount);
+    // ── État du jeu par cityId ─────────────────────────────────
+    /** Ressources : cityId → resourceId (1-50) → quantité (scaled ×1e4 pour fractions) */
+    mapping(uint256 => mapping(uint256 => uint256)) public cityResources;
+
+    /** $KIRHA in-game : cityId → montant en wei (18 décimales) */
+    mapping(uint256 => uint256) public cityKirha;
+
+    /** Niveaux métiers : cityId → metierId (0-4) → niveau (1-100) */
+    mapping(uint256 => mapping(uint8 => uint32)) public cityMetierLevel;
+
+    /** XP métiers : cityId → metierId (0-4) → xp */
+    mapping(uint256 => mapping(uint8 => uint32)) public cityMetierXp;
+
+    /** XP total métiers : cityId → metierId (0-4) → xp_total */
+    mapping(uint256 => mapping(uint8 => uint32)) public cityMetierXpTotal;
+
+    // ── Opérateurs autorisés (ex : KirhaMarket) ───────────────
+    mapping(address => bool) public operators;
+
+    // ── Events ────────────────────────────────────────────────
+    event PseudoRegistered(address indexed player, string pseudo, uint256 indexed cityId);
+    event DataSaved(address indexed player, uint256 indexed cityId);
+    event KirhaWithdrawn(address indexed player, uint256 indexed cityId, uint256 amount);
+    event KirhaDeposited(address indexed player, uint256 indexed cityId, uint256 amount);
+    event ResourcesWithdrawn(address indexed player, uint256 indexed cityId);
+    event ResourcesDeposited(address indexed player, uint256 indexed cityId);
+
+    // ── Modifiers ─────────────────────────────────────────────
+
+    modifier onlyCityOwner(uint256 cityId) {
+        require(cityNft.ownerOf(cityId) == msg.sender, "KirhaGame: not city owner");
+        _;
+    }
+
+    modifier onlyOperator() {
+        require(operators[msg.sender], "KirhaGame: not operator");
+        _;
+    }
 
     constructor(
         address initialOwner,
         address _resources,
-        address _kirhaToken
+        address _kirhaToken,
+        address _cityNft
     ) Ownable(initialOwner) {
         resources  = KirhaResources(_resources);
         kirhaToken = KirhaToken(_kirhaToken);
+        cityNft    = KirhaCity(_cityNft);
     }
 
     // --------------------------------------------------------
-    // Enregistrement pseudo — unique global on-chain
+    // Administration
+    // --------------------------------------------------------
+
+    function setOperator(address op, bool approved) external onlyOwner {
+        operators[op] = approved;
+    }
+
+    // --------------------------------------------------------
+    // Enregistrement — crée la ville NFT
     // --------------------------------------------------------
 
     /**
-     * @notice Enregistre un pseudo unique pour msg.sender.
+     * @notice Enregistre un pseudo et mint le NFT ville.
      * @param name  3-16 caractères, alphanumérique + underscore
      */
     function registerPseudo(string calldata name) external {
         uint256 len = bytes(name).length;
-        require(len >= 3 && len <= 16,            "KirhaGame: invalid name length");
+        require(len >= 3 && len <= 16,                       "KirhaGame: invalid name length");
         require(bytes(playerPseudo[msg.sender]).length == 0, "KirhaGame: already registered");
         require(_pseudoToAddress[name] == address(0),        "KirhaGame: pseudo already taken");
+
         _pseudoToAddress[name]   = msg.sender;
         playerPseudo[msg.sender] = name;
         playerCount++;
-        playerCityId[msg.sender] = playerCount;
-        emit PseudoRegistered(msg.sender, name, playerCount);
+        uint256 cityId = playerCount;
+
+        // Initialiser les niveaux à 1 pour les 5 métiers
+        for (uint8 m = 0; m < 5; m++) {
+            cityMetierLevel[cityId][m] = 1;
+        }
+
+        cityNft.mintCity(msg.sender, cityId, name);
+        emit PseudoRegistered(msg.sender, name, cityId);
     }
 
     /** @notice Retourne true si le pseudo est disponible. */
@@ -70,36 +123,202 @@ contract KirhaGame is Ownable {
         return _pseudoToAddress[name] == address(0);
     }
 
+    /** @notice cityId de l'adresse (basé sur ownerToCityId du NFT — reflète les transferts) */
+    function playerCityId(address player) external view returns (uint256) {
+        return cityNft.ownerToCityId(player);
+    }
+
     // --------------------------------------------------------
     // Sauvegarde on-chain (TESTNET — sans vérification signature)
     // --------------------------------------------------------
 
     /**
-     * @notice Mint groupé des ressources récoltées off-chain.
-     * @param ids     IDs ERC-1155 à minter (1-50)
-     * @param amounts Quantités correspondantes
+     * @notice Sauvegarde groupée : ressources récoltées + niveaux métiers + $KIRHA gagné.
+     *
+     * @param cityId         Ville à sauvegarder (appelant doit en être le propriétaire)
+     * @param resourceIds    IDs des ressources à ajouter (1-50)
+     * @param resourceAmts   Quantités à ajouter (×1e4, ex: 1.5 → 15000)
+     * @param metierIds      IDs des métiers à mettre à jour (0-4)
+     * @param metierLevels   Niveaux courants (1-100)
+     * @param metierXps      XP courant dans le niveau
+     * @param metierXpTotals XP total accumulé
+     * @param kirhaGained    $KIRHA gagné depuis la dernière sauvegarde (en wei)
+     *
+     * NOTE TESTNET : kirhaGained n'est pas validé on-chain.
      */
-    function batchMintResources(
-        uint256[] calldata ids,
-        uint256[] calldata amounts
-    ) external {
-        require(ids.length > 0, "KirhaGame: empty batch");
-        require(ids.length == amounts.length, "KirhaGame: length mismatch");
-        resources.mintBatch(msg.sender, ids, amounts);
-        emit ResourcesMinted(msg.sender, ids, amounts);
+    function batchSave(
+        uint256          cityId,
+        uint256[] calldata resourceIds,
+        uint256[] calldata resourceAmts,
+        uint8[]   calldata metierIds,
+        uint32[]  calldata metierLevels,
+        uint32[]  calldata metierXps,
+        uint32[]  calldata metierXpTotals,
+        uint256            kirhaGained
+    ) external nonReentrant onlyCityOwner(cityId) {
+        require(resourceIds.length == resourceAmts.length, "KirhaGame: resources length mismatch");
+        require(
+            metierIds.length == metierLevels.length &&
+            metierIds.length == metierXps.length &&
+            metierIds.length == metierXpTotals.length,
+            "KirhaGame: metiers length mismatch"
+        );
+
+        for (uint256 i = 0; i < resourceIds.length; i++) {
+            require(resourceIds[i] >= 1 && resourceIds[i] <= 50, "KirhaGame: invalid resource id");
+            cityResources[cityId][resourceIds[i]] += resourceAmts[i];
+        }
+
+        for (uint256 i = 0; i < metierIds.length; i++) {
+            require(metierIds[i] < 5, "KirhaGame: invalid metier id");
+            cityMetierLevel[cityId][metierIds[i]]   = metierLevels[i];
+            cityMetierXp[cityId][metierIds[i]]      = metierXps[i];
+            cityMetierXpTotal[cityId][metierIds[i]] = metierXpTotals[i];
+        }
+
+        if (kirhaGained > 0) {
+            cityKirha[cityId] += kirhaGained;
+        }
+
+        emit DataSaved(msg.sender, cityId);
     }
 
     // --------------------------------------------------------
-    // $KIRHA — Retrait (mint vers le joueur)
+    // $KIRHA — Retrait (cityKirha → ERC-20 dans le wallet)
+    // --------------------------------------------------------
+
+    function withdrawKirha(uint256 cityId, uint256 amount) external nonReentrant onlyCityOwner(cityId) {
+        require(amount > 0,                    "KirhaGame: amount must be > 0");
+        require(cityKirha[cityId] >= amount,   "KirhaGame: insufficient city kirha");
+        cityKirha[cityId] -= amount;
+        kirhaToken.mint(msg.sender, amount);
+        emit KirhaWithdrawn(msg.sender, cityId, amount);
+    }
+
+    // --------------------------------------------------------
+    // $KIRHA — Dépôt (ERC-20 wallet → cityKirha)
     // --------------------------------------------------------
 
     /**
-     * @notice Mint des $KIRHA vers le joueur (gains de vente off-chain)
-     * @param amount Montant en wei (18 décimales)
+     * @notice Dépose des $KIRHA du wallet dans la ville (brûle les tokens ERC-20).
+     *         Le contrat KirhaGame doit être minter sur KirhaToken pour pouvoir brûler.
      */
-    function withdrawKirha(uint256 amount) external {
+    function depositKirha(uint256 cityId, uint256 amount) external nonReentrant onlyCityOwner(cityId) {
         require(amount > 0, "KirhaGame: amount must be > 0");
-        kirhaToken.mint(msg.sender, amount);
-        emit KirhaWithdrawn(msg.sender, amount);
+        kirhaToken.burn(msg.sender, amount);
+        cityKirha[cityId] += amount;
+        emit KirhaDeposited(msg.sender, cityId, amount);
+    }
+
+    // --------------------------------------------------------
+    // Ressources — Retrait vers wallet (cityResources → ERC-1155)
+    // --------------------------------------------------------
+
+    /**
+     * @notice Retire des ressources de la ville vers le wallet (mint ERC-1155).
+     * @param cityId  Ville source
+     * @param ids     IDs des ressources (1-50)
+     * @param amounts Quantités (entières, non ×1e4)
+     */
+    function withdrawResources(
+        uint256          cityId,
+        uint256[] calldata ids,
+        uint256[] calldata amounts
+    ) external nonReentrant onlyCityOwner(cityId) {
+        require(ids.length > 0,              "KirhaGame: empty");
+        require(ids.length == amounts.length,"KirhaGame: length mismatch");
+        for (uint256 i = 0; i < ids.length; i++) {
+            uint256 scaled = amounts[i] * 1e4;
+            require(cityResources[cityId][ids[i]] >= scaled, "KirhaGame: insufficient resources");
+            cityResources[cityId][ids[i]] -= scaled;
+        }
+        resources.mintBatch(msg.sender, ids, amounts);
+        emit ResourcesWithdrawn(msg.sender, cityId);
+    }
+
+    // --------------------------------------------------------
+    // Ressources — Dépôt depuis wallet (ERC-1155 → cityResources)
+    // --------------------------------------------------------
+
+    /**
+     * @notice Dépose des ERC-1155 du wallet dans la ville (brûle les tokens).
+     */
+    function depositResources(
+        uint256          cityId,
+        uint256[] calldata ids,
+        uint256[] calldata amounts
+    ) external nonReentrant onlyCityOwner(cityId) {
+        require(ids.length > 0,              "KirhaGame: empty");
+        require(ids.length == amounts.length,"KirhaGame: length mismatch");
+        resources.burnBatch(msg.sender, ids, amounts);
+        for (uint256 i = 0; i < ids.length; i++) {
+            cityResources[cityId][ids[i]] += amounts[i] * 1e4;
+        }
+        emit ResourcesDeposited(msg.sender, cityId);
+    }
+
+    // --------------------------------------------------------
+    // Fonctions opérateur — appelées par KirhaMarket
+    // --------------------------------------------------------
+
+    function operatorDeductResource(uint256 cityId, uint256 resourceId, uint256 amountScaled)
+        external onlyOperator
+    {
+        require(cityResources[cityId][resourceId] >= amountScaled, "KirhaGame: insufficient resources");
+        cityResources[cityId][resourceId] -= amountScaled;
+    }
+
+    function operatorRestoreResource(uint256 cityId, uint256 resourceId, uint256 amountScaled)
+        external onlyOperator
+    {
+        cityResources[cityId][resourceId] += amountScaled;
+    }
+
+    function operatorDeductKirha(uint256 cityId, uint256 amount)
+        external onlyOperator
+    {
+        require(cityKirha[cityId] >= amount, "KirhaGame: insufficient kirha");
+        cityKirha[cityId] -= amount;
+    }
+
+    function operatorAddKirha(uint256 cityId, uint256 amount)
+        external onlyOperator
+    {
+        cityKirha[cityId] += amount;
+    }
+
+    // --------------------------------------------------------
+    // Vues
+    // --------------------------------------------------------
+
+    /** Retourne les balances de ressources pour une liste d'IDs (scaled ×1e4). */
+    function getCityResources(uint256 cityId, uint256[] calldata ids)
+        external view returns (uint256[] memory balances)
+    {
+        balances = new uint256[](ids.length);
+        for (uint256 i = 0; i < ids.length; i++) {
+            balances[i] = cityResources[cityId][ids[i]];
+        }
+    }
+
+    struct MetierState {
+        uint8  metierId;
+        uint32 level;
+        uint32 xp;
+        uint32 xpTotal;
+    }
+
+    /** Retourne l'état des 5 métiers d'une ville. */
+    function getCityMetiers(uint256 cityId)
+        external view returns (MetierState[5] memory state)
+    {
+        for (uint8 m = 0; m < 5; m++) {
+            state[m] = MetierState({
+                metierId: m,
+                level:    cityMetierLevel[cityId][m],
+                xp:       cityMetierXp[cityId][m],
+                xpTotal:  cityMetierXpTotal[cityId][m]
+            });
+        }
     }
 }

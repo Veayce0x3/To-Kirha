@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAccount } from 'wagmi';
 import { useGameStore } from '../store/gameStore';
 import { getResourceById } from '../data/metiers';
 import { ResourceId } from '../data/resources';
@@ -93,9 +92,10 @@ function TabPnj() {
 // ── Onglet HDV on-chain ─────────────────────────────────────
 
 function TabOnchain() {
-  const { address } = useAccount();
   const inventaire  = useGameStore(s => s.inventaire);
+  const villeId     = useGameStore(s => s.villeId);
   const { t, lang } = useT();
+  const villeIdBn   = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
   const {
     listings, myListings, isApproved, status, error,
     approveMarket, batchMettrEnVente, batchAcheter, annulerListing,
@@ -144,8 +144,7 @@ function TabOnchain() {
     }
   }, [sellResourceId, listings, sellPrice]);
 
-  const busy = status === 'approving' || status === 'listing' || status === 'buying' || status === 'cancelling';
-  const shortAddr = (addr: string) => `${addr.slice(0,6)}…${addr.slice(-4)}`;
+  const busy = status === 'listing' || status === 'buying' || status === 'cancelling';
 
   const priceNum = parseFloat(sellPrice || '0');
   const qtyNum   = parseInt(sellQty || '0');
@@ -219,7 +218,7 @@ function TabOnchain() {
                   </p>
                   {listingsSorted.map((l, idx) => {
                     const key = l.listingId.toString();
-                    const isMine = l.seller.toLowerCase() === address?.toLowerCase();
+                    const isMine = villeIdBn !== undefined && l.sellerCityId === villeIdBn;
                     const isCheapest = idx === 0;
                     const inCart = buyCart.some(c => c.listingId === l.listingId);
                     const qtyVal = buyQty[key] ?? '1';
@@ -233,7 +232,7 @@ function TabOnchain() {
                             {isCheapest && !isMine && <span style={{ background:'rgba(106,191,68,0.15)', color:'#4a8f2a', fontSize:'9px', fontWeight:700, padding:'1px 6px', borderRadius:8 }}>Moins cher</span>}
                           </div>
                           <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>
-                            ×{l.quantity} disponible · {isMine ? <span style={{ color:'#6abf44', fontWeight:700 }}>Votre vente</span> : `Vendeur : ${shortAddr(l.seller)}`}
+                            ×{l.quantity} disponible · {isMine ? <span style={{ color:'#6abf44', fontWeight:700 }}>Votre vente</span> : `Ville #${l.sellerCityId.toString()}`}
                           </span>
                         </div>
                         {isMine ? (
@@ -320,7 +319,7 @@ function TabOnchain() {
                   <p style={{ color:'#7a4060', fontSize:'11px', margin:0 }}>Le contrat HDV doit être autorisé à transférer vos ressources.</p>
                 </div>
                 <button style={{ ...s.sellBtn, padding:'7px 12px', fontSize:'11px' }} onClick={approveMarket} disabled={busy}>
-                  {status === 'approving' ? '⏳' : 'Autoriser'}
+                  Autoriser
                 </button>
               </div>
             )}
@@ -436,7 +435,7 @@ function TabOnchain() {
                       batchMettrEnVente(cart).then(() => { setCart([]); setTab('mesVentes'); });
                     }}
                   >
-                    {status === 'listing' ? '⏳ Confirmation en cours…' : status === 'approving' ? '✍️ Approbation…' : `💰 Publier ${cart.length} vente${cart.length > 1 ? 's' : ''} (1 signature)`}
+                    {status === 'listing' ? '⏳ Confirmation en cours…' : `💰 Publier ${cart.length} vente${cart.length > 1 ? 's' : ''} (1 signature)`}
                   </button>
                 </div>
               )}

@@ -3,17 +3,19 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 /**
- * Déploiement des contrats To-Kirha
+ * Déploiement des contrats To-Kirha v2 (City NFT)
  *
  * Ordre :
  *   1. KirhaToken
  *   2. KirhaResources
- *   3. KirhaGame      (testnet — sans vérification ECDSA)
- *   4. KirhaMarket    (HDV on-chain)
+ *   3. KirhaCity      (ERC-721 ville)
+ *   4. KirhaGame      (toutes les données indexées par cityId)
+ *   5. KirhaMarket    (HDV — opère sur les balances de ville)
  *
  * Post-déploiement :
- *   - KirhaGame  ajouté comme minter sur KirhaResources + KirhaToken
- *   - KirhaMarket autorisé à burn/mint KirhaToken + transfert ERC-1155
+ *   - KirhaCity.setGame(KirhaGame)
+ *   - KirhaGame → minter sur KirhaResources + KirhaToken
+ *   - KirhaMarket → operator sur KirhaGame + minter sur KirhaToken
  *   - Les adresses sont écrites dans src/contracts/addresses.ts
  */
 
@@ -23,11 +25,10 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   const address = deployer.address;
 
-  console.log('\n=== To-Kirha Deployment ===');
+  console.log('\n=== To-Kirha Deployment v2 (City NFT) ===');
   console.log('Deployer :', address);
   console.log('Balance  :', ethers.formatEther(await ethers.provider.getBalance(address)), 'ETH\n');
 
-  // Nonce séquentiel — évite les doublons dus à la latence RPC
   let nonce = await ethers.provider.getTransactionCount(address, 'pending');
   console.log('Starting nonce:', nonce);
 
@@ -54,45 +55,57 @@ async function main() {
   const resourcesAddr = await kirhaResources.getAddress();
   console.log('  KirhaResources :', resourcesAddr);
 
-  // ── 3. KirhaGame ───────────────────────────────────────────
-  console.log('Deploying KirhaGame (testnet — no ECDSA)...');
+  // ── 3. KirhaCity ───────────────────────────────────────────
+  console.log('Deploying KirhaCity...');
+  const KirhaCity = await ethers.getContractFactory('KirhaCity');
+  const kirhaCity = await KirhaCity.deploy(address, {
+    nonce: nonce++, gasPrice: GAS_PRICE,
+  });
+  await kirhaCity.waitForDeployment();
+  const cityAddr = await kirhaCity.getAddress();
+  console.log('  KirhaCity      :', cityAddr);
+
+  // ── 4. KirhaGame ───────────────────────────────────────────
+  console.log('Deploying KirhaGame...');
   const KirhaGame = await ethers.getContractFactory('KirhaGame');
-  const kirhaGame = await KirhaGame.deploy(address, resourcesAddr, tokenAddr, {
+  const kirhaGame = await KirhaGame.deploy(address, resourcesAddr, tokenAddr, cityAddr, {
     nonce: nonce++, gasPrice: GAS_PRICE,
   });
   await kirhaGame.waitForDeployment();
   const gameAddr = await kirhaGame.getAddress();
   console.log('  KirhaGame      :', gameAddr);
 
-  // ── 4. KirhaMarket ─────────────────────────────────────────
+  // ── 5. KirhaMarket ─────────────────────────────────────────
   console.log('Deploying KirhaMarket...');
   const KirhaMarket = await ethers.getContractFactory('KirhaMarket');
-  const kirhaMarket = await KirhaMarket.deploy(address, resourcesAddr, tokenAddr, TREASURY, {
+  const kirhaMarket = await KirhaMarket.deploy(address, tokenAddr, cityAddr, gameAddr, TREASURY, {
     nonce: nonce++, gasPrice: GAS_PRICE,
   });
   await kirhaMarket.waitForDeployment();
   const marketAddr = await kirhaMarket.getAddress();
   console.log('  KirhaMarket    :', marketAddr);
 
-  // ── 5. Autoriser KirhaGame comme minter ────────────────────
+  // ── 6. KirhaCity.setGame ────────────────────────────────────
+  console.log('\nConfiguring KirhaCity...');
+  await (kirhaCity as any).setGame(gameAddr, { nonce: nonce++, gasPrice: GAS_PRICE });
+  console.log('  KirhaCity.setGame(KirhaGame) ✓');
+
+  // ── 7. Permissions KirhaGame ────────────────────────────────
   console.log('\nConfiguring permissions...');
-  await (kirhaResources as any).addMinter(gameAddr, {
-    nonce: nonce++, gasPrice: GAS_PRICE,
-  });
+  await (kirhaResources as any).addMinter(gameAddr, { nonce: nonce++, gasPrice: GAS_PRICE });
   console.log('  KirhaGame → minter on KirhaResources ✓');
 
-  await (kirhaToken as any).addMinter(gameAddr, {
-    nonce: nonce++, gasPrice: GAS_PRICE,
-  });
+  await (kirhaToken as any).addMinter(gameAddr, { nonce: nonce++, gasPrice: GAS_PRICE });
   console.log('  KirhaGame → minter on KirhaToken ✓');
 
-  // ── 6. Autoriser KirhaMarket ───────────────────────────────
-  await (kirhaToken as any).addMinter(marketAddr, {
-    nonce: nonce++, gasPrice: GAS_PRICE,
-  });
+  // ── 8. Permissions KirhaMarket ──────────────────────────────
+  await (kirhaGame as any).setOperator(marketAddr, true, { nonce: nonce++, gasPrice: GAS_PRICE });
+  console.log('  KirhaMarket → operator on KirhaGame ✓');
+
+  await (kirhaToken as any).addMinter(marketAddr, { nonce: nonce++, gasPrice: GAS_PRICE });
   console.log('  KirhaMarket → minter on KirhaToken ✓');
 
-  // ── 7. Écriture des adresses dans le frontend ──────────────
+  // ── 9. Écriture des adresses ────────────────────────────────
   const addressesPath = path.join(__dirname, '../src/contracts/addresses.ts');
   const network = await ethers.provider.getNetwork();
   const content = `// ============================================================
@@ -104,6 +117,7 @@ async function main() {
 /** Base Sepolia (chainId 84532) */
 export const KIRHA_TOKEN_ADDRESS     = '${tokenAddr}' as \`0x\${string}\`;
 export const KIRHA_RESOURCES_ADDRESS = '${resourcesAddr}' as \`0x\${string}\`;
+export const KIRHA_CITY_ADDRESS      = '${cityAddr}' as \`0x\${string}\`;
 export const KIRHA_GAME_ADDRESS      = '${gameAddr}' as \`0x\${string}\`;
 export const KIRHA_MARKET_ADDRESS    = '${marketAddr}' as \`0x\${string}\`;
 `;
@@ -113,6 +127,7 @@ export const KIRHA_MARKET_ADDRESS    = '${marketAddr}' as \`0x\${string}\`;
   console.log('\n=== Deployment complete ===');
   console.log('KirhaToken    :', tokenAddr);
   console.log('KirhaResources:', resourcesAddr);
+  console.log('KirhaCity     :', cityAddr);
   console.log('KirhaGame     :', gameAddr);
   console.log('KirhaMarket   :', marketAddr);
 }

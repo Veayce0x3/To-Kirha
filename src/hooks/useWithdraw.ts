@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useWriteContract } from 'wagmi';
+import { useWriteContract, usePublicClient } from 'wagmi';
 import { parseEther } from 'viem';
 import { useGameStore } from '../store/gameStore';
 import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
@@ -12,24 +12,31 @@ export function useWithdraw() {
   const [error, setError]   = useState<string | null>(null);
 
   const soldeKirha         = useGameStore(s => s.soldeKirha);
+  const villeId            = useGameStore(s => s.villeId);
+  const retirerKirha       = useGameStore(s => s.retirerKirha);
+
   const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
 
   const retirer = useCallback(async (montant: number) => {
     if (montant <= 0 || status === 'signing' || status === 'pending') return;
     if (montant > soldeKirha) return;
+    if (!villeId || villeId === '0') return;
+
     setError(null);
     setStatus('signing');
 
     try {
       const amountWei = parseEther(montant.toString());
       setStatus('pending');
-      await writeContractAsync({
+      const hash = await writeContractAsync({
         address:      KIRHA_GAME_ADDRESS,
         abi:          KirhaGameAbi,
         functionName: 'withdrawKirha',
-        args:         [amountWei],
+        args:         [BigInt(villeId), amountWei],
       });
-      useGameStore.getState().retirerKirha(montant);
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      retirerKirha(montant);
       setStatus('success');
       setTimeout(() => setStatus('idle'), 3000);
     } catch (err) {
@@ -37,7 +44,7 @@ export function useWithdraw() {
       setError(msg);
       setStatus('error');
     }
-  }, [soldeKirha, status, writeContractAsync]);
+  }, [soldeKirha, villeId, status, writeContractAsync, publicClient, retirerKirha]);
 
   return { retirer, status, error, soldeKirha };
 }

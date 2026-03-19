@@ -3,7 +3,8 @@
     "inputs": [
       { "internalType": "address", "name": "initialOwner", "type": "address" },
       { "internalType": "address", "name": "_resources",   "type": "address" },
-      { "internalType": "address", "name": "_kirhaToken",  "type": "address" }
+      { "internalType": "address", "name": "_kirhaToken",  "type": "address" },
+      { "internalType": "address", "name": "_cityNft",     "type": "address" }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -30,7 +31,7 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "inputs": [{ "internalType": "address", "name": "player", "type": "address" }],
     "name": "playerCityId",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -44,27 +45,24 @@
     "type": "function"
   },
   {
-    "anonymous": false,
     "inputs": [
-      { "indexed": true,  "internalType": "address", "name": "player", "type": "address" },
-      { "indexed": false, "internalType": "string",  "name": "pseudo", "type": "string"  },
-      { "indexed": false, "internalType": "uint256", "name": "cityId", "type": "uint256" }
+      { "internalType": "uint256",   "name": "cityId",        "type": "uint256"   },
+      { "internalType": "uint256[]", "name": "resourceIds",   "type": "uint256[]" },
+      { "internalType": "uint256[]", "name": "resourceAmts",  "type": "uint256[]" },
+      { "internalType": "uint8[]",   "name": "metierIds",     "type": "uint8[]"   },
+      { "internalType": "uint32[]",  "name": "metierLevels",  "type": "uint32[]"  },
+      { "internalType": "uint32[]",  "name": "metierXps",     "type": "uint32[]"  },
+      { "internalType": "uint32[]",  "name": "metierXpTotals","type": "uint32[]"  },
+      { "internalType": "uint256",   "name": "kirhaGained",   "type": "uint256"   }
     ],
-    "name": "PseudoRegistered",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256[]", "name": "ids",     "type": "uint256[]" },
-      { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }
-    ],
-    "name": "batchMintResources",
+    "name": "batchSave",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
+      { "internalType": "uint256", "name": "cityId", "type": "uint256" },
       { "internalType": "uint256", "name": "amount", "type": "uint256" }
     ],
     "name": "withdrawKirha",
@@ -73,19 +71,131 @@
     "type": "function"
   },
   {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId", "type": "uint256" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "depositKirha",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256",   "name": "cityId",  "type": "uint256"   },
+      { "internalType": "uint256[]", "name": "ids",     "type": "uint256[]" },
+      { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }
+    ],
+    "name": "withdrawResources",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256",   "name": "cityId",  "type": "uint256"   },
+      { "internalType": "uint256[]", "name": "ids",     "type": "uint256[]" },
+      { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }
+    ],
+    "name": "depositResources",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256",   "name": "cityId", "type": "uint256"   },
+      { "internalType": "uint256[]", "name": "ids",    "type": "uint256[]" }
+    ],
+    "name": "getCityResources",
+    "outputs": [
+      { "internalType": "uint256[]", "name": "balances", "type": "uint256[]" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId", "type": "uint256" }
+    ],
+    "name": "getCityMetiers",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "uint8",  "name": "metierId", "type": "uint8"  },
+          { "internalType": "uint32", "name": "level",    "type": "uint32" },
+          { "internalType": "uint32", "name": "xp",       "type": "uint32" },
+          { "internalType": "uint32", "name": "xpTotal",  "type": "uint32" }
+        ],
+        "internalType": "struct KirhaGame.MetierState[5]",
+        "name": "state",
+        "type": "tuple[5]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId",     "type": "uint256" },
+      { "internalType": "uint256", "name": "resourceId", "type": "uint256" }
+    ],
+    "name": "cityResources",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "cityId", "type": "uint256" }],
+    "name": "cityKirha",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId",   "type": "uint256" },
+      { "internalType": "uint8",   "name": "metierId", "type": "uint8"   }
+    ],
+    "name": "cityMetierLevel",
+    "outputs": [{ "internalType": "uint32", "name": "", "type": "uint32" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "op",       "type": "address" },
+      { "internalType": "bool",    "name": "approved", "type": "bool"    }
+    ],
+    "name": "setOperator",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "anonymous": false,
     "inputs": [
-      { "indexed": true,  "internalType": "address",   "name": "player",  "type": "address"   },
-      { "indexed": false, "internalType": "uint256[]", "name": "ids",     "type": "uint256[]" },
-      { "indexed": false, "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }
+      { "indexed": true,  "internalType": "address", "name": "player", "type": "address" },
+      { "indexed": false, "internalType": "string",  "name": "pseudo", "type": "string"  },
+      { "indexed": true,  "internalType": "uint256", "name": "cityId", "type": "uint256" }
     ],
-    "name": "ResourcesMinted",
+    "name": "PseudoRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "player", "type": "address" },
+      { "indexed": true, "internalType": "uint256", "name": "cityId", "type": "uint256" }
+    ],
+    "name": "DataSaved",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
       { "indexed": true,  "internalType": "address", "name": "player", "type": "address" },
+      { "indexed": true,  "internalType": "uint256", "name": "cityId", "type": "uint256" },
       { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
     ],
     "name": "KirhaWithdrawn",
@@ -95,6 +205,7 @@
     "anonymous": false,
     "inputs": [
       { "indexed": true,  "internalType": "address", "name": "player", "type": "address" },
+      { "indexed": true,  "internalType": "uint256", "name": "cityId", "type": "uint256" },
       { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
     ],
     "name": "KirhaDeposited",
