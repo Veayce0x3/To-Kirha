@@ -13,7 +13,8 @@
     "test:contracts": "npx hardhat test",
     "remove-bg": "npx ts-node --project tsconfig.hardhat.json scripts/remove-background.ts",
     "flush-nonces": "npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/flush-nonces.js --network base-sepolia",
-    "deploy:step": "npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/deploy-step.js --network base-sepolia"
+    "deploy:step": "npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/deploy-step.js --network base-sepolia",
+    "gen:assets": "npx ts-node --project tsconfig.hardhat.json scripts/gen-character-assets.ts"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.4",

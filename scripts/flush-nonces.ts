@@ -8,7 +8,7 @@
 
 import { ethers } from 'hardhat';
 
-const GAS_PRICE   = 3_000_000_000n; // 3 gwei
+const GAS_PRICE   = 20_000_000_000n; // 20 gwei (remplace les TXs stuck à 6-15 gwei)
 const SCAN_RANGE  = 30;              // nonces à scanner au-delà du confirmé
 
 async function main(): Promise<void> {

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useWriteContract } from 'wagmi';
+import { useWriteContract, usePublicClient } from 'wagmi';
 import { useGameStore } from '../store/gameStore';
 import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
@@ -10,32 +10,39 @@ export function useSave() {
   const [status, setStatus] = useState<SaveStatus>('idle');
   const [error, setError]   = useState<string | null>(null);
 
-  const pendingMints      = useGameStore(s => s.pending_mints);
-  const viderPendingMints = useGameStore(s => s.viderPendingMints);
-  const setSauvegarde     = useGameStore(s => s.setSauvegarde);
+  const pendingMints           = useGameStore(s => s.pending_mints);
+  const soustraireMintesPending = useGameStore(s => s.soustraireMintesPending);
+  const setSauvegarde          = useGameStore(s => s.setSauvegarde);
 
   const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
+
+  // Seules les entrées dont la partie entière est ≥ 1 peuvent être mintées
+  const mintableItems = pendingMints
+    .map(p => ({ resource_id: p.resource_id, quantite: Math.floor(p.quantite) }))
+    .filter(p => p.quantite >= 1);
 
   const sauvegarder = useCallback(async () => {
-    if (pendingMints.length === 0 || status === 'signing' || status === 'pending') return;
+    if (mintableItems.length === 0 || status === 'signing' || status === 'pending') return;
     setError(null);
     setStatus('signing');
 
     try {
-      const ids     = pendingMints.map(p => BigInt(p.resource_id));
-      const amounts = pendingMints.map(p => BigInt(p.quantite));
+      const ids     = mintableItems.map(p => BigInt(p.resource_id));
+      const amounts = mintableItems.map(p => BigInt(p.quantite));
       setStatus('pending');
 
-      // Note : nonce + signature seront ajoutés quand le backend sera en place
-      // Pour le dev, le contrat peut être déployé sans vérification de signature
-      await writeContractAsync({
+      const hash = await writeContractAsync({
         address:      KIRHA_GAME_ADDRESS,
         abi:          KirhaGameAbi,
         functionName: 'batchMintResources',
-        args:         [ids, amounts, BigInt(0), '0x'],
+        args:         [ids, amounts],
       });
 
-      viderPendingMints();
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+
+      // Soustraire uniquement les quantités entières mintées (conserver les fractions)
+      soustraireMintesPending(mintableItems);
       setSauvegarde(Date.now());
       setStatus('success');
       setTimeout(() => setStatus('idle'), 3000);
@@ -44,13 +51,14 @@ export function useSave() {
       setError(msg);
       setStatus('error');
     }
-  }, [pendingMints, status, writeContractAsync, viderPendingMints, setSauvegarde]);
+  }, [mintableItems, status, writeContractAsync, publicClient, soustraireMintesPending, setSauvegarde]);
 
   return {
     sauvegarder,
     status,
     error,
-    pendingCount: pendingMints.length,
+    // Badge = nb de ressources différentes mintables (quantité entière ≥ 1)
+    pendingCount: mintableItems.length,
     reset: () => { setStatus('idle'); setError(null); },
   };
 }

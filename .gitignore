@@ -27,3 +27,15 @@ typechain-types/
 # Editor
 .vscode/
 .idea/
+
+# Claude local settings (peut contenir des clés privées)
+.claude/
+
+# Secrets supplémentaires
+*.secret
+*.secrets
+.secrets
+hardhat.config.local.ts
+deploy-keys.json
+wallet.json
+keystore/

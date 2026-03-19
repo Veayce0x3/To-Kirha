@@ -2,105 +2,70 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "./KirhaResources.sol";
+import "./KirhaToken.sol";
 
 /**
  * @title KirhaGame
  * @notice Contrat principal du jeu To-Kirha.
  *
  * Flux de sauvegarde :
- *   1. Le serveur (ou le joueur via signature du serveur) appelle batchMintResources
- *   2. Le contrat vérifie la signature ECDSA du serveur (signer autorisé)
- *   3. Il appelle KirhaResources.mintBatch pour minéter les ressources récoltées
+ *   1. Le joueur appelle batchMintResources depuis le frontend
+ *   2. Le contrat mint les ressources récoltées off-chain
  *
- * Sécurité :
- *   - Chaque sauvegarde inclut un nonce unique par joueur → anti-replay
- *   - Seul le signer autorisé peut produire des signatures valides
+ * NOTE TESTNET : vérification de signature ECDSA désactivée.
+ *   Réactiver avant déploiement mainnet en ajoutant :
+ *   - le check ECDSA sur la signature backend
+ *   - la gestion des nonces anti-replay
  */
 contract KirhaGame is Ownable {
-    using ECDSA for bytes32;
-    using MessageHashUtils for bytes32;
 
     KirhaResources public immutable resources;
+    KirhaToken     public immutable kirhaToken;
 
-    /** Signataire autorisé (backend To-Kirha) */
-    address public signer;
-
-    /** Nonce anti-replay par joueur */
-    mapping(address => uint256) public nonces;
-
-    event ResourcesMinted(address indexed player, uint256[] ids, uint256[] amounts, uint256 nonce);
-    event SignerUpdated(address indexed newSigner);
+    event ResourcesMinted(address indexed player, uint256[] ids, uint256[] amounts);
+    event KirhaWithdrawn(address indexed player, uint256 amount);
+    event KirhaDeposited(address indexed player, uint256 amount);
 
     constructor(
         address initialOwner,
         address _resources,
-        address _signer
+        address _kirhaToken
     ) Ownable(initialOwner) {
-        resources = KirhaResources(_resources);
-        signer = _signer;
+        resources  = KirhaResources(_resources);
+        kirhaToken = KirhaToken(_kirhaToken);
     }
 
     // --------------------------------------------------------
-    // Administration
-    // --------------------------------------------------------
-
-    function setSigner(address _signer) external onlyOwner {
-        signer = _signer;
-        emit SignerUpdated(_signer);
-    }
-
-    // --------------------------------------------------------
-    // Sauvegarde on-chain
+    // Sauvegarde on-chain (TESTNET — sans vérification signature)
     // --------------------------------------------------------
 
     /**
      * @notice Mint groupé des ressources récoltées off-chain.
-     *
-     * @param ids       IDs ERC-1155 à minter (1-50)
-     * @param amounts   Quantités correspondantes
-     * @param nonce     Nonce du joueur (doit correspondre à nonces[msg.sender])
-     * @param signature Signature ECDSA du signer : keccak256(player, ids, amounts, nonce, chainId)
+     * @param ids     IDs ERC-1155 à minter (1-50)
+     * @param amounts Quantités correspondantes
      */
     function batchMintResources(
         uint256[] calldata ids,
-        uint256[] calldata amounts,
-        uint256 nonce,
-        bytes calldata signature
+        uint256[] calldata amounts
     ) external {
         require(ids.length > 0, "KirhaGame: empty batch");
         require(ids.length == amounts.length, "KirhaGame: length mismatch");
-        require(nonce == nonces[msg.sender], "KirhaGame: invalid nonce");
-
-        // Vérifie la signature du backend
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                msg.sender,
-                ids,
-                amounts,
-                nonce,
-                block.chainid
-            )
-        );
-        bytes32 ethHash = hash.toEthSignedMessageHash();
-        address recovered = ethHash.recover(signature);
-        require(recovered == signer, "KirhaGame: invalid signature");
-
-        // Incrémente le nonce avant mint (protection re-entrancy)
-        nonces[msg.sender]++;
-
-        // Mint les ressources
         resources.mintBatch(msg.sender, ids, amounts);
-
-        emit ResourcesMinted(msg.sender, ids, amounts, nonce);
+        emit ResourcesMinted(msg.sender, ids, amounts);
     }
 
+    // --------------------------------------------------------
+    // $KIRHA — Retrait (mint vers le joueur)
+    // --------------------------------------------------------
+
     /**
-     * @notice Retourne le nonce actuel d'un joueur (pour construire la signature côté backend)
+     * @notice Mint des $KIRHA vers le joueur (gains de vente off-chain)
+     * @param amount Montant en wei (18 décimales)
      */
-    function getNonce(address player) external view returns (uint256) {
-        return nonces[player];
+    function withdrawKirha(uint256 amount) external {
+        require(amount > 0, "KirhaGame: amount must be > 0");
+        kirhaToken.mint(msg.sender, amount);
+        emit KirhaWithdrawn(msg.sender, amount);
     }
 }

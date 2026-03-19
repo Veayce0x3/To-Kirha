@@ -1,11 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { METIERS, Ressource, MetierId } from '../data/metiers';
 import { ResourceId } from '../data/resources';
-
-// ============================================================
-// Types
-// ============================================================
+import { calculerBonus } from '../data/vetements';
 
 export interface SlotAvecTimer {
   index:              number;
@@ -20,48 +17,51 @@ export interface UseHarvestReturn {
   ressources_disponibles: Ressource[];
   niveau:                 number;
   xp:                     number;
-  demarrer:               (slotIndex: number, resourceId: ResourceId) => void;
-  collecter:              (slotIndex: number) => void;
+  // Plante une ressource sur le slot (fonctionne même si slot déjà actif → change la ressource)
+  planterRessource:       (slotIndex: number, resourceId: ResourceId) => void;
+  // Récolte le slot prêt puis relance automatiquement avec la même ressource
+  collecterEtRelancer:    (slotIndex: number) => void;
 }
 
-// ============================================================
-// Quantité récoltée selon rareté
-// ============================================================
-
-function quantiteRecolte(r: Ressource): number {
-  switch (r.rarete) {
-    case 'legendaire': return 1;
-    case 'epique':     return 2;
-    case 'rare':       return 3;
-    default:           return 5;
-  }
+function quantiteRecolte(niveauJoueur: number): number {
+  if (niveauJoueur <= 1)  return 0.2;
+  if (niveauJoueur <= 50) return 0.2 + (niveauJoueur - 1) * (0.3 / 49);
+  return 0.5 + (niveauJoueur - 50) * (0.5 / 50);
 }
-
-// ============================================================
-// Hook
-// ============================================================
 
 export function useHarvest(metierId: MetierId): UseHarvestReturn {
   const metier          = METIERS[metierId];
-  const slots_store     = useGameStore(s => s.slots);
+  const slots_store     = useGameStore(s => s.slots[metierId]);
   const metier_progress = useGameStore(s => s.metiers[metierId]);
+  const equipement      = useGameStore(s => s.equipement);
   const demarrerRecolte = useGameStore(s => s.demarrerRecolte);
   const terminerRecolte = useGameStore(s => s.terminerRecolte);
   const ajouterXp       = useGameStore(s => s.ajouterXp);
   const ajouterPending  = useGameStore(s => s.ajouterPendingMint);
 
-  // Tick 1s pour rafraîchir les timers
+  const bonus = calculerBonus(equipement);
+
+  const slotsRef          = useRef(slots_store);
+  const bonusRef          = useRef(bonus);
+  const metierProgressRef = useRef(metier_progress);
+  slotsRef.current          = slots_store;
+  bonusRef.current          = bonus;
+  metierProgressRef.current = metier_progress;
+
   const [, setTick] = useState(0);
+
+  // Tick 1s — uniquement pour rafraîchir les timers affichés (pas d'auto-collect)
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 1000);
     return () => clearInterval(id);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metierId]);
 
   const slots: SlotAvecTimer[] = slots_store.map(slot => {
     if (!slot.termine_a || !slot.resource_id) {
       return { index: slot.index, debloque: slot.debloque, resource_id: null, secondes_restantes: null, prete: false };
     }
-    const diff = slot.termine_a - Date.now();
+    const diff  = slot.termine_a - Date.now();
     const prete = diff <= 0;
     return {
       index:              slot.index,
@@ -74,38 +74,41 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
 
   const ressources_disponibles = metier.ressources.filter(r => r.niveau_requis <= metier_progress.niveau);
 
-  const demarrer = useCallback((slotIndex: number, resourceId: ResourceId) => {
+  // Plante (ou replante) une ressource sur n'importe quel slot débloqué
+  const planterRessource = useCallback((slotIndex: number, resourceId: ResourceId) => {
+    const slot = slotsRef.current[slotIndex];
+    if (!slot.debloque) return;
     const ressource = metier.ressources.find(r => r.id === resourceId);
-    if (!ressource) return;
-    const slot = slots_store[slotIndex];
-    if (!slot.debloque || slot.resource_id !== null) return;
-    demarrerRecolte(slotIndex, resourceId, ressource.temps_recolte_secondes * 1000);
-  }, [slots_store, metier.ressources, demarrerRecolte]);
+    if (!ressource || ressource.niveau_requis > metierProgressRef.current.niveau) return;
+    demarrerRecolte(metierId, slotIndex, resourceId, 30_000);
+  }, [metier.ressources, metierId, demarrerRecolte]);
 
-  const collecter = useCallback((slotIndex: number) => {
-    const slot = slots_store[slotIndex];
+  // Récolte le slot (s'il est prêt) puis relance immédiatement avec la même ressource
+  const collecterEtRelancer = useCallback((slotIndex: number) => {
+    const slot = slotsRef.current[slotIndex];
     if (!slot.resource_id || !slot.termine_a || Date.now() < slot.termine_a) return;
-    const ressource = metier.ressources.find(r => r.id === slot.resource_id);
+    const rid      = slot.resource_id;
+    const ressource = metier.ressources.find(r => r.id === rid);
     if (!ressource) return;
-    const qte = quantiteRecolte(ressource);
-    terminerRecolte(slotIndex, qte);
-    ajouterXp(metierId, ressource.xp_recolte);
-    ajouterPending(ressource.id, qte);
-  }, [slots_store, metier.ressources, metierId, terminerRecolte, ajouterXp, ajouterPending]);
+    const ratio   = quantiteRecolte(metierProgressRef.current.niveau);
+    const xpFinal = Math.round(ressource.xp_recolte * (1 + bonusRef.current.xp_bonus / 100));
+    // Collecter
+    terminerRecolte(metierId, slotIndex, ratio);
+    ajouterXp(metierId, xpFinal);
+    ajouterPending(rid, ratio);
+    // Relancer avec la même ressource
+    demarrerRecolte(metierId, slotIndex, rid, 30_000);
+  }, [metier.ressources, metierId, terminerRecolte, ajouterXp, ajouterPending, demarrerRecolte]);
 
   return {
     slots,
     ressources_disponibles,
-    niveau: metier_progress.niveau,
-    xp:     metier_progress.xp,
-    demarrer,
-    collecter,
+    niveau:           metier_progress.niveau,
+    xp:               metier_progress.xp,
+    planterRessource,
+    collecterEtRelancer,
   };
 }
-
-// ============================================================
-// Helpers
-// ============================================================
 
 export function formatTimer(secondes: number): string {
   const m = Math.floor(secondes / 60).toString().padStart(2, '0');
