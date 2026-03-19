@@ -60,6 +60,7 @@ export interface GameState {
   retirerKirha:             (montant: number) => void;
   ajouterKirha:             (montant: number) => void;
   retirerRessource:         (resourceId: ResourceId, quantite: number) => void;
+  ajouterRessource:         (resourceId: ResourceId, quantite: number) => void;
 }
 
 // ============================================================
@@ -239,6 +240,14 @@ export const useGameStore = create<GameState>()(
           const inventaire = { ...state.inventaire };
           const current = inventaire[resourceId] ?? 0;
           inventaire[resourceId] = Math.max(0, Math.round((current - quantite) * 1e10) / 1e10);
+          return { inventaire };
+        }),
+
+      ajouterRessource: (resourceId, quantite) =>
+        set((state) => {
+          const inventaire = { ...state.inventaire };
+          const current = inventaire[resourceId] ?? 0;
+          inventaire[resourceId] = Math.round((current + quantite) * 1e10) / 1e10;
           return { inventaire };
         }),
 

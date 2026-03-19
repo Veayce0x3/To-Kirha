@@ -41,7 +41,8 @@ export function useMarket() {
   const [error, setError]   = useState<string | null>(null);
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
-  const retirerRessource = useGameStore(s => s.retirerRessource);
+  const retirerRessource  = useGameStore(s => s.retirerRessource);
+  const ajouterRessource  = useGameStore(s => s.ajouterRessource);
 
   // ── Lire les listings actifs ───────────────────────────────
   const { data: listingsRaw, refetch: refetchListings } = useReadContract({
@@ -155,8 +156,8 @@ export function useMarket() {
     }
   }, [address, isApproved, approveMarket, writeContractAsync, refetchListings, publicClient]);
 
-  // ── Acheter ───────────────────────────────────────────────
-  const acheter = useCallback(async (listingId: bigint, quantity: number) => {
+  // ── Acheter (unitaire) ────────────────────────────────────
+  const acheter = useCallback(async (listingId: bigint, quantity: number, resourceId: number) => {
     setError(null);
     setStatus('buying');
     try {
@@ -167,6 +168,8 @@ export function useMarket() {
         args:         [listingId, BigInt(quantity)],
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      ajouterRessource(resourceId as ResourceId, quantity);
+      await new Promise(resolve => setTimeout(resolve, 2000));
       await refetchListings();
       setStatus('success');
       setTimeout(() => setStatus('idle'), 3000);
@@ -174,7 +177,36 @@ export function useMarket() {
       setError(err instanceof Error ? err.message : 'Erreur');
       setStatus('error');
     }
-  }, [writeContractAsync, refetchListings, publicClient]);
+  }, [writeContractAsync, refetchListings, publicClient, ajouterRessource]);
+
+  // ── Acheter (panier — batch) ───────────────────────────────
+  const batchAcheter = useCallback(async (items: { listingId: bigint; quantity: number; resourceId: number }[]) => {
+    if (items.length === 0) return;
+    setError(null);
+    setStatus('buying');
+    try {
+      const hash = await writeContractAsync({
+        address:      KIRHA_MARKET_ADDRESS,
+        abi:          KirhaMarketAbi,
+        functionName: 'batchBuyResources',
+        args: [
+          items.map(i => i.listingId),
+          items.map(i => BigInt(i.quantity)),
+        ],
+      });
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      for (const item of items) {
+        ajouterRessource(item.resourceId as ResourceId, item.quantity);
+      }
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await refetchListings();
+      setStatus('success');
+      setTimeout(() => setStatus('idle'), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur');
+      setStatus('error');
+    }
+  }, [writeContractAsync, refetchListings, publicClient, ajouterRessource]);
 
   // ── Annuler un listing ─────────────────────────────────────
   const annulerListing = useCallback(async (listingId: bigint) => {
@@ -209,6 +241,7 @@ export function useMarket() {
     mettrEnVente,
     batchMettrEnVente,
     acheter,
+    batchAcheter,
     annulerListing,
     refetchListings,
   };

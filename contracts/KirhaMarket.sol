@@ -108,41 +108,50 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
     // Achat
     // --------------------------------------------------------
 
-    /**
-     * @notice Achète des ressources depuis un listing.
-     * @param listingId ID du listing
-     * @param quantity  Quantité à acheter (≤ disponible)
-     */
-    function buyResource(uint256 listingId, uint256 quantity) external nonReentrant {
+    /** Logique interne d'achat (réutilisée par buyResource et batchBuyResources) */
+    function _executeBuy(uint256 listingId, uint256 quantity) internal {
         Listing storage l = listings[listingId];
         require(l.active,              "KirhaMarket: listing not active");
         require(quantity > 0,          "KirhaMarket: quantity must be > 0");
         require(quantity <= l.quantity,"KirhaMarket: not enough stock");
         require(msg.sender != l.seller,"KirhaMarket: cannot buy own listing");
 
-        uint256 totalCost     = quantity * l.pricePerUnit;
-        uint256 taxAmount     = (totalCost * TAX_BPS) / 10000;
-        uint256 sellerAmount  = totalCost - taxAmount;
+        uint256 totalCost    = quantity * l.pricePerUnit;
+        uint256 taxAmount    = (totalCost * TAX_BPS) / 10000;
+        uint256 sellerAmount = totalCost - taxAmount;
 
-        // Burn $KIRHA de l'acheteur
         kirhaToken.burn(msg.sender, totalCost);
-
-        // Mint $KIRHA vers le vendeur (moins taxe)
         kirhaToken.mint(l.seller, sellerAmount);
+        if (taxAmount > 0) kirhaToken.mint(treasury, taxAmount);
 
-        // Mint taxe vers la trésorerie
-        if (taxAmount > 0) {
-            kirhaToken.mint(treasury, taxAmount);
-        }
-
-        // Transfert ERC-1155 vers l'acheteur
         l.quantity -= quantity;
-        if (l.quantity == 0) {
-            l.active = false;
-        }
+        if (l.quantity == 0) l.active = false;
         resources.safeTransferFrom(address(this), msg.sender, l.resourceId, quantity, "");
 
         emit ResourceSold(listingId, msg.sender, quantity, totalCost, sellerAmount);
+    }
+
+    /**
+     * @notice Achète des ressources depuis un listing.
+     */
+    function buyResource(uint256 listingId, uint256 quantity) external nonReentrant {
+        _executeBuy(listingId, quantity);
+    }
+
+    /**
+     * @notice Achète plusieurs listings en une seule transaction (panier).
+     * @param listingIds Tableau des IDs de listings
+     * @param quantities Tableau des quantités à acheter
+     */
+    function batchBuyResources(
+        uint256[] calldata listingIds,
+        uint256[] calldata quantities
+    ) external nonReentrant {
+        require(listingIds.length > 0,                    "KirhaMarket: empty batch");
+        require(listingIds.length == quantities.length,   "KirhaMarket: length mismatch");
+        for (uint256 i = 0; i < listingIds.length; i++) {
+            _executeBuy(listingIds[i], quantities[i]);
+        }
     }
 
     // --------------------------------------------------------

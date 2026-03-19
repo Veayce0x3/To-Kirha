@@ -25,7 +25,7 @@ function TabPnj() {
       const rid = Number(id) as ResourceId;
       const res = getResourceById(rid);
       if (!res) return null;
-      const price = PNJ_PRICES[rid] ?? Math.ceil(res.niveau_requis / 10);
+      const price = PNJ_PRICES[rid] ?? 0.01;
       return { id: rid, qty, res, price };
     })
     .filter(Boolean) as { id: ResourceId; qty: number; res: NonNullable<ReturnType<typeof getResourceById>>; price: number }[];
@@ -98,15 +98,19 @@ function TabOnchain() {
   const { t, lang } = useT();
   const {
     listings, myListings, isApproved, status, error,
-    approveMarket, batchMettrEnVente, acheter, annulerListing,
+    approveMarket, batchMettrEnVente, batchAcheter, annulerListing,
   } = useMarket();
 
   const [tab, setTab]               = useState<'acheter'|'vendre'|'mesVentes'>('acheter');
   const [sellResourceId, setSellResourceId] = useState('');
   const [sellQty, setSellQty]       = useState('');
   const [sellPrice, setSellPrice]   = useState('');
-  const [buyQty, setBuyQty]         = useState<Record<string, string>>({});
   const [buyResourceId, setBuyResourceId] = useState('');
+
+  // Quantités d'achat par listing et panier
+  const [buyQty, setBuyQty]         = useState<Record<string, string>>({});
+  type BuyCartItem = { listingId: bigint; resourceId: number; quantity: number; pricePerUnit: number; maxQty: number };
+  const [buyCart, setBuyCart]       = useState<BuyCartItem[]>([]);
 
   // Panier de vente (pending avant publication)
   type CartItem = { resourceId: number; quantity: number; pricePerUnit: number };
@@ -215,48 +219,92 @@ function TabOnchain() {
                   </p>
                   {listingsSorted.map((l, idx) => {
                     const key = l.listingId.toString();
-                    const qty = parseInt(buyQty[key] || '1') || 1;
-                    const total = (l.pricePerUnit * qty).toFixed(4);
                     const isMine = l.seller.toLowerCase() === address?.toLowerCase();
                     const isCheapest = idx === 0;
+                    const inCart = buyCart.some(c => c.listingId === l.listingId);
+                    const qtyVal = buyQty[key] ?? '1';
+
                     return (
                       <div key={key} style={{ ...s.itemRow, opacity: isMine ? 0.7 : 1, border: isCheapest ? '1.5px solid rgba(106,191,68,0.5)' : '1px solid rgba(212,100,138,0.15)' }}>
                         <div style={{ flex:1 }}>
                           <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
                             <span style={{ color:'#c43070', fontSize:'15px', fontWeight:800 }}>{l.pricePerUnit.toFixed(4)} $K</span>
                             <span style={{ color:'#7a4060', fontSize:'10px' }}>/unité</span>
-                            {isCheapest && <span style={{ background:'rgba(106,191,68,0.15)', color:'#4a8f2a', fontSize:'9px', fontWeight:700, padding:'1px 6px', borderRadius:8 }}>Moins cher</span>}
+                            {isCheapest && !isMine && <span style={{ background:'rgba(106,191,68,0.15)', color:'#4a8f2a', fontSize:'9px', fontWeight:700, padding:'1px 6px', borderRadius:8 }}>Moins cher</span>}
                           </div>
                           <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>
                             ×{l.quantity} disponible · {isMine ? <span style={{ color:'#6abf44', fontWeight:700 }}>Votre vente</span> : `Vendeur : ${shortAddr(l.seller)}`}
                           </span>
                         </div>
-                        <div style={{ display:'flex', flexDirection:'column', gap:4, alignItems:'flex-end' }}>
-                          {isMine ? (
-                            <span style={{ color:'#9a6080', fontSize:'10px', fontStyle:'italic' }}>En vente</span>
-                          ) : (
-                            <>
-                              <input
-                                type="number" min="1" max={l.quantity} value={buyQty[key] ?? '1'}
-                                onChange={e => setBuyQty(prev => ({ ...prev, [key]: e.target.value }))}
-                                style={{ width:44, padding:'4px 6px', border:'1px solid rgba(212,100,138,0.25)', borderRadius:8, fontSize:11, color:'#1e0a16', textAlign:'center' }}
-                              />
-                              <span style={{ color:'#f9a825', fontSize:'11px', fontWeight:800 }}>{total} $K</span>
-                              <button
-                                style={{ ...s.sellBtn, background:'rgba(106,191,68,0.12)', borderColor:'rgba(106,191,68,0.3)', color:'#4a8f2a' }}
-                                onClick={() => acheter(l.listingId, qty)}
-                                disabled={busy}
-                              >
-                                {status === 'buying' ? '⏳' : 'Acheter'}
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        {isMine ? (
+                          <span style={{ color:'#9a6080', fontSize:'10px', fontStyle:'italic' }}>En vente</span>
+                        ) : inCart ? (
+                          <span style={{ color:'#6abf44', fontSize:'10px', fontWeight:700 }}>✓ Dans le panier</span>
+                        ) : (
+                          <div style={{ display:'flex', flexDirection:'column', gap:4, alignItems:'flex-end' }}>
+                            <input
+                              type="number" min="1" max={l.quantity} value={qtyVal}
+                              onChange={e => setBuyQty(prev => ({ ...prev, [key]: e.target.value }))}
+                              style={{ width:44, padding:'4px 6px', border:'1px solid rgba(212,100,138,0.25)', borderRadius:8, fontSize:11, color:'#1e0a16', textAlign:'center' }}
+                            />
+                            <button
+                              style={{ ...s.sellBtn, background:'rgba(106,191,68,0.12)', borderColor:'rgba(106,191,68,0.3)', color:'#4a8f2a', whiteSpace:'nowrap' }}
+                              onClick={() => {
+                                const qty = Math.max(1, Math.min(l.quantity, parseInt(qtyVal) || 1));
+                                setBuyCart(prev => [...prev, { listingId: l.listingId, resourceId: l.resourceId, quantity: qty, pricePerUnit: l.pricePerUnit, maxQty: l.quantity }]);
+                              }}
+                            >
+                              + Panier
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
               )
+            )}
+
+            {/* ── Panier d'achat ── */}
+            {buyCart.length > 0 && (
+              <div style={{ marginTop:16 }}>
+                <p style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700, margin:'0 0 8px' }}>Panier ({buyCart.length})</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:10 }}>
+                  {buyCart.map((item, i) => (
+                    <div key={i} style={{ ...s.itemRow, padding:'8px 10px' }}>
+                      <span style={{ fontSize:'18px' }}>{emojiByResourceId(item.resourceId)}</span>
+                      <div style={{ flex:1 }}>
+                        <span style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700 }}>{getNomRessource(item.resourceId, lang)}</span>
+                        <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>×{item.quantity} · {item.pricePerUnit.toFixed(4)} $K/u</span>
+                      </div>
+                      <span style={{ color:'#f9a825', fontSize:'12px', fontWeight:800, marginRight:8 }}>
+                        {(item.quantity * item.pricePerUnit).toFixed(4)} $K
+                      </span>
+                      <button
+                        style={{ color:'#c43070', background:'none', border:'none', cursor:'pointer', fontSize:'14px' }}
+                        onClick={() => setBuyCart(prev => prev.filter((_, j) => j !== i))}
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ ...s.summary, marginBottom:10 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between' }}>
+                    <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:700 }}>Total</span>
+                    <span style={{ color:'#f9a825', fontSize:'14px', fontWeight:800 }}>
+                      {buyCart.reduce((a, i) => a + i.quantity * i.pricePerUnit, 0).toFixed(4)} $K
+                    </span>
+                  </div>
+                </div>
+                <button
+                  style={{ ...s.mainBtn, background:'linear-gradient(135deg, #6abf44, #3a8f1e)', opacity: busy ? 0.5 : 1 }}
+                  disabled={busy}
+                  onClick={() => batchAcheter(buyCart).then(() => { setBuyCart([]); setBuyResourceId(''); })}
+                >
+                  {status === 'buying' ? '⏳ Achat en cours…' : `🛒 Acheter le panier (${buyCart.length} article${buyCart.length > 1 ? 's' : ''}, 1 signature)`}
+                </button>
+                {status === 'success' && <p style={{ color:'#6abf44', fontSize:'12px', fontWeight:700, textAlign:'center', marginTop:8 }}>✅ Achat confirmé ! Ressources ajoutées à ton inventaire.</p>}
+                {error && <p style={{ color:'#c43070', fontSize:'10px', marginTop:4 }}>{error.slice(0,120)}</p>}
+              </div>
             )}
           </>
         )}
@@ -385,7 +433,7 @@ function TabOnchain() {
                     style={{ ...s.mainBtn, opacity: busy ? 0.5 : 1 }}
                     disabled={busy}
                     onClick={() => {
-                      batchMettrEnVente(cart).then(() => setCart([]));
+                      batchMettrEnVente(cart).then(() => { setCart([]); setTab('mesVentes'); });
                     }}
                   >
                     {status === 'listing' ? '⏳ Confirmation en cours…' : status === 'approving' ? '✍️ Approbation…' : `💰 Publier ${cart.length} vente${cart.length > 1 ? 's' : ''} (1 signature)`}
@@ -460,7 +508,7 @@ function TabOnchain() {
 export function HdvPage() {
   const navigate  = useNavigate();
   const { t }     = useT();
-  const [hdvTab, setHdvTab] = useState<'pnj'|'onchain'>('pnj');
+  const [hdvTab, setHdvTab] = useState<'pnj'|'onchain'>('onchain');
 
   return (
     <div style={s.page}>
@@ -476,7 +524,7 @@ export function HdvPage() {
           🧙 PNJ
         </button>
         <button style={{ flex:1, padding:'11px', background:'none', border:'none', borderBottom: hdvTab==='onchain' ? '2px solid #8a25d4':'2px solid transparent', color: hdvTab==='onchain' ? '#8a25d4':'#7a4060', fontSize:'13px', fontWeight:700, cursor:'pointer', marginBottom:-2 }} onClick={() => setHdvTab('onchain')}>
-          ⛓️ On-chain
+          🏪 Bazar
         </button>
       </div>
 
