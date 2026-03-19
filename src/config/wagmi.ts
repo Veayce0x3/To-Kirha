@@ -8,6 +8,7 @@ import {
   braveWallet,
   okxWallet,
   bybitWallet,
+  roninWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 import { createConfig, http } from 'wagmi';
 import { baseSepolia } from 'viem/chains';
@@ -27,6 +28,7 @@ const connectors = connectorsForWallets(
         braveWallet,
         okxWallet,
         bybitWallet,
+        roninWallet,
       ],
     },
   ],
