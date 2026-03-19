@@ -1,14 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useReadContract, useWriteContract, usePublicClient } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
-import { KIRHA_MARKET_ADDRESS } from '../contracts/addresses';
+import { KIRHA_MARKET_ADDRESS, KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaMarketAbi from '../contracts/abis/KirhaMarket.json';
+import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
 import { useGameStore } from '../store/gameStore';
 import { ResourceId } from '../data/resources';
 
 export interface OnChainListing {
   listingId:       bigint;
   sellerCityId:    bigint;
+  sellerPseudo:    string;       // pseudo lié à la ville vendeur
   resourceId:      number;
   quantity:        number;       // quantité réelle (non scalée)
   pricePerUnit:    number;       // en $KIRHA (float)
@@ -39,6 +41,30 @@ export function useMarket() {
     query:        { refetchInterval: 5000 },
   });
 
+  // IDs uniques des villes vendeuses (pour batch-fetch des pseudos)
+  const uniqueSellerCityIds = useMemo(() => {
+    if (!listingsRaw) return [];
+    const [items] = listingsRaw as [readonly { sellerCityId: bigint }[], readonly bigint[]];
+    return [...new Set(items.map(i => i.sellerCityId))];
+  }, [listingsRaw]);
+
+  // ── Fetch batch des pseudos vendeurs ──────────────────────
+  const { data: pseudosRaw } = useReadContract({
+    address:      KIRHA_GAME_ADDRESS,
+    abi:          KirhaGameAbi,
+    functionName: 'getCityPseudos',
+    args:         [uniqueSellerCityIds],
+    query:        { enabled: uniqueSellerCityIds.length > 0 },
+  });
+
+  const pseudoMap = useMemo((): Map<bigint, string> => {
+    const map = new Map<bigint, string>();
+    if (!pseudosRaw) return map;
+    const pseudos = pseudosRaw as string[];
+    uniqueSellerCityIds.forEach((id, i) => map.set(id, pseudos[i] ?? '?'));
+    return map;
+  }, [pseudosRaw, uniqueSellerCityIds]);
+
   // ── Parser les listings bruts ──────────────────────────────
   // quantity on-chain est scalée ×1e4 (ex: 10 unités = 100000)
   const listings: OnChainListing[] = (() => {
@@ -50,6 +76,7 @@ export function useMarket() {
     return items.map((item, i) => ({
       listingId:       ids[i],
       sellerCityId:    item.sellerCityId,
+      sellerPseudo:    pseudoMap.get(item.sellerCityId) ?? '…',
       resourceId:      Number(item.resourceId),
       quantity:        Number(item.quantity) / 1e4,   // dé-scaler
       pricePerUnit:    parseFloat(formatEther(item.pricePerUnit)),

@@ -163,6 +163,20 @@
     "type": "function"
   },
   {
+    "inputs": [{ "internalType": "uint256", "name": "cityId", "type": "uint256" }],
+    "name": "cityPseudo",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256[]", "name": "cityIds", "type": "uint256[]" }],
+    "name": "getCityPseudos",
+    "outputs": [{ "internalType": "string[]", "name": "pseudos", "type": "string[]" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       { "internalType": "address", "name": "op",       "type": "address" },
       { "internalType": "bool",    "name": "approved", "type": "bool"    }

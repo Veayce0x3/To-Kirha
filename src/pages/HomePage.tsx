@@ -1,16 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAccount } from 'wagmi';
 import { useGameStore } from '../store/gameStore';
 import { SettingsModal } from '../components/SettingsModal';
 import { useT } from '../utils/i18n';
 
 export function HomePage() {
-  const navigate    = useNavigate();
-  const { address } = useAccount();
-  const soldeKirha  = useGameStore(s => s.soldeKirha);
-  const pepitesOr   = useGameStore(s => s.pepitesOr);
-  const short = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '';
+  const navigate   = useNavigate();
+  const soldeKirha = useGameStore(s => s.soldeKirha);
+  const pepitesOr  = useGameStore(s => s.pepitesOr);
+  const pseudo     = useGameStore(s => s.pseudo);
+  const villeId    = useGameStore(s => s.villeId);
   const [showSettings, setShowSettings] = useState(false);
   const { t } = useT();
 
@@ -33,7 +32,10 @@ export function HomePage() {
           <span style={s.logoTitle}>To-Kirha</span>
         </div>
         <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
-          <span style={s.addressPill}>{short}</span>
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end' }}>
+            <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:800 }}>{pseudo ?? '—'}</span>
+            <span style={{ color:'#9a6080', fontSize:'9px' }}>Ville #{villeId}</span>
+          </div>
           <button style={s.settingsBtn} onClick={() => setShowSettings(true)}>⚙️</button>
         </div>
       </div>

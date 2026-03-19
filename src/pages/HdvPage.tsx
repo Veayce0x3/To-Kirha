@@ -232,7 +232,7 @@ function TabOnchain() {
                             {isCheapest && !isMine && <span style={{ background:'rgba(106,191,68,0.15)', color:'#4a8f2a', fontSize:'9px', fontWeight:700, padding:'1px 6px', borderRadius:8 }}>Moins cher</span>}
                           </div>
                           <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>
-                            ×{l.quantity} disponible · {isMine ? <span style={{ color:'#6abf44', fontWeight:700 }}>Votre vente</span> : `Ville #${l.sellerCityId.toString()}`}
+                            ×{l.quantity} disponible · {isMine ? <span style={{ color:'#6abf44', fontWeight:700 }}>Votre vente</span> : l.sellerPseudo}
                           </span>
                         </div>
                         {isMine ? (

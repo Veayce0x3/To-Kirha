@@ -28,6 +28,8 @@ contract KirhaGame is Ownable, ReentrancyGuard {
     // ── Pseudos ────────────────────────────────────────────────
     mapping(string  => address) private _pseudoToAddress;
     mapping(address => string)  public  playerPseudo;
+    /** Pseudo lié à la ville (suit le NFT lors des transferts) */
+    mapping(uint256 => string)  public  cityPseudo;
 
     // ── Compteur séquentiel ────────────────────────────────────
     uint256 public playerCount;
@@ -108,6 +110,7 @@ contract KirhaGame is Ownable, ReentrancyGuard {
         playerPseudo[msg.sender] = name;
         playerCount++;
         uint256 cityId = playerCount;
+        cityPseudo[cityId]       = name;
 
         // Initialiser les niveaux à 1 pour les 5 métiers
         for (uint8 m = 0; m < 5; m++) {
@@ -306,6 +309,16 @@ contract KirhaGame is Ownable, ReentrancyGuard {
         uint32 level;
         uint32 xp;
         uint32 xpTotal;
+    }
+
+    /** Retourne les pseudos pour une liste de cityIds. */
+    function getCityPseudos(uint256[] calldata cityIds)
+        external view returns (string[] memory pseudos)
+    {
+        pseudos = new string[](cityIds.length);
+        for (uint256 i = 0; i < cityIds.length; i++) {
+            pseudos[i] = cityPseudo[cityIds[i]];
+        }
     }
 
     /** Retourne l'état des 5 métiers d'une ville. */
