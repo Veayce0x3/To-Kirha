@@ -16,6 +16,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
+          modalSize="compact"
           theme={darkTheme({
             accentColor:           '#ff6b9d',
             accentColorForeground: '#1a0a1e',

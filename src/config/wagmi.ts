@@ -1,11 +1,13 @@
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import {
-  rabbyWallet,
   metaMaskWallet,
   walletConnectWallet,
   coinbaseWallet,
   rainbowWallet,
   trustWallet,
+  braveWallet,
+  okxWallet,
+  bybitWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 import { createConfig, http } from 'wagmi';
 import { baseSepolia } from 'viem/chains';
@@ -15,14 +17,16 @@ const PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? 'YOUR_PROJEC
 const connectors = connectorsForWallets(
   [
     {
-      groupName: 'Recommandés',
+      groupName: 'Mobile & Desktop',
       wallets: [
-        rabbyWallet,
+        walletConnectWallet, // fonctionne avec Rabby mobile, MetaMask mobile, etc.
         metaMaskWallet,
-        walletConnectWallet,
         coinbaseWallet,
         trustWallet,
         rainbowWallet,
+        braveWallet,
+        okxWallet,
+        bybitWallet,
       ],
     },
   ],
