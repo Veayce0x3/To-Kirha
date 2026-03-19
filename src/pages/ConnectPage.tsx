@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useDisconnect, useReadContract, useWriteContract, usePublicClient } from 'wagmi';
 import { KirhaTokenImg } from '../assets/bucheron';
 import { useGameStore } from '../store/gameStore';
@@ -32,7 +32,6 @@ function LangToggle() {
 
 export function ConnectPage() {
   const { isConnected, address } = useAccount();
-  const { openConnectModal } = useConnectModal();
   const { disconnect }       = useDisconnect();
   const navigate             = useNavigate();
   const publicClient         = usePublicClient();
@@ -205,9 +204,17 @@ export function ConnectPage() {
       </div>
 
       <div style={s.btnRow}>
-        <button onClick={() => openConnectModal?.()} style={s.btnCreate}>
-          🏙️ {t('connect.create_city')}
-        </button>
+        <ConnectButton.Custom>
+          {({ openConnectModal, mounted }) => (
+            <button
+              onClick={openConnectModal}
+              disabled={!mounted}
+              style={{ ...s.btnCreate, opacity: mounted ? 1 : 0.5 }}
+            >
+              🏙️ {t('connect.create_city')}
+            </button>
+          )}
+        </ConnectButton.Custom>
       </div>
 
       <p style={s.network}>{t('connect.network')}</p>
