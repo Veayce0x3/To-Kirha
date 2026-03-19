@@ -7,6 +7,8 @@ import { useT } from '../utils/i18n';
 import { KIRHA_CITY_ADDRESS } from '../contracts/addresses';
 import KirhaCityAbi from '../contracts/abis/KirhaCity.json';
 
+const ADMIN_WALLETS = ['0x5a9d55c76c38ede9b8b34ed6e7f35578ce919b0c'];
+
 interface SettingsModalProps {
   onClose: () => void;
 }
@@ -32,6 +34,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
 
+  const isAdmin     = !!address && ADMIN_WALLETS.includes(address.toLowerCase());
   const shortWallet = address ? `${address.slice(0,6)}…${address.slice(-4)}` : '—';
 
   async function handleTransfer() {
@@ -189,6 +192,19 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               </div>
             )}
           </div>
+
+          {/* Admin (wallets whitelistés seulement) */}
+          {isAdmin && (
+            <div style={ms.section}>
+              <span style={ms.sectionTitle}>Administration</span>
+              <button
+                style={{ ...ms.saveBtn, background:'rgba(196,48,112,0.1)', border:'1.5px solid rgba(196,48,112,0.3)', color:'#c43070' }}
+                onClick={() => { onClose(); navigate('/admin'); }}
+              >
+                ⚙️ Page Admin
+              </button>
+            </div>
+          )}
 
           {/* Déconnexion */}
           <div style={ms.section}>

@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import { useGameStore } from '../store/gameStore';
-
-const ADMIN_WALLETS = ['0x5a9d55c76c38ede9b8b34ed6e7f35578ce919b0c'];
 import { getResourceById } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
 import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
 import { useSave } from '../hooks/useSave';
+import { SettingsModal } from './SettingsModal';
 
 // ============================================================
 // Modal Inventaire
@@ -182,11 +181,11 @@ const ms: Record<string, React.CSSProperties> = {
 // ============================================================
 
 export function BottomMenu() {
-  const { isConnected, address } = useAccount();
+  const { isConnected } = useAccount();
   const { pathname }     = useLocation();
   const navigate         = useNavigate();
-  const isAdmin = !!address && ADMIN_WALLETS.includes(address.toLowerCase());
   const [showInventaire, setShowInventaire] = useState(false);
+  const [showSettings, setShowSettings]     = useState(false);
   const { t } = useT();
   const { sauvegarder, status: saveStatus, error: saveError, pendingCount, reset: resetSave } = useSave();
 
@@ -198,8 +197,8 @@ export function BottomMenu() {
 
   return (
     <>
-      {/* ── Modal Inventaire ─────────────────────────────────── */}
       {showInventaire && <InventaireModal onClose={() => setShowInventaire(false)} />}
+      {showSettings   && <SettingsModal   onClose={() => setShowSettings(false)} />}
 
       {/* ── Barre de menu ─────────────────────────────────────── */}
       <div style={s.menu}>
@@ -239,13 +238,11 @@ export function BottomMenu() {
           </span>
         </button>
 
-        {/* Admin (wallet autorisé uniquement) */}
-        {isAdmin && (
-          <button style={s.btn} onClick={() => navigate('/admin')}>
-            <span style={s.icon}>⚙️</span>
-            <span style={s.label}>Admin</span>
-          </button>
-        )}
+        {/* Paramètres */}
+        <button style={s.btn} onClick={() => setShowSettings(true)}>
+          <span style={s.icon}>⚙️</span>
+          <span style={s.label}>{t('nav.settings')}</span>
+        </button>
       </div>
     </>
   );

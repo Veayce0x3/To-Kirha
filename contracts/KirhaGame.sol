@@ -159,6 +159,51 @@ contract KirhaGame is Ownable, ReentrancyGuard {
         emit CityDeleted(cityId);
     }
 
+    /** @notice Remet à zéro ressources + $KIRHA + pépites d'une ville (garde NFT, métiers, pseudo). */
+    function adminResetCity(uint256 cityId) external onlyOwner {
+        for (uint256 i = 1; i <= 50; i++) {
+            cityResources[cityId][i] = 0;
+        }
+        cityKirha[cityId]   = 0;
+        cityPepites[cityId] = 0;
+    }
+
+    /** @notice Donne du $KIRHA in-game à une ville. */
+    function adminGiveKirha(uint256 cityId, uint256 amount) external onlyOwner {
+        cityKirha[cityId] += amount;
+    }
+
+    /** @notice Donne des pépites d'or à une ville. */
+    function adminGivePepites(uint256 cityId, uint256 amount) external onlyOwner {
+        cityPepites[cityId] += amount;
+    }
+
+    /** @notice Donne le VIP à une ville pour un nombre de jours supplémentaires. */
+    function adminGiveVip(uint256 cityId, uint64 daysCount) external onlyOwner {
+        uint64 base = vipExpiry[cityId] > uint64(block.timestamp) ? vipExpiry[cityId] : uint64(block.timestamp);
+        vipExpiry[cityId] = base + daysCount * 1 days;
+    }
+
+    /** @notice Donne une ressource à une ville (amount = quantité entière, scalée ×1e4 en interne). */
+    function adminGiveResource(uint256 cityId, uint256 resourceId, uint256 amount) external onlyOwner {
+        require(resourceId >= 1 && resourceId <= 50, "KirhaGame: invalid resource id");
+        cityResources[cityId][resourceId] += amount * 1e4;
+    }
+
+    /** @notice Modifie le niveau et l'XP d'un métier pour une ville. */
+    function adminSetMetierXp(
+        uint256 cityId,
+        uint8   metierId,
+        uint32  level,
+        uint32  xp,
+        uint32  xpTotal
+    ) external onlyOwner {
+        require(metierId < 5, "KirhaGame: invalid metier id");
+        cityMetierLevel[cityId][metierId]   = level;
+        cityMetierXp[cityId][metierId]      = xp;
+        cityMetierXpTotal[cityId][metierId] = xpTotal;
+    }
+
     // --------------------------------------------------------
     // Enregistrement — crée la ville NFT
     // --------------------------------------------------------

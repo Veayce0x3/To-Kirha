@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAccount, useDisconnect, usePublicClient } from 'wagmi';
+import { useAccount, usePublicClient } from 'wagmi';
 import { ConnectPage }  from './pages/ConnectPage';
 import { HomePage }     from './pages/HomePage';
 import { RecoltePage }  from './pages/RecoltePage';
@@ -42,18 +42,9 @@ class ErrorBoundary extends React.Component<
 }
 
 function VersionGuard() {
-  const { disconnect } = useDisconnect();
   useEffect(() => {
-    const saved = localStorage.getItem('kirha_version');
-    if (saved !== APP_VERSION) {
-      localStorage.removeItem('to-kirha-game');
-      // Reset city ID so the player gets #1 (sequential, no UUID)
-      localStorage.removeItem('kirha_city_id');
-      localStorage.removeItem('kirha_next_city_id');
-      localStorage.setItem('kirha_version', APP_VERSION);
-      disconnect();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Juste marquer la version — ne plus effacer le localStorage
+    localStorage.setItem('kirha_version', APP_VERSION);
   }, []);
   return null;
 }
@@ -93,12 +84,15 @@ function VilleIdGuard() {
           address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
           functionName: 'playerCityId', args: [address],
         }) as bigint;
-        if (cityId > 0n) setVilleId(cityId.toString());
-        const pseudo = await publicClient.readContract({
-          address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
-          functionName: 'playerPseudo', args: [address],
-        }) as string;
-        if (pseudo) setPseudo(pseudo);
+        if (cityId > 0n) {
+          setVilleId(cityId.toString());
+          // Lire le pseudo via cityPseudo (lié au NFT) plutôt que playerPseudo (lié à l'adresse)
+          const pseudo = await publicClient.readContract({
+            address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
+            functionName: 'cityPseudo', args: [cityId],
+          }) as string;
+          if (pseudo) setPseudo(pseudo);
+        }
       } catch {}
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,6 +102,9 @@ function VilleIdGuard() {
 
 function Guard({ children }: { children: React.ReactNode }) {
   const { isConnected } = useAccount();
+  const villeId = useGameStore(s => s.villeId);
+  // Connecté mais pas encore enregistré → retour à ConnectPage pour inscription
+  if (isConnected && (!villeId || villeId === '0')) return <Navigate to="/" replace />;
   return isConnected ? <>{children}</> : <Navigate to="/" replace />;
 }
 

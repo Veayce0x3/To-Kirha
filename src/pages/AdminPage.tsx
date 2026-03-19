@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAccount, usePublicClient, useWriteContract } from 'wagmi';
-import { formatEther } from 'viem';
+import { formatEther, parseEther } from 'viem';
 import { KIRHA_GAME_ADDRESS, KIRHA_CITY_ADDRESS, KIRHA_MARKET_ADDRESS } from '../contracts/addresses';
 import KirhaGameAbi   from '../contracts/abis/KirhaGame.json';
 import KirhaCityAbi   from '../contracts/abis/KirhaCity.json';
@@ -44,6 +44,20 @@ export function AdminPage() {
   // Delete confirmation state
   const [deleteStep, setDeleteStep]   = useState<Record<number, number>>({});
   const [deleteInput, setDeleteInput] = useState<Record<number, string>>({});
+
+  // Reset confirmation state
+  const [resetStep, setResetStep] = useState<Record<number, number>>({});
+
+  // Give panel state per city
+  const [showGive, setShowGive] = useState<Record<number, boolean>>({});
+  const [giveKirha, setGiveKirha]       = useState<Record<number, string>>({});
+  const [givePepites, setGivePepites]   = useState<Record<number, string>>({});
+  const [giveVipDays, setGiveVipDays]   = useState<Record<number, string>>({});
+  const [giveResId, setGiveResId]       = useState<Record<number, string>>({});
+  const [giveResAmt, setGiveResAmt]     = useState<Record<number, string>>({});
+  const [giveXpMetier, setGiveXpMetier] = useState<Record<number, string>>({});
+  const [giveXpAmt, setGiveXpAmt]       = useState<Record<number, string>>({});
+  const [giveStatus, setGiveStatus]     = useState<Record<string, 'idle'|'pending'|'ok'|'err'>>({});
 
   const isAdmin = !!address && ADMIN_WALLETS.includes(address.toLowerCase());
 
@@ -132,6 +146,18 @@ export function AdminPage() {
       setExpandedCity(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur adminDeleteCity');
+    }
+  }
+
+  async function adminCall(cityId: number, key: string, fn: string, args: unknown[]) {
+    setGiveStatus(prev => ({ ...prev, [key]: 'pending' }));
+    try {
+      await writeContractAsync({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: fn, args: args as never[] });
+      setGiveStatus(prev => ({ ...prev, [key]: 'ok' }));
+      setTimeout(() => setGiveStatus(prev => ({ ...prev, [key]: 'idle' })), 2500);
+    } catch (e) {
+      setError(e instanceof Error ? e.message.slice(0, 80) : 'Erreur');
+      setGiveStatus(prev => ({ ...prev, [key]: 'err' }));
     }
   }
 
@@ -261,15 +287,175 @@ export function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Actions admin : Ban */}
-                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      {/* ── ACTIONS ADMIN ─────────────────── */}
+                      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                         <p style={{ color:'#9a6080', fontSize:10, margin:0, fontWeight:700 }}>ACTIONS ADMIN</p>
+
+                        {/* Ban / Débannir */}
                         <button
                           style={{ padding:'6px 12px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:'none', background: p.isBanned ? 'rgba(106,191,68,0.2)' : 'rgba(196,48,112,0.2)', color: p.isBanned ? '#6abf44' : '#ff6b9d', alignSelf:'flex-start' }}
                           onClick={() => toggleBan(p.cityId, p.isBanned)}
                         >
                           {p.isBanned ? '✅ Débannir' : '🚫 Bannir'}
                         </button>
+
+                        {/* Reset ville */}
+                        {(resetStep[p.cityId] ?? 0) === 0 && (
+                          <button
+                            style={{ padding:'6px 12px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:'1px solid rgba(255,165,0,0.4)', background:'transparent', color:'#ffa500', alignSelf:'flex-start' }}
+                            onClick={() => setResetStep(prev => ({ ...prev, [p.cityId]: 1 }))}
+                          >
+                            🔄 Reset ville
+                          </button>
+                        )}
+                        {(resetStep[p.cityId] ?? 0) === 1 && (
+                          <div style={{ background:'rgba(255,165,0,0.08)', border:'1px solid rgba(255,165,0,0.3)', borderRadius:10, padding:'10px 12px', display:'flex', flexDirection:'column', gap:8 }}>
+                            <p style={{ color:'#ffa500', fontSize:11, fontWeight:700, margin:0 }}>⚠️ Remet à zéro ressources, $KIRHA et pépites. NFT, métiers et pseudo conservés.</p>
+                            <div style={{ display:'flex', gap:8 }}>
+                              <button
+                                style={{ padding:'5px 10px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:'none', background:'rgba(255,165,0,0.3)', color:'#ffa500' }}
+                                onClick={async () => { await adminCall(p.cityId, `reset_${p.cityId}`, 'adminResetCity', [BigInt(p.cityId)]); setResetStep(prev => ({ ...prev, [p.cityId]: 0 })); }}
+                              >
+                                {giveStatus[`reset_${p.cityId}`] === 'pending' ? '⏳…' : 'Confirmer le reset'}
+                              </button>
+                              <button
+                                style={{ padding:'5px 10px', borderRadius:8, fontSize:11, cursor:'pointer', border:'none', background:'rgba(255,255,255,0.05)', color:'#7a4060' }}
+                                onClick={() => setResetStep(prev => ({ ...prev, [p.cityId]: 0 }))}
+                              >Annuler</button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Donner (panneau dépliant) */}
+                        <button
+                          style={{ padding:'6px 12px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:'1px solid rgba(106,191,68,0.4)', background:'transparent', color:'#6abf44', alignSelf:'flex-start' }}
+                          onClick={() => setShowGive(prev => ({ ...prev, [p.cityId]: !prev[p.cityId] }))}
+                        >
+                          🎁 {showGive[p.cityId] ? 'Fermer donner' : 'Donner…'}
+                        </button>
+
+                        {showGive[p.cityId] && (
+                          <div style={{ background:'rgba(106,191,68,0.05)', border:'1px solid rgba(106,191,68,0.2)', borderRadius:10, padding:'10px 12px', display:'flex', flexDirection:'column', gap:10 }}>
+
+                            {/* $KIRHA */}
+                            <div>
+                              <p style={{ color:'#6abf44', fontSize:9, fontWeight:700, margin:'0 0 4px' }}>💠 DONNER $KIRHA IN-GAME</p>
+                              <div style={{ display:'flex', gap:6 }}>
+                                <input type="number" min="0" placeholder="Montant (ex: 10)"
+                                  value={giveKirha[p.cityId] ?? ''}
+                                  onChange={e => setGiveKirha(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={inputStyle}
+                                />
+                                <button style={giveBtnStyle}
+                                  disabled={!giveKirha[p.cityId]}
+                                  onClick={() => adminCall(p.cityId, `kirha_${p.cityId}`, 'adminGiveKirha', [BigInt(p.cityId), parseEther(giveKirha[p.cityId] || '0')])}
+                                >
+                                  {giveStatus[`kirha_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`kirha_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Pépites */}
+                            <div>
+                              <p style={{ color:'#f9a825', fontSize:9, fontWeight:700, margin:'0 0 4px' }}>✨ DONNER PÉPITES D'OR</p>
+                              <div style={{ display:'flex', gap:6 }}>
+                                <input type="number" min="0" placeholder="Quantité (ex: 100)"
+                                  value={givePepites[p.cityId] ?? ''}
+                                  onChange={e => setGivePepites(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={inputStyle}
+                                />
+                                <button style={giveBtnStyle}
+                                  disabled={!givePepites[p.cityId]}
+                                  onClick={() => adminCall(p.cityId, `pep_${p.cityId}`, 'adminGivePepites', [BigInt(p.cityId), BigInt(givePepites[p.cityId] || '0')])}
+                                >
+                                  {giveStatus[`pep_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`pep_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* VIP */}
+                            <div>
+                              <p style={{ color:'#ab47bc', fontSize:9, fontWeight:700, margin:'0 0 4px' }}>👑 DONNER VIP</p>
+                              <div style={{ display:'flex', gap:6 }}>
+                                <select
+                                  value={giveVipDays[p.cityId] ?? '7'}
+                                  onChange={e => setGiveVipDays(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={{ ...inputStyle, flex:'none', width:100 }}
+                                >
+                                  <option value="7">7 jours</option>
+                                  <option value="30">30 jours</option>
+                                  <option value="90">90 jours</option>
+                                </select>
+                                <button style={giveBtnStyle}
+                                  onClick={() => adminCall(p.cityId, `vip_${p.cityId}`, 'adminGiveVip', [BigInt(p.cityId), BigInt(giveVipDays[p.cityId] ?? '7')])}
+                                >
+                                  {giveStatus[`vip_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`vip_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Ressource */}
+                            <div>
+                              <p style={{ color:'#29b6f6', fontSize:9, fontWeight:700, margin:'0 0 4px' }}>📦 DONNER RESSOURCE</p>
+                              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                                <select
+                                  value={giveResId[p.cityId] ?? '1'}
+                                  onChange={e => setGiveResId(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={{ ...inputStyle, flex:'none', width:100, fontSize:9 }}
+                                >
+                                  {Array.from({length:50}, (_, i) => i+1).map(id => (
+                                    <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')}</option>
+                                  ))}
+                                </select>
+                                <input type="number" min="1" placeholder="Qté"
+                                  value={giveResAmt[p.cityId] ?? ''}
+                                  onChange={e => setGiveResAmt(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={{ ...inputStyle, width:60 }}
+                                />
+                                <button style={giveBtnStyle}
+                                  disabled={!giveResAmt[p.cityId]}
+                                  onClick={() => adminCall(p.cityId, `res_${p.cityId}`, 'adminGiveResource', [BigInt(p.cityId), BigInt(giveResId[p.cityId] ?? '1'), BigInt(giveResAmt[p.cityId] || '0')])}
+                                >
+                                  {giveStatus[`res_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`res_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* XP */}
+                            <div>
+                              <p style={{ color:'#7a6cb0', fontSize:9, fontWeight:700, margin:'0 0 4px' }}>⭐ DONNER XP MÉTIER</p>
+                              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                                <select
+                                  value={giveXpMetier[p.cityId] ?? '0'}
+                                  onChange={e => setGiveXpMetier(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={{ ...inputStyle, flex:'none', width:100 }}
+                                >
+                                  {METIER_NAMES.map((name, i) => (
+                                    <option key={i} value={i}>{name}</option>
+                                  ))}
+                                </select>
+                                <input type="number" min="1" placeholder="XP à ajouter"
+                                  value={giveXpAmt[p.cityId] ?? ''}
+                                  onChange={e => setGiveXpAmt(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={{ ...inputStyle, width:90 }}
+                                />
+                                <button style={giveBtnStyle}
+                                  disabled={!giveXpAmt[p.cityId]}
+                                  onClick={() => {
+                                    const mid = parseInt(giveXpMetier[p.cityId] ?? '0');
+                                    const xpAdd = parseInt(giveXpAmt[p.cityId] || '0');
+                                    const curXp = (p.xp[mid] ?? 0) + xpAdd;
+                                    const curXpTotal = (p.xpTotal[mid] ?? 0) + xpAdd;
+                                    adminCall(p.cityId, `xp_${p.cityId}`, 'adminSetMetierXp', [BigInt(p.cityId), mid, p.levels[mid] ?? 1, curXp, curXpTotal]);
+                                  }}
+                                >
+                                  {giveStatus[`xp_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`xp_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
+                                </button>
+                              </div>
+                            </div>
+
+                          </div>
+                        )}
 
                         {/* Suppression en 3 étapes */}
                         {step === 0 && (
@@ -360,3 +546,13 @@ export function AdminPage() {
     </div>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  flex: 1, padding:'5px 8px', borderRadius:6, border:'1px solid rgba(106,191,68,0.3)',
+  background:'rgba(0,0,0,0.4)', color:'#e0c8d8', fontSize:11, fontFamily:'monospace',
+  minWidth: 0,
+};
+const giveBtnStyle: React.CSSProperties = {
+  padding:'5px 10px', borderRadius:6, fontSize:10, fontWeight:700, cursor:'pointer',
+  border:'none', background:'rgba(106,191,68,0.25)', color:'#6abf44', flexShrink:0,
+};

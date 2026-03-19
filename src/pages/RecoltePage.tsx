@@ -215,9 +215,14 @@ function MetierSelector({ onSelect }: { onSelect: (id: MetierId) => void }) {
                   <span style={{ ...s.levelBadge, borderColor: cfg.color, color: cfg.color }}>
                     {t('recolte.level')} {p.niveau}
                   </span>
-                  <div style={{ flex: 1, height: 4, background: 'rgba(212,100,138,0.1)', borderRadius: 2, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: cfg.color, borderRadius: 2, transition: 'width 0.3s' }} />
+                  {/* Barre XP distincte (bleu/violet) */}
+                  <span style={{ color:'#7a6cb0', fontSize:'8px', fontWeight:700, flexShrink:0 }}>XP</span>
+                  <div style={{ flex: 1, height: 4, background: 'rgba(122,108,176,0.15)', borderRadius: 2, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg,#7a6cb0,#5b3fa0)', borderRadius: 2, transition: 'width 0.3s' }} />
                   </div>
+                  <span style={{ color:'#7a6cb0', fontSize:'8px', fontFamily:'monospace', fontWeight:600, flexShrink:0 }}>
+                    {p.xp}/{xpRequis(p.niveau)}
+                  </span>
                   {maxSecs > 0 && (
                     <span style={{ color: cfg.color, fontSize: '9px', fontFamily: 'monospace', fontWeight: 700 }}>
                       {formatTimer(maxSecs)}

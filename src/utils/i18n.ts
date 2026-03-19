@@ -11,6 +11,7 @@ const TRANSLATIONS = {
     // --- Navigation / Global ---
     'nav.home':          'Kirha-City',
     'nav.inventory':     'Inventaire',
+    'nav.settings':      'Paramètres',
     'nav.back_home':     '← Accueil',
     'nav.back':          '← Retour',
 
@@ -194,6 +195,7 @@ const TRANSLATIONS = {
     // --- Navigation / Global ---
     'nav.home':          'Kirha-City',
     'nav.inventory':     'Inventory',
+    'nav.settings':      'Settings',
     'nav.back_home':     '← Home',
     'nav.back':          '← Back',
 

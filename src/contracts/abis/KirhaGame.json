@@ -270,6 +270,67 @@
     "type": "function"
   },
   {
+    "inputs": [{ "internalType": "uint256", "name": "cityId", "type": "uint256" }],
+    "name": "adminResetCity",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId", "type": "uint256" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "adminGiveKirha",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId", "type": "uint256" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "adminGivePepites",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId",    "type": "uint256" },
+      { "internalType": "uint64",  "name": "daysCount", "type": "uint64"  }
+    ],
+    "name": "adminGiveVip",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId",     "type": "uint256" },
+      { "internalType": "uint256", "name": "resourceId", "type": "uint256" },
+      { "internalType": "uint256", "name": "amount",     "type": "uint256" }
+    ],
+    "name": "adminGiveResource",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId",   "type": "uint256" },
+      { "internalType": "uint8",   "name": "metierId", "type": "uint8"   },
+      { "internalType": "uint32",  "name": "level",    "type": "uint32"  },
+      { "internalType": "uint32",  "name": "xp",       "type": "uint32"  },
+      { "internalType": "uint32",  "name": "xpTotal",  "type": "uint32"  }
+    ],
+    "name": "adminSetMetierXp",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       { "internalType": "uint256", "name": "cityId",   "type": "uint256" },
       { "internalType": "uint8",   "name": "packType", "type": "uint8"   }
