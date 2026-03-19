@@ -3,19 +3,20 @@
 ## Description
 Jeu Web3 thème sakura inspiré de Dofus / Sunflower Land.
 Web app React accessible navigateur mobile et PC, hébergée sur GitHub Pages.
-**Architecture City NFT (Option B)** : chaque joueur possède un NFT ERC-721 "ville" qui contient toutes ses données (ressources, niveaux, $KIRHA in-game). Transférer le NFT transfère tout.
+**Architecture City NFT** : chaque joueur possède un NFT ERC-721 "ville" qui contient toutes ses données (ressources, niveaux, $KIRHA in-game). Transférer le NFT transfère tout.
 Gameplay 100% off-chain (localStorage), sauvegarde on-chain via `batchSave`.
 **Langue par défaut : Français. Multilingue FR/EN — sélecteur sur ConnectPage.**
 
 ---
 
 ## Stack technique
-- **Frontend** : React + Vite, TypeScript, Zustand v7 (persist localStorage), React Router (HashRouter)
+- **Frontend** : React + Vite, TypeScript, Zustand v8 (persist localStorage), React Router (HashRouter)
 - **Wallet** : Wagmi v2 + Viem, RainbowKit
 - **Blockchain** : Base Sepolia (testnet) / Base Mainnet (futur)
 - **Smart contracts** : Hardhat + Solidity 0.8.24 + OpenZeppelin 5.x + `viaIR: true` (stack too deep fix)
 - **Hébergement** : GitHub Pages — https://veayce0x3.github.io/To-Kirha/
-- **CI/CD** : GitHub Actions (push main → build → deploy gh-pages automatique)
+- **Relayer** : Cloudflare Workers — https://kirha-relayer.tokirha.workers.dev
+- **CI/CD** : GitHub Actions (push main → build → deploy gh-pages + worker automatique)
 
 ---
 
@@ -23,6 +24,7 @@ Gameplay 100% off-chain (localStorage), sauvegarde on-chain via `batchSave`.
 - **Petits fixes / UI** : modifier + `git add/commit/push` → GitHub Actions déploie automatiquement en 2-3 min. **Pas besoin de lancer le serveur local.**
 - **Gros changements** (nouveaux contrats, refonte) : tester en local d'abord (`npm run dev`), puis push.
 - **Serveur local** : `source ~/.nvm/nvm.sh && nvm use 20 && npm run dev`
+- **Worker Cloudflare** : déployé automatiquement par GitHub Actions (job `deploy-worker`). Jamais besoin de déployer manuellement.
 
 ---
 
@@ -57,11 +59,12 @@ ConnectPage (/)
   └── HomePage (/home)
         ├── Récolte     (/recolte)    → Sélecteur métier → Zone ressources + timer
         ├── HDV         (/hdv)        → Vente PNJ + HDV on-chain KirhaMarket
-        ├── Banque      (/banque)     → Retrait/Dépôt $KIRHA + Sauvegarde on-chain
+        ├── Banque      (/banque)     → Retrait/Dépôt $KIRHA + Pépites + VIP + Sauvegarde on-chain
         ├── Maison      (/maison)     → Inventaire + Stats + Perso
         └── Craft       (/craft)      → Crafting (WIP)
 
-/admin  → AdminPage (wallet whitelist uniquement)
+/admin  → AdminPage (wallet whitelist uniquement, token requis)
+/temple → TemplePage (quêtes journalières)
 ```
 
 ---
@@ -69,15 +72,17 @@ ConnectPage (/)
 ## Contrats déployés — Base Sepolia (chainId 84532)
 
 **Déployés le 19 mars 2026 — wallet `0x5A9d55c76c38eDe9b8B34ED6e7F35578cE919b0C`**
-**Version : v2 City NFT (architecture complète cityId-indexée)**
+**Version v4 — avec admin give tools + VIP + Pépites + authorizeRelayer**
 
 | Contrat         | Adresse                                      |
 |-----------------|----------------------------------------------|
-| KirhaToken      | `0xA3FA9725B70735F8d102CaF3A6CE1eD3d7dFD9d3` |
-| KirhaResources  | `0x92395a2D56E5Ae7f406009c91a962A9840d159EE` |
-| KirhaCity       | `0x5e1E573Ca5b503643b22f59a4D2d93a815Fa4d4E` |
-| KirhaGame       | `0xDD953d02f953c166C100FA2A9b9d1cdAf51Ff846` |
-| KirhaMarket     | `0xf90F7BDF45757a1bd9a3C599dFdCbF987c1E651a` |
+| KirhaToken      | `0x5D6D96bE636A20e4AB811041bc339438AeA24CC4` |
+| KirhaResources  | `0xd637F65F6f7DCA5D17edb1B6c99a8E56097084aD` |
+| KirhaCity       | `0x65545059D2E87cae0737237E43dfAf835bf08b83` |
+| KirhaGame       | `0x898bf53dC0E8DcE3A9De5fD48F996328BF651C5f` |
+| KirhaMarket     | `0xe7B125dEf1b83E624BA7383Af0D286DdA428122C` |
+
+**Relayer wallet** : `0xe1b9eC5dB0cB6F13cF5A2357304c092c8ed4c683` (financé en ETH Sepolia)
 
 Permissions configurées :
 - KirhaCity → `setGame(KirhaGame)`
@@ -88,7 +93,32 @@ Permissions configurées :
 
 ---
 
-## Architecture City NFT (Option B) — Principe fondamental
+## Cloudflare Workers Relayer
+
+**URL** : `https://kirha-relayer.tokirha.workers.dev`
+**KV namespace** (rate limiting) : `c5c553e7009b4c9b8e7dcef8a545e1c6`
+
+### Routes
+| Route | Fonction | Rate limit |
+|---|---|---|
+| `POST /save` | `batchSave` on-chain | 20/heure par cityId |
+| `POST /market/list` | `listResource` on-chain | 30/heure par cityId |
+| `POST /market/buy` | `buyResource` on-chain | 50/heure par cityId |
+| `POST /market/cancel` | `cancelListing` on-chain | — |
+| `POST /admin/*` | Actions admin (ADMIN_PRIVATE_KEY) | Header X-Admin-Token requis |
+
+### Secrets Cloudflare (configurés — ne pas retoucher)
+- `ADMIN_PRIVATE_KEY` : clé privée du wallet déployeur (signe les txs admin)
+- `ADMIN_TOKEN` : token bearer pour authentifier la page admin
+- `RELAYER_PRIVATE_KEY` : clé privée du wallet relayer
+
+### Routes admin
+`/admin/reset-city`, `/admin/give-kirha`, `/admin/give-pepites`, `/admin/give-vip`,
+`/admin/give-resource`, `/admin/set-metier-xp`, `/admin/delete-city`, `/admin/set-ban`
+
+---
+
+## Architecture City NFT — Principe fondamental
 
 Toutes les données de jeu sont **indexées par cityId**, jamais par adresse wallet.
 
@@ -96,90 +126,99 @@ Toutes les données de jeu sont **indexées par cityId**, jamais par adresse wal
 // KirhaGame.sol
 mapping(uint256 => mapping(uint256 => uint256)) public cityResources; // cityId→resourceId→montant (×1e4)
 mapping(uint256 => uint256)                     public cityKirha;     // $KIRHA in-game (wei)
+mapping(uint256 => uint256)                     public cityPepites;   // Pépites d'or
+mapping(uint256 => uint64)                      public vipExpiry;     // timestamp UNIX
 mapping(uint256 => mapping(uint8 => uint32))    public cityMetierLevel;
 mapping(uint256 => string)                      public cityPseudo;
 
 // KirhaCity.sol (ERC-721)
-mapping(address => uint256) public ownerToCityId;  // reverse mapping — mis à jour sur chaque transfert
+mapping(address => uint256) public ownerToCityId;
 ```
-
-**Conséquence** : transférer le NFT KirhaCity transfère automatiquement ressources, niveaux, $KIRHA in-game et pseudo — car tout est stocké par cityId dans KirhaGame.
 
 **`playerCityId(address)`** dans KirhaGame = `cityNft.ownerToCityId(player)` — la source de vérité.
 
 ### villeId — règle absolue
 - **Toujours lu depuis la blockchain** via `playerCityId(address)` après connexion
 - **Jamais initialisé depuis localStorage ou un compteur local**
-- Store Zustand : `villeId: ''` par défaut, `setVilleId(cityId.toString())` appelé dans ConnectPage après 1.5s de délai RPC
-- Tout hook utilisant villeId vérifie `villeId && villeId !== '0'` avant d'appeler les contrats
+- Store Zustand : `villeId: ''` par défaut, `setVilleId(cityId.toString())` appelé dans VilleIdGuard/ConnectPage
 
 ---
 
 ## Architecture des fichiers (état actuel — 19 mars 2026)
 ```
 src/
-├── App.tsx                  # Routes + Guards (VersionGuard v0.5.0, BeforeUnloadGuard)
-│                            # Routes: /, /home, /recolte, /hdv, /banque, /maison, /craft, /admin
+├── App.tsx                  # Routes + Guards (VersionGuard v0.6.0, VilleIdGuard avec chain sync complet)
+│                            # Routes: /, /home, /recolte, /hdv, /banque, /maison, /craft, /admin, /temple
 ├── main.tsx                 # WagmiProvider + RainbowKitProvider + QueryClientProvider
 ├── index.css                # Desktop max-width 820px, responsive slots-grid
-├── assets/
-│   ├── bucheron.ts          # KirhaTokenImg
-│   └── personnage/index.ts  # resolveSprite()
 ├── components/
-│   ├── BottomMenu.tsx       # Barre permanente : Accueil / Inventaire (modal 2 onglets) / 💾 Sauvegarder
+│   ├── BottomMenu.tsx       # 3 boutons : Accueil / Inventaire (modal 2 onglets) / 💾 Sauvegarder
+│   │                        # Indicateur actif sur le bouton Home
 │   ├── Character.tsx        # Personnage 6 calques CSS, 4 directions
 │   └── SettingsModal.tsx    # Paramètres : langue, save, transfert ville NFT, déconnexion
-├── config/wagmi.ts
+│                            # Bouton "⚙️ Page Admin" visible uniquement wallet whitelist
 ├── contracts/
 │   ├── abis/
 │   │   ├── KirhaGame.json   # batchSave / withdrawKirha / depositKirha / getCityResources
-│   │   │                    # getCityMetiers / getCityPseudos / playerCityId / playerCount
+│   │   │                    # getCityMetiers / playerCityId / cityKirha / cityPepites / vipExpiry
+│   │   │                    # isRelayerFor / adminResetCity / adminGiveKirha / adminGivePepites
+│   │   │                    # adminGiveVip / adminGiveResource / adminSetMetierXp / adminDeleteCity
 │   │   ├── KirhaCity.json   # ownerOf / ownerToCityId / mintCity / safeTransferFrom
 │   │   └── KirhaMarket.json # listResource / buyResource / cancelListing / getActiveListings
-│   │                        # (listingId contient sellerCityId, pas d'escrow ERC-1155)
-│   └── addresses.ts         # 5 contrats déployés (Token, Resources, City, Game, Market)
+│   └── addresses.ts         # 5 contrats + RELAYER_ADDRESS
 ├── data/
 │   ├── metiers.ts           # 5 métiers × 10 ressources = 50 IDs | TEST_MODE=true → 2s
 │   ├── resources.ts         # Enum ResourceId (1-50)
 │   └── vetements.ts
 ├── hooks/
 │   ├── useHarvest.ts        # Timer, planterRessource(), collecterEtRelancer() — PAS d'auto-collect
-│   ├── useSave.ts           # batchSave on-chain (ressources ×1e4 + 5 métiers + kirhaEarned)
+│   ├── useSave.ts           # batchSave on-chain via relayer (fallback wallet direct)
 │   ├── useWithdraw.ts       # withdrawKirha(cityId, amount)
-│   ├── useDeposit.ts        # depositKirha(cityId, amount) — KirhaGame burn ERC-20, crédite cityKirha
-│   └── useMarket.ts         # HDV : cityId pour toutes ops, getCityPseudos batch, pas d'approbation ERC-1155
+│   ├── useDeposit.ts        # depositKirha(cityId, amount)
+│   ├── useMarket.ts         # HDV on-chain via relayer (list/buy/cancel)
+│   └── useVip.ts            # buyPepites(packType) + buyVip(durationType) on-chain
 ├── pages/
 │   ├── ConnectPage.tsx      # Landing + pseudo on-chain + LangToggle + register/login flow
-│   ├── HomePage.tsx         # Map principale (5 cards) + pseudo + "Ville #X"
-│   ├── RecoltePage.tsx      # Sélecteur métier + Zone récolte (slots + timer)
-│   ├── HdvPage.tsx          # PNJ off-chain + On-chain (sellerPseudo affiché, plus d'approbation ERC-1155)
-│   ├── BanquePage.tsx       # Retrait $KIRHA / Dépôt / Sauvegarde / wallet_watchAsset
+│   ├── HomePage.tsx         # Map principale (5 cards) + badge VIP + modal info VIP
+│   ├── RecoltePage.tsx      # Sélecteur métier (barre XP bleue/violette) + Zone récolte
+│   ├── HdvPage.tsx          # PNJ off-chain + On-chain (sellerPseudo, relayer ops)
+│   ├── BanquePage.tsx       # Retrait/Dépôt $KIRHA + Pépites d'or (4 packs) + VIP (3 durées)
 │   ├── MaisonPage.tsx       # Inventaire + stats métiers + perso
 │   ├── CraftPage.tsx        # WIP
-│   └── AdminPage.tsx        # /admin — whitelist wallet, stats on-chain complètes
-├── store/gameStore.ts       # Zustand persist v7, villeId='', kirhaEarned, resetKirhaEarned, setVilleId
+│   ├── AdminPage.tsx        # /admin — token worker, actions give/reset sans wallet popup
+│   │                        # Alerte solde relayer (rouge si < 0.05 ETH)
+│   └── TemplePage.tsx       # Quêtes journalières
+├── store/gameStore.ts       # Zustand persist v8, soft migration (jamais full reset)
+│                            # setChainBalances / setMetierFromChain / addInventaireFromChain
 └── utils/
-    ├── grid.ts              # Pathfinding A* (gardé pour usage futur)
-    ├── tiled.ts             # Parser Tiled JSON (gardé pour usage futur)
     ├── i18n.ts              # Traductions FR/EN complètes (50 ressources + UI)
-    ├── resourceUtils.ts     # emojiByResourceId(), getNomRessource() — SOURCE UNIQUE, ne pas dupliquer
-    └── cityId.ts            # (obsolète — plus utilisé, villeId vient du on-chain)
+    ├── resourceUtils.ts     # emojiByResourceId(), getNomRessource() — SOURCE UNIQUE
+    ├── grid.ts              # A* pathfinding (inactif, gardé pour usage futur)
+    └── tiled.ts             # Parser Tiled JSON (inactif, gardé pour usage futur)
 
 contracts/
 ├── KirhaToken.sol           # ERC-20 $KIRHA, mintable par KirhaGame + KirhaMarket
-├── KirhaResources.sol       # ERC-1155, 50 IDs ressources (utilisé pour opérations mais non transféré en HDV)
+├── KirhaResources.sol       # ERC-1155, 50 IDs ressources
 ├── KirhaCity.sol            # ERC-721 city NFT — ownerToCityId updated dans _update() override
 ├── KirhaGame.sol            # batchSave + withdrawKirha + depositKirha + registerPseudo
-│                            # getCityResources / getCityMetiers / getCityPseudos / playerCityId
-│                            # operator fns: operatorDeductResource, operatorAddKirha, etc.
+│                            # buyPepites (4 packs) + buyVip (3 durées) + isVip()
+│                            # authorizeRelayer + isRelayerFor (session key gasless)
+│                            # adminGiveKirha/Pepites/Vip/Resource + adminSetMetierXp + adminResetCity
 │                            # ECDSA désactivé sur testnet (à réactiver avant mainnet)
-└── KirhaMarket.sol          # HDV city-to-city : escrow dans cityResources (pas ERC-1155)
-                             # taxe 50% (TAX_BPS = 5000), burn/mint $KIRHA
+└── KirhaMarket.sol          # HDV city-to-city, taxe 50% (VIP vendeur → 25%), burn/mint $KIRHA
+                             # onlyCityOwnerOrRelayer sur list/buy/cancel
+
+kirha-relayer/
+├── src/index.ts             # Cloudflare Worker — toutes les routes
+└── wrangler.toml            # Config worker, KV binding, ALLOWED_ORIGIN
 
 scripts/
 ├── deploy.ts                # Déploie 5 contrats, nonces séquentiels, gasPrice 15 gwei
 ├── flush-nonces.ts          # Purge mempool (20 gwei), scanner +30 nonces
 └── gen-character-assets.ts
+
+.github/workflows/
+└── deploy.yml               # 2 jobs : deploy-frontend (gh-pages) + deploy-worker (wrangler)
 ```
 
 ---
@@ -187,13 +226,14 @@ scripts/
 ## Routing
 ```
 /         → ConnectPage
-/home     → HomePage (Guard: wallet connecté requis)
+/home     → HomePage (Guard: wallet connecté + villeId requis)
 /recolte  → RecoltePage (Guard)
 /hdv      → HdvPage (Guard)
 /banque   → BanquePage (Guard)
 /maison   → MaisonPage (Guard)
 /craft    → CraftPage (Guard)
-/admin    → AdminPage (Guard + whitelist wallet 0x5A9d55c76c38eDe9b8B34ED6e7F35578cE919b0C)
+/admin    → AdminPage (Guard + whitelist wallet)
+/temple   → TemplePage (Guard)
 ```
 
 ---
@@ -201,75 +241,69 @@ scripts/
 ## Fonctionnalités implémentées (19 mars 2026)
 
 ### Connexion / Inscription (ConnectPage)
-- Deux boutons : "Se connecter" (mode login) / "Créer une ville" (mode register)
-- Login : lit `playerPseudo(address)` on-chain → si pseudo trouvé → lit `playerCityId` → `/home`
-- Register : formulaire pseudo → vérifie `isPseudoAvailable` → `registerPseudo(pseudo)` → mint ville NFT
-- Délai 1.5s après `waitForTransactionReceipt` pour laisser le RPC propager avant de lire `playerCityId`
-- **`villeId` source de vérité = on-chain uniquement** — jamais de localStorage
+- Login : lit `playerCityId(address)` + `cityPseudo(cityId)` on-chain → `/home`
+- Register : formulaire pseudo → `registerPseudo(pseudo)` → mint ville NFT
+- Délai 1.5s après tx receipt pour laisser le RPC propager
+
+### Chain sync au login (VilleIdGuard — App.tsx)
+À chaque connexion wallet, lit on-chain et merge dans Zustand (Math.max — jamais downgrade) :
+- `cityKirha` → `soldeKirha`
+- `cityPepites` → `pepitesOr`
+- `vipExpiry` → `vipExpiry`
+- `getCityMetiers` → niveaux + XP de chaque métier
+- `getCityResources` (50 IDs) → inventaire complet
 
 ### Système de récolte (useHarvest)
 - **Pas d'auto-collect** — le joueur collecte manuellement en cliquant le slot "Prêt"
-- Ressource "en main" : bouton Choisir → ressource sélectionnée → cliquer un slot pour planter
-- `collecterEtRelancer()` : collecte + redémarre immédiatement avec la même ressource
-- Badges métier : "X actifs" (couleur métier), "✓ Prêt" (vert), "Inactif" (rouge)
-- 5 slots débloqués par défaut, jusqu'à 20 slots par métier (coût ressources + $KIRHA)
+- `collecterEtRelancer()` : collecte + redémarre immédiatement
+- 5 slots débloqués par défaut, jusqu'à 20 par métier
 
-### Sauvegarde on-chain (useSave + batchSave)
-- Appelle `batchSave(cityId, resourceIds[], resourceAmts[], metierIds[], metierLevels[], metierXps[], metierXpTotals[], kirhaGained)` en une seule tx
-- **Ressources scaled ×1e4** : 1.4 unités → 14000 on-chain (pas de float en Solidity)
-- **Floor des quantités** : seule la partie entière est mintée (ex: 1.4 → mint 1, garde 0.4 en local)
-- `soustraireMintesPending` : soustrait uniquement les entiers mintés, conserve les fractions
-- `kirhaEarned` : $KIRHA accumulé via ventes PNJ depuis la dernière save → envoyé en wei via `parseEther`
-- Bouton 💾 dans BottomMenu : badge rouge = nb ressources en attente
+### Sauvegarde on-chain (useSave)
+- Via relayer Cloudflare (gasless) si session active, sinon wallet direct
+- `batchSave(cityId, resourceIds[], resourceAmts[], metierIds[], metierLevels[], metierXps[], metierXpTotals[], kirhaGained)`
+- Ressources scaled ×1e4, floor des quantités fractionnaires
 - Auto-save sur `beforeunload` si pending_mints.length > 0
 
-### Paramètres + Transfert de ville (SettingsModal)
-- Accessible via ⚙️ sur HomePage
-- **Transfert de ville NFT** : `safeTransferFrom(from, to, cityId)` sur KirhaCity
-  - Ressources, niveaux, $KIRHA in-game et pseudo suivent automatiquement
-  - Auto-déconnexion + retour `/` après succès
-- Sauvegarde manuelle, sélecteur langue, déconnexion
-
-### Banque (BanquePage)
-- **Retrait** : `withdrawKirha(cityId, amount)` → mint $KIRHA ERC-20 vers le joueur, déduit cityKirha
-- **Dépôt** : `depositKirha(cityId, amount)` → KirhaGame brûle les ERC-20, crédite cityKirha
-- **wallet_watchAsset** : bouton "+ Ajouter $KIRHA au wallet" (EIP-747, compatible Rabby)
-
 ### HDV on-chain (KirhaMarket + useMarket)
-- **Pas d'approbation ERC-1155** — tout passe par les fonctions operator de KirhaGame
-- Struct `Listing` : `sellerCityId` (pas d'adresse), `resourceId`, `quantity`, `pricePerUnit`
-- `getCityPseudos(cityIds[])` : batch getter — récupère les pseudos vendeurs en 1 appel
-- **Onglet PNJ** : vente off-chain à prix fixe
-- **Onglet On-chain** : 3 sous-onglets
-  - *Acheter* : listings triés prix, `sellerPseudo` affiché, filtre ressource
-  - *Vendre* : panier multi-ressources → 1 signature `batchListResources`
-  - *Mes ventes* : `cancelListing`, montant estimé affiché
-- `waitForTransactionReceipt` avant refetch (fix listing invisible)
-- Taxe 50% treasury affichée dans l'UI (TAX_BPS = 5000 — non modifiable sans redéploiement)
+- Toutes les ops passent par le relayer (list/buy/cancel)
+- Struct `Listing` : `sellerCityId`, `resourceId`, `quantity`, `pricePerUnit`
+- Taxe 50% → 25% si vendeur est VIP
+- `getCityPseudos(cityIds[])` : batch getter pseudos vendeurs
+
+### VIP + Pépites d'or (useVip + BanquePage)
+- **Pépites d'or** : monnaie premium achetée avec $KIRHA
+  - Pack Petit : 50 pépites — 5 $KIRHA
+  - Pack Moyen : 150 pépites — 13 $KIRHA (+10%)
+  - Pack Grand : 400 pépites — 32 $KIRHA (+25%)
+  - Pack Premium : 1000 pépites — 65 $KIRHA (+50%)
+- **VIP** : réduit la taxe HDV de 50% → 25%
+  - 7 jours : 100 pépites
+  - 30 jours : 300 pépites
+  - 90 jours : 700 pépites
+- Badge VIP dans HomePage, modal info avec date d'expiration
 
 ### Page Admin (/admin)
-- Whitelist : `['0x5A9d55c76c38eDe9b8B34ED6e7F35578cE919b0C']` — accès refusé sinon
-- Données lues on-chain sur bouton "Charger" (pas d'auto-fetch)
-- Stats globales : villes créées, joueurs, listings total, listings actifs
-- Liste joueurs expandable : cityId, pseudo, wallet, $KIRHA, ressources on-chain, niveaux métiers
-- Top 15 ressources globales (somme tous joueurs)
+- Accessible depuis SettingsModal (wallet whitelist uniquement)
+- **Token ADMIN_TOKEN** requis dans l'interface (stocké en sessionStorage)
+- **Toutes les actions passent par le worker Cloudflare** (ADMIN_PRIVATE_KEY) — aucun popup wallet
+- Actions : give kirha/pépites/VIP/ressource, set XP métier, reset city, ban/unban, delete city
+- Alerte rouge si solde relayer < 0.05 ETH
+- Stats on-chain : villes créées, joueurs, listings actifs
 
 ### Multilingue (i18n)
 - FR/EN complet : navigation, UI, 50 noms de ressources
 - `useT()` hook → `t(key)` + `lang`
-- `getNomRessource(id, lang)` dans `resourceUtils.ts`
-- Sélecteur 🇫🇷/🇬🇧 sur ConnectPage (avant connexion wallet) + SettingsModal
+- Sélecteur 🇫🇷/🇬🇧 sur ConnectPage + SettingsModal
 
 ---
 
-## Zustand Store v7 — Champs clés
-```typescript
-villeId:      ''        // Jamais depuis localStorage — setVilleId() appelé depuis ConnectPage
-kirhaEarned:  0         // $KIRHA ventes PNJ depuis dernière save — resetKirhaEarned() après batchSave
-pseudo:       null      // setPseudo() appelé depuis ConnectPage après on-chain read
-```
-
-**Migration v7** : reset complet + suppression des clés localStorage héritées (`kirha_city_id`, `kirha_next_city_id`, `kirha_pseudos`).
+## Zustand Store v8 — Règles
+- **Version bloquée à 8** — ne jamais incrémenter sans changement de structure
+- **Migration douce** : `migrate()` remplit les champs manquants avec valeurs par défaut, ne retourne JAMAIS `undefined`
+- Champs clés : `villeId`, `soldeKirha`, `pepitesOr`, `vipExpiry`, `pseudo`, `inventaire`, `metiers`, `kirhaEarned`
+- `setChainBalances(kirha, pepites, vipExpiry)` : merge Math.max à la connexion
+- `setMetierFromChain(metierId, niveau, xp, xpTotal)` : merge Math.max
+- `addInventaireFromChain(resourceId, qty)` : merge Math.max
 
 ---
 
@@ -291,49 +325,48 @@ pseudo:       null      // setPseudo() appelé depuis ConnectPage après on-chai
 ### CE QUI EST FAIT ET FONCTIONNEL ✅
 | Composant                        | Fichier                        | État             |
 |----------------------------------|--------------------------------|------------------|
-| Routing + Guards                 | App.tsx                        | ✅ v0.5.0        |
-| Architecture City NFT complète   | KirhaCity + KirhaGame          | ✅ Déployée      |
+| Routing + Guards + chain sync    | App.tsx                        | ✅ v0.6.0        |
+| Architecture City NFT complète   | KirhaCity + KirhaGame          | ✅ Déployée v4   |
 | Page connexion + pseudo on-chain | ConnectPage.tsx                | ✅ Complet       |
-| Fix villeId (source on-chain)    | ConnectPage + gameStore v7     | ✅ Complet       |
-| Map principale (5 cards)         | HomePage.tsx                   | ✅ Complet       |
+| Map principale (5 cards + VIP)   | HomePage.tsx                   | ✅ Complet       |
 | Récolte (sélecteur + zones)      | RecoltePage.tsx                | ✅ Complet       |
-| HDV PNJ + On-chain (cityId)      | HdvPage.tsx + useMarket        | ✅ Complet       |
-| Banque (retrait/dépôt/save)      | BanquePage.tsx                 | ✅ Complet       |
+| HDV PNJ + On-chain (relayer)     | HdvPage.tsx + useMarket        | ✅ Complet       |
+| Banque (retrait/dépôt/VIP/pép.)  | BanquePage.tsx + useVip        | ✅ Complet       |
 | Maison (inventaire+stats)        | MaisonPage.tsx                 | ✅ Complet       |
-| Menu bas + bouton 💾             | BottomMenu.tsx                 | ✅ Complet       |
+| Menu bas (3 boutons + actif)     | BottomMenu.tsx                 | ✅ Complet       |
 | SettingsModal + transfert ville  | SettingsModal.tsx              | ✅ Complet       |
 | Personnage (Maison)              | Character.tsx                  | ✅ 4 dirs        |
-| Hook sauvegarde (batchSave)      | hooks/useSave.ts               | ✅ On-chain      |
+| Hook sauvegarde (relayer)        | hooks/useSave.ts               | ✅ On-chain      |
 | Hook retrait                     | hooks/useWithdraw.ts           | ✅ On-chain      |
 | Hook dépôt                       | hooks/useDeposit.ts            | ✅ On-chain      |
-| Hook marché (cityId, pseudos)    | hooks/useMarket.ts             | ✅ Complet       |
+| Hook marché (relayer)            | hooks/useMarket.ts             | ✅ Complet       |
+| Hook VIP + Pépites               | hooks/useVip.ts                | ✅ Complet       |
 | Traductions FR/EN                | utils/i18n.ts                  | ✅ 50 res.       |
 | Emojis/noms ressources           | utils/resourceUtils.ts         | ✅ Centralisé    |
-| Store Zustand                    | store/gameStore.ts             | ✅ v7            |
-| Page Admin /admin                | AdminPage.tsx                  | ✅ Complet       |
-| CI/CD GitHub Pages               | .github/workflows/             | ✅ En place      |
+| Store Zustand                    | store/gameStore.ts             | ✅ v8 soft migr. |
+| Page Admin (worker, no popup)    | AdminPage.tsx                  | ✅ Complet       |
+| Relayer Cloudflare Workers       | kirha-relayer/                 | ✅ Déployé       |
+| CI/CD GitHub Pages + Worker      | .github/workflows/deploy.yml   | ✅ En place      |
 
 ### CE QUI MANQUE / EST EN ATTENTE ⏳
 | Élément                           | Priorité   | Notes                                        |
 |-----------------------------------|------------|----------------------------------------------|
 | TEST_MODE → false                 | Haute      | Avant production (timers réels ~30 min)      |
 | Vérification ECDSA on-chain       | Haute      | Avant mainnet (KirhaGame, nonce anti-replay) |
-| Session key (gasless)             | Moyenne    | Nécessite backend relayer (ERC-4337)         |
 | Sprites ressources pixel art      | Moyenne    | 50 assets à créer                            |
 | CraftPage (contenu)               | Basse      | À concevoir                                  |
 | MaisonPage — vêtements/bonus      | Basse      | Système équipement à brancher                |
 | Frames animation marche/récolte   | Basse      | Après gameplay complet (EN PAUSE)            |
-| Pépites d'or                      | Très basse | Monnaie premium, usage à définir             |
 
 ---
 
 ## Testnet v1 → Mainnet v2
-La v1 testnet est entièrement wipeble pour la v2 mainnet. Migration impliquera :
 - `TEST_MODE = false` dans `metiers.ts` (timers réels ~30 min)
 - ECDSA activé sur KirhaGame (nonce anti-replay)
 - Redéploiement complet sur Base Mainnet
 - Nouveau store Zustand (version++)
 - Clé déployeur dédiée mainnet
+- Nouveau relayer wallet financé en ETH Mainnet
 
 ---
 
@@ -347,12 +380,12 @@ Toujours utiliser Node 20 : `source ~/.nvm/nvm.sh && nvm use 20`
 Déploiement : `npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/deploy.js --network base-sepolia`
 
 ### viaIR: true — stack too deep
-`KirhaGame.batchSave` a trop de paramètres → `viaIR: true` dans `hardhat.config.ts` sous `settings`.
+`KirhaGame.batchSave` a trop de paramètres → `viaIR: true` dans `hardhat.config.ts`.
 Ne pas retirer cette option.
 
 ### Mempool Base Sepolia congestionné
 Le script `flush-nonces.ts` utilise **20 gwei** et scanne +30 nonces.
-Le script `deploy.ts` utilise des **nonces séquentiels** (variable `nonce++`) — ne JAMAIS appeler `getTransactionCount('pending')` plusieurs fois dans le même script.
+Le script `deploy.ts` utilise des **nonces séquentiels** — ne JAMAIS appeler `getTransactionCount('pending')` plusieurs fois dans le même script.
 
 ### writeFileSync dans deploy.ts
 Le path `__dirname` résout vers `dist-hardhat/scripts/` après compilation TS.
@@ -365,14 +398,11 @@ OpenZeppelin 5.x utilise l'opcode `mcopy`. `hardhat.config.ts` a `evmVersion: 'c
 `BigInt(0.4)` plante. Dans `useSave` : toujours `Math.floor(quantite)` et filtrer `>= 1` avant de construire les args. Les montants sont scaled ×1e4 : `BigInt(Math.round(quantite * 1e4))`.
 
 ### Race condition RPC après transaction
-Après `waitForTransactionReceipt`, attendre 1.5s avant de lire l'état on-chain (ex: `playerCityId`). Sans ce délai, le RPC retourne l'état avant propagation.
+Après `waitForTransactionReceipt`, attendre 1.5s avant de lire l'état on-chain. Sans ce délai, le RPC retourne l'état avant propagation.
 
-### Listing HDV invisible après transaction
-Toujours utiliser `waitForTransactionReceipt` avant `refetchListings()`.
-
-### Ville #0 / Ville #1 pour tous (BUG CORRIGÉ)
-Cause : `villeId` initialisé depuis localStorage counter.
-Fix : `villeId: ''` dans store, `setVilleId()` appelé uniquement depuis ConnectPage après lecture on-chain.
+### Zustand soft migration
+La fonction `migrate()` ne doit jamais retourner `undefined` — ça cause un full reset du store.
+Toujours retourner `{ ...state, champManquant: state.champManquant ?? valeurDefaut }`.
 
 ---
 
@@ -382,6 +412,15 @@ VITE_WALLETCONNECT_PROJECT_ID=   # UUID depuis cloud.walletconnect.com (aussi da
 DEPLOYER_PRIVATE_KEY=0x...       # Clé privée wallet déployeur — NE JAMAIS COMMITER
 BASESCAN_API_KEY=                # Optionnel, vérification contrats
 ```
+
+### GitHub Secrets (CI/CD)
+- `VITE_WALLETCONNECT_PROJECT_ID` : build frontend
+- `CLOUDFLARE_API_TOKEN` : deploy worker
+
+### Cloudflare Worker Secrets (configurés, ne pas retoucher)
+- `RELAYER_PRIVATE_KEY` : wallet relayer
+- `ADMIN_PRIVATE_KEY` : wallet déployeur (actions admin)
+- `ADMIN_TOKEN` : token bearer page admin
 
 ---
 
@@ -396,8 +435,8 @@ BASESCAN_API_KEY=                # Optionnel, vérification contrats
 - `resourceUtils.ts` est la **source unique** pour emojis et noms de ressources — ne jamais dupliquer
 - Le nom du jeu ($KIRHA, Pépites d'or) reste en français même en version EN
 - KirhaGame testnet : **ECDSA désactivé** — à réactiver avant mainnet avec nonce anti-replay
-- KirhaMarket : taxe **50% hardcodée** (TAX_BPS = 5000) — non modifiable sans redéploiement
-- **Workflow** : petits fixes → push direct sur main. Gros changements → local d'abord.
-- `.claude/` est dans `.gitignore` — ne jamais commiter les settings locaux Claude
+- KirhaMarket : taxe **50% hardcodée** (TAX_BPS = 5000) — VIP réduit à 25% pour le vendeur
+- **Worker Cloudflare** : déployé auto par CI — ne jamais déployer manuellement sauf urgence
+- **Zustand version = 8** — ne jamais incrémenter sans vrai changement de structure
 - `villeId` ne vient **jamais** du localStorage — toujours de `playerCityId(address)` on-chain
 - `cityId.ts` dans utils est obsolète — ne plus l'utiliser
