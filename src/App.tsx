@@ -8,6 +8,7 @@ import { HdvPage }      from './pages/HdvPage';
 import { BanquePage }   from './pages/BanquePage';
 import { MaisonPage }   from './pages/MaisonPage';
 import { CraftPage }    from './pages/CraftPage';
+import { AdminPage }    from './pages/AdminPage';
 import { BottomMenu }   from './components/BottomMenu';
 import { useGameStore } from './store/gameStore';
 import { useSave } from './hooks/useSave';
@@ -95,6 +96,7 @@ export default function App() {
             <Route path="/banque" element={<Guard><BanquePage /></Guard>} />
             <Route path="/maison" element={<Guard><MaisonPage /></Guard>} />
             <Route path="/craft"  element={<Guard><CraftPage /></Guard>} />
+            <Route path="/admin"  element={<Guard><AdminPage /></Guard>} />
             <Route path="*"       element={<Navigate to="/home" replace />} />
           </Routes>
           <BottomMenu />
