@@ -49,6 +49,7 @@ export function useMarket() {
     abi:          KirhaMarketAbi,
     functionName: 'getActiveListings',
     args:         [0n, 100n],
+    query:        { refetchInterval: 5000 },
   });
 
   // ── Vérifier approbation ERC-1155 ─────────────────────────
@@ -118,6 +119,8 @@ export function useMarket() {
       for (const item of items) {
         retirerRessource(item.resourceId as ResourceId, item.quantity);
       }
+      // Attendre que le nœud RPC propage l'état avant de refetch
+      await new Promise(resolve => setTimeout(resolve, 2000));
       await refetchListings();
       setStatus('success');
       setTimeout(() => setStatus('idle'), 3000);

@@ -106,7 +106,7 @@ function TabOnchain() {
   const [sellQty, setSellQty]       = useState('');
   const [sellPrice, setSellPrice]   = useState('');
   const [buyQty, setBuyQty]         = useState<Record<string, string>>({});
-  const [buyFilter, setBuyFilter]   = useState('');
+  const [buyResourceId, setBuyResourceId] = useState('');
 
   // Panier de vente (pending avant publication)
   type CartItem = { resourceId: number; quantity: number; pricePerUnit: number };
@@ -157,13 +157,13 @@ function TabOnchain() {
     return Math.min(...rl.map(l => l.pricePerUnit));
   })();
 
-  // Listings acheteur : triés du moins cher au plus cher, tous visibles (y compris les siens)
-  const listingsSorted = [...listings]
-    .sort((a, b) => a.pricePerUnit - b.pricePerUnit)
-    .filter(l => buyFilter === '' || l.resourceId === parseInt(buyFilter));
-
-  // Ressources uniques présentes dans les listings pour le filtre
+  // Ressources uniques présentes dans les listings
   const buyResourceIds = [...new Set(listings.map(l => l.resourceId))].sort((a, b) => a - b);
+
+  // Listings pour la ressource sélectionnée, triés par prix croissant
+  const listingsSorted = [...listings]
+    .filter(l => buyResourceId !== '' && l.resourceId === parseInt(buyResourceId))
+    .sort((a, b) => a.pricePerUnit - b.pricePerUnit);
 
   return (
     <div style={{ paddingBottom:90 }}>
@@ -181,80 +181,82 @@ function TabOnchain() {
         {/* ── Acheter ── */}
         {tab === 'acheter' && (
           <>
-            {/* Filtre par ressource */}
-            {listings.length > 0 && (
-              <div style={{ marginBottom:10 }}>
-                <select
-                  value={buyFilter}
-                  onChange={e => setBuyFilter(e.target.value)}
-                  style={s.select}
-                >
-                  <option value="">Toutes les ressources ({listings.length})</option>
-                  {buyResourceIds.map(rid => (
-                    <option key={rid} value={rid}>
-                      {emojiByResourceId(rid)} {getNomRessource(rid, lang)} ({listings.filter(l => l.resourceId === rid).length})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {/* Sélecteur de ressource (obligatoire) */}
+            <div style={{ marginBottom:12 }}>
+              <label style={s.label}>Quelle ressource cherches-tu ?</label>
+              <select
+                value={buyResourceId}
+                onChange={e => { setBuyResourceId(e.target.value); setBuyQty({}); }}
+                style={s.select}
+              >
+                <option value="">-- Choisir une ressource --</option>
+                {buyResourceIds.map(rid => (
+                  <option key={rid} value={rid}>
+                    {emojiByResourceId(rid)} {getNomRessource(rid, lang)} ({listings.filter(l => l.resourceId === rid).length} offre{listings.filter(l => l.resourceId === rid).length > 1 ? 's' : ''})
+                  </option>
+                ))}
+              </select>
+              {listings.length === 0 && (
+                <p style={{ color:'#9a6080', fontSize:'11px', margin:'6px 0 0' }}>Aucune offre sur le marché pour l'instant.</p>
+              )}
+            </div>
 
-            {listingsSorted.length === 0 ? (
-              <div style={s.empty}>
-                <span style={{ fontSize:'36px' }}>🏪</span>
-                <p style={{ color:'#7a4060', fontSize:'13px', marginTop:10 }}>
-                  {listings.length === 0 ? 'Aucune offre disponible.' : 'Aucune offre pour cette ressource.'}
-                </p>
-              </div>
-            ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                {listingsSorted.map(l => {
-                  const res = getResourceById(l.resourceId as ResourceId);
-                  const key = l.listingId.toString();
-                  const qty = parseInt(buyQty[key] || '1') || 1;
-                  const total = (l.pricePerUnit * qty).toFixed(4);
-                  const isMine = l.seller.toLowerCase() === address?.toLowerCase();
-                  return (
-                    <div key={key} style={{ ...s.itemRow, opacity: isMine ? 0.7 : 1 }}>
-                      <div style={s.itemIcon}>
-                        <span style={{ fontSize:'20px' }}>{emojiByResourceId(l.resourceId)}</span>
+            {/* Listings pour la ressource sélectionnée */}
+            {buyResourceId !== '' && (
+              listingsSorted.length === 0 ? (
+                <div style={s.empty}>
+                  <span style={{ fontSize:'36px' }}>🏪</span>
+                  <p style={{ color:'#7a4060', fontSize:'13px', marginTop:10 }}>Aucune offre pour cette ressource.</p>
+                </div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  <p style={{ color:'#7a4060', fontSize:'11px', margin:'0 0 4px' }}>
+                    {listingsSorted.length} offre{listingsSorted.length > 1 ? 's' : ''} — triées du moins cher au plus cher
+                  </p>
+                  {listingsSorted.map((l, idx) => {
+                    const key = l.listingId.toString();
+                    const qty = parseInt(buyQty[key] || '1') || 1;
+                    const total = (l.pricePerUnit * qty).toFixed(4);
+                    const isMine = l.seller.toLowerCase() === address?.toLowerCase();
+                    const isCheapest = idx === 0;
+                    return (
+                      <div key={key} style={{ ...s.itemRow, opacity: isMine ? 0.7 : 1, border: isCheapest ? '1.5px solid rgba(106,191,68,0.5)' : '1px solid rgba(212,100,138,0.15)' }}>
+                        <div style={{ flex:1 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
+                            <span style={{ color:'#c43070', fontSize:'15px', fontWeight:800 }}>{l.pricePerUnit.toFixed(4)} $K</span>
+                            <span style={{ color:'#7a4060', fontSize:'10px' }}>/unité</span>
+                            {isCheapest && <span style={{ background:'rgba(106,191,68,0.15)', color:'#4a8f2a', fontSize:'9px', fontWeight:700, padding:'1px 6px', borderRadius:8 }}>Moins cher</span>}
+                          </div>
+                          <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>
+                            ×{l.quantity} disponible · {isMine ? <span style={{ color:'#6abf44', fontWeight:700 }}>Votre vente</span> : `Vendeur : ${shortAddr(l.seller)}`}
+                          </span>
+                        </div>
+                        <div style={{ display:'flex', flexDirection:'column', gap:4, alignItems:'flex-end' }}>
+                          {isMine ? (
+                            <span style={{ color:'#9a6080', fontSize:'10px', fontStyle:'italic' }}>En vente</span>
+                          ) : (
+                            <>
+                              <input
+                                type="number" min="1" max={l.quantity} value={buyQty[key] ?? '1'}
+                                onChange={e => setBuyQty(prev => ({ ...prev, [key]: e.target.value }))}
+                                style={{ width:44, padding:'4px 6px', border:'1px solid rgba(212,100,138,0.25)', borderRadius:8, fontSize:11, color:'#1e0a16', textAlign:'center' }}
+                              />
+                              <span style={{ color:'#f9a825', fontSize:'11px', fontWeight:800 }}>{total} $K</span>
+                              <button
+                                style={{ ...s.sellBtn, background:'rgba(106,191,68,0.12)', borderColor:'rgba(106,191,68,0.3)', color:'#4a8f2a' }}
+                                onClick={() => acheter(l.listingId, qty)}
+                                disabled={busy}
+                              >
+                                {status === 'buying' ? '⏳' : 'Acheter'}
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <div style={{ flex:1 }}>
-                        <span style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700 }}>
-                          {res ? getNomRessource(l.resourceId, lang) : `Ressource #${l.resourceId}`}
-                        </span>
-                        <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>
-                          ×{l.quantity} dispo · <span style={{ color:'#c43070', fontWeight:700 }}>{l.pricePerUnit.toFixed(4)} $K</span>/unité
-                        </span>
-                        <span style={{ color: isMine ? '#6abf44' : '#9a6080', fontSize:'9px', fontWeight: isMine ? 700 : 400 }}>
-                          {isMine ? '👤 Votre vente' : `Vendeur : ${shortAddr(l.seller)}`}
-                        </span>
-                      </div>
-                      <div style={{ display:'flex', flexDirection:'column', gap:4, alignItems:'flex-end' }}>
-                        {isMine ? (
-                          <span style={{ color:'#9a6080', fontSize:'10px', fontStyle:'italic' }}>En vente</span>
-                        ) : (
-                          <>
-                            <input
-                              type="number" min="1" max={l.quantity} value={buyQty[key] ?? '1'}
-                              onChange={e => setBuyQty(prev => ({ ...prev, [key]: e.target.value }))}
-                              style={{ width:44, padding:'4px 6px', border:'1px solid rgba(212,100,138,0.25)', borderRadius:8, fontSize:11, color:'#1e0a16', textAlign:'center' }}
-                            />
-                            <span style={{ color:'#f9a825', fontSize:'11px', fontWeight:800 }}>{total} $K</span>
-                            <button
-                              style={{ ...s.sellBtn, background:'rgba(106,191,68,0.12)', borderColor:'rgba(106,191,68,0.3)', color:'#4a8f2a' }}
-                              onClick={() => acheter(l.listingId, qty)}
-                              disabled={busy}
-                            >
-                              {status === 'buying' ? '⏳' : 'Acheter'}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )
             )}
           </>
         )}
