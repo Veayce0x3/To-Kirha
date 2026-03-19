@@ -13,7 +13,14 @@ Gameplay 100% off-chain (localStorage), sauvegarde on-chain via batch mint ERC-1
 - **Wallet** : Wagmi v2 + Viem, RainbowKit
 - **Blockchain** : Base Sepolia (testnet) / Base Mainnet
 - **Smart contracts** : Hardhat + Solidity 0.8.24 + OpenZeppelin 5.x
-- **Hébergement** : GitHub Pages (branche `gh-pages`, CI via GitHub Actions)
+- **Hébergement** : GitHub Pages — https://veayce0x3.github.io/To-Kirha/
+
+---
+
+## Workflow de développement
+- **Petits fixes / UI** : modifier + `git add/commit/push` → GitHub Actions déploie automatiquement en 2-3 min. **Pas besoin de lancer le serveur local.**
+- **Gros changements** (nouveaux contrats, refonte) : tester en local d'abord (`npm run dev`), puis push.
+- **Serveur local** : `source ~/.nvm/nvm.sh && nvm use 20 && npm run dev`
 
 ---
 
@@ -22,7 +29,7 @@ Gameplay 100% off-chain (localStorage), sauvegarde on-chain via batch mint ERC-1
 # Toujours utiliser Node 20 (Node 24 incompatible avec Hardhat + ts-node)
 source ~/.nvm/nvm.sh && nvm use 20
 
-# Dev
+# Dev local
 npm run dev
 
 # Build production
@@ -31,8 +38,11 @@ npm run build
 # Compiler les contrats Solidity
 npm run compile
 
-# Déployer sur Base Sepolia
+# Déployer les 4 contrats sur Base Sepolia
 npm run deploy:sepolia
+
+# Redéployer uniquement KirhaGame (garde Token/Resources/Market)
+npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/deploy-game.js --network base-sepolia
 
 # Vider le mempool si stuck
 npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/flush-nonces.js --network base-sepolia
@@ -57,14 +67,14 @@ ConnectPage (/)
 
 ## Contrats déployés — Base Sepolia (chainId 84532)
 
-**Déployés le 18 mars 2026 — wallet `0x5A9d55c76c38eDe9b8B34ED6e7F35578cE919b0C`**
+**Déployés le 19 mars 2026 — wallet `0x5A9d55c76c38eDe9b8B34ED6e7F35578cE919b0C`**
 
-| Contrat         | Adresse                                      |
-|-----------------|----------------------------------------------|
-| KirhaToken      | `0xa5219170d568861cd46a5B758362C382aD9a8f42` |
-| KirhaResources  | `0xD50981beD8D5150fe9207Ff1C41fEF31b79e1059` |
-| KirhaGame       | `0x6A18F3Ef99226d7fe35CFC2405040094bfC08B49` |
-| KirhaMarket     | `0x59d886F11E96F8dCC503b0b1a7D3032872a18768` |
+| Contrat         | Adresse                                        | Dernière MAJ  |
+|-----------------|------------------------------------------------|---------------|
+| KirhaToken      | `0x7DF9F321829c9096622D81E640968e601e43a025`   | 19 mars 2026  |
+| KirhaResources  | `0x581334a6725C5A6057cF63283655eb38AC1cA295`   | 19 mars 2026  |
+| KirhaGame       | `0x9c9f9a2567099dc35C20e0E7e28E4E531Ae003Fb`   | 19 mars 2026  |
+| KirhaMarket     | `0x0b98d02DFA79794e7f28943C5b757A43a4a3dc92`   | 19 mars 2026  |
 
 Permissions configurées :
 - KirhaGame → minter sur KirhaResources + KirhaToken
@@ -74,7 +84,7 @@ Permissions configurées :
 
 ---
 
-## Architecture des fichiers (état actuel — 18 mars 2026)
+## Architecture des fichiers (état actuel — 19 mars 2026)
 ```
 src/
 ├── App.tsx                  # Routes + Guards (VersionGuard v0.5.0, BeforeUnloadGuard)
@@ -84,13 +94,13 @@ src/
 │   ├── bucheron.ts          # KirhaTokenImg
 │   └── personnage/index.ts  # resolveSprite()
 ├── components/
-│   ├── BottomMenu.tsx       # Barre permanente : Accueil / Inventaire (modal 2 onglets)
+│   ├── BottomMenu.tsx       # Barre permanente : Accueil / Inventaire / 💾 Sauvegarder
 │   └── Character.tsx        # Personnage 6 calques CSS, 4 directions
 ├── config/wagmi.ts
 ├── contracts/
 │   ├── abis/
-│   │   ├── KirhaGame.json   # batchMintResources(ids, amounts) + withdrawKirha — SANS nonce/signature
-│   │   └── KirhaMarket.json # listResource / buyResource / cancelListing / getActiveListings
+│   │   ├── KirhaGame.json   # batchMintResources + withdrawKirha + registerPseudo + isPseudoAvailable
+│   │   └── KirhaMarket.json # listResource / batchListResources / buyResource / cancelListing / getActiveListings
 │   └── addresses.ts         # Adresses déployées (les 4 contrats)
 ├── data/
 │   ├── metiers.ts           # 5 métiers × 10 ressources = 50 IDs | TEST_MODE=true → 2s
@@ -98,19 +108,19 @@ src/
 │   └── vetements.ts
 ├── hooks/
 │   ├── useHarvest.ts        # Timer, planterRessource(), collecterEtRelancer() — PAS d'auto-collect
-│   ├── useSave.ts           # batchMintResources on-chain (args: [ids, amounts])
+│   ├── useSave.ts           # batchMintResources on-chain — floor() les quantités, garde les fractions
 │   ├── useWithdraw.ts       # withdrawKirha on-chain
 │   ├── useDeposit.ts        # KirhaToken.transfer → KIRHA_GAME_ADDRESS
-│   └── useMarket.ts         # HDV on-chain : listings, approbation ERC-1155, list/buy/cancel
+│   └── useMarket.ts         # HDV on-chain : listings, approbation ERC-1155, batch list/buy/cancel
 ├── pages/
-│   ├── ConnectPage.tsx      # Accueil + LangToggle (🇫🇷/🇬🇧) + ConnectButton
+│   ├── ConnectPage.tsx      # Landing + pseudo on-chain + LangToggle
 │   ├── HomePage.tsx         # Map principale (5 cards)
 │   ├── RecoltePage.tsx      # Sélecteur métier + Zone récolte (slots + timer)
 │   ├── HdvPage.tsx          # 2 onglets : PNJ (off-chain) + On-chain (KirhaMarket)
 │   ├── BanquePage.tsx       # Retrait $KIRHA / Dépôt / Sauvegarde / wallet_watchAsset
 │   ├── MaisonPage.tsx       # Inventaire + stats métiers + perso
 │   └── CraftPage.tsx        # WIP
-├── store/gameStore.ts       # Zustand persist v4, ajouterKirha, retirerKirha
+├── store/gameStore.ts       # Zustand persist v5, retirerRessource, soustraireMintesPending
 └── utils/
     ├── grid.ts              # Pathfinding A* (gardé pour usage futur)
     ├── tiled.ts             # Parser Tiled JSON (gardé pour usage futur)
@@ -121,11 +131,12 @@ src/
 contracts/
 ├── KirhaToken.sol           # ERC-20 $KIRHA, mintable par KirhaGame + KirhaMarket
 ├── KirhaResources.sol       # ERC-1155, 50 IDs ressources
-├── KirhaGame.sol            # batchMintResources (ECDSA désactivé testnet) + withdrawKirha
-└── KirhaMarket.sol          # HDV on-chain : escrow ERC-1155, burn/mint $KIRHA, taxe 50%
+├── KirhaGame.sol            # batchMintResources + withdrawKirha + registerPseudo (ECDSA désactivé testnet)
+└── KirhaMarket.sol          # HDV on-chain : escrow ERC-1155, burn/mint $KIRHA, taxe 50%, batchListResources
 
 scripts/
 ├── deploy.ts                # Déploie 4 contrats, nonces séquentiels, gasPrice 15 gwei
+├── deploy-game.ts           # Redéploie uniquement KirhaGame + configure permissions
 ├── flush-nonces.ts          # Purge mempool (20 gwei), scanner +30 nonces
 └── gen-character-assets.ts
 ```
@@ -145,17 +156,27 @@ scripts/
 
 ---
 
-## Fonctionnalités implémentées (18 mars 2026)
+## Fonctionnalités implémentées (19 mars 2026)
 
 ### Système de récolte (useHarvest)
 - **Pas d'auto-collect** — le joueur collecte manuellement en cliquant le slot "Prêt"
 - Ressource "en main" : bouton Choisir → ressource sélectionnée → cliquer un slot pour planter
 - `collecterEtRelancer()` : collecte + redémarre immédiatement avec la même ressource
-- Badges métier : "X actifs" (couleur métier), "✓ Prêt" (vert), "Inactif" (rouge) — même style pill
+- Badges métier : "X actifs" (couleur métier), "✓ Prêt" (vert), "Inactif" (rouge)
 
 ### Sauvegarde on-chain (useSave)
 - `batchMintResources(ids[], amounts[])` — sans nonce ni signature (testnet)
+- **Floor des quantités** : seule la partie entière est mintée (ex: 1.4 → mint 1, garde 0.4)
+- `soustraireMintesPending` : soustrait uniquement les entiers mintés, conserve les fractions
+- Bouton 💾 dans le menu bas : badge rouge = nb ressources en attente, état erreur si échec
 - Auto-save sur `beforeunload` si pending_mints.length > 0
+
+### Pseudo unique on-chain (KirhaGame + ConnectPage)
+- `registerPseudo(string)` : enregistre le pseudo on-chain (unique global, payé en gas une fois)
+- `isPseudoAvailable(string)` : vérifié avant signature
+- `playerPseudo(address)` : getter auto — reconnecte les joueurs existants sans saisie
+- ConnectPage vérifie on-chain au connect : si pseudo existe → direct /home, sinon → formulaire
+- Plus de localStorage pour les pseudos — tout est on-chain
 
 ### Banque (BanquePage)
 - **Retrait** : `withdrawKirha(amount)` → mint $KIRHA vers le joueur
@@ -164,18 +185,22 @@ scripts/
 - Sauvegarde on-chain manuelle
 
 ### HDV on-chain (KirhaMarket + useMarket)
-- **Onglet PNJ** : vente off-chain à prix fixe (inchangé)
+- **Onglet PNJ** : vente off-chain à prix fixe
 - **Onglet On-chain** : 3 sous-onglets
-  - *Acheter* : liste les offres actives (`getActiveListings`), choix de quantité, `buyResource`
-  - *Vendre* : sélection ressource/quantité/prix, approbation ERC-1155 auto si nécessaire, `listResource`
-  - *Mes ventes* : liste ses propres listings, `cancelListing`
-- Taxe 50% treasury affichée dans l'UI (vendeur reçoit 50%)
+  - *Acheter* : listings triés du moins cher au plus cher, filtre par ressource, ses propres listings visibles avec badge "Votre vente"
+  - *Vendre* : système **panier** — ajouter N ressources, 1 seule signature via `batchListResources`
+    - Prix pré-rempli avec le plus bas du marché (ou 0.01 si aucune offre)
+    - Récapitulatif : total brut / taxe 50% / montant reçu
+    - Après succès : `retirerRessource` décrémente l'inventaire local
+  - *Mes ventes* : liste ses propres listings, `cancelListing`, montant estimé affiché
+- `waitForTransactionReceipt` avant tout refetch (fix listing invisible)
+- Taxe 50% treasury affichée dans l'UI
 
 ### Multilingue (i18n)
 - FR/EN complet : navigation, UI, 50 noms de ressources
 - `useT()` hook → `t(key)` + `lang`
 - `getNomRessource(id, lang)` dans `resourceUtils.ts`
-- Sélecteur 🇫🇷/🇬🇧 sur ConnectPage (avant connexion wallet)
+- Sélecteur 🇫🇷/🇬🇧 sur ConnectPage
 
 ---
 
@@ -190,45 +215,56 @@ scripts/
 
 ---
 
-## État du projet (18 mars 2026)
+## État du projet (19 mars 2026)
 
 ### CE QUI EST FAIT ET FONCTIONNEL ✅
-| Composant                  | Fichier                        | État        |
-|----------------------------|--------------------------------|-------------|
-| Routing + Guards           | App.tsx                        | ✅ v0.5.0   |
-| Page connexion + LangToggle| ConnectPage.tsx                | ✅ Complet  |
-| Map principale (5 cards)   | HomePage.tsx                   | ✅ Complet  |
-| Récolte (sélecteur + zones)| RecoltePage.tsx                | ✅ Complet  |
-| HDV PNJ + On-chain         | HdvPage.tsx                    | ✅ Complet  |
-| Banque (retrait/dépôt/save)| BanquePage.tsx                 | ✅ Complet  |
-| Maison (inventaire+stats)  | MaisonPage.tsx                 | ✅ Complet  |
-| Menu bas                   | BottomMenu.tsx                 | ✅ Complet  |
-| Modal Inventaire           | BottomMenu.tsx                 | ✅ 2 onglets|
-| Personnage (Maison)        | Character.tsx                  | ✅ 4 dirs   |
-| Hook récolte               | hooks/useHarvest.ts            | ✅ Manuel   |
-| Hook sauvegarde            | hooks/useSave.ts               | ✅ On-chain |
-| Hook retrait               | hooks/useWithdraw.ts           | ✅ On-chain |
-| Hook dépôt                 | hooks/useDeposit.ts            | ✅ On-chain |
-| Hook marché                | hooks/useMarket.ts             | ✅ Complet  |
-| Traductions FR/EN          | utils/i18n.ts                  | ✅ 50 res.  |
-| Emojis/noms ressources     | utils/resourceUtils.ts         | ✅ Centralisé|
-| Store Zustand              | store/gameStore.ts             | ✅ v4       |
-| Données métiers            | data/metiers.ts                | ✅ TEST_MODE|
-| Smart contracts            | contracts/                     | ✅ Déployés |
-| CI/CD GitHub Pages         | —                              | ✅ En place |
+| Composant                      | Fichier                        | État             |
+|--------------------------------|--------------------------------|------------------|
+| Routing + Guards               | App.tsx                        | ✅ v0.5.0        |
+| Page connexion + pseudo on-chain | ConnectPage.tsx              | ✅ Complet       |
+| Map principale (5 cards)       | HomePage.tsx                   | ✅ Complet       |
+| Récolte (sélecteur + zones)    | RecoltePage.tsx                | ✅ Complet       |
+| HDV PNJ + On-chain (panier)    | HdvPage.tsx                    | ✅ Complet       |
+| Banque (retrait/dépôt/save)    | BanquePage.tsx                 | ✅ Complet       |
+| Maison (inventaire+stats)      | MaisonPage.tsx                 | ✅ Complet       |
+| Menu bas + bouton 💾           | BottomMenu.tsx                 | ✅ Complet       |
+| Personnage (Maison)            | Character.tsx                  | ✅ 4 dirs        |
+| Hook récolte                   | hooks/useHarvest.ts            | ✅ Manuel        |
+| Hook sauvegarde (floor fix)    | hooks/useSave.ts               | ✅ On-chain      |
+| Hook retrait                   | hooks/useWithdraw.ts           | ✅ On-chain      |
+| Hook dépôt                     | hooks/useDeposit.ts            | ✅ On-chain      |
+| Hook marché (batch + refetch)  | hooks/useMarket.ts             | ✅ Complet       |
+| Traductions FR/EN              | utils/i18n.ts                  | ✅ 50 res.       |
+| Emojis/noms ressources         | utils/resourceUtils.ts         | ✅ Centralisé    |
+| Store Zustand                  | store/gameStore.ts             | ✅ v5            |
+| Données métiers                | data/metiers.ts                | ✅ TEST_MODE     |
+| Smart contracts                | contracts/                     | ✅ Déployés      |
+| CI/CD GitHub Pages             | .github/workflows/deploy.yml   | ✅ En place      |
+| Pseudo unique global on-chain  | KirhaGame.sol + ConnectPage    | ✅ Complet       |
+| Reset parties (Zustand v5)     | store/gameStore.ts             | ✅ Fait          |
 
 ### CE QUI MANQUE / EST EN ATTENTE ⏳
-| Élément                           | Priorité | Notes                                   |
-|-----------------------------------|----------|-----------------------------------------|
-| Session key (gasless)             | Moyenne  | Nécessite backend relayer (ERC-4337)    |
-| TEST_MODE → false                 | Haute    | Avant production (timers réels)         |
-| Vérification ECDSA on-chain       | Haute    | Avant mainnet (KirhaGame)               |
-| Sprites ressources pixel art      | Moyenne  | 50 assets à créer                       |
-| Frames animation marche/récolte   | Basse    | Après gameplay complet                  |
-| CraftPage (contenu)               | Basse    | À concevoir                             |
-| MaisonPage — vêtements/bonus      | Basse    | Système équipement à brancher           |
-| NFT de progression                | Basse    | Tokenisation compte joueur              |
-| Pépites d'or                      | Très basse | Monnaie premium, usage à définir      |
+| Élément                           | Priorité   | Notes                                        |
+|-----------------------------------|------------|----------------------------------------------|
+| TEST_MODE → false                 | Haute      | Avant production (timers réels 30 min)       |
+| Vérification ECDSA on-chain       | Haute      | Avant mainnet (KirhaGame)                    |
+| Session key (gasless)             | Moyenne    | Nécessite backend relayer (ERC-4337)         |
+| Sprites ressources pixel art      | Moyenne    | 50 assets à créer                            |
+| CraftPage (contenu)               | Basse      | À concevoir                                  |
+| MaisonPage — vêtements/bonus      | Basse      | Système équipement à brancher                |
+| NFT de progression                | Basse      | Tokenisation compte joueur                   |
+| Frames animation marche/récolte   | Basse      | Après gameplay complet                       |
+| Pépites d'or                      | Très basse | Monnaie premium, usage à définir             |
+
+---
+
+## Testnet v1 → Mainnet v2
+La v1 testnet est entièrement wipeble pour la v2 mainnet. La migration impliquera :
+- `TEST_MODE = false` dans `metiers.ts` (timers réels ~30 min)
+- ECDSA activé sur KirhaGame (nonce anti-replay)
+- Redéploiement complet sur Base Mainnet
+- Nouveau store Zustand v1 (reset)
+- Vraie clé déployeur dédiée mainnet
 
 ---
 
@@ -243,22 +279,28 @@ Déploiement : `npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-
 
 ### Mempool Base Sepolia congestionné — solution définitive
 Le script `flush-nonces.ts` utilise **20 gwei** et scanne +30 nonces.
-Le script `deploy.ts` utilise des **nonces séquentiels** (variable `nonce++`) pour éviter les doublons dus à la latence RPC.
-Ne JAMAIS appeler `getTransactionCount('pending')` plusieurs fois de suite dans le même script — utiliser un compteur local.
-
-### evmVersion Cancun
-OpenZeppelin 5.x utilise l'opcode `mcopy`. `hardhat.config.ts` a `evmVersion: 'cancun'`.
+Le script `deploy.ts` utilise des **nonces séquentiels** (variable `nonce++`) pour éviter les doublons.
+Ne JAMAIS appeler `getTransactionCount('pending')` plusieurs fois de suite — utiliser un compteur local.
 
 ### writeFileSync dans deploy.ts
 Le path `__dirname` résout vers `dist-hardhat/scripts/` après compilation TS.
 Si le fichier `addresses.ts` n'est pas écrit automatiquement, l'écrire manuellement depuis les adresses affichées en console.
 
+### evmVersion Cancun
+OpenZeppelin 5.x utilise l'opcode `mcopy`. `hardhat.config.ts` a `evmVersion: 'cancun'`.
+
+### BigInt et quantités fractionnaires
+`BigInt(0.4)` plante. Dans `useSave`, toujours utiliser `Math.floor(quantite)` et filtrer `>= 1` avant de construire les args du contrat.
+
+### Listing HDV invisible après transaction
+Toujours utiliser `waitForTransactionReceipt` avant `refetchListings()` — sinon le listing n'est pas encore indexé.
+
 ---
 
 ## Variables d'environnement (.env)
 ```
-VITE_WALLETCONNECT_PROJECT_ID=   # Format UUID depuis cloud.walletconnect.com
-DEPLOYER_PRIVATE_KEY=0x...       # Clé privée wallet déployeur
+VITE_WALLETCONNECT_PROJECT_ID=   # UUID depuis cloud.walletconnect.com (aussi dans GitHub Secrets)
+DEPLOYER_PRIVATE_KEY=0x...       # Clé privée wallet déployeur — NE JAMAIS COMMITER
 BASESCAN_API_KEY=                # Optionnel, vérification contrats
 ```
 
@@ -266,7 +308,7 @@ BASESCAN_API_KEY=                # Optionnel, vérification contrats
 
 ## Notes pour Claude
 - Toujours utiliser Node 20 (`nvm use 20`) avant les commandes Hardhat
-- Ne pas monter le gasPrice au-delà de 20 gwei sur Base Sepolia testnet (flush-nonces = 20 gwei, deploy = 15 gwei)
+- Ne pas monter le gasPrice au-delà de 20 gwei sur Base Sepolia testnet
 - Le projet n'a pas de `"type": "module"` dans package.json
 - Demander confirmation avant de modifier plusieurs fichiers à la fois
 - Animations personnage **EN PAUSE** — ne pas travailler dessus avant que le gameplay soit complet
@@ -276,3 +318,5 @@ BASESCAN_API_KEY=                # Optionnel, vérification contrats
 - Le nom du jeu ($KIRHA, Pépites d'or) reste en français même en version EN
 - KirhaGame testnet : ECDSA désactivé — à réactiver avant mainnet avec nonce anti-replay
 - KirhaMarket : taxe 50% hardcodée (TAX_BPS = 5000) — non modifiable sans redéploiement
+- **Workflow** : petits fixes → push direct sur main (pas besoin de serveur local). Gros changements → local d'abord.
+- `.claude/` est dans `.gitignore` — ne jamais commiter les settings locaux Claude
