@@ -17,7 +17,7 @@ import "./KirhaGame.sol";
  * Flux :
  *   1. Vendeur appelle listResource(cityId, ...) → ressources prélevées de sa ville
  *   2. Acheteur appelle buyResource(listingId, buyerCityId, qty) → $KIRHA prélevés de sa ville, ressources ajoutées
- *   3. Taxe 50% : 50% mintée en ERC-20 vers la trésorerie, 50% ajoutée en cityKirha du vendeur
+ *   3. Taxe 50% (25% si vendeur VIP) : mintée en ERC-20 vers la trésorerie, reste ajouté en cityKirha du vendeur
  *   4. Vendeur peut cancelListing → ressources restituées dans sa ville
  */
 contract KirhaMarket is Ownable, ReentrancyGuard {
@@ -161,7 +161,8 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
         require(scaledQty <= l.quantity, "KirhaMarket: not enough stock");
 
         uint256 totalCost    = quantity * l.pricePerUnit;
-        uint256 taxAmount    = (totalCost * TAX_BPS) / 10000;
+        uint256 effectiveTax = game.isVip(l.sellerCityId) ? TAX_BPS / 2 : TAX_BPS;
+        uint256 taxAmount    = (totalCost * effectiveTax) / 10000;
         uint256 sellerAmount = totalCost - taxAmount;
 
         // Déduire $KIRHA de la ville acheteur

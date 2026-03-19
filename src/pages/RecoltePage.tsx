@@ -439,13 +439,17 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ ...s.levelBadge, borderColor: cfg.color, color: cfg.color }}>{t('recolte.level')} {niveau}</span>
-            <div style={{ width: 60, height: 3, background: 'rgba(212,100,138,0.1)', borderRadius: 2 }}>
-              <div style={{ height: '100%', width: `${pct}%`, background: cfg.color, borderRadius: 2 }} />
-            </div>
           </div>
-          <span style={{ color: cfg.color, fontSize: '9px', fontFamily:'monospace' }}>
-            {xp} / {xpRequis(niveau)} XP
-          </span>
+          {/* Barre XP distincte (bleu/violet) */}
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:2 }}>
+            <span style={{ color:'#7a6cb0', fontSize:'9px', fontWeight:700 }}>XP</span>
+            <div style={{ width:80, height:4, background:'rgba(122,108,176,0.15)', borderRadius:2, overflow:'hidden' }}>
+              <div style={{ height:'100%', width:`${pct}%`, background:'linear-gradient(90deg,#7a6cb0,#5b3fa0)', borderRadius:2, transition:'width 0.3s' }} />
+            </div>
+            <span style={{ color:'#7a6cb0', fontSize:'8px', fontFamily:'monospace', fontWeight:700 }}>
+              {xp}/{xpRequis(niveau)}
+            </span>
+          </div>
         </div>
         <div style={{ width: 80 }} />
       </div>

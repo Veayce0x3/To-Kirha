@@ -59,6 +59,15 @@ contract KirhaCity is ERC721, Ownable {
     }
 
     // --------------------------------------------------------
+    // Burn (appelé par KirhaGame lors de adminDeleteCity)
+    // --------------------------------------------------------
+
+    function burnCity(uint256 cityId) external onlyGame {
+        _burn(cityId);
+        // _update() gère automatiquement la mise à zéro de ownerToCityId
+    }
+
+    // --------------------------------------------------------
     // Override _update — maintenir ownerToCityId
     // --------------------------------------------------------
 

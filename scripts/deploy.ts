@@ -16,10 +16,13 @@ import * as path from 'path';
  *   - KirhaCity.setGame(KirhaGame)
  *   - KirhaGame → minter sur KirhaResources + KirhaToken
  *   - KirhaMarket → operator sur KirhaGame + minter sur KirhaToken
+ *   - KirhaGame.setTrustedRelayer(TRUSTED_RELAYER)
  *   - Les adresses sont écrites dans src/contracts/addresses.ts
  */
 
 const GAS_PRICE = 15_000_000_000n; // 15 gwei
+
+const TRUSTED_RELAYER = '0xe1b9eC5dB0cB6F13cF5A2357304c092c8ed4c683';
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -105,7 +108,12 @@ async function main() {
   await (kirhaToken as any).addMinter(marketAddr, { nonce: nonce++, gasPrice: GAS_PRICE });
   console.log('  KirhaMarket → minter on KirhaToken ✓');
 
-  // ── 9. Écriture des adresses ────────────────────────────────
+  // ── 9. Trusted Relayer ──────────────────────────────────────
+  console.log('\nConfiguring trusted relayer...');
+  await (kirhaGame as any).setTrustedRelayer(TRUSTED_RELAYER, { nonce: nonce++, gasPrice: GAS_PRICE });
+  console.log('  KirhaGame.setTrustedRelayer(' + TRUSTED_RELAYER + ') ✓');
+
+  // ── 10. Écriture des adresses ───────────────────────────────
   const addressesPath = path.join(__dirname, '../src/contracts/addresses.ts');
   const network = await ethers.provider.getNetwork();
   const content = `// ============================================================
@@ -130,6 +138,7 @@ export const KIRHA_MARKET_ADDRESS    = '${marketAddr}' as \`0x\${string}\`;
   console.log('KirhaCity     :', cityAddr);
   console.log('KirhaGame     :', gameAddr);
   console.log('KirhaMarket   :', marketAddr);
+  console.log('TrustedRelayer:', TRUSTED_RELAYER);
 }
 
 main().catch((err) => {

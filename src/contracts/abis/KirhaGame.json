@@ -224,5 +224,106 @@
     ],
     "name": "KirhaDeposited",
     "type": "event"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId",          "type": "uint256" },
+      { "internalType": "uint64",  "name": "durationSeconds", "type": "uint64"  }
+    ],
+    "name": "authorizeRelayer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "cityId", "type": "uint256" }],
+    "name": "isRelayerActive",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId", "type": "uint256" },
+      { "internalType": "bool",    "name": "banned", "type": "bool"    }
+    ],
+    "name": "setBan",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "cityId", "type": "uint256" }],
+    "name": "adminDeleteCity",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId",   "type": "uint256" },
+      { "internalType": "uint8",   "name": "packType", "type": "uint8"   }
+    ],
+    "name": "buyPepites",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cityId",      "type": "uint256" },
+      { "internalType": "uint8",   "name": "durationType","type": "uint8"   }
+    ],
+    "name": "buyVip",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "cityId", "type": "uint256" }],
+    "name": "isVip",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "cityId", "type": "uint256" }],
+    "name": "getCityStatus",
+    "outputs": [
+      { "internalType": "uint256", "name": "kirha",      "type": "uint256" },
+      { "internalType": "uint256", "name": "pepites",    "type": "uint256" },
+      { "internalType": "bool",    "name": "vip",        "type": "bool"    },
+      { "internalType": "uint64",  "name": "vipExpiry_", "type": "uint64"  }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "cityPepites",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "vipExpiry",
+    "outputs": [{ "internalType": "uint64", "name": "", "type": "uint64" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "bannedCities",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "trustedRelayer",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
   }
 ]

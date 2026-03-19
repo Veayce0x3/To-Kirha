@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useWriteContract, usePublicClient } from 'wagmi';
+import { useWriteContract, usePublicClient, useReadContract } from 'wagmi';
 import { parseEther } from 'viem';
 import { useGameStore } from '../store/gameStore';
 import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
@@ -7,6 +7,9 @@ import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
 import { MetierId } from '../data/metiers';
 
 export type SaveStatus = 'idle' | 'signing' | 'pending' | 'success' | 'error';
+
+// Relayer Cloudflare Workers URL (placeholder — à mettre à jour après déploiement)
+const RELAYER_URL = 'https://kirha-relayer.tokirha.workers.dev';
 
 // Mapping métier string → id uint8 on-chain
 const METIER_TO_ID: Record<MetierId, number> = {
@@ -29,6 +32,17 @@ export function useSave() {
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
 
+  const villeIdBn = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
+
+  // Lecture de l'état du relayer pour cette ville
+  const { data: relayerActive } = useReadContract({
+    address:      KIRHA_GAME_ADDRESS,
+    abi:          KirhaGameAbi,
+    functionName: 'isRelayerActive',
+    args:         villeIdBn ? [villeIdBn] : undefined,
+    query: { enabled: !!villeIdBn, refetchInterval: 60_000 },
+  });
+
   // Ressources mintables : quantité entière ≥ 1 uniquement
   const mintableItems = pendingMints
     .map(p => ({ resource_id: p.resource_id, quantite: Math.floor(p.quantite) }))
@@ -50,9 +64,9 @@ export function useSave() {
       const resourceAmts = mintableItems.map(p => BigInt(Math.round(p.quantite * 1e4)));
 
       // ── Métiers ─────────────────────────────────────────────
-      const metierIds     = METIER_IDS.map(id => METIER_TO_ID[id]);
-      const metierLevels  = METIER_IDS.map(id => metiers[id].niveau);
-      const metierXps     = METIER_IDS.map(id => metiers[id].xp);
+      const metierIds      = METIER_IDS.map(id => METIER_TO_ID[id]);
+      const metierLevels   = METIER_IDS.map(id => metiers[id].niveau);
+      const metierXps      = METIER_IDS.map(id => metiers[id].xp);
       const metierXpTotals = METIER_IDS.map(id => metiers[id].xp_total);
 
       // ── $KIRHA gagné depuis la dernière save ─────────────────
@@ -60,23 +74,49 @@ export function useSave() {
 
       setStatus('pending');
 
-      const hash = await writeContractAsync({
-        address:      KIRHA_GAME_ADDRESS,
-        abi:          KirhaGameAbi,
-        functionName: 'batchSave',
-        args: [
-          BigInt(villeId),
-          resourceIds,
-          resourceAmts,
-          metierIds,
-          metierLevels,
-          metierXps,
-          metierXpTotals,
-          kirhaWei,
-        ],
-      });
+      if (relayerActive) {
+        // ── Voie relayer (gasless) ────────────────────────────
+        const body = JSON.stringify({
+          cityId:         villeId,
+          resourceIds:    resourceIds.map(String),
+          resourceAmts:   resourceAmts.map(String),
+          metierIds:      metierIds.map(String),
+          metierLevels:   metierLevels.map(String),
+          metierXps:      metierXps.map(String),
+          metierXpTotals: metierXpTotals.map(String),
+          kirhaGained:    kirhaWei.toString(),
+        });
 
-      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+        const res = await fetch(RELAYER_URL, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        });
+
+        if (!res.ok) {
+          const text = await res.text().catch(() => 'Erreur relayer');
+          throw new Error(text);
+        }
+      } else {
+        // ── Voie directe (fallback wallet) ────────────────────
+        const hash = await writeContractAsync({
+          address:      KIRHA_GAME_ADDRESS,
+          abi:          KirhaGameAbi,
+          functionName: 'batchSave',
+          args: [
+            BigInt(villeId),
+            resourceIds,
+            resourceAmts,
+            metierIds,
+            metierLevels,
+            metierXps,
+            metierXpTotals,
+            kirhaWei,
+          ],
+        });
+
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      }
 
       soustraireMintesPending(mintableItems);
       resetKirhaEarned();
@@ -90,7 +130,7 @@ export function useSave() {
     }
   }, [
     hasSomethingToSave, mintableItems, metiers, villeId, kirhaEarned,
-    status, writeContractAsync, publicClient,
+    status, relayerActive, writeContractAsync, publicClient,
     soustraireMintesPending, setSauvegarde, resetKirhaEarned,
   ]);
 
@@ -98,7 +138,9 @@ export function useSave() {
     sauvegarder,
     status,
     error,
-    pendingCount: mintableItems.length + (kirhaEarned > 0 ? 1 : 0),
+    pendingCount:     mintableItems.length + (kirhaEarned > 0 ? 1 : 0),
+    isRelayerActive:  !!relayerActive,
+    relayerUrl:       RELAYER_URL,
     reset: () => { setStatus('idle'); setError(null); },
   };
 }

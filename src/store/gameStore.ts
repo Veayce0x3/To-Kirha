@@ -39,9 +39,12 @@ export interface GameState {
   soldeKirha:          number;
   kirhaEarned:         number; // $KIRHA gagné (PNJ) depuis la dernière sauvegarde on-chain
   pepitesOr:           number;
+  vipExpiry:           number; // timestamp en secondes, 0 = pas VIP
   villeId:             string;
   langue:              'fr' | 'en';
   pseudo:              string | null;
+  templeCompletedDate: string;   // date ISO du jour (UTC) des quêtes complétées
+  templeCompleted:     number[]; // indices des quêtes complétées ce jour
 
   setAddress:               (address: string | null) => void;
   ajouterXp:                (metier: MetierId, xp: number) => void;
@@ -63,6 +66,11 @@ export interface GameState {
   retirerRessource:         (resourceId: ResourceId, quantite: number) => void;
   ajouterRessource:         (resourceId: ResourceId, quantite: number) => void;
   setVilleId:               (villeId: string) => void;
+  setVipExpiry:             (expiry: number) => void;
+  setPepitesOr:             (amount: number) => void;
+  ajouterPepites:           (amount: number) => void;
+  retirerPepites:           (amount: number) => void;
+  completerQueteTemple:     (index: number) => void;
 }
 
 // ============================================================
@@ -135,9 +143,12 @@ export const useGameStore = create<GameState>()(
       soldeKirha:          0,
       kirhaEarned:         0,
       pepitesOr:           0,
+      vipExpiry:           0,
       villeId:             '',
       langue:              'fr',
       pseudo:              null,
+      templeCompletedDate: '',
+      templeCompleted:     [],
 
       setAddress: (address) => set({ address }),
 
@@ -253,6 +264,26 @@ export const useGameStore = create<GameState>()(
 
       resetKirhaEarned: () => set({ kirhaEarned: 0 }),
 
+      setVipExpiry: (expiry) => set({ vipExpiry: expiry }),
+
+      setPepitesOr: (amount) => set({ pepitesOr: amount }),
+
+      ajouterPepites: (amount) =>
+        set((state) => ({ pepitesOr: Math.round((state.pepitesOr + amount) * 1e10) / 1e10 })),
+
+      retirerPepites: (amount) =>
+        set((state) => ({ pepitesOr: Math.max(0, Math.round((state.pepitesOr - amount) * 1e10) / 1e10) })),
+
+      completerQueteTemple: (index) =>
+        set((state) => {
+          const today = new Date().toISOString().slice(0, 10);
+          const completed = state.templeCompletedDate === today
+            ? [...state.templeCompleted]
+            : [];
+          if (completed.includes(index)) return state;
+          return { templeCompletedDate: today, templeCompleted: [...completed, index] };
+        }),
+
       setSlotSelectedResource: (metier, slotIndex, resourceId) =>
         set((state) => {
           const metierSlots = [...state.slots[metier]];
@@ -285,9 +316,9 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'to-kirha-game',
-      version: 7,
+      version: 8,
       migrate: (_state: unknown, _version: number) => {
-        // v5 : reset complet — efface aussi les clés localStorage héritées
+        // v8 : reset complet après redéploiement des contrats
         localStorage.removeItem('kirha_city_id');
         localStorage.removeItem('kirha_next_city_id');
         localStorage.removeItem('kirha_pseudos');

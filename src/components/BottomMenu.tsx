@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import { useGameStore } from '../store/gameStore';
+
+const ADMIN_WALLETS = ['0x5a9d55c76c38ede9b8b34ed6e7f35578ce919b0c'];
 import { getResourceById } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
@@ -180,9 +182,10 @@ const ms: Record<string, React.CSSProperties> = {
 // ============================================================
 
 export function BottomMenu() {
-  const { isConnected }  = useAccount();
+  const { isConnected, address } = useAccount();
   const { pathname }     = useLocation();
   const navigate         = useNavigate();
+  const isAdmin = !!address && ADMIN_WALLETS.includes(address.toLowerCase());
   const [showInventaire, setShowInventaire] = useState(false);
   const { t } = useT();
   const { sauvegarder, status: saveStatus, error: saveError, pendingCount, reset: resetSave } = useSave();
@@ -235,6 +238,14 @@ export function BottomMenu() {
             {saveBusy ? 'Sauvegarde…' : saveError_ ? 'Erreur ↺' : 'Sauvegarder'}
           </span>
         </button>
+
+        {/* Admin (wallet autorisé uniquement) */}
+        {isAdmin && (
+          <button style={s.btn} onClick={() => navigate('/admin')}>
+            <span style={s.icon}>⚙️</span>
+            <span style={s.label}>Admin</span>
+          </button>
+        )}
       </div>
     </>
   );
@@ -247,7 +258,9 @@ const s: Record<string, React.CSSProperties> = {
     zIndex:         100,
     display:        'flex',
     gap:            '8px',
-    padding:        '10px 12px 14px',
+    padding:        '10px 12px max(14px, env(safe-area-inset-bottom))',
+    paddingBottom:  'max(14px, env(safe-area-inset-bottom))' as string,
+    minHeight:      64,
     background:     'rgba(253,240,245,0.96)',
     borderTop:      '1px solid rgba(212,100,138,0.18)',
     backdropFilter: 'blur(10px)',

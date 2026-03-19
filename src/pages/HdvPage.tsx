@@ -94,8 +94,12 @@ function TabPnj() {
 function TabOnchain() {
   const inventaire  = useGameStore(s => s.inventaire);
   const villeId     = useGameStore(s => s.villeId);
+  const vipExpiry   = useGameStore(s => s.vipExpiry);
   const { t, lang } = useT();
   const villeIdBn   = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
+  const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
+  const taxRate = isVip ? 0.25 : 0.5;
+  const taxLabel = isVip ? 'Taxe: 25% (VIP)' : 'Taxe: 50%';
   const {
     listings, myListings, isApproved, status, error,
     approveMarket, batchMettrEnVente, batchAcheter, annulerListing,
@@ -149,7 +153,7 @@ function TabOnchain() {
   const priceNum = parseFloat(sellPrice || '0');
   const qtyNum   = parseInt(sellQty || '0');
   const totalBrut = priceNum * qtyNum;
-  const totalNet  = totalBrut * 0.5;
+  const totalNet  = totalBrut * (1 - taxRate);
 
   // Prix du marché auto-rempli ?
   const marketPrice = (() => {
@@ -326,6 +330,12 @@ function TabOnchain() {
 
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
 
+              {/* ── Info taxe ── */}
+              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background: isVip ? 'rgba(249,168,37,0.08)' : 'rgba(212,100,138,0.05)', border:'1px solid rgba(212,100,138,0.15)', borderRadius:10 }}>
+                <span style={{ fontSize:'13px' }}>{isVip ? '👑' : 'ℹ️'}</span>
+                <span style={{ color: isVip ? '#f9a825' : '#7a4060', fontSize:'11px', fontWeight:700 }}>{taxLabel}</span>
+              </div>
+
               {/* ── Formulaire d'ajout au panier ── */}
               <div style={{ background:'rgba(212,100,138,0.04)', border:'1px solid rgba(212,100,138,0.13)', borderRadius:12, padding:'12px' }}>
                 <p style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700, margin:'0 0 10px' }}>Ajouter au panier</p>
@@ -400,7 +410,7 @@ function TabOnchain() {
                             <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>×{item.quantity} · {item.pricePerUnit.toFixed(4)} $K/u</span>
                           </div>
                           <div style={{ textAlign:'right', marginRight:8 }}>
-                            <span style={{ color:'#6abf44', fontSize:'11px', fontWeight:700, display:'block' }}>{(brut * 0.5).toFixed(4)} $K</span>
+                            <span style={{ color:'#6abf44', fontSize:'11px', fontWeight:700, display:'block' }}>{(brut * (1 - taxRate)).toFixed(4)} $K</span>
                             <span style={{ color:'#9a6080', fontSize:'9px' }}>après taxe</span>
                           </div>
                           <button
@@ -423,7 +433,7 @@ function TabOnchain() {
                     <div style={{ borderTop:'1px solid rgba(212,100,138,0.2)', marginTop:6, paddingTop:6, display:'flex', justifyContent:'space-between' }}>
                       <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:700 }}>Vous recevez</span>
                       <span style={{ color:'#6abf44', fontSize:'14px', fontWeight:800 }}>
-                        {(cart.reduce((acc, i) => acc + i.quantity * i.pricePerUnit, 0) * 0.5).toFixed(4)} $K
+                        {(cart.reduce((acc, i) => acc + i.quantity * i.pricePerUnit, 0) * (1 - taxRate)).toFixed(4)} $K
                       </span>
                     </div>
                   </div>
@@ -480,7 +490,7 @@ function TabOnchain() {
                           ×{l.quantity} · {l.pricePerUnit.toFixed(4)} $K/unité
                         </span>
                         <span style={{ color:'#6abf44', fontSize:'10px' }}>
-                          Vous recevrez : {(l.pricePerUnit * l.quantity * 0.5).toFixed(4)} $K
+                          Vous recevrez : {(l.pricePerUnit * l.quantity * (1 - taxRate)).toFixed(4)} $K
                         </span>
                       </div>
                       <button
@@ -523,7 +533,7 @@ export function HdvPage() {
           🧙 PNJ
         </button>
         <button style={{ flex:1, padding:'11px', background:'none', border:'none', borderBottom: hdvTab==='onchain' ? '2px solid #8a25d4':'2px solid transparent', color: hdvTab==='onchain' ? '#8a25d4':'#7a4060', fontSize:'13px', fontWeight:700, cursor:'pointer', marginBottom:-2 }} onClick={() => setHdvTab('onchain')}>
-          🏪 Bazar
+          🏪 Hôtel des Ventes
         </button>
       </div>
 

@@ -158,6 +158,16 @@ const TRANSLATIONS = {
     'settings.save_error':    '❌ Erreur — Réessayer',
     'settings.save_btn':      '💾 Sauvegarder',
 
+    // --- TemplePage ---
+    'home.card_temple':      'Temple',
+    'home.card_temple_desc': 'Quêtes quotidiennes',
+    'temple.title':          'Temple des Offrandes',
+    'temple.subtitle':       'Offrandes quotidiennes — réinitialisées à minuit UTC',
+    'temple.quest_label':    'Offrir',
+    'temple.completed':      'Complété ✓',
+    'temple.insufficient':   'Ressources insuffisantes',
+    'temple.reset_in':       'Réinitialisation dans',
+
     // --- Métiers ---
     'metier.bucheron':         'Bûcheron',
     'metier.paysan':           'Paysan',
@@ -330,6 +340,16 @@ const TRANSLATIONS = {
     'settings.save_success':  '✅ Saved!',
     'settings.save_error':    '❌ Error — Retry',
     'settings.save_btn':      '💾 Save',
+
+    // --- TemplePage ---
+    'home.card_temple':      'Temple',
+    'home.card_temple_desc': 'Daily quests',
+    'temple.title':          'Temple of Offerings',
+    'temple.subtitle':       'Daily offerings — reset at midnight UTC',
+    'temple.quest_label':    'Offer',
+    'temple.completed':      'Completed ✓',
+    'temple.insufficient':   'Insufficient resources',
+    'temple.reset_in':       'Resets in',
 
     // --- Métiers ---
     'metier.bucheron':        'Lumberjack',

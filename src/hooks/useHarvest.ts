@@ -24,10 +24,8 @@ export interface UseHarvestReturn {
   collecterEtRelancer:    (slotIndex: number) => void;
 }
 
-function quantiteRecolte(niveauJoueur: number): number {
-  if (niveauJoueur <= 1)  return 0.2;
-  if (niveauJoueur <= 50) return 0.2 + (niveauJoueur - 1) * (0.3 / 49);
-  return 0.5 + (niveauJoueur - 50) * (0.5 / 50);
+function quantiteRecolte(_niveauJoueur: number): number {
+  return 0.2;
 }
 
 export function useHarvest(metierId: MetierId): UseHarvestReturn {

@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
-import { useSave } from '../hooks/useSave';
-import { useGameStore } from '../store/gameStore';
 import { useWithdraw } from '../hooks/useWithdraw';
 import { useDeposit } from '../hooks/useDeposit';
 import { useT } from '../utils/i18n';
@@ -11,13 +9,11 @@ import { KIRHA_TOKEN_ADDRESS } from '../contracts/addresses';
 export function BanquePage() {
   const navigate    = useNavigate();
   const { address } = useAccount();
-  const { sauvegarder, status, pendingCount } = useSave();
-  const derniereSave = useGameStore(s => s.derniere_sauvegarde);
   const { retirer, status: withdrawStatus, error: withdrawError, soldeKirha } = useWithdraw();
   const { deposer, status: depositStatus, error: depositError, balanceKirha } = useDeposit();
-  const [montantRetrait, setMontantRetrait]     = useState('');
-  const [montantDepot, setMontantDepot]         = useState('');
-  const [watchStatus, setWatchStatus]           = useState<'idle'|'ok'|'err'>('idle');
+  const [montantRetrait, setMontantRetrait] = useState('');
+  const [montantDepot, setMontantDepot]     = useState('');
+  const [watchStatus, setWatchStatus]       = useState<'idle'|'ok'|'err'>('idle');
   const { t } = useT();
 
   const addKirhaToWallet = async () => {
@@ -42,7 +38,6 @@ export function BanquePage() {
   };
 
   const short = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '';
-  const saveDate = derniereSave ? new Date(derniereSave).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : t('banque.save_never');
 
   return (
     <div style={s.page}>
@@ -73,34 +68,6 @@ export function BanquePage() {
             onClick={addKirhaToWallet}
           >
             {watchStatus === 'ok' ? '✅ $KIRHA ajouté' : watchStatus === 'err' ? '❌ Erreur' : '+ Ajouter $KIRHA au wallet'}
-          </button>
-        </div>
-
-        {/* Sauvegarde on-chain */}
-        <div style={s.saveCard}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'10px' }}>
-            <div>
-              <p style={{ color:'#1e0a16', fontSize:'14px', fontWeight:700, margin:0 }}>{t('banque.save_title')}</p>
-              <p style={{ color:'#7a4060', fontSize:'11px', margin:'3px 0 0' }}>
-                {pendingCount > 0 ? `${pendingCount} ${t('banque.save_pending')}` : t('banque.save_none')}
-              </p>
-            </div>
-            {pendingCount > 0 && (
-              <span style={{ background:'#c43070', color:'#fdf0f5', borderRadius:'50%', width:22, height:22, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:800 }}>{pendingCount}</span>
-            )}
-          </div>
-          <p style={{ color:'#7a4060', fontSize:'10px', marginBottom:'12px' }}>
-            {t('banque.save_last')} : {saveDate}
-          </p>
-          <button
-            style={{ ...s.saveBtn, opacity: (status === 'pending' || status === 'signing') ? 0.6 : 1 }}
-            onClick={sauvegarder}
-            disabled={status === 'pending' || status === 'signing'}
-          >
-            {status === 'pending' ? t('banque.save_pending_tx')
-              : status === 'signing' ? t('banque.save_signing')
-              : status === 'success' ? t('banque.save_success')
-              : pendingCount > 0 ? `${t('banque.save_btn')} (${pendingCount})` : t('banque.save_btn')}
           </button>
         </div>
 

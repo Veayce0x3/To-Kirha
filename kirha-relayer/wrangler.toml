@@ -1,0 +1,14 @@
+name = "kirha-relayer"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+RPC_URL = "https://base-sepolia-rpc.publicnode.com"
+KIRHA_GAME_ADDRESS = "0x0410eBecA7859D7bF86d3bA7490ED8cd0F2192eD"
+CHAIN_ID = "84532"
+ALLOWED_ORIGIN = "https://veayce0x3.github.io"
+
+[[kv_namespaces]]
+binding = "RATE_LIMITER"
+id = "c5c553e7009b4c9b8e7dcef8a545e1c6"

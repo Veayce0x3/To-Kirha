@@ -10,8 +10,11 @@ export function HomePage() {
   const pepitesOr  = useGameStore(s => s.pepitesOr);
   const pseudo     = useGameStore(s => s.pseudo);
   const villeId    = useGameStore(s => s.villeId);
+  const vipExpiry  = useGameStore(s => s.vipExpiry);
   const [showSettings, setShowSettings] = useState(false);
   const { t } = useT();
+
+  const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
 
   const CARDS = [
     { route: '/recolte', icon: '🌿', label: t('home.card_recolte'),  desc: t('home.card_recolte_desc'), color: '#6abf44' },
@@ -19,6 +22,7 @@ export function HomePage() {
     { route: '/banque',  icon: '🏦', label: t('home.card_banque'),   desc: t('home.card_banque_desc'),  color: '#8a25d4' },
     { route: '/maison',  icon: '🏠', label: t('home.card_maison'),   desc: t('home.card_maison_desc'),  color: '#c43070' },
     { route: '/craft',   icon: '⚗️', label: t('home.card_craft'),    desc: t('home.card_craft_desc'),   color: '#8d6e63' },
+    { route: '/temple',  icon: '⛩️', label: t('home.card_temple'),   desc: t('home.card_temple_desc'),  color: '#c4306e' },
   ] as const;
 
   return (
@@ -33,7 +37,12 @@ export function HomePage() {
         </div>
         <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
           <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end' }}>
-            <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:800 }}>{pseudo ?? '—'}</span>
+            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+              <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:800 }}>{pseudo ?? '—'}</span>
+              {isVip && (
+                <span style={{ background:'linear-gradient(135deg,#f9a825,#c43070)', color:'#fff', fontSize:'8px', fontWeight:800, padding:'1px 5px', borderRadius:6 }}>VIP ✨</span>
+              )}
+            </div>
             <span style={{ color:'#9a6080', fontSize:'9px' }}>
               {villeId ? `Ville #${villeId}` : '…'}
             </span>

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAccount, useDisconnect, usePublicClient } from 'wagmi';
 import { ConnectPage }  from './pages/ConnectPage';
 import { HomePage }     from './pages/HomePage';
 import { RecoltePage }  from './pages/RecoltePage';
@@ -9,11 +9,14 @@ import { BanquePage }   from './pages/BanquePage';
 import { MaisonPage }   from './pages/MaisonPage';
 import { CraftPage }    from './pages/CraftPage';
 import { AdminPage }    from './pages/AdminPage';
+import { TemplePage }   from './pages/TemplePage';
 import { BottomMenu }   from './components/BottomMenu';
 import { useGameStore } from './store/gameStore';
 import { useSave } from './hooks/useSave';
+import { KIRHA_GAME_ADDRESS } from './contracts/addresses';
+import KirhaGameAbi from './contracts/abis/KirhaGame.json';
 
-const APP_VERSION = '0.5.0';
+const APP_VERSION = '0.6.0';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -60,19 +63,46 @@ function BeforeUnloadGuard() {
   const { sauvegarder } = useSave();
 
   useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
+    const handler = (_e: BeforeUnloadEvent) => {
       if (pending.length === 0) return;
       // Déclenche la sauvegarde on-chain (MetaMask s'ouvrira)
       sauvegarder();
-      // Empêche la fermeture immédiate pour laisser le temps de signer
-      e.preventDefault();
-      e.returnValue = '';
+      // Note: e.preventDefault() et e.returnValue retiré — cause des popups indésirables sur Android
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   // sauvegarder est stable (useCallback) mais on le met en dépendance par sécurité
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pending.length]);
+  return null;
+}
+
+function VilleIdGuard() {
+  const { isConnected, address } = useAccount();
+  const villeId     = useGameStore(s => s.villeId);
+  const setVilleId  = useGameStore(s => s.setVilleId);
+  const setPseudo   = useGameStore(s => s.setPseudo);
+  const publicClient = usePublicClient();
+
+  useEffect(() => {
+    if (!isConnected || !address || !publicClient) return;
+    if (villeId && villeId !== '0') return;
+    (async () => {
+      try {
+        const cityId = await publicClient.readContract({
+          address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
+          functionName: 'playerCityId', args: [address],
+        }) as bigint;
+        if (cityId > 0n) setVilleId(cityId.toString());
+        const pseudo = await publicClient.readContract({
+          address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
+          functionName: 'playerPseudo', args: [address],
+        }) as string;
+        if (pseudo) setPseudo(pseudo);
+      } catch {}
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, address, villeId, publicClient]);
   return null;
 }
 
@@ -87,6 +117,7 @@ export default function App() {
       <HashRouter>
         <VersionGuard />
         <BeforeUnloadGuard />
+        <VilleIdGuard />
         <div style={{ position:'relative', width:'100%', height:'100vh', overflow:'hidden' }}>
           <Routes>
             <Route path="/"       element={<ConnectPage />} />
@@ -97,6 +128,7 @@ export default function App() {
             <Route path="/maison" element={<Guard><MaisonPage /></Guard>} />
             <Route path="/craft"  element={<Guard><CraftPage /></Guard>} />
             <Route path="/admin"  element={<Guard><AdminPage /></Guard>} />
+            <Route path="/temple" element={<Guard><TemplePage /></Guard>} />
             <Route path="*"       element={<Navigate to="/home" replace />} />
           </Routes>
           <BottomMenu />
