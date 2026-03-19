@@ -5,7 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 RPC_URL = "https://base-sepolia-rpc.publicnode.com"
-KIRHA_GAME_ADDRESS = "0x0410eBecA7859D7bF86d3bA7490ED8cd0F2192eD"
+KIRHA_GAME_ADDRESS = "0xd9fbc77ebA3D79304829375762b36D6dBb759464"
+KIRHA_MARKET_ADDRESS = "0x847d961EB1421798B1687728F3860A7E2546fC86"
 CHAIN_ID = "84532"
 ALLOWED_ORIGIN = "https://veayce0x3.github.io"
 

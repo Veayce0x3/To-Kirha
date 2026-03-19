@@ -1,14 +1,21 @@
 import { ethers } from 'ethers';
 
-// ── ABI minimal pour batchSave ──────────────────────────────
+// ── ABIs minimaux ───────────────────────────────────────────
 const KIRHA_GAME_ABI = [
   'function batchSave(uint256 cityId, uint256[] resourceIds, uint256[] resourceAmts, uint8[] metierIds, uint32[] metierLevels, uint32[] metierXps, uint32[] metierXpTotals, uint256 kirhaGained) external',
+];
+
+const KIRHA_MARKET_ABI = [
+  'function listResource(uint256 cityId, uint256 resourceId, uint256 quantity, uint256 pricePerUnit) external returns (uint256)',
+  'function buyResource(uint256 listingId, uint256 buyerCityId, uint256 quantity) external',
+  'function cancelListing(uint256 listingId) external',
 ];
 
 interface Env {
   RELAYER_PRIVATE_KEY: string;
   RPC_URL: string;
   KIRHA_GAME_ADDRESS: string;
+  KIRHA_MARKET_ADDRESS: string;
   ALLOWED_ORIGIN: string;
   RATE_LIMITER: KVNamespace;
 }
@@ -24,6 +31,23 @@ interface SavePayload {
   kirhaGained: string;
 }
 
+interface ListPayload {
+  cityId: string;
+  resourceId: string;
+  quantity: string;
+  pricePerUnit: string;
+}
+
+interface BuyPayload {
+  listingId: string;
+  buyerCityId: string;
+  quantity: string;
+}
+
+interface CancelPayload {
+  listingId: string;
+}
+
 function corsHeaders(origin: string, allowedOrigin: string) {
   const allowed = allowedOrigin === '*' || origin === allowedOrigin
     ? origin
@@ -34,6 +58,22 @@ function corsHeaders(origin: string, allowedOrigin: string) {
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
   };
+}
+
+function jsonResponse(cors: Record<string, string>, body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, 'Content-Type': 'application/json' },
+  });
+}
+
+function cleanError(msg: string): string {
+  if (msg.includes('city is banned'))    return 'Ville bannie.';
+  if (msg.includes('not authorized'))    return 'Session expirée, veuillez re-autoriser.';
+  if (msg.includes('Rate limit'))        return 'Trop de requêtes.';
+  if (msg.includes('not enough stock'))  return 'Stock insuffisant.';
+  if (msg.includes('not enough kirha'))  return 'Solde $KIRHA insuffisant.';
+  return msg.slice(0, 120);
 }
 
 export default {
@@ -47,81 +87,167 @@ export default {
     }
 
     if (request.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-        status: 405, headers: { ...cors, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse(cors, { error: 'Method not allowed' }, 405);
     }
+
+    const url      = new URL(request.url);
+    const pathname = url.pathname;
 
     // ── Parse body ───────────────────────────────────────────
-    let body: SavePayload;
+    let body: unknown;
     try {
-      body = await request.json() as SavePayload;
+      body = await request.json();
     } catch {
-      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-        status: 400, headers: { ...cors, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse(cors, { error: 'Invalid JSON' }, 400);
     }
 
-    const {
-      cityId, resourceIds, resourceAmts,
-      metierIds, metierLevels, metierXps, metierXpTotals, kirhaGained,
-    } = body;
+    // ── Provider / wallet ────────────────────────────────────
+    const provider = new ethers.JsonRpcProvider(env.RPC_URL);
+    const wallet   = new ethers.Wallet(env.RELAYER_PRIVATE_KEY, provider);
 
-    if (!cityId || !metierIds || !metierLevels) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400, headers: { ...cors, 'Content-Type': 'application/json' },
-      });
+    // ════════════════════════════════════════════════════════
+    // POST /save  — batchSave
+    // ════════════════════════════════════════════════════════
+    if (pathname === '/' || pathname === '/save') {
+      const p = body as SavePayload;
+
+      if (!p.cityId || !p.metierIds || !p.metierLevels) {
+        return jsonResponse(cors, { error: 'Missing required fields' }, 400);
+      }
+
+      // Rate limiting : max 20 saves/heure par cityId
+      const hourBucket = Math.floor(Date.now() / 3_600_000);
+      const rateKey    = `save:${p.cityId}:${hourBucket}`;
+      const countStr   = await env.RATE_LIMITER.get(rateKey);
+      const count      = parseInt(countStr ?? '0', 10);
+      if (count >= 20) {
+        return jsonResponse(cors, { error: 'Rate limit exceeded (20/hour)' }, 429);
+      }
+      await env.RATE_LIMITER.put(rateKey, String(count + 1), { expirationTtl: 3600 });
+
+      try {
+        const contract = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ABI, wallet);
+        const tx = await contract.batchSave(
+          BigInt(p.cityId),
+          (p.resourceIds  ?? []).map(BigInt),
+          (p.resourceAmts ?? []).map(BigInt),
+          p.metierIds,
+          p.metierLevels,
+          p.metierXps,
+          p.metierXpTotals,
+          BigInt(p.kirhaGained ?? '0'),
+        );
+        const receipt = await tx.wait();
+        return jsonResponse(cors, { success: true, txHash: receipt.hash });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        return jsonResponse(cors, { error: cleanError(msg) }, 500);
+      }
     }
 
-    // ── Rate limiting : max 20 saves par cityId par heure ────
-    const hourBucket  = Math.floor(Date.now() / 3_600_000);
-    const rateKey     = `save:${cityId}:${hourBucket}`;
-    const countStr    = await env.RATE_LIMITER.get(rateKey);
-    const count       = parseInt(countStr ?? '0', 10);
+    // ════════════════════════════════════════════════════════
+    // POST /market/list  — listResource
+    // ════════════════════════════════════════════════════════
+    if (pathname === '/market/list') {
+      const p = body as ListPayload;
 
-    if (count >= 20) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded (20/hour)' }), {
-        status: 429, headers: { ...cors, 'Content-Type': 'application/json' },
-      });
+      if (!p.cityId || !p.resourceId || !p.quantity || !p.pricePerUnit) {
+        return jsonResponse(cors, { error: 'Missing required fields' }, 400);
+      }
+
+      // Rate limiting : max 30 mises en vente/heure par cityId
+      const hourBucket = Math.floor(Date.now() / 3_600_000);
+      const rateKey    = `list:${p.cityId}:${hourBucket}`;
+      const countStr   = await env.RATE_LIMITER.get(rateKey);
+      const count      = parseInt(countStr ?? '0', 10);
+      if (count >= 30) {
+        return jsonResponse(cors, { error: 'Rate limit exceeded (30/hour)' }, 429);
+      }
+      await env.RATE_LIMITER.put(rateKey, String(count + 1), { expirationTtl: 3600 });
+
+      try {
+        const contract = new ethers.Contract(env.KIRHA_MARKET_ADDRESS, KIRHA_MARKET_ABI, wallet);
+        const tx = await contract.listResource(
+          BigInt(p.cityId),
+          BigInt(p.resourceId),
+          BigInt(p.quantity),
+          BigInt(p.pricePerUnit),
+        );
+        const receipt = await tx.wait();
+        // Récupérer le listingId depuis l'event ResourceListed
+        let listingId: string | undefined;
+        for (const log of receipt.logs ?? []) {
+          try {
+            const iface = new ethers.Interface([
+              'event ResourceListed(uint256 indexed listingId, uint256 indexed sellerCityId, uint256 resourceId, uint256 quantity, uint256 pricePerUnit)',
+            ]);
+            const parsed = iface.parseLog(log);
+            if (parsed) listingId = parsed.args.listingId.toString();
+          } catch {}
+        }
+        return jsonResponse(cors, { success: true, txHash: receipt.hash, listingId });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        return jsonResponse(cors, { error: cleanError(msg) }, 500);
+      }
     }
-    await env.RATE_LIMITER.put(rateKey, String(count + 1), { expirationTtl: 3600 });
 
-    // ── Envoyer la transaction ───────────────────────────────
-    try {
-      const provider = new ethers.JsonRpcProvider(env.RPC_URL);
-      const wallet   = new ethers.Wallet(env.RELAYER_PRIVATE_KEY, provider);
-      const contract = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ABI, wallet);
+    // ════════════════════════════════════════════════════════
+    // POST /market/buy  — buyResource
+    // ════════════════════════════════════════════════════════
+    if (pathname === '/market/buy') {
+      const p = body as BuyPayload;
 
-      const tx = await contract.batchSave(
-        BigInt(cityId),
-        (resourceIds  ?? []).map(BigInt),
-        (resourceAmts ?? []).map(BigInt),
-        metierIds,
-        metierLevels,
-        metierXps,
-        metierXpTotals,
-        BigInt(kirhaGained ?? '0'),
-      );
+      if (!p.listingId || !p.buyerCityId || !p.quantity) {
+        return jsonResponse(cors, { error: 'Missing required fields' }, 400);
+      }
 
-      const receipt = await tx.wait();
+      // Rate limiting : max 50 achats/heure par buyerCityId
+      const hourBucket = Math.floor(Date.now() / 3_600_000);
+      const rateKey    = `buy:${p.buyerCityId}:${hourBucket}`;
+      const countStr   = await env.RATE_LIMITER.get(rateKey);
+      const count      = parseInt(countStr ?? '0', 10);
+      if (count >= 50) {
+        return jsonResponse(cors, { error: 'Rate limit exceeded (50/hour)' }, 429);
+      }
+      await env.RATE_LIMITER.put(rateKey, String(count + 1), { expirationTtl: 3600 });
 
-      return new Response(JSON.stringify({ success: true, txHash: receipt.hash }), {
-        status: 200,
-        headers: { ...cors, 'Content-Type': 'application/json' },
-      });
-
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error';
-      // Simplifier les messages d'erreur contrat pour le client
-      const clean = msg.includes('city is banned')      ? 'Ville bannie.'
-                  : msg.includes('not authorized')      ? 'Session expirée, veuillez re-autoriser.'
-                  : msg.includes('Rate limit')          ? 'Trop de sauvegardes.'
-                  : msg.slice(0, 120);
-
-      return new Response(JSON.stringify({ error: clean }), {
-        status: 500,
-        headers: { ...cors, 'Content-Type': 'application/json' },
-      });
+      try {
+        const contract = new ethers.Contract(env.KIRHA_MARKET_ADDRESS, KIRHA_MARKET_ABI, wallet);
+        const tx = await contract.buyResource(
+          BigInt(p.listingId),
+          BigInt(p.buyerCityId),
+          BigInt(p.quantity),
+        );
+        const receipt = await tx.wait();
+        return jsonResponse(cors, { success: true, txHash: receipt.hash });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        return jsonResponse(cors, { error: cleanError(msg) }, 500);
+      }
     }
+
+    // ════════════════════════════════════════════════════════
+    // POST /market/cancel  — cancelListing
+    // ════════════════════════════════════════════════════════
+    if (pathname === '/market/cancel') {
+      const p = body as CancelPayload;
+
+      if (!p.listingId) {
+        return jsonResponse(cors, { error: 'Missing listingId' }, 400);
+      }
+
+      try {
+        const contract = new ethers.Contract(env.KIRHA_MARKET_ADDRESS, KIRHA_MARKET_ABI, wallet);
+        const tx = await contract.cancelListing(BigInt(p.listingId));
+        const receipt = await tx.wait();
+        return jsonResponse(cors, { success: true, txHash: receipt.hash });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        return jsonResponse(cors, { error: cleanError(msg) }, 500);
+      }
+    }
+
+    return jsonResponse(cors, { error: 'Not found' }, 404);
   },
 };

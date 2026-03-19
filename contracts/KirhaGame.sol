@@ -220,6 +220,12 @@ contract KirhaGame is Ownable, ReentrancyGuard {
         return s.relayer != address(0) && uint64(block.timestamp) < s.expiry;
     }
 
+    /** Retourne true si addr est le relayer actif pour cette ville (utilisé par KirhaMarket) */
+    function isRelayerFor(uint256 cityId, address addr) external view returns (bool) {
+        RelayerSession memory s = relayerSession[cityId];
+        return s.relayer == addr && uint64(block.timestamp) < s.expiry;
+    }
+
     // --------------------------------------------------------
     // Sauvegarde on-chain (TESTNET — sans vérification signature)
     // --------------------------------------------------------

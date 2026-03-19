@@ -75,6 +75,14 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
         _;
     }
 
+    /** Accepte le propriétaire de la ville OU le relayer actif pour cette ville */
+    modifier onlyCityOwnerOrRelayer(uint256 cityId) {
+        if (msg.sender != cityNft.ownerOf(cityId)) {
+            require(game.isRelayerFor(cityId, msg.sender), "KirhaMarket: not authorized");
+        }
+        _;
+    }
+
     function setTreasury(address _treasury) external onlyOwner {
         treasury = _treasury;
         emit TreasuryUpdated(_treasury);
@@ -95,7 +103,7 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
         uint256 resourceId,
         uint256 quantity,
         uint256 pricePerUnit
-    ) external nonReentrant onlyCityOwner(cityId) returns (uint256 listingId) {
+    ) external nonReentrant onlyCityOwnerOrRelayer(cityId) returns (uint256 listingId) {
         require(quantity > 0,     "KirhaMarket: quantity must be > 0");
         require(pricePerUnit > 0, "KirhaMarket: price must be > 0");
 
@@ -122,7 +130,7 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
         uint256[] calldata resourceIds,
         uint256[] calldata quantities,
         uint256[] calldata prices
-    ) external nonReentrant onlyCityOwner(cityId) {
+    ) external nonReentrant onlyCityOwnerOrRelayer(cityId) {
         require(resourceIds.length > 0,                    "KirhaMarket: empty batch");
         require(resourceIds.length == quantities.length,   "KirhaMarket: length mismatch");
         require(resourceIds.length == prices.length,       "KirhaMarket: length mismatch");
@@ -188,7 +196,7 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
         uint256 listingId,
         uint256 buyerCityId,
         uint256 quantity
-    ) external nonReentrant onlyCityOwner(buyerCityId) {
+    ) external nonReentrant onlyCityOwnerOrRelayer(buyerCityId) {
         _executeBuy(listingId, buyerCityId, quantity);
     }
 
@@ -196,7 +204,7 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
         uint256          buyerCityId,
         uint256[] calldata listingIds,
         uint256[] calldata quantities
-    ) external nonReentrant onlyCityOwner(buyerCityId) {
+    ) external nonReentrant onlyCityOwnerOrRelayer(buyerCityId) {
         require(listingIds.length > 0,                  "KirhaMarket: empty batch");
         require(listingIds.length == quantities.length, "KirhaMarket: length mismatch");
         for (uint256 i = 0; i < listingIds.length; i++) {
@@ -211,7 +219,11 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
     function cancelListing(uint256 listingId) external nonReentrant {
         Listing storage l = listings[listingId];
         require(l.active, "KirhaMarket: not active");
-        require(cityNft.ownerOf(l.sellerCityId) == msg.sender, "KirhaMarket: not seller");
+        address seller = cityNft.ownerOf(l.sellerCityId);
+        require(
+            msg.sender == seller || game.isRelayerFor(l.sellerCityId, msg.sender),
+            "KirhaMarket: not seller"
+        );
 
         l.active = false;
         uint256 remaining = l.quantity;

@@ -7,10 +7,12 @@ import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
 import { useGameStore } from '../store/gameStore';
 import { ResourceId } from '../data/resources';
 
+const RELAYER_URL = 'https://kirha-relayer.tokirha.workers.dev';
+
 export interface OnChainListing {
   listingId:       bigint;
   sellerCityId:    bigint;
-  sellerPseudo:    string;       // pseudo lié à la ville vendeur
+  sellerPseudo:    string;
   resourceId:      number;
   quantity:        number;       // quantité réelle (non scalée)
   pricePerUnit:    number;       // en $KIRHA (float)
@@ -31,6 +33,15 @@ export function useMarket() {
   const ajouterRessource = useGameStore(s => s.ajouterRessource);
 
   const cityIdBn = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
+
+  // ── État relayer pour cette ville ─────────────────────────
+  const { data: relayerActive } = useReadContract({
+    address:      KIRHA_GAME_ADDRESS,
+    abi:          KirhaGameAbi,
+    functionName: 'isRelayerActive',
+    args:         cityIdBn ? [cityIdBn] : undefined,
+    query: { enabled: !!cityIdBn, refetchInterval: 60_000 },
+  });
 
   // ── Lire les listings actifs ───────────────────────────────
   const { data: listingsRaw, refetch: refetchListings } = useReadContract({
@@ -66,7 +77,6 @@ export function useMarket() {
   }, [pseudosRaw, uniqueSellerCityIds]);
 
   // ── Parser les listings bruts ──────────────────────────────
-  // quantity on-chain est scalée ×1e4 (ex: 10 unités = 100000)
   const listings: OnChainListing[] = (() => {
     if (!listingsRaw) return [];
     const [items, ids] = listingsRaw as [
@@ -78,33 +88,94 @@ export function useMarket() {
       sellerCityId:    item.sellerCityId,
       sellerPseudo:    pseudoMap.get(item.sellerCityId) ?? '…',
       resourceId:      Number(item.resourceId),
-      quantity:        Number(item.quantity) / 1e4,   // dé-scaler
+      quantity:        Number(item.quantity) / 1e4,
       pricePerUnit:    parseFloat(formatEther(item.pricePerUnit)),
       pricePerUnitWei: item.pricePerUnit,
     }));
   })();
 
-  // ── Mettre en vente (batch — 1 signature) ─────────────────
-  const batchMettrEnVente = useCallback(async (
-    items: { resourceId: number; quantity: number; pricePerUnit: number }[]
+  // ── Helper : POST vers le relayer ──────────────────────────
+  async function relayerPost(endpoint: string, body: unknown): Promise<void> {
+    const res = await fetch(`${RELAYER_URL}${endpoint}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => 'Erreur relayer');
+      let msg = text;
+      try { msg = (JSON.parse(text) as { error?: string }).error ?? text; } catch {}
+      throw new Error(msg);
+    }
+  }
+
+  // ── Mettre en vente (1 ressource) ─────────────────────────
+  const mettrEnVente = useCallback(async (
+    resourceId: number, quantity: number, pricePerUnit: number
   ) => {
-    if (!cityIdBn || items.length === 0) return;
+    if (!cityIdBn || !villeId) return;
     setError(null);
     setStatus('listing');
     try {
-      const hash = await writeContractAsync({
-        address:      KIRHA_MARKET_ADDRESS,
-        abi:          KirhaMarketAbi,
-        functionName: 'batchListResources',
-        args: [
-          cityIdBn,
-          items.map(i => BigInt(i.resourceId)),
-          items.map(i => BigInt(Math.floor(i.quantity))),
-          items.map(i => parseEther(i.pricePerUnit.toString())),
-        ],
-      });
-      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
-      // Retirer de l'inventaire local
+      if (relayerActive) {
+        await relayerPost('/market/list', {
+          cityId:       villeId,
+          resourceId:   String(resourceId),
+          quantity:     String(Math.floor(quantity)),
+          pricePerUnit: parseEther(pricePerUnit.toString()).toString(),
+        });
+      } else {
+        const hash = await writeContractAsync({
+          address:      KIRHA_MARKET_ADDRESS,
+          abi:          KirhaMarketAbi,
+          functionName: 'listResource',
+          args:         [cityIdBn, BigInt(resourceId), BigInt(Math.floor(quantity)), parseEther(pricePerUnit.toString())],
+        });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      }
+      retirerRessource(resourceId as ResourceId, Math.floor(quantity));
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await refetchListings();
+      setStatus('success');
+      setTimeout(() => setStatus('idle'), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur');
+      setStatus('error');
+    }
+  }, [cityIdBn, villeId, relayerActive, writeContractAsync, publicClient, retirerRessource, refetchListings]);
+
+  // ── Mettre en vente (batch — 1 appel) ─────────────────────
+  const batchMettrEnVente = useCallback(async (
+    items: { resourceId: number; quantity: number; pricePerUnit: number }[]
+  ) => {
+    if (!cityIdBn || !villeId || items.length === 0) return;
+    setError(null);
+    setStatus('listing');
+    try {
+      if (relayerActive) {
+        // Appels séquentiels (le relayer gère les nonces)
+        for (const item of items) {
+          await relayerPost('/market/list', {
+            cityId:       villeId,
+            resourceId:   String(item.resourceId),
+            quantity:     String(Math.floor(item.quantity)),
+            pricePerUnit: parseEther(item.pricePerUnit.toString()).toString(),
+          });
+        }
+      } else {
+        const hash = await writeContractAsync({
+          address:      KIRHA_MARKET_ADDRESS,
+          abi:          KirhaMarketAbi,
+          functionName: 'batchListResources',
+          args: [
+            cityIdBn,
+            items.map(i => BigInt(i.resourceId)),
+            items.map(i => BigInt(Math.floor(i.quantity))),
+            items.map(i => parseEther(i.pricePerUnit.toString())),
+          ],
+        });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      }
       for (const item of items) {
         retirerRessource(item.resourceId as ResourceId, Math.floor(item.quantity));
       }
@@ -116,27 +187,69 @@ export function useMarket() {
       setError(err instanceof Error ? err.message : 'Erreur');
       setStatus('error');
     }
-  }, [cityIdBn, writeContractAsync, refetchListings, publicClient, retirerRessource]);
+  }, [cityIdBn, villeId, relayerActive, writeContractAsync, refetchListings, publicClient, retirerRessource]);
+
+  // ── Acheter (unitaire) ────────────────────────────────────
+  const acheter = useCallback(async (listingId: bigint, quantity: number, resourceId: number) => {
+    if (!cityIdBn || !villeId) return;
+    setError(null);
+    setStatus('buying');
+    try {
+      if (relayerActive) {
+        await relayerPost('/market/buy', {
+          listingId:   listingId.toString(),
+          buyerCityId: villeId,
+          quantity:    String(Math.floor(quantity)),
+        });
+      } else {
+        const hash = await writeContractAsync({
+          address:      KIRHA_MARKET_ADDRESS,
+          abi:          KirhaMarketAbi,
+          functionName: 'buyResource',
+          args:         [listingId, cityIdBn, BigInt(Math.floor(quantity))],
+        });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      }
+      ajouterRessource(resourceId as ResourceId, quantity);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await refetchListings();
+      setStatus('success');
+      setTimeout(() => setStatus('idle'), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur');
+      setStatus('error');
+    }
+  }, [cityIdBn, villeId, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource]);
 
   // ── Acheter (panier — batch) ───────────────────────────────
   const batchAcheter = useCallback(async (
     items: { listingId: bigint; quantity: number; resourceId: number }[]
   ) => {
-    if (!cityIdBn || items.length === 0) return;
+    if (!cityIdBn || !villeId || items.length === 0) return;
     setError(null);
     setStatus('buying');
     try {
-      const hash = await writeContractAsync({
-        address:      KIRHA_MARKET_ADDRESS,
-        abi:          KirhaMarketAbi,
-        functionName: 'batchBuyResources',
-        args: [
-          cityIdBn,
-          items.map(i => i.listingId),
-          items.map(i => BigInt(Math.floor(i.quantity))),
-        ],
-      });
-      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      if (relayerActive) {
+        for (const item of items) {
+          await relayerPost('/market/buy', {
+            listingId:   item.listingId.toString(),
+            buyerCityId: villeId,
+            quantity:    String(Math.floor(item.quantity)),
+          });
+        }
+      } else {
+        const hash = await writeContractAsync({
+          address:      KIRHA_MARKET_ADDRESS,
+          abi:          KirhaMarketAbi,
+          functionName: 'batchBuyResources',
+          args: [
+            cityIdBn,
+            items.map(i => i.listingId),
+            items.map(i => BigInt(Math.floor(i.quantity))),
+          ],
+        });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      }
       for (const item of items) {
         ajouterRessource(item.resourceId as ResourceId, item.quantity);
       }
@@ -148,44 +261,24 @@ export function useMarket() {
       setError(err instanceof Error ? err.message : 'Erreur');
       setStatus('error');
     }
-  }, [cityIdBn, writeContractAsync, refetchListings, publicClient, ajouterRessource]);
-
-  // ── Acheter (unitaire) ────────────────────────────────────
-  const acheter = useCallback(async (listingId: bigint, quantity: number, resourceId: number) => {
-    if (!cityIdBn) return;
-    setError(null);
-    setStatus('buying');
-    try {
-      const hash = await writeContractAsync({
-        address:      KIRHA_MARKET_ADDRESS,
-        abi:          KirhaMarketAbi,
-        functionName: 'buyResource',
-        args:         [listingId, cityIdBn, BigInt(Math.floor(quantity))],
-      });
-      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
-      ajouterRessource(resourceId as ResourceId, quantity);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      await refetchListings();
-      setStatus('success');
-      setTimeout(() => setStatus('idle'), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur');
-      setStatus('error');
-    }
-  }, [cityIdBn, writeContractAsync, refetchListings, publicClient, ajouterRessource]);
+  }, [cityIdBn, villeId, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource]);
 
   // ── Annuler un listing ─────────────────────────────────────
   const annulerListing = useCallback(async (listingId: bigint) => {
     setError(null);
     setStatus('cancelling');
     try {
-      const hash = await writeContractAsync({
-        address:      KIRHA_MARKET_ADDRESS,
-        abi:          KirhaMarketAbi,
-        functionName: 'cancelListing',
-        args:         [listingId],
-      });
-      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      if (relayerActive) {
+        await relayerPost('/market/cancel', { listingId: listingId.toString() });
+      } else {
+        const hash = await writeContractAsync({
+          address:      KIRHA_MARKET_ADDRESS,
+          abi:          KirhaMarketAbi,
+          functionName: 'cancelListing',
+          args:         [listingId],
+        });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      }
       await refetchListings();
       setStatus('success');
       setTimeout(() => setStatus('idle'), 3000);
@@ -193,19 +286,19 @@ export function useMarket() {
       setError(err instanceof Error ? err.message : 'Erreur');
       setStatus('error');
     }
-  }, [writeContractAsync, refetchListings, publicClient]);
+  }, [relayerActive, writeContractAsync, refetchListings, publicClient]);
 
   const myListings = listings.filter(l => cityIdBn && l.sellerCityId === cityIdBn);
 
   return {
     listings,
     myListings,
-    isApproved: true,   // Plus besoin d'approbation ERC-1155
+    isApproved: true,
+    isRelayerActive: !!relayerActive,
     status,
     error,
-    approveMarket: async () => {},  // No-op (kept for interface compatibility)
-    mettrEnVente: async (_rid: number, qty: number, price: number) =>
-      batchMettrEnVente([{ resourceId: _rid, quantity: qty, pricePerUnit: price }]),
+    approveMarket: async () => {},
+    mettrEnVente,
     batchMettrEnVente,
     acheter,
     batchAcheter,
