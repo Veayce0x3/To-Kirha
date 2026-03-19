@@ -5,8 +5,10 @@ import { baseSepolia } from 'viem/chains';
 const PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? 'YOUR_PROJECT_ID';
 
 export const wagmiConfig = getDefaultConfig({
-  appName:   'To-Kirha',
-  projectId: PROJECT_ID,
-  chains:    [baseSepolia],
-  ssr:       false,
+  appName:        'To-Kirha',
+  appDescription: 'Jeu Web3 thème sakura — récoltez, vendez, progressez.',
+  appUrl:         'https://veayce0x3.github.io/To-Kirha',
+  projectId:      PROJECT_ID,
+  chains:         [baseSepolia],
+  ssr:            false,
 });
