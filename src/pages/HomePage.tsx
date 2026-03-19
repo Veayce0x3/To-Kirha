@@ -34,7 +34,9 @@ export function HomePage() {
         <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
           <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end' }}>
             <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:800 }}>{pseudo ?? '—'}</span>
-            <span style={{ color:'#9a6080', fontSize:'9px' }}>Ville #{villeId}</span>
+            <span style={{ color:'#9a6080', fontSize:'9px' }}>
+              {villeId ? `Ville #${villeId}` : '…'}
+            </span>
           </div>
           <button style={s.settingsBtn} onClick={() => setShowSettings(true)}>⚙️</button>
         </div>

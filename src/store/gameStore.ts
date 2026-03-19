@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware';
 import { MetierId } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { Equipement, TypeVetement } from '../data/vetements';
-import { getOrCreateCityId } from '../utils/cityId';
 
 // ============================================================
 // Types
@@ -136,7 +135,7 @@ export const useGameStore = create<GameState>()(
       soldeKirha:          0,
       kirhaEarned:         0,
       pepitesOr:           0,
-      villeId:             getOrCreateCityId(),
+      villeId:             '',
       langue:              'fr',
       pseudo:              null,
 
@@ -286,7 +285,7 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'to-kirha-game',
-      version: 6,
+      version: 7,
       migrate: (_state: unknown, _version: number) => {
         // v5 : reset complet — efface aussi les clés localStorage héritées
         localStorage.removeItem('kirha_city_id');

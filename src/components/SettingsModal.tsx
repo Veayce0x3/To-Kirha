@@ -85,7 +85,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               <div style={{ flex:1 }}>
                 <span style={{ color:'#1e0a16', fontSize:'15px', fontWeight:800 }}>{pseudo ?? '—'}</span>
                 <span style={{ color:'#9a6080', fontSize:'10px', display:'block' }}>
-                  Ville #{villeId} · {shortWallet}
+                  {villeId ? `Ville #${villeId}` : '…'} · {shortWallet}
                 </span>
               </div>
             </div>

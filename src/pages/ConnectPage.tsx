@@ -64,6 +64,8 @@ export function ConnectPage() {
     if (pseudo && pseudo.length > 0) {
       // Joueur déjà enregistré → lire cityId puis entrer dans le jeu
       (async () => {
+        // Petit délai pour laisser le RPC propager l'état
+        await new Promise(r => setTimeout(r, 1500));
         const cityId = await publicClient?.readContract({
           address:      KIRHA_GAME_ADDRESS,
           abi:          KirhaGameAbi,
@@ -71,9 +73,7 @@ export function ConnectPage() {
           args:         [address],
         }) as bigint | undefined;
         if (cityId !== undefined && cityId > 0n) {
-          const idStr = cityId.toString();
-          localStorage.setItem('kirha_city_id', idStr);
-          setVilleId(idStr);
+          setVilleId(cityId.toString());
         }
         setPseudo(pseudo);
         setAddress(address);
@@ -117,6 +117,8 @@ export function ConnectPage() {
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
 
+      // Délai pour laisser le RPC propager l'état après la tx
+      await new Promise(r => setTimeout(r, 1500));
       const cityId = await publicClient?.readContract({
         address:      KIRHA_GAME_ADDRESS,
         abi:          KirhaGameAbi,
@@ -124,9 +126,7 @@ export function ConnectPage() {
         args:         [address],
       }) as bigint | undefined;
       if (cityId !== undefined && cityId > 0n) {
-        const idStr = cityId.toString();
-        localStorage.setItem('kirha_city_id', idStr);
-        setVilleId(idStr);
+        setVilleId(cityId.toString());
       }
       setPseudo(val);
       setAddress(address);
