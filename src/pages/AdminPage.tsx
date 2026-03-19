@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useAccount, usePublicClient, useWriteContract } from 'wagmi';
-import { formatEther, parseEther } from 'viem';
-import { KIRHA_GAME_ADDRESS, KIRHA_CITY_ADDRESS, KIRHA_MARKET_ADDRESS } from '../contracts/addresses';
+import { useAccount, usePublicClient } from 'wagmi';
+import { formatEther } from 'viem';
+import { KIRHA_GAME_ADDRESS, KIRHA_CITY_ADDRESS, KIRHA_MARKET_ADDRESS, RELAYER_ADDRESS } from '../contracts/addresses';
 import KirhaGameAbi   from '../contracts/abis/KirhaGame.json';
 import KirhaCityAbi   from '../contracts/abis/KirhaCity.json';
 import KirhaMarketAbi from '../contracts/abis/KirhaMarket.json';
@@ -28,10 +28,11 @@ interface PlayerData {
 const ALL_RESOURCE_IDS = Array.from({ length: 50 }, (_, i) => BigInt(i + 1));
 const METIER_NAMES = ['Bûcheron', 'Paysan', 'Pêcheur', 'Mineur', 'Alchimiste'];
 
+const ADMIN_WORKER_URL = 'https://kirha-relayer.tokirha.workers.dev';
+
 export function AdminPage() {
   const { address }  = useAccount();
   const publicClient = usePublicClient();
-  const { writeContractAsync } = useWriteContract();
 
   const [players, setPlayers]             = useState<PlayerData[]>([]);
   const [totalCities, setTotalCities]     = useState<number | null>(null);
@@ -40,6 +41,8 @@ export function AdminPage() {
   const [loading, setLoading]             = useState(false);
   const [error, setError]                 = useState<string | null>(null);
   const [expandedCity, setExpandedCity]   = useState<number | null>(null);
+  const [relayerBalance, setRelayerBalance] = useState<bigint | null>(null);
+  const [adminToken, setAdminToken] = useState(() => sessionStorage.getItem('kirha_admin_token') ?? '');
 
   // Delete confirmation state
   const [deleteStep, setDeleteStep]   = useState<Record<number, number>>({});
@@ -67,6 +70,10 @@ export function AdminPage() {
     setLoading(true);
     setError(null);
     try {
+      // 0. Balance du relayer
+      const relBal = await publicClient.getBalance({ address: RELAYER_ADDRESS });
+      setRelayerBalance(relBal);
+
       // 1. Nombre total de villes
       const count = await publicClient.readContract({
         address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'playerCount',
@@ -119,40 +126,50 @@ export function AdminPage() {
   }
 
   async function toggleBan(cityId: number, currentlyBanned: boolean) {
+    if (!adminToken) { setError('Token admin requis'); return; }
     try {
-      await writeContractAsync({
-        address: KIRHA_GAME_ADDRESS,
-        abi: KirhaGameAbi,
-        functionName: 'setBan',
-        args: [BigInt(cityId), !currentlyBanned],
+      const res = await fetch(`${ADMIN_WORKER_URL}/admin/set-ban`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({ cityId: String(cityId), banned: String(!currentlyBanned) }),
       });
-      setPlayers(prev => prev.map(p =>
-        p.cityId === cityId ? { ...p, isBanned: !currentlyBanned } : p
-      ));
+      if (!res.ok) { const d = await res.json() as {error?:string}; throw new Error(d.error); }
+      setPlayers(prev => prev.map(p => p.cityId === cityId ? { ...p, isBanned: !currentlyBanned } : p));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur setBan');
+      setError(e instanceof Error ? e.message.slice(0, 80) : 'Erreur toggleBan');
     }
   }
 
   async function deleteCity(cityId: number) {
+    if (!adminToken) { setError('Token admin requis'); return; }
     try {
-      await writeContractAsync({
-        address: KIRHA_GAME_ADDRESS,
-        abi: KirhaGameAbi,
-        functionName: 'adminDeleteCity',
-        args: [BigInt(cityId)],
+      const res = await fetch(`${ADMIN_WORKER_URL}/admin/delete-city`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({ cityId: String(cityId) }),
       });
+      if (!res.ok) { const d = await res.json() as {error?:string}; throw new Error(d.error); }
       setPlayers(prev => prev.filter(p => p.cityId !== cityId));
       setExpandedCity(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur adminDeleteCity');
+      setError(e instanceof Error ? e.message.slice(0, 80) : 'Erreur deleteCity');
     }
   }
 
-  async function adminCall(cityId: number, key: string, fn: string, args: unknown[]) {
+  async function adminWorkerCall(cityId: number, key: string, action: string, payload: Record<string, string>) {
+    if (!adminToken) {
+      setError('Token admin requis');
+      return;
+    }
     setGiveStatus(prev => ({ ...prev, [key]: 'pending' }));
     try {
-      await writeContractAsync({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: fn, args: args as never[] });
+      const res = await fetch(`${ADMIN_WORKER_URL}/admin/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({ cityId: String(cityId), ...payload }),
+      });
+      const data = await res.json() as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'Erreur');
       setGiveStatus(prev => ({ ...prev, [key]: 'ok' }));
       setTimeout(() => setGiveStatus(prev => ({ ...prev, [key]: 'idle' })), 2500);
     } catch (e) {
@@ -201,6 +218,32 @@ export function AdminPage() {
           {loading ? '⏳ Chargement…' : '🔄 Charger'}
         </button>
       </div>
+
+      {/* Token admin */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, background:'rgba(196,48,112,0.08)', border:'1px solid rgba(196,48,112,0.2)', borderRadius:10, padding:'8px 12px' }}>
+        <span style={{ color:'#ff6b9d', fontSize:11, fontWeight:700 }}>🔑 Token admin</span>
+        <input
+          type="password"
+          placeholder="Token secret"
+          value={adminToken}
+          onChange={e => { setAdminToken(e.target.value); sessionStorage.setItem('kirha_admin_token', e.target.value); }}
+          style={{ flex:1, padding:'4px 8px', borderRadius:6, border:'1px solid rgba(196,48,112,0.3)', background:'rgba(0,0,0,0.3)', color:'#e0c8d8', fontSize:11, fontFamily:'monospace' }}
+        />
+        {adminToken && <span style={{ color:'#6abf44', fontSize:10 }}>✓ Défini</span>}
+      </div>
+
+      {/* Relayer gas alert */}
+      {relayerBalance !== null && (
+        relayerBalance < 50000000000000000n ? (
+          <div style={{ marginBottom:16, padding:'10px 14px', background:'rgba(196,48,112,0.12)', border:'1px solid rgba(196,48,112,0.4)', borderRadius:10, color:'#ff6b9d', fontSize:12, fontWeight:700 }}>
+            ⚠️ Relayer bientôt à court de gas — Solde: {parseFloat(formatEther(relayerBalance)).toFixed(3)} ETH
+          </div>
+        ) : (
+          <div style={{ marginBottom:16, padding:'10px 14px', background:'rgba(106,191,68,0.08)', border:'1px solid rgba(106,191,68,0.3)', borderRadius:10, color:'#6abf44', fontSize:12, fontWeight:700 }}>
+            ⛽ Relayer OK — Solde: {parseFloat(formatEther(relayerBalance)).toFixed(3)} ETH
+          </div>
+        )
+      )}
 
       {error && <p style={{ color:'#ff6b9d', fontSize:12, marginBottom:16 }}>❌ {error}</p>}
 
@@ -314,7 +357,7 @@ export function AdminPage() {
                             <div style={{ display:'flex', gap:8 }}>
                               <button
                                 style={{ padding:'5px 10px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:'none', background:'rgba(255,165,0,0.3)', color:'#ffa500' }}
-                                onClick={async () => { await adminCall(p.cityId, `reset_${p.cityId}`, 'adminResetCity', [BigInt(p.cityId)]); setResetStep(prev => ({ ...prev, [p.cityId]: 0 })); }}
+                                onClick={async () => { await adminWorkerCall(p.cityId, `reset_${p.cityId}`, 'reset-city', {}); setResetStep(prev => ({ ...prev, [p.cityId]: 0 })); }}
                               >
                                 {giveStatus[`reset_${p.cityId}`] === 'pending' ? '⏳…' : 'Confirmer le reset'}
                               </button>
@@ -348,7 +391,7 @@ export function AdminPage() {
                                 />
                                 <button style={giveBtnStyle}
                                   disabled={!giveKirha[p.cityId]}
-                                  onClick={() => adminCall(p.cityId, `kirha_${p.cityId}`, 'adminGiveKirha', [BigInt(p.cityId), parseEther(giveKirha[p.cityId] || '0')])}
+                                  onClick={() => adminWorkerCall(p.cityId, `kirha_${p.cityId}`, 'give-kirha', { amount: giveKirha[p.cityId] || '0' })}
                                 >
                                   {giveStatus[`kirha_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`kirha_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
                                 </button>
@@ -366,7 +409,7 @@ export function AdminPage() {
                                 />
                                 <button style={giveBtnStyle}
                                   disabled={!givePepites[p.cityId]}
-                                  onClick={() => adminCall(p.cityId, `pep_${p.cityId}`, 'adminGivePepites', [BigInt(p.cityId), BigInt(givePepites[p.cityId] || '0')])}
+                                  onClick={() => adminWorkerCall(p.cityId, `pep_${p.cityId}`, 'give-pepites', { amount: givePepites[p.cityId] || '0' })}
                                 >
                                   {giveStatus[`pep_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`pep_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
                                 </button>
@@ -387,7 +430,7 @@ export function AdminPage() {
                                   <option value="90">90 jours</option>
                                 </select>
                                 <button style={giveBtnStyle}
-                                  onClick={() => adminCall(p.cityId, `vip_${p.cityId}`, 'adminGiveVip', [BigInt(p.cityId), BigInt(giveVipDays[p.cityId] ?? '7')])}
+                                  onClick={() => adminWorkerCall(p.cityId, `vip_${p.cityId}`, 'give-vip', { days: giveVipDays[p.cityId] ?? '7' })}
                                 >
                                   {giveStatus[`vip_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`vip_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
                                 </button>
@@ -414,7 +457,7 @@ export function AdminPage() {
                                 />
                                 <button style={giveBtnStyle}
                                   disabled={!giveResAmt[p.cityId]}
-                                  onClick={() => adminCall(p.cityId, `res_${p.cityId}`, 'adminGiveResource', [BigInt(p.cityId), BigInt(giveResId[p.cityId] ?? '1'), BigInt(giveResAmt[p.cityId] || '0')])}
+                                  onClick={() => adminWorkerCall(p.cityId, `res_${p.cityId}`, 'give-resource', { resourceId: giveResId[p.cityId] ?? '1', amount: giveResAmt[p.cityId] || '0' })}
                                 >
                                   {giveStatus[`res_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`res_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
                                 </button>
@@ -446,7 +489,7 @@ export function AdminPage() {
                                     const xpAdd = parseInt(giveXpAmt[p.cityId] || '0');
                                     const curXp = (p.xp[mid] ?? 0) + xpAdd;
                                     const curXpTotal = (p.xpTotal[mid] ?? 0) + xpAdd;
-                                    adminCall(p.cityId, `xp_${p.cityId}`, 'adminSetMetierXp', [BigInt(p.cityId), mid, p.levels[mid] ?? 1, curXp, curXpTotal]);
+                                    adminWorkerCall(p.cityId, `xp_${p.cityId}`, 'set-metier-xp', { metierId: String(mid), level: String(p.levels[mid] ?? 1), xp: String(curXp), xpTotal: String(curXpTotal) });
                                   }}
                                 >
                                   {giveStatus[`xp_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`xp_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}

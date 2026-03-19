@@ -11,6 +11,17 @@ const KIRHA_MARKET_ABI = [
   'function cancelListing(uint256 listingId) external',
 ];
 
+const KIRHA_GAME_ADMIN_ABI = [
+  'function adminResetCity(uint256 cityId) external',
+  'function adminGiveKirha(uint256 cityId, uint256 amount) external',
+  'function adminGivePepites(uint256 cityId, uint256 amount) external',
+  'function adminGiveVip(uint256 cityId, uint64 daysCount) external',
+  'function adminGiveResource(uint256 cityId, uint256 resourceId, uint256 amount) external',
+  'function adminSetMetierXp(uint256 cityId, uint8 metierId, uint32 level, uint32 xp, uint32 xpTotal) external',
+  'function adminDeleteCity(uint256 cityId) external',
+  'function setBan(uint256 cityId, bool banned) external',
+];
+
 interface Env {
   RELAYER_PRIVATE_KEY: string;
   RPC_URL: string;
@@ -18,6 +29,8 @@ interface Env {
   KIRHA_MARKET_ADDRESS: string;
   ALLOWED_ORIGIN: string;
   RATE_LIMITER: KVNamespace;
+  ADMIN_PRIVATE_KEY: string;
+  ADMIN_TOKEN: string;
 }
 
 interface SavePayload {
@@ -240,6 +253,53 @@ export default {
       try {
         const contract = new ethers.Contract(env.KIRHA_MARKET_ADDRESS, KIRHA_MARKET_ABI, wallet);
         const tx = await contract.cancelListing(BigInt(p.listingId));
+        const receipt = await tx.wait();
+        return jsonResponse(cors, { success: true, txHash: receipt.hash });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        return jsonResponse(cors, { error: cleanError(msg) }, 500);
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    // POST /admin/*  — actions admin via ADMIN_PRIVATE_KEY
+    // ════════════════════════════════════════════════════════
+    if (pathname.startsWith('/admin/')) {
+      // Check admin token
+      const token = request.headers.get('X-Admin-Token');
+      if (!env.ADMIN_TOKEN || token !== env.ADMIN_TOKEN) {
+        return jsonResponse(cors, { error: 'Unauthorized' }, 401);
+      }
+
+      const action = pathname.replace('/admin/', '');
+      const p = body as Record<string, string>;
+
+      try {
+        const provider = new ethers.JsonRpcProvider(env.RPC_URL);
+        const wallet = new ethers.Wallet(env.ADMIN_PRIVATE_KEY, provider);
+        const contract = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ADMIN_ABI, wallet);
+
+        let tx;
+        if (action === 'reset-city') {
+          tx = await contract.adminResetCity(BigInt(p.cityId));
+        } else if (action === 'give-kirha') {
+          tx = await contract.adminGiveKirha(BigInt(p.cityId), BigInt(p.amount));
+        } else if (action === 'give-pepites') {
+          tx = await contract.adminGivePepites(BigInt(p.cityId), BigInt(p.amount));
+        } else if (action === 'give-vip') {
+          tx = await contract.adminGiveVip(BigInt(p.cityId), BigInt(p.days));
+        } else if (action === 'give-resource') {
+          tx = await contract.adminGiveResource(BigInt(p.cityId), BigInt(p.resourceId), BigInt(p.amount));
+        } else if (action === 'set-metier-xp') {
+          tx = await contract.adminSetMetierXp(BigInt(p.cityId), parseInt(p.metierId), parseInt(p.level), parseInt(p.xp), parseInt(p.xpTotal));
+        } else if (action === 'delete-city') {
+          tx = await contract.adminDeleteCity(BigInt(p.cityId));
+        } else if (action === 'set-ban') {
+          tx = await contract.setBan(BigInt(p.cityId), p.banned === 'true');
+        } else {
+          return jsonResponse(cors, { error: 'Unknown admin action' }, 404);
+        }
+
         const receipt = await tx.wait();
         return jsonResponse(cors, { success: true, txHash: receipt.hash });
       } catch (err) {

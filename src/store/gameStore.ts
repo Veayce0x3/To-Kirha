@@ -71,6 +71,9 @@ export interface GameState {
   ajouterPepites:           (amount: number) => void;
   retirerPepites:           (amount: number) => void;
   completerQueteTemple:     (index: number) => void;
+  setChainBalances:         (kirha: number, pepites: number, vipExpiry: number) => void;
+  setMetierFromChain:       (metierId: MetierId, niveau: number, xp: number, xpTotal: number) => void;
+  addInventaireFromChain:   (resourceId: ResourceId, qty: number) => void;
 }
 
 // ============================================================
@@ -284,6 +287,29 @@ export const useGameStore = create<GameState>()(
           return { templeCompletedDate: today, templeCompleted: [...completed, index] };
         }),
 
+      setChainBalances: (kirha, pepites, vipExpiry) =>
+        set((state) => ({
+          soldeKirha: Math.max(state.soldeKirha, kirha),
+          pepitesOr:  Math.max(state.pepitesOr, pepites),
+          vipExpiry:  Math.max(state.vipExpiry, vipExpiry),
+        })),
+
+      setMetierFromChain: (metierId, niveau, xp, xpTotal) =>
+        set((state) => {
+          const current = state.metiers[metierId];
+          if (niveau <= current.niveau && xpTotal <= current.xp_total) return state;
+          return { metiers: { ...state.metiers, [metierId]: { ...current, niveau: Math.max(current.niveau, niveau), xp_total: Math.max(current.xp_total, xpTotal), xp: niveau > current.niveau ? xp : current.xp } } };
+        }),
+
+      addInventaireFromChain: (resourceId, qty) =>
+        set((state) => {
+          if (qty <= 0) return state;
+          const inventaire = { ...state.inventaire };
+          const current = inventaire[resourceId] ?? 0;
+          inventaire[resourceId] = Math.max(current, qty);
+          return { inventaire };
+        }),
+
       setSlotSelectedResource: (metier, slotIndex, resourceId) =>
         set((state) => {
           const metierSlots = [...state.slots[metier]];
@@ -317,12 +343,19 @@ export const useGameStore = create<GameState>()(
     {
       name: 'to-kirha-game',
       version: 8,
-      migrate: (_state: unknown, _version: number) => {
-        // v8 : reset complet après redéploiement des contrats
-        localStorage.removeItem('kirha_city_id');
-        localStorage.removeItem('kirha_next_city_id');
-        localStorage.removeItem('kirha_pseudos');
-        return undefined; // repart de zéro
+      migrate: (persistedState: unknown, _version: number) => {
+        if (!persistedState || typeof persistedState !== 'object') return undefined;
+        const state = persistedState as Partial<GameState>;
+        // Migration douce: garder toutes les données existantes, compléter les champs manquants
+        return {
+          ...state,
+          // S'assurer que les nouveaux champs existent
+          pepitesOr:           state.pepitesOr           ?? 0,
+          vipExpiry:           state.vipExpiry            ?? 0,
+          templeCompletedDate: state.templeCompletedDate  ?? '',
+          templeCompleted:     state.templeCompleted       ?? [],
+          kirhaEarned:         state.kirhaEarned           ?? 0,
+        };
       },
     }
   )

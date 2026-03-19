@@ -7,7 +7,6 @@ import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
 import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
 import { useSave } from '../hooks/useSave';
-import { SettingsModal } from './SettingsModal';
 
 // ============================================================
 // Modal Inventaire
@@ -185,7 +184,6 @@ export function BottomMenu() {
   const { pathname }     = useLocation();
   const navigate         = useNavigate();
   const [showInventaire, setShowInventaire] = useState(false);
-  const [showSettings, setShowSettings]     = useState(false);
   const { t } = useT();
   const { sauvegarder, status: saveStatus, error: saveError, pendingCount, reset: resetSave } = useSave();
 
@@ -195,15 +193,16 @@ export function BottomMenu() {
   const saveBusy  = saveStatus === 'signing' || saveStatus === 'pending';
   const saveError_ = saveStatus === 'error';
 
+  const homeActive = pathname === '/home';
+
   return (
     <>
       {showInventaire && <InventaireModal onClose={() => setShowInventaire(false)} />}
-      {showSettings   && <SettingsModal   onClose={() => setShowSettings(false)} />}
 
       {/* ── Barre de menu ─────────────────────────────────────── */}
       <div style={s.menu}>
         {/* Kirha-City */}
-        <button style={s.btn} onClick={() => navigate('/home')}>
+        <button style={{ ...s.btn, ...(homeActive ? s.btnActive : {}) }} onClick={() => navigate('/home')}>
           <span style={s.icon}>🏠</span>
           <span style={s.label}>{t('nav.home')}</span>
         </button>
@@ -236,12 +235,6 @@ export function BottomMenu() {
           <span style={{ ...s.label, color: saveError_ ? '#c43070' : pendingCount > 0 ? '#4a8f2a' : undefined }}>
             {saveBusy ? 'Sauvegarde…' : saveError_ ? 'Erreur ↺' : 'Sauvegarder'}
           </span>
-        </button>
-
-        {/* Paramètres */}
-        <button style={s.btn} onClick={() => setShowSettings(true)}>
-          <span style={s.icon}>⚙️</span>
-          <span style={s.label}>{t('nav.settings')}</span>
         </button>
       </div>
     </>
@@ -277,4 +270,5 @@ const s: Record<string, React.CSSProperties> = {
   },
   icon:  { fontSize: '20px' },
   label: { color: '#7a4060', fontSize: '10px', fontWeight: 600 },
+  btnActive: { borderColor: 'rgba(196,48,112,0.5)', background: 'rgba(196,48,112,0.12)' },
 };

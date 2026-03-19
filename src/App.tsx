@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAccount, usePublicClient } from 'wagmi';
+import { formatEther } from 'viem';
 import { ConnectPage }  from './pages/ConnectPage';
 import { HomePage }     from './pages/HomePage';
 import { RecoltePage }  from './pages/RecoltePage';
@@ -12,6 +13,8 @@ import { AdminPage }    from './pages/AdminPage';
 import { TemplePage }   from './pages/TemplePage';
 import { BottomMenu }   from './components/BottomMenu';
 import { useGameStore } from './store/gameStore';
+import { MetierId } from './data/metiers';
+import { ResourceId } from './data/resources';
 import { useSave } from './hooks/useSave';
 import { KIRHA_GAME_ADDRESS } from './contracts/addresses';
 import KirhaGameAbi from './contracts/abis/KirhaGame.json';
@@ -68,11 +71,16 @@ function BeforeUnloadGuard() {
   return null;
 }
 
+const METIER_IDS_ARR: MetierId[] = ['bucheron', 'paysan', 'pecheur', 'mineur', 'alchimiste'];
+
 function VilleIdGuard() {
   const { isConnected, address } = useAccount();
   const villeId     = useGameStore(s => s.villeId);
   const setVilleId  = useGameStore(s => s.setVilleId);
   const setPseudo   = useGameStore(s => s.setPseudo);
+  const setChainBalances    = useGameStore(s => s.setChainBalances);
+  const setMetierFromChain  = useGameStore(s => s.setMetierFromChain);
+  const addInventaireFromChain = useGameStore(s => s.addInventaireFromChain);
   const publicClient = usePublicClient();
 
   useEffect(() => {
@@ -92,6 +100,42 @@ function VilleIdGuard() {
             functionName: 'cityPseudo', args: [cityId],
           }) as string;
           if (pseudo) setPseudo(pseudo);
+
+          // Sync balances from chain
+          const [kirhaWei, pepites, vipExp] = await Promise.all([
+            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityKirha', args: [cityId] }),
+            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPepites', args: [cityId] }),
+            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'vipExpiry', args: [cityId] }),
+          ]) as [bigint, bigint, bigint];
+
+          setChainBalances(
+            parseFloat(formatEther(kirhaWei)),
+            Number(pepites),
+            Number(vipExp)
+          );
+
+          // Sync metiers
+          const metiersChain = await publicClient.readContract({
+            address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
+            functionName: 'getCityMetiers', args: [cityId],
+          }) as { metierId: number; level: number; xp: number; xpTotal: number }[];
+
+          for (const m of metiersChain) {
+            const mid = METIER_IDS_ARR[m.metierId];
+            if (mid) setMetierFromChain(mid, Number(m.level), Number(m.xp), Number(m.xpTotal));
+          }
+
+          // Sync resources
+          const allIds = Array.from({ length: 50 }, (_, i) => BigInt(i + 1));
+          const resourcesChain = await publicClient.readContract({
+            address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
+            functionName: 'getCityResources', args: [cityId, allIds],
+          }) as bigint[];
+
+          for (let i = 0; i < resourcesChain.length; i++) {
+            const qty = Number(resourcesChain[i]) / 1e4;
+            if (qty > 0) addInventaireFromChain((i + 1) as ResourceId, qty);
+          }
         }
       } catch {}
     })();

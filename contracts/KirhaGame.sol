@@ -67,9 +67,9 @@ contract KirhaGame is Ownable, ReentrancyGuard {
 
     // ── Pack prices in $KIRHA wei ──────────────────────────────
     uint256 public constant PACK_SMALL_PRICE   = 5 ether;   // 50 pépites
-    uint256 public constant PACK_MEDIUM_PRICE  = 13 ether;  // 165 pépites
-    uint256 public constant PACK_LARGE_PRICE   = 32 ether;  // 500 pépites
-    uint256 public constant PACK_PREMIUM_PRICE = 65 ether;  // 1500 pépites
+    uint256 public constant PACK_MEDIUM_PRICE  = 13 ether;  // 150 pépites (+10%)
+    uint256 public constant PACK_LARGE_PRICE   = 32 ether;  // 400 pépites (+25%)
+    uint256 public constant PACK_PREMIUM_PRICE = 65 ether;  // 1000 pépites (+50%)
 
     // ── VIP prices in pépites ──────────────────────────────────
     uint256 public constant VIP_7D_PEPITES  = 100;
@@ -414,9 +414,9 @@ contract KirhaGame is Ownable, ReentrancyGuard {
         uint256 price;
         uint256 pepites;
         if (packType == 0)      { price = PACK_SMALL_PRICE;   pepites = 50;   }
-        else if (packType == 1) { price = PACK_MEDIUM_PRICE;  pepites = 165;  }
-        else if (packType == 2) { price = PACK_LARGE_PRICE;   pepites = 500;  }
-        else if (packType == 3) { price = PACK_PREMIUM_PRICE; pepites = 1500; }
+        else if (packType == 1) { price = PACK_MEDIUM_PRICE;  pepites = 150;  }
+        else if (packType == 2) { price = PACK_LARGE_PRICE;   pepites = 400;  }
+        else if (packType == 3) { price = PACK_PREMIUM_PRICE; pepites = 1000; }
         else revert("KirhaGame: invalid pack type");
         require(cityKirha[cityId] >= price, "KirhaGame: insufficient kirha");
         cityKirha[cityId] -= price;

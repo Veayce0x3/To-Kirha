@@ -4,6 +4,7 @@ import { useGameStore } from '../store/gameStore';
 import { SettingsModal } from '../components/SettingsModal';
 import { useT } from '../utils/i18n';
 
+
 export function HomePage() {
   const navigate   = useNavigate();
   const soldeKirha = useGameStore(s => s.soldeKirha);
@@ -12,6 +13,7 @@ export function HomePage() {
   const villeId    = useGameStore(s => s.villeId);
   const vipExpiry  = useGameStore(s => s.vipExpiry);
   const [showSettings, setShowSettings] = useState(false);
+  const [showVipInfo, setShowVipInfo] = useState(false);
   const { t } = useT();
 
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
@@ -28,6 +30,16 @@ export function HomePage() {
   return (
     <div style={s.page}>
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showVipInfo && (
+        <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.3)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => setShowVipInfo(false)}>
+          <div style={{ background:'#fdf0f5', borderRadius:18, padding:'24px 20px', width:'100%', maxWidth:300 }} onClick={e => e.stopPropagation()}>
+            <p style={{ color:'#f9a825', fontSize:'18px', fontWeight:800, margin:'0 0 8px' }}>👑 VIP Actif</p>
+            <p style={{ color:'#7a4060', fontSize:'12px', margin:'0 0 16px' }}>Taxe HDV réduite : 25% (au lieu de 50%)</p>
+            <p style={{ color:'#1e0a16', fontSize:'13px', fontWeight:700, margin:0 }}>Expire le {new Date(vipExpiry * 1000).toLocaleDateString('fr-FR')}</p>
+            <button style={{ marginTop:16, width:'100%', padding:'10px', borderRadius:12, background:'rgba(249,168,37,0.15)', border:'1px solid rgba(249,168,37,0.3)', color:'#f9a825', fontWeight:700, cursor:'pointer' }} onClick={() => { setShowVipInfo(false); navigate('/banque'); }}>Prolonger le VIP</button>
+          </div>
+        </div>
+      )}
 
       {/* TopBar */}
       <div style={s.topbar}>
@@ -64,6 +76,17 @@ export function HomePage() {
           <span style={s.soldeLabel}>$KIRHA</span>
           <span style={s.soldeValue}>{soldeKirha > 0 ? soldeKirha.toFixed(4) : '—'}</span>
         </div>
+        <div style={s.soldeDivider} />
+        <button
+          style={{ ...s.soldeItem, cursor:'pointer', background:'none', border:'none' }}
+          onClick={() => isVip ? setShowVipInfo(true) : navigate('/banque')}
+        >
+          <span style={{ ...s.soldeIcon, filter: isVip ? 'none' : 'grayscale(1) opacity(0.4)' }}>👑</span>
+          <span style={{ ...s.soldeLabel, color: isVip ? '#f9a825' : '#9a6080' }}>VIP</span>
+          <span style={{ ...s.soldeValue, color: isVip ? '#f9a825' : '#9a6080', fontSize:'11px' }}>
+            {isVip ? '✨' : 'OFF'}
+          </span>
+        </button>
       </div>
 
       {/* Cards */}

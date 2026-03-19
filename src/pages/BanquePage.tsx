@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import { useWithdraw } from '../hooks/useWithdraw';
 import { useDeposit } from '../hooks/useDeposit';
+import { useVip, VIP_PACKS, VIP_DURATIONS } from '../hooks/useVip';
+import { useGameStore } from '../store/gameStore';
 import { useT } from '../utils/i18n';
 import { KIRHA_TOKEN_ADDRESS } from '../contracts/addresses';
 
@@ -11,6 +13,11 @@ export function BanquePage() {
   const { address } = useAccount();
   const { retirer, status: withdrawStatus, error: withdrawError, soldeKirha } = useWithdraw();
   const { deposer, status: depositStatus, error: depositError, balanceKirha } = useDeposit();
+  const { acheterPepites, acheterVip, status: vipStatus, error: vipError } = useVip();
+  const soldeKirhaStore = useGameStore(s => s.soldeKirha);
+  const pepitesOr  = useGameStore(s => s.pepitesOr);
+  const vipExpiry  = useGameStore(s => s.vipExpiry);
+  const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
   const [montantRetrait, setMontantRetrait] = useState('');
   const [montantDepot, setMontantDepot]     = useState('');
   const [watchStatus, setWatchStatus]       = useState<'idle'|'ok'|'err'>('idle');
@@ -163,12 +170,62 @@ export function BanquePage() {
           </button>
         </div>
 
-        <div style={s.comingCard}>
-          <span style={{ fontSize:'28px' }}>👑</span>
-          <div>
-            <p style={{ color:'#1e0a16', fontSize:'13px', fontWeight:700, margin:0 }}>{t('banque.vip_title')}</p>
-            <p style={{ color:'#7a4060', fontSize:'11px', margin:'3px 0 0' }}>{t('banque.vip_desc')}</p>
+        {/* Pépites d'or — achat avec $KIRHA */}
+        <div style={s.saveCard}>
+          <p style={{ color:'#f9a825', fontSize:'14px', fontWeight:700, margin:'0 0 4px' }}>🪙 Pépites d'or</p>
+          <p style={{ color:'#7a4060', fontSize:'11px', margin:'0 0 12px' }}>
+            Solde : <strong style={{color:'#f9a825'}}>{pepitesOr.toFixed(0)}</strong> pépites · {soldeKirhaStore.toFixed(2)} $KIRHA disponibles
+          </p>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {VIP_PACKS.map(pack => (
+              <button
+                key={pack.type}
+                style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', background:'rgba(249,168,37,0.07)', border:'1px solid rgba(249,168,37,0.2)', borderRadius:10, cursor: soldeKirhaStore < pack.kirha ? 'not-allowed' : 'pointer', opacity: soldeKirhaStore < pack.kirha ? 0.5 : 1 }}
+                onClick={() => acheterPepites(pack.type)}
+                disabled={vipStatus === 'pending' || soldeKirhaStore < pack.kirha}
+              >
+                <div style={{textAlign:'left'}}>
+                  <span style={{color:'#f9a825', fontSize:'13px', fontWeight:700}}>🪙 {pack.pepites} pépites</span>
+                  {pack.bonus && <span style={{marginLeft:6, color:'#6abf44', fontSize:'9px', fontWeight:700}}>{pack.bonus}</span>}
+                  <span style={{display:'block', color:'#7a4060', fontSize:'10px'}}>Pack {pack.label}</span>
+                </div>
+                <span style={{color:'#1e0a16', fontSize:'12px', fontWeight:800}}>{pack.kirha} $K</span>
+              </button>
+            ))}
           </div>
+          {vipError && vipStatus === 'error' && <p style={{color:'#c43070', fontSize:'10px', margin:'8px 0 0'}}>{vipError}</p>}
+        </div>
+
+        {/* VIP — achat avec pépites */}
+        <div style={s.saveCard}>
+          <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
+            <span style={{fontSize:'20px'}}>👑</span>
+            <p style={{ color:'#c43070', fontSize:'14px', fontWeight:700, margin:0 }}>Statut VIP</p>
+            {isVip && <span style={{ background:'linear-gradient(135deg,#f9a825,#c43070)', color:'#fff', fontSize:'9px', fontWeight:800, padding:'2px 7px', borderRadius:6 }}>ACTIF ✨</span>}
+          </div>
+          {isVip ? (
+            <p style={{color:'#6abf44', fontSize:'12px', margin:'0 0 12px'}}>
+              VIP actif — expire le {new Date(vipExpiry * 1000).toLocaleDateString('fr-FR')}
+            </p>
+          ) : (
+            <p style={{color:'#7a4060', fontSize:'11px', margin:'0 0 12px'}}>
+              Avantage VIP : taxe HDV réduite de 50% → 25%
+            </p>
+          )}
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {VIP_DURATIONS.map(dur => (
+              <button
+                key={dur.type}
+                style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', background:'rgba(196,48,112,0.07)', border:'1px solid rgba(196,48,112,0.2)', borderRadius:10, cursor: pepitesOr < dur.pepites ? 'not-allowed' : 'pointer', opacity: pepitesOr < dur.pepites ? 0.5 : 1 }}
+                onClick={() => acheterVip(dur.type)}
+                disabled={vipStatus === 'pending' || pepitesOr < dur.pepites}
+              >
+                <span style={{color:'#1e0a16', fontSize:'13px', fontWeight:700}}>{dur.label}</span>
+                <span style={{color:'#c43070', fontSize:'12px', fontWeight:800}}>🪙 {dur.pepites}</span>
+              </button>
+            ))}
+          </div>
+          {vipStatus === 'success' && <p style={{color:'#6abf44', fontSize:'11px', margin:'8px 0 0'}}>✅ VIP activé !</p>}
         </div>
 
       </div>
