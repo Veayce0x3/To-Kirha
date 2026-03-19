@@ -67,15 +67,8 @@ export interface GameState {
 // XP requis par niveau
 // ============================================================
 
-const XP_TABLE: Record<number, number> = {
-  1: 100, 10: 300, 20: 600, 30: 1000,
-  40: 1500, 50: 2200, 60: 3000, 70: 4000,
-  80: 5500, 90: 7500,
-};
-
 export function xpRequis(niveau: number): number {
-  const palier = Math.floor(niveau / 10) * 10;
-  return XP_TABLE[palier] ?? 500;
+  return niveau * 100;
 }
 
 // ============================================================

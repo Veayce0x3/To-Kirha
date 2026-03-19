@@ -175,11 +175,11 @@ function MetierSelector({ onSelect }: { onSelect: (id: MetierId) => void }) {
           const pct          = Math.min(100, (p.xp / xpRequis(p.niveau)) * 100);
           const metierSlots  = slotsAll[id] ?? [];
           const activeSlots  = metierSlots.filter(sl => sl.resource_id !== null && sl.termine_a !== null);
-          const pendingSlots = activeSlots.filter(sl => sl.termine_a! > now);
           const isActive     = activeSlots.length > 0;
-          const allDone      = isActive && pendingSlots.length === 0;
-          const maxSecs      = pendingSlots.length > 0
-            ? Math.ceil((Math.max(...pendingSlots.map(sl => sl.termine_a!)) - now) / 1000)
+          const doneSlots    = activeSlots.filter(sl => sl.termine_a! <= now);
+          const runningSlots = activeSlots.filter(sl => sl.termine_a! > now);
+          const maxSecs      = runningSlots.length > 0
+            ? Math.ceil((Math.max(...runningSlots.map(sl => sl.termine_a!)) - now) / 1000)
             : 0;
 
           return (
@@ -195,14 +195,14 @@ function MetierSelector({ onSelect }: { onSelect: (id: MetierId) => void }) {
                   <span style={{ color: '#1e0a16', fontSize: '14px', fontWeight: 800 }}>
                     {t(`metier.${id}` as `metier.${MetierId}`)}
                   </span>
-                  {isActive && !allDone && (
+                  {runningSlots.length > 0 && (
                     <span style={{ background: cfg.color, color: '#fff', borderRadius: 10, padding: '1px 7px', fontSize: '9px', fontWeight: 800 }}>
-                      {activeSlots.length} actif{activeSlots.length > 1 ? 's' : ''}
+                      {runningSlots.length} en cours
                     </span>
                   )}
-                  {allDone && (
+                  {doneSlots.length > 0 && (
                     <span style={{ background: '#6abf44', color: '#fff', borderRadius: 10, padding: '1px 7px', fontSize: '9px', fontWeight: 800 }}>
-                      ✓ Prêt
+                      {doneSlots.length} prêt{doneSlots.length > 1 ? 's' : ''}
                     </span>
                   )}
                   {!isActive && (
@@ -242,7 +242,7 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
   const icons  = METIER_ICONS[metierId];
   const { t, lang } = useT();
 
-  const { slots, niveau, xp, planterRessource, collecterEtRelancer } = useHarvest(metierId);
+  const { slots, niveau, xp, planterRessource, collecterEtRelancer, lastHarvested } = useHarvest(metierId);
   const debloquerSlot   = useGameStore(s => s.debloquerSlot);
   const inventaire      = useGameStore(s => s.inventaire);
   const soldeKirha      = useGameStore(s => s.soldeKirha);
@@ -443,9 +443,17 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
               <div style={{ height: '100%', width: `${pct}%`, background: cfg.color, borderRadius: 2 }} />
             </div>
           </div>
+          <span style={{ color: cfg.color, fontSize: '9px', fontFamily:'monospace' }}>
+            {xp} / {xpRequis(niveau)} XP
+          </span>
         </div>
         <div style={{ width: 80 }} />
       </div>
+      {lastHarvested && (
+        <div style={{ position:'fixed', bottom:90, left:'50%', transform:'translateX(-50%)', background:'rgba(30,10,22,0.85)', color:'#6abf44', padding:'8px 18px', borderRadius:20, fontSize:'14px', fontWeight:800, zIndex:500, pointerEvents:'none', whiteSpace:'nowrap' }}>
+          +{lastHarvested.qty.toFixed(2)} {emojiByResourceId(lastHarvested.resourceId)} {getNomRessource(lastHarvested.resourceId, lang)}
+        </div>
+      )}
 
       <div style={{ padding: '10px 14px', paddingBottom: 90 }}>
 

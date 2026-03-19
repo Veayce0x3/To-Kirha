@@ -27,7 +27,11 @@ contract KirhaGame is Ownable {
     mapping(string  => address) private _pseudoToAddress;
     mapping(address => string)  public  playerPseudo;
 
-    event PseudoRegistered(address indexed player, string pseudo);
+    // ── City IDs séquentiels ───────────────────────────────────
+    uint256 public playerCount;
+    mapping(address => uint256) public playerCityId;
+
+    event PseudoRegistered(address indexed player, string pseudo, uint256 cityId);
     event ResourcesMinted(address indexed player, uint256[] ids, uint256[] amounts);
     event KirhaWithdrawn(address indexed player, uint256 amount);
     event KirhaDeposited(address indexed player, uint256 amount);
@@ -56,7 +60,9 @@ contract KirhaGame is Ownable {
         require(_pseudoToAddress[name] == address(0),        "KirhaGame: pseudo already taken");
         _pseudoToAddress[name]   = msg.sender;
         playerPseudo[msg.sender] = name;
-        emit PseudoRegistered(msg.sender, name);
+        playerCount++;
+        playerCityId[msg.sender] = playerCount;
+        emit PseudoRegistered(msg.sender, name, playerCount);
     }
 
     /** @notice Retourne true si le pseudo est disponible. */

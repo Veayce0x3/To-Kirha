@@ -4,7 +4,6 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useDisconnect, useReadContract, useWriteContract, usePublicClient } from 'wagmi';
 import { KirhaTokenImg } from '../assets/bucheron';
 import { useGameStore } from '../store/gameStore';
-import { assignNewCityId } from '../utils/cityId';
 import { useT } from '../utils/i18n';
 import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
@@ -62,10 +61,21 @@ export function ConnectPage() {
     if (!isConnected || !address || pseudoLoading) return;
     const pseudo = onChainPseudo as string | undefined;
     if (pseudo && pseudo.length > 0) {
-      // Joueur déjà enregistré → entrer dans le jeu
-      setPseudo(pseudo);
-      setAddress(address);
-      navigate('/home', { replace: true });
+      // Joueur déjà enregistré → lire cityId puis entrer dans le jeu
+      (async () => {
+        const cityId = await publicClient?.readContract({
+          address:      KIRHA_GAME_ADDRESS,
+          abi:          KirhaGameAbi,
+          functionName: 'playerCityId',
+          args:         [address],
+        }) as bigint | undefined;
+        if (cityId !== undefined) {
+          localStorage.setItem('kirha_city_id', cityId.toString());
+        }
+        setPseudo(pseudo);
+        setAddress(address);
+        navigate('/home', { replace: true });
+      })();
     }
     // Sinon : rester sur la page (login mode ou register mode géré dans le rendu)
   }, [isConnected, address, pseudoLoading, onChainPseudo]);
@@ -104,7 +114,15 @@ export function ConnectPage() {
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
 
-      assignNewCityId();
+      const cityId = await publicClient?.readContract({
+        address:      KIRHA_GAME_ADDRESS,
+        abi:          KirhaGameAbi,
+        functionName: 'playerCityId',
+        args:         [address],
+      }) as bigint | undefined;
+      if (cityId !== undefined) {
+        localStorage.setItem('kirha_city_id', cityId.toString());
+      }
       setPseudo(val);
       setAddress(address);
       navigate('/home', { replace: true });

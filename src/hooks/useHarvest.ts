@@ -17,6 +17,7 @@ export interface UseHarvestReturn {
   ressources_disponibles: Ressource[];
   niveau:                 number;
   xp:                     number;
+  lastHarvested:          { qty: number; resourceId: ResourceId } | null;
   // Plante une ressource sur le slot (fonctionne même si slot déjà actif → change la ressource)
   planterRessource:       (slotIndex: number, resourceId: ResourceId) => void;
   // Récolte le slot prêt puis relance automatiquement avec la même ressource
@@ -49,6 +50,7 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
   metierProgressRef.current = metier_progress;
 
   const [, setTick] = useState(0);
+  const [lastHarvested, setLastHarvested] = useState<{ qty: number; resourceId: ResourceId } | null>(null);
 
   // Tick 1s — uniquement pour rafraîchir les timers affichés (pas d'auto-collect)
   useEffect(() => {
@@ -96,6 +98,8 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     terminerRecolte(metierId, slotIndex, ratio);
     ajouterXp(metierId, xpFinal);
     ajouterPending(rid, ratio);
+    setLastHarvested({ qty: ratio, resourceId: rid });
+    setTimeout(() => setLastHarvested(null), 2000);
     // Relancer avec la même ressource
     demarrerRecolte(metierId, slotIndex, rid, 30_000);
   }, [metier.ressources, metierId, terminerRecolte, ajouterXp, ajouterPending, demarrerRecolte]);
@@ -105,6 +109,7 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     ressources_disponibles,
     niveau:           metier_progress.niveau,
     xp:               metier_progress.xp,
+    lastHarvested,
     planterRessource,
     collecterEtRelancer,
   };

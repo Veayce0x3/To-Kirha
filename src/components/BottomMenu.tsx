@@ -226,9 +226,7 @@ export function BottomMenu() {
           title={saveError_ ? (saveError ?? 'Erreur') : pendingCount === 0 ? 'Rien à sauvegarder' : `${pendingCount} ressource(s) à sauvegarder`}
         >
           {pendingCount > 0 && !saveError_ && (
-            <span style={{ position:'absolute', top:4, right:6, background:'#c43070', color:'#fff', fontSize:'9px', fontWeight:800, borderRadius:8, padding:'1px 5px', lineHeight:'14px' }}>
-              {pendingCount}
-            </span>
+            <span style={{ position:'absolute', top:6, right:8, width:7, height:7, background:'#6abf44', borderRadius:'50%' }} />
           )}
           <span style={s.icon}>
             {saveBusy ? '⏳' : saveStatus === 'success' ? '✅' : saveError_ ? '❌' : '💾'}

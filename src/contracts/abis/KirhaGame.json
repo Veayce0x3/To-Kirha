@@ -30,10 +30,25 @@
     "type": "function"
   },
   {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "playerCityId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "playerCount",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "anonymous": false,
     "inputs": [
       { "indexed": true,  "internalType": "address", "name": "player", "type": "address" },
-      { "indexed": false, "internalType": "string",  "name": "pseudo", "type": "string"  }
+      { "indexed": false, "internalType": "string",  "name": "pseudo", "type": "string"  },
+      { "indexed": false, "internalType": "uint256", "name": "cityId", "type": "uint256" }
     ],
     "name": "PseudoRegistered",
     "type": "event"

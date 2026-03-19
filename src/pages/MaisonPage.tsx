@@ -63,7 +63,7 @@ export function MaisonPage() {
     return a.res!.metier < b.res!.metier ? -1 : a.res!.metier > b.res!.metier ? 1 : 0;
   });
 
-  const totalItems = items.reduce((acc, i) => acc + i.qty, 0);
+  const totalItems = parseFloat(items.reduce((acc, i) => acc + i.qty, 0).toFixed(2));
 
   return (
     <div style={s.page}>
@@ -117,7 +117,7 @@ export function MaisonPage() {
                       <span style={{ color:'#7a4060', fontSize:'10px' }}>{METIER_CONFIG[res!.metier].icon} {METIERS[res!.metier].nom}</span>
                     </div>
                     <div style={s.itemRight}>
-                      <span style={{ color:'#1e0a16', fontSize:'15px', fontWeight:800 }}>×{qty}</span>
+                      <span style={{ color:'#1e0a16', fontSize:'15px', fontWeight:800 }}>×{parseFloat(qty.toFixed(2))}</span>
                     </div>
                   </div>
                 );
