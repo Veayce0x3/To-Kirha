@@ -274,10 +274,13 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'to-kirha-game',
-      version: 4,
-      migrate: (_state: unknown, version: number) => {
-        if (version < 4) return undefined;
-        return _state;
+      version: 5,
+      migrate: (_state: unknown, _version: number) => {
+        // v5 : reset complet — efface aussi les clés localStorage héritées
+        localStorage.removeItem('kirha_city_id');
+        localStorage.removeItem('kirha_next_city_id');
+        localStorage.removeItem('kirha_pseudos');
+        return undefined; // repart de zéro
       },
     }
   )

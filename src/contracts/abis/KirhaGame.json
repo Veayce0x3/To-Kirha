@@ -9,6 +9,36 @@
     "type": "constructor"
   },
   {
+    "inputs": [{ "internalType": "string", "name": "name", "type": "string" }],
+    "name": "registerPseudo",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "string", "name": "name", "type": "string" }],
+    "name": "isPseudoAvailable",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "playerPseudo",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "address", "name": "player", "type": "address" },
+      { "indexed": false, "internalType": "string",  "name": "pseudo", "type": "string"  }
+    ],
+    "name": "PseudoRegistered",
+    "type": "event"
+  },
+  {
     "inputs": [
       { "internalType": "uint256[]", "name": "ids",     "type": "uint256[]" },
       { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }

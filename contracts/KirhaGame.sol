@@ -23,6 +23,11 @@ contract KirhaGame is Ownable {
     KirhaResources public immutable resources;
     KirhaToken     public immutable kirhaToken;
 
+    // ── Pseudos ────────────────────────────────────────────────
+    mapping(string  => address) private _pseudoToAddress;
+    mapping(address => string)  public  playerPseudo;
+
+    event PseudoRegistered(address indexed player, string pseudo);
     event ResourcesMinted(address indexed player, uint256[] ids, uint256[] amounts);
     event KirhaWithdrawn(address indexed player, uint256 amount);
     event KirhaDeposited(address indexed player, uint256 amount);
@@ -34,6 +39,29 @@ contract KirhaGame is Ownable {
     ) Ownable(initialOwner) {
         resources  = KirhaResources(_resources);
         kirhaToken = KirhaToken(_kirhaToken);
+    }
+
+    // --------------------------------------------------------
+    // Enregistrement pseudo — unique global on-chain
+    // --------------------------------------------------------
+
+    /**
+     * @notice Enregistre un pseudo unique pour msg.sender.
+     * @param name  3-16 caractères, alphanumérique + underscore
+     */
+    function registerPseudo(string calldata name) external {
+        uint256 len = bytes(name).length;
+        require(len >= 3 && len <= 16,            "KirhaGame: invalid name length");
+        require(bytes(playerPseudo[msg.sender]).length == 0, "KirhaGame: already registered");
+        require(_pseudoToAddress[name] == address(0),        "KirhaGame: pseudo already taken");
+        _pseudoToAddress[name]   = msg.sender;
+        playerPseudo[msg.sender] = name;
+        emit PseudoRegistered(msg.sender, name);
+    }
+
+    /** @notice Retourne true si le pseudo est disponible. */
+    function isPseudoAvailable(string calldata name) external view returns (bool) {
+        return _pseudoToAddress[name] == address(0);
     }
 
     // --------------------------------------------------------
