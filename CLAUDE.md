@@ -246,12 +246,14 @@ scripts/
 - Délai 1.5s après tx receipt pour laisser le RPC propager
 
 ### Chain sync au login (VilleIdGuard — App.tsx)
-À chaque connexion wallet, lit on-chain et merge dans Zustand (Math.max — jamais downgrade) :
-- `cityKirha` → `soldeKirha`
-- `cityPepites` → `pepitesOr`
-- `vipExpiry` → `vipExpiry`
-- `getCityMetiers` → niveaux + XP de chaque métier
-- `getCityResources` (50 IDs) → inventaire complet
+À chaque connexion wallet, lit on-chain et sync dans Zustand :
+- `cityKirha` → `soldeKirha = chainKirha + kirhaEarned` (chaîne = source de vérité, on ajoute les gains PNJ non sauvegardés)
+- `cityPepites` → `pepitesOr` (direct depuis chaîne)
+- `vipExpiry` → `vipExpiry` (Math.max — garde le plus grand)
+- `getCityMetiers` → niveaux + XP de chaque métier (Math.max)
+- `getCityResources` (50 IDs) → inventaire complet (Math.max)
+- Si cityId = 0n (ville supprimée) → `resetGameData()` + redirect vers `/`
+- Si reset admin détecté (tout à zéro on-chain mais local a données) → `forceChainSync()` écrase le local
 
 ### Système de récolte (useHarvest)
 - **Pas d'auto-collect** — le joueur collecte manuellement en cliquant le slot "Prêt"
@@ -269,6 +271,16 @@ scripts/
 - Struct `Listing` : `sellerCityId`, `resourceId`, `quantity`, `pricePerUnit`
 - Taxe 50% → 25% si vendeur est VIP
 - `getCityPseudos(cityIds[])` : batch getter pseudos vendeurs
+
+### Auto-switch réseau
+- Tous les hooks (`useSave`, `useWithdraw`, `useDeposit`, `useMarket`, `useVip`) appellent `switchChainAsync({ chainId: baseSepolia.id })` avant tout `writeContractAsync`
+- L'appel est wrapped dans try/catch — en cas de refus, wagmi v2 gère la vérification via `chainId` dans writeContractAsync
+- `useVip` : ajout de `switchChainAsync` pour `buyPepites` et `buyVip`
+
+### Menu mobile (iOS/Android)
+- `index.html` : **sans** `viewport-fit=cover` → viewport s'arrête au-dessus de la barre iOS, pas de descente du menu
+- `index.css` : `#root` utilise `height: 100svh` (small viewport = exclut toujours la nav bar) avec fallbacks `dvh`/`vh`
+- `.bottom-menu` : `padding-bottom: 52px !important` (fixe, sans env()) → boutons toujours accessibles au-dessus de la nav bar Android
 
 ### VIP + Pépites d'or (useVip + BanquePage)
 - **Pépites d'or** : monnaie premium achetée avec $KIRHA
@@ -289,6 +301,13 @@ scripts/
 - Actions : give kirha/pépites/VIP/ressource, set XP métier, reset city, ban/unban, delete city
 - Alerte rouge si solde relayer < 0.05 ETH
 - Stats on-chain : villes créées, joueurs, listings actifs
+- Set XP : deux modes — additive (+XP) et niveau direct (calcule automatiquement xpTotal cumulatif)
+- charger() : per-city try/catch → ignore les villes supprimées sans bloquer le chargement
+- give-kirha : utilise `parseEther(amtStr)` (précision exacte, pas BigInt flottant)
+
+### SettingsModal
+- Bouton "Sync depuis la chaîne" : recharge la page → VilleIdGuard re-sync depuis blockchain
+  Utile après une action admin (give/retrait KIRHA, pépites, VIP) pour voir les changements immédiatement
 
 ### Multilingue (i18n)
 - FR/EN complet : navigation, UI, 50 noms de ressources
@@ -297,13 +316,18 @@ scripts/
 
 ---
 
-## Zustand Store v8 — Règles
-- **Version bloquée à 8** — ne jamais incrémenter sans changement de structure
+## Zustand Store v9 — Règles
+- **Version actuelle : 9** — ne jamais incrémenter sans changement de structure
 - **Migration douce** : `migrate()` remplit les champs manquants avec valeurs par défaut, ne retourne JAMAIS `undefined`
 - Champs clés : `villeId`, `soldeKirha`, `pepitesOr`, `vipExpiry`, `pseudo`, `inventaire`, `metiers`, `kirhaEarned`
-- `setChainBalances(kirha, pepites, vipExpiry)` : merge Math.max à la connexion
+- `setChainBalances(kirha, pepites, vipExpiry)` :
+  - `soldeKirha = kirha + state.kirhaEarned` (chaîne autoritaire + gains PNJ non sauvegardés)
+  - `pepitesOr = pepites` (direct depuis chaîne — reflète les actions admin)
+  - `vipExpiry = Math.max(...)` (garde le plus grand)
 - `setMetierFromChain(metierId, niveau, xp, xpTotal)` : merge Math.max
 - `addInventaireFromChain(resourceId, qty)` : merge Math.max
+- `forceChainSync(...)` : écrase tout le local depuis la chaîne (reset admin détecté)
+- `resetGameData()` : remet à zéro toutes les données de jeu (garde address/villeId/pseudo/langue)
 
 ---
 
@@ -320,7 +344,7 @@ scripts/
 
 ---
 
-## État du projet (19 mars 2026)
+## État du projet (20 mars 2026)
 
 ### CE QUI EST FAIT ET FONCTIONNEL ✅
 | Composant                        | Fichier                        | État             |
@@ -343,7 +367,7 @@ scripts/
 | Hook VIP + Pépites               | hooks/useVip.ts                | ✅ Complet       |
 | Traductions FR/EN                | utils/i18n.ts                  | ✅ 50 res.       |
 | Emojis/noms ressources           | utils/resourceUtils.ts         | ✅ Centralisé    |
-| Store Zustand                    | store/gameStore.ts             | ✅ v8 soft migr. |
+| Store Zustand                    | store/gameStore.ts             | ✅ v9 soft migr. |
 | Page Admin (worker, no popup)    | AdminPage.tsx                  | ✅ Complet       |
 | Relayer Cloudflare Workers       | kirha-relayer/                 | ✅ Déployé       |
 | CI/CD GitHub Pages + Worker      | .github/workflows/deploy.yml   | ✅ En place      |
