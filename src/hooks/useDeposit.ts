@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useAccount, useReadContract, useWriteContract, usePublicClient } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, usePublicClient, useSwitchChain } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
 import { parseEther, formatUnits } from 'viem';
 import { useGameStore } from '../store/gameStore';
@@ -27,6 +27,7 @@ export function useDeposit() {
   const ajouterKirha = useGameStore(s => s.ajouterKirha);
 
   const { writeContractAsync } = useWriteContract();
+  const { switchChainAsync }   = useSwitchChain();
   const publicClient = usePublicClient();
 
   const { data: balanceWei, refetch } = useReadContract({
@@ -54,6 +55,7 @@ export function useDeposit() {
     try {
       const amountWei = parseEther(montant.toFixed(6));
       setStatus('pending');
+      try { await switchChainAsync({ chainId: baseSepolia.id }); } catch {}
       const hash = await writeContractAsync({
         address:      KIRHA_GAME_ADDRESS,
         abi:          KirhaGameAbi,

@@ -46,6 +46,7 @@ export function AdminPage() {
   const [expandedCity, setExpandedCity]   = useState<number | null>(null);
   const [relayerBalance, setRelayerBalance] = useState<bigint | null>(null);
   const [adminToken, setAdminToken] = useState(() => sessionStorage.getItem('kirha_admin_token') ?? '');
+  const [tokenStatus, setTokenStatus] = useState<'unknown'|'ok'|'invalid'|'testing'>('unknown');
 
   // Delete confirmation state
   const [deleteStep, setDeleteStep]   = useState<Record<number, number>>({});
@@ -78,6 +79,22 @@ export function AdminPage() {
   const [retirerOpStatus, setRetirerOpStatus] = useState<Record<string, 'idle'|'pending'|'ok'|'err'>>({});
 
   const isAdmin = !!address && ADMIN_WALLETS.includes(address.toLowerCase());
+
+  // ── Tester le token ────────────────────────────────────
+  async function testerToken() {
+    if (!adminToken) return;
+    setTokenStatus('testing');
+    try {
+      const res = await fetch(`${ADMIN_WORKER_URL}/admin/ping`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body:    JSON.stringify({}),
+      });
+      setTokenStatus(res.ok ? 'ok' : 'invalid');
+    } catch {
+      setTokenStatus('invalid');
+    }
+  }
 
   // ── Chargement des données ─────────────────────────────
   async function charger() {
@@ -377,16 +394,27 @@ export function AdminPage() {
       </div>
 
       {/* Token admin */}
-      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, background:'rgba(196,48,112,0.08)', border:'1px solid rgba(196,48,112,0.2)', borderRadius:10, padding:'8px 12px' }}>
-        <span style={{ color:'#ff6b9d', fontSize:11, fontWeight:700 }}>🔑 Token admin</span>
-        <input
-          type="password"
-          placeholder="Token secret"
-          value={adminToken}
-          onChange={e => { setAdminToken(e.target.value); sessionStorage.setItem('kirha_admin_token', e.target.value); }}
-          style={{ flex:1, padding:'4px 8px', borderRadius:6, border:'1px solid rgba(196,48,112,0.3)', background:'rgba(0,0,0,0.3)', color:'#e0c8d8', fontSize:11, fontFamily:'monospace' }}
-        />
-        {adminToken && <span style={{ color:'#6abf44', fontSize:10 }}>✓ Défini</span>}
+      <div style={{ marginBottom:16, background:'rgba(196,48,112,0.08)', border:`1px solid ${tokenStatus === 'ok' ? 'rgba(106,191,68,0.5)' : tokenStatus === 'invalid' ? 'rgba(255,100,100,0.5)' : 'rgba(196,48,112,0.2)'}`, borderRadius:10, padding:'8px 12px' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ color:'#ff6b9d', fontSize:11, fontWeight:700 }}>🔑 Token admin</span>
+          <input
+            type="password"
+            placeholder="Token secret"
+            value={adminToken}
+            onChange={e => { setAdminToken(e.target.value); sessionStorage.setItem('kirha_admin_token', e.target.value); setTokenStatus('unknown'); }}
+            style={{ flex:1, padding:'4px 8px', borderRadius:6, border:'1px solid rgba(196,48,112,0.3)', background:'rgba(0,0,0,0.3)', color:'#e0c8d8', fontSize:11, fontFamily:'monospace' }}
+          />
+          <button
+            onClick={testerToken}
+            disabled={!adminToken || tokenStatus === 'testing'}
+            style={{ padding:'3px 8px', borderRadius:6, border:'1px solid rgba(196,48,112,0.4)', background:'rgba(196,48,112,0.15)', color:'#ff6b9d', fontSize:10, fontWeight:700, cursor:'pointer', flexShrink:0 }}
+          >
+            {tokenStatus === 'testing' ? '⏳' : 'Tester'}
+          </button>
+        </div>
+        {tokenStatus === 'ok' && <p style={{ color:'#6abf44', fontSize:10, margin:'4px 0 0' }}>✅ Token valide — accès autorisé</p>}
+        {tokenStatus === 'invalid' && <p style={{ color:'#ff6b6b', fontSize:10, margin:'4px 0 0' }}>❌ Token invalide ou erreur réseau</p>}
+        {tokenStatus === 'unknown' && adminToken && <p style={{ color:'#9a6080', fontSize:10, margin:'4px 0 0' }}>Clique sur "Tester" pour valider le token.</p>}
       </div>
 
       {/* Relayer gas alert */}

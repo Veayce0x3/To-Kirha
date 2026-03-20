@@ -68,7 +68,7 @@ function corsHeaders(origin: string, allowedOrigin: string) {
   return {
     'Access-Control-Allow-Origin': allowed,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token',
     'Access-Control-Max-Age': '86400',
   };
 }
@@ -272,6 +272,12 @@ export default {
       }
 
       const action = pathname.replace('/admin/', '');
+
+      // Route de test simple (pas de tx on-chain)
+      if (action === 'ping') {
+        return jsonResponse(cors, { ok: true, msg: 'Token valide ✓' });
+      }
+
       const p = body as Record<string, string>;
 
       try {

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useWriteContract, usePublicClient } from 'wagmi';
+import { useWriteContract, usePublicClient, useSwitchChain } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
 import { parseEther } from 'viem';
 import { useGameStore } from '../store/gameStore';
@@ -17,6 +17,7 @@ export function useWithdraw() {
   const retirerKirha       = useGameStore(s => s.retirerKirha);
 
   const { writeContractAsync } = useWriteContract();
+  const { switchChainAsync }   = useSwitchChain();
   const publicClient = usePublicClient();
 
   const retirer = useCallback(async (montant: number) => {
@@ -30,6 +31,7 @@ export function useWithdraw() {
     try {
       const amountWei = parseEther(montant.toString());
       setStatus('pending');
+      try { await switchChainAsync({ chainId: baseSepolia.id }); } catch {}
       const hash = await writeContractAsync({
         address:      KIRHA_GAME_ADDRESS,
         abi:          KirhaGameAbi,

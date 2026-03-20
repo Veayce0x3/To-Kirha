@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useWriteContract, usePublicClient, useReadContract } from 'wagmi';
+import { useWriteContract, usePublicClient, useReadContract, useSwitchChain } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
 import { parseEther } from 'viem';
 import { useGameStore } from '../store/gameStore';
@@ -31,6 +31,7 @@ export function useSave() {
   const resetKirhaEarned       = useGameStore(s => s.resetKirhaEarned);
 
   const { writeContractAsync } = useWriteContract();
+  const { switchChainAsync }   = useSwitchChain();
   const publicClient = usePublicClient();
 
   const villeIdBn = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
@@ -100,6 +101,7 @@ export function useSave() {
         }
       } else {
         // ── Voie directe (fallback wallet) ────────────────────
+        try { await switchChainAsync({ chainId: baseSepolia.id }); } catch {}
         const hash = await writeContractAsync({
           address:      KIRHA_GAME_ADDRESS,
           abi:          KirhaGameAbi,

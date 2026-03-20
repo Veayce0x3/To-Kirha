@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useReadContract, useWriteContract, usePublicClient } from 'wagmi';
+import { useReadContract, useWriteContract, usePublicClient, useSwitchChain } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
 import { parseEther, formatEther } from 'viem';
 import { KIRHA_MARKET_ADDRESS, KIRHA_GAME_ADDRESS } from '../contracts/addresses';
@@ -27,7 +27,13 @@ export function useMarket() {
   const [error, setError]   = useState<string | null>(null);
 
   const { writeContractAsync } = useWriteContract();
+  const { switchChainAsync }   = useSwitchChain();
   const publicClient = usePublicClient();
+
+  // Switch vers Base Sepolia si le wallet est sur une autre chaîne
+  async function ensureChain() {
+    try { await switchChainAsync({ chainId: baseSepolia.id }); } catch {}
+  }
 
   const villeId          = useGameStore(s => s.villeId);
   const retirerRessource = useGameStore(s => s.retirerRessource);
@@ -127,6 +133,7 @@ export function useMarket() {
           pricePerUnit: parseEther(pricePerUnit.toString()).toString(),
         });
       } else {
+        await ensureChain();
         const hash = await writeContractAsync({
           address:      KIRHA_MARKET_ADDRESS,
           abi:          KirhaMarketAbi,
@@ -166,6 +173,7 @@ export function useMarket() {
           });
         }
       } else {
+        await ensureChain();
         const hash = await writeContractAsync({
           address:      KIRHA_MARKET_ADDRESS,
           abi:          KirhaMarketAbi,
@@ -206,6 +214,7 @@ export function useMarket() {
           quantity:    String(Math.floor(quantity)),
         });
       } else {
+        await ensureChain();
         const hash = await writeContractAsync({
           address:      KIRHA_MARKET_ADDRESS,
           abi:          KirhaMarketAbi,
@@ -244,6 +253,7 @@ export function useMarket() {
           });
         }
       } else {
+        await ensureChain();
         const hash = await writeContractAsync({
           address:      KIRHA_MARKET_ADDRESS,
           abi:          KirhaMarketAbi,
@@ -277,6 +287,7 @@ export function useMarket() {
     setStatus('listing');
     setError(null);
     try {
+      await ensureChain();
       const hash = await writeContractAsync({
         address:  KIRHA_GAME_ADDRESS,
         abi:      KirhaGameAbi,
@@ -304,6 +315,7 @@ export function useMarket() {
       if (relayerActive) {
         await relayerPost('/market/cancel', { listingId: listingId.toString() });
       } else {
+        await ensureChain();
         const hash = await writeContractAsync({
           address:      KIRHA_MARKET_ADDRESS,
           abi:          KirhaMarketAbi,
