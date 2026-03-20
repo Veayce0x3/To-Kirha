@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useWriteContract, usePublicClient } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
 import { parseEther } from 'viem';
 import { useGameStore } from '../store/gameStore';
 import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
@@ -34,6 +35,7 @@ export function useWithdraw() {
         abi:          KirhaGameAbi,
         functionName: 'withdrawKirha',
         args:         [BigInt(villeId), amountWei],
+        chainId:      baseSepolia.id,
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       retirerKirha(montant);

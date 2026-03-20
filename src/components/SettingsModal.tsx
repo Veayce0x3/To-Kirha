@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { useSave } from '../hooks/useSave';
 import { useDisconnect, useAccount, useWriteContract, usePublicClient } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
 import { useT } from '../utils/i18n';
 import { KIRHA_CITY_ADDRESS } from '../contracts/addresses';
 import KirhaCityAbi from '../contracts/abis/KirhaCity.json';
@@ -53,6 +54,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
         abi:          KirhaCityAbi,
         functionName: 'safeTransferFrom',
         args:         [address, transferTo as `0x${string}`, BigInt(villeId)],
+        chainId:      baseSepolia.id,
       });
       setTransferStatus('pending');
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });

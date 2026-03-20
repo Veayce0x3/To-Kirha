@@ -7,6 +7,7 @@ import { getResourceById } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
 import { useMarket } from '../hooks/useMarket';
+import { useSave } from '../hooks/useSave';
 import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
 import { KIRHA_MARKET_ADDRESS, KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaMarketAbi from '../contracts/abis/KirhaMarket.json';
@@ -181,6 +182,8 @@ function TabOnchain() {
   const inventaire  = useGameStore(s => s.inventaire);
   const villeId     = useGameStore(s => s.villeId);
   const vipExpiry   = useGameStore(s => s.vipExpiry);
+  const soldeKirha  = useGameStore(s => s.soldeKirha);
+  const pepitesOr   = useGameStore(s => s.pepitesOr);
   const { lang } = useT();
   const villeIdBn   = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
@@ -190,8 +193,20 @@ function TabOnchain() {
     listings, myListings, status, error, isRelayerActive,
     activerRelayer, batchMettrEnVente, batchAcheter, annulerListing,
   } = useMarket();
+  const { sauvegarder, status: saveStatus, pendingCount } = useSave();
 
   const [tab, setTab]               = useState<'acheter'|'vendre'|'mesVentes'|'historique'>('acheter');
+  const [relayerSecondsLeft, setRelayerSecondsLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isRelayerActive || !villeId) { setRelayerSecondsLeft(null); return; }
+    const at = parseInt(localStorage.getItem(`kirha_relayer_at_${villeId}`) ?? '0');
+    const expiresAt = at ? at + 43200_000 : Date.now() + 43200_000;
+    const update = () => setRelayerSecondsLeft(Math.max(0, Math.round((expiresAt - Date.now()) / 1000)));
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [isRelayerActive, villeId]);
   const [sellResourceId, setSellResourceId] = useState('');
   const [sellQty, setSellQty]       = useState('');
   const [sellPrice, setSellPrice]   = useState('');
@@ -250,19 +265,32 @@ function TabOnchain() {
     <div style={{ paddingBottom:90 }}>
 
       {/* Bannière relayer */}
-      {!isRelayerActive && (
+      {isRelayerActive ? (
+        <div style={{ margin:'12px 14px 0', padding:'10px 14px', background:'rgba(106,191,68,0.07)', border:'1px solid rgba(106,191,68,0.3)', borderRadius:12, display:'flex', gap:10, alignItems:'center' }}>
+          <span style={{ fontSize:18 }}>⚡</span>
+          <div style={{ flex:1 }}>
+            <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 1px' }}>Mode gasless actif</p>
+            {relayerSecondsLeft !== null && (
+              <p style={{ color:'#7a4060', fontSize:10, margin:0 }}>
+                Expire dans {Math.floor(relayerSecondsLeft / 3600)}h {Math.floor((relayerSecondsLeft % 3600) / 60)}min
+              </p>
+            )}
+          </div>
+          <span style={{ color:'#6abf44', fontSize:10, fontWeight:700, background:'rgba(106,191,68,0.15)', padding:'3px 8px', borderRadius:6 }}>✓ ACTIF</span>
+        </div>
+      ) : (
         <div style={{ margin:'12px 14px 0', padding:'12px 14px', background:'rgba(249,168,37,0.08)', border:'1px solid rgba(249,168,37,0.35)', borderRadius:12, display:'flex', gap:10, alignItems:'center' }}>
           <span style={{ fontSize:20 }}>⚡</span>
           <div style={{ flex:1 }}>
             <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 2px' }}>Mode gasless désactivé</p>
-            <p style={{ color:'#7a4060', fontSize:10, margin:0 }}>Autorise le relayer une fois (8h) pour des transactions sans frais.</p>
+            <p style={{ color:'#7a4060', fontSize:10, margin:0 }}>Autorise le relayer une fois (12h) pour des transactions sans frais.</p>
           </div>
           <button
             style={{ padding:'7px 12px', background:'#f9a825', color:'#1e0a16', border:'none', borderRadius:10, fontSize:11, fontWeight:700, cursor: relayerActivating ? 'default' : 'pointer', opacity: relayerActivating ? 0.6 : 1 }}
             onClick={activerRelayer}
             disabled={relayerActivating}
           >
-            {relayerActivating ? '⏳…' : 'Activer'}
+            {relayerActivating ? '⏳…' : 'Activer (12h)'}
           </button>
         </div>
       )}
@@ -282,6 +310,24 @@ function TabOnchain() {
             ? <span style={{ color:'#f9a825', fontSize:11, fontWeight:700 }}>👑 VIP actif — Taxe 25%</span>
             : <span style={{ color:'#9a6080', fontSize:11 }}>Taxe vendeur : 50%</span>
           }
+        </div>
+      </div>
+
+      {/* Soldes */}
+      <div style={{ display:'flex', gap:8, padding:'8px 14px 0' }}>
+        <div style={{ ...ms.statCard, flex:1, flexDirection:'row', gap:6, alignItems:'center', justifyContent:'center' }}>
+          <span style={{ fontSize:14 }}>💠</span>
+          <div>
+            <span style={{ color:'#1e0a16', fontSize:13, fontWeight:800 }}>{soldeKirha > 0 ? soldeKirha.toFixed(4) : '—'}</span>
+            <span style={{ color:'#9a6080', fontSize:9, display:'block', fontWeight:700 }}>$KIRHA</span>
+          </div>
+        </div>
+        <div style={{ ...ms.statCard, flex:1, flexDirection:'row', gap:6, alignItems:'center', justifyContent:'center' }}>
+          <span style={{ fontSize:14 }}>🪙</span>
+          <div>
+            <span style={{ color:'#f9a825', fontSize:13, fontWeight:800 }}>{pepitesOr > 0 ? pepitesOr.toFixed(0) : '—'}</span>
+            <span style={{ color:'#9a6080', fontSize:9, display:'block', fontWeight:700 }}>PÉPITES</span>
+          </div>
         </div>
       </div>
 
@@ -372,20 +418,36 @@ function TabOnchain() {
                               <span style={{ color:'#6abf44', fontSize:11, fontWeight:700 }}>✓ Panier</span>
                             ) : (
                               <div style={{ display:'flex', flexDirection:'column', gap:5, alignItems:'flex-end' }}>
-                                <input
-                                  type="number" min="1" max={l.quantity} value={qtyVal}
-                                  onChange={e => setBuyQty(prev => ({ ...prev, [key]: e.target.value }))}
-                                  style={{ width:46, padding:'5px 6px', border:'1.5px solid rgba(212,100,138,0.3)', borderRadius:8, fontSize:12, color:'#1e0a16', textAlign:'center', outline:'none' }}
-                                />
-                                <button
-                                  style={{ background:'linear-gradient(135deg, #c43070, #8a25d4)', color:'#fff', border:'none', borderRadius:8, padding:'5px 10px', fontSize:10, fontWeight:700, cursor:'pointer' }}
-                                  onClick={() => {
-                                    const qty = Math.max(1, Math.min(l.quantity, parseInt(qtyVal) || 1));
-                                    setBuyCart(prev => [...prev, { listingId: l.listingId, resourceId: l.resourceId, quantity: qty, pricePerUnit: l.pricePerUnit, maxQty: l.quantity }]);
-                                  }}
-                                >
-                                  + Panier
-                                </button>
+                                <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+                                  <button
+                                    style={{ width:22, height:22, background:'rgba(196,48,112,0.1)', border:'1px solid rgba(196,48,112,0.25)', borderRadius:5, color:'#c43070', fontSize:14, fontWeight:700, cursor:'pointer', lineHeight:1, padding:0 }}
+                                    onClick={() => setBuyQty(prev => ({ ...prev, [key]: String(Math.max(1, (parseInt(prev[key] ?? '1') || 1) - 1)) }))}
+                                  >−</button>
+                                  <input
+                                    type="number" min="1" max={l.quantity} value={qtyVal}
+                                    onChange={e => setBuyQty(prev => ({ ...prev, [key]: e.target.value }))}
+                                    style={{ width:40, padding:'4px 4px', border:'1.5px solid rgba(212,100,138,0.3)', borderRadius:6, fontSize:12, color:'#1e0a16', textAlign:'center', outline:'none' }}
+                                  />
+                                  <button
+                                    style={{ width:22, height:22, background:'rgba(196,48,112,0.1)', border:'1px solid rgba(196,48,112,0.25)', borderRadius:5, color:'#c43070', fontSize:14, fontWeight:700, cursor:'pointer', lineHeight:1, padding:0 }}
+                                    onClick={() => setBuyQty(prev => ({ ...prev, [key]: String(Math.min(l.quantity, (parseInt(prev[key] ?? '1') || 1) + 1)) }))}
+                                  >+</button>
+                                </div>
+                                <div style={{ display:'flex', gap:3 }}>
+                                  <button
+                                    style={{ background:'rgba(196,48,112,0.08)', color:'#c43070', border:'1px solid rgba(196,48,112,0.2)', borderRadius:6, padding:'3px 6px', fontSize:9, fontWeight:700, cursor:'pointer' }}
+                                    onClick={() => setBuyQty(prev => ({ ...prev, [key]: String(l.quantity) }))}
+                                  >MAX</button>
+                                  <button
+                                    style={{ background:'linear-gradient(135deg, #c43070, #8a25d4)', color:'#fff', border:'none', borderRadius:7, padding:'4px 8px', fontSize:10, fontWeight:700, cursor:'pointer' }}
+                                    onClick={() => {
+                                      const qty = Math.max(1, Math.min(l.quantity, parseInt(qtyVal) || 1));
+                                      setBuyCart(prev => [...prev, { listingId: l.listingId, resourceId: l.resourceId, quantity: qty, pricePerUnit: l.pricePerUnit, maxQty: l.quantity }]);
+                                    }}
+                                  >
+                                    + Panier
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -441,6 +503,22 @@ function TabOnchain() {
         {/* ── Vendre ── */}
         {tab === 'vendre' && (
           <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            {pendingCount > 0 && (
+              <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'rgba(249,168,37,0.1)', border:'1px solid rgba(249,168,37,0.4)', borderRadius:12 }}>
+                <span style={{ fontSize:18 }}>⚠️</span>
+                <div style={{ flex:1 }}>
+                  <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 2px' }}>Ressources non sauvegardées</p>
+                  <p style={{ color:'#7a4060', fontSize:10, margin:0 }}>Sauvegarde d'abord tes ressources avant de les vendre sur le marché.</p>
+                </div>
+                <button
+                  style={{ padding:'7px 12px', background:'#f9a825', color:'#1e0a16', border:'none', borderRadius:10, fontSize:11, fontWeight:700, cursor: saveStatus !== 'idle' ? 'default' : 'pointer', opacity: saveStatus !== 'idle' ? 0.6 : 1, flexShrink:0 }}
+                  onClick={sauvegarder}
+                  disabled={saveStatus !== 'idle'}
+                >
+                  {saveStatus === 'signing' || saveStatus === 'pending' ? '⏳…' : '💾 Sauvegarder'}
+                </button>
+              </div>
+            )}
             <div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', background: isVip ? 'rgba(249,168,37,0.1)' : 'rgba(196,48,112,0.07)', border: isVip ? '1px solid rgba(249,168,37,0.3)' : '1px solid rgba(196,48,112,0.2)', borderRadius:20, alignSelf:'flex-start' }}>
               <span style={{ fontSize:13 }}>{isVip ? '👑' : 'ℹ️'}</span>
               <span style={{ color: isVip ? '#f9a825' : '#9a6080', fontSize:11, fontWeight:700 }}>{taxLabel}</span>
@@ -451,12 +529,28 @@ function TabOnchain() {
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 <div>
                   <label style={s.label}>Ressource</label>
-                  <select value={sellResourceId} onChange={e => setSellResourceId(e.target.value)} style={s.select}>
-                    <option value="">-- Choisir --</option>
-                    {inventaireItems.filter(item => !cart.some(c => c.resourceId === item.id)).map(item => (
-                      <option key={item.id} value={item.id}>{emojiByResourceId(item.id)} {getNomRessource(item.id, lang)} (×{item.qty})</option>
-                    ))}
-                  </select>
+                  {inventaireItems.filter(item => !cart.some(c => c.resourceId === item.id)).length === 0 ? (
+                    <p style={{ color:'#9a6080', fontSize:12, margin:'4px 0' }}>Aucune ressource disponible en inventaire.</p>
+                  ) : (
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:6 }}>
+                      {inventaireItems.filter(item => !cart.some(c => c.resourceId === item.id)).map(item => {
+                        const isSelected = sellResourceId === String(item.id);
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => setSellResourceId(isSelected ? '' : String(item.id))}
+                            style={{ background: isSelected ? 'linear-gradient(135deg, rgba(196,48,112,0.1), rgba(138,37,212,0.07))' : '#fff', border: isSelected ? '2px solid #c43070' : '1px solid rgba(212,100,138,0.2)', borderRadius:14, padding:'10px', cursor:'pointer', textAlign:'left', boxShadow: isSelected ? '0 2px 12px rgba(196,48,112,0.12)' : 'none' }}
+                          >
+                            <span style={{ fontSize:26, display:'block', marginBottom:4 }}>{emojiByResourceId(item.id)}</span>
+                            <span style={{ color:'#1e0a16', fontSize:11, fontWeight:700, display:'block', marginBottom:4, lineHeight:1.2 }}>{getNomRessource(item.id, lang)}</span>
+                            <span style={{ background:'rgba(196,48,112,0.1)', color:'#c43070', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:8 }}>
+                              ×{item.qty} dispo
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {sellResourceId && (
@@ -464,7 +558,21 @@ function TabOnchain() {
                     <div style={{ display:'flex', gap:8 }}>
                       <div style={{ flex:1 }}>
                         <label style={s.label}>Quantité (max {maxQty})</label>
-                        <input type="number" min="1" max={maxQty} value={sellQty} onChange={e => setSellQty(e.target.value)} placeholder="1" style={s.input} />
+                        <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                          <button
+                            style={{ width:28, height:28, background:'rgba(196,48,112,0.1)', border:'1px solid rgba(196,48,112,0.25)', borderRadius:7, color:'#c43070', fontSize:16, fontWeight:700, cursor:'pointer', lineHeight:1, padding:0, flexShrink:0 }}
+                            onClick={() => setSellQty(String(Math.max(1, (parseInt(sellQty) || 1) - 1)))}
+                          >−</button>
+                          <input type="number" min="1" max={maxQty} value={sellQty} onChange={e => setSellQty(e.target.value)} placeholder="1" style={{ ...s.input, flex:1, textAlign:'center' }} />
+                          <button
+                            style={{ width:28, height:28, background:'rgba(196,48,112,0.1)', border:'1px solid rgba(196,48,112,0.25)', borderRadius:7, color:'#c43070', fontSize:16, fontWeight:700, cursor:'pointer', lineHeight:1, padding:0, flexShrink:0 }}
+                            onClick={() => setSellQty(String(Math.min(maxQty, (parseInt(sellQty) || 1) + 1)))}
+                          >+</button>
+                          <button
+                            style={{ padding:'0 10px', height:28, background:'rgba(196,48,112,0.1)', border:'1px solid rgba(196,48,112,0.25)', borderRadius:7, color:'#c43070', fontSize:10, fontWeight:700, cursor:'pointer', flexShrink:0 }}
+                            onClick={() => setSellQty(String(maxQty))}
+                          >MAX</button>
+                        </div>
                       </div>
                       <div style={{ flex:1 }}>
                         <label style={s.label}>

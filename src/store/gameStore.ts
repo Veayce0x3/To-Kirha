@@ -71,6 +71,7 @@ export interface GameState {
   ajouterPepites:           (amount: number) => void;
   retirerPepites:           (amount: number) => void;
   completerQueteTemple:     (index: number) => void;
+  resetTempleQuetes:        () => void;
   setChainBalances:         (kirha: number, pepites: number, vipExpiry: number) => void;
   setMetierFromChain:       (metierId: MetierId, niveau: number, xp: number, xpTotal: number) => void;
   addInventaireFromChain:   (resourceId: ResourceId, qty: number) => void;
@@ -279,13 +280,11 @@ export const useGameStore = create<GameState>()(
 
       completerQueteTemple: (index) =>
         set((state) => {
-          const today = new Date().toISOString().slice(0, 10);
-          const completed = state.templeCompletedDate === today
-            ? [...state.templeCompleted]
-            : [];
-          if (completed.includes(index)) return state;
-          return { templeCompletedDate: today, templeCompleted: [...completed, index] };
+          if (state.templeCompleted.includes(index)) return state;
+          return { templeCompleted: [...state.templeCompleted, index] };
         }),
+
+      resetTempleQuetes: () => set({ templeCompleted: [], templeCompletedDate: '' }),
 
       setChainBalances: (kirha, pepites, vipExpiry) =>
         set((state) => ({

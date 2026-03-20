@@ -17,7 +17,9 @@ export function BanquePage() {
   const soldeKirhaStore = useGameStore(s => s.soldeKirha);
   const pepitesOr  = useGameStore(s => s.pepitesOr);
   const vipExpiry  = useGameStore(s => s.vipExpiry);
-  const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
+  const now = Math.floor(Date.now() / 1000);
+  const isVip = vipExpiry > 0 && vipExpiry > now;
+  const vipRemainingDays = isVip ? Math.ceil((vipExpiry - now) / 86400) : 0;
   const [montantRetrait, setMontantRetrait] = useState('');
   const [montantDepot, setMontantDepot]     = useState('');
   const [watchStatus, setWatchStatus]       = useState<'idle'|'ok'|'err'>('idle');
@@ -55,6 +57,20 @@ export function BanquePage() {
       </div>
 
       <div style={{ padding:'16px', paddingBottom:90 }}>
+
+        {/* Récap soldes */}
+        <div style={{ display:'flex', gap:10, marginBottom:12 }}>
+          <div style={{ flex:1, background:'linear-gradient(135deg, rgba(196,48,112,0.08), rgba(138,37,212,0.05))', border:'1px solid rgba(196,48,112,0.2)', borderRadius:14, padding:'12px 14px', display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
+            <span style={{ fontSize:20 }}>💠</span>
+            <span style={{ color:'#1e0a16', fontSize:18, fontWeight:900 }}>{soldeKirhaStore > 0 ? soldeKirhaStore.toFixed(4) : '0'}</span>
+            <span style={{ color:'#9a6080', fontSize:10, fontWeight:700 }}>$KIRHA IN-GAME</span>
+          </div>
+          <div style={{ flex:1, background:'linear-gradient(135deg, rgba(249,168,37,0.1), rgba(196,48,112,0.04))', border:'1px solid rgba(249,168,37,0.25)', borderRadius:14, padding:'12px 14px', display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
+            <span style={{ fontSize:20 }}>🪙</span>
+            <span style={{ color:'#f9a825', fontSize:18, fontWeight:900 }}>{pepitesOr > 0 ? pepitesOr.toFixed(0) : '0'}</span>
+            <span style={{ color:'#9a6080', fontSize:10, fontWeight:700 }}>PÉPITES D'OR</span>
+          </div>
+        </div>
 
         {/* Wallet */}
         <div style={s.walletCard}>
@@ -212,18 +228,40 @@ export function BanquePage() {
               Avantage VIP : taxe HDV réduite de 50% → 25%
             </p>
           )}
+          {isVip && vipRemainingDays > 0 && (
+            <p style={{ color:'#f9a825', fontSize:'11px', margin:'0 0 10px' }}>
+              ⏳ Il vous reste <strong>{vipRemainingDays} jours</strong> de VIP. L'achat prolongera votre abonnement.
+            </p>
+          )}
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-            {VIP_DURATIONS.map(dur => (
-              <button
-                key={dur.type}
-                style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', background:'rgba(196,48,112,0.07)', border:'1px solid rgba(196,48,112,0.2)', borderRadius:10, cursor: pepitesOr < dur.pepites ? 'not-allowed' : 'pointer', opacity: pepitesOr < dur.pepites ? 0.5 : 1 }}
-                onClick={() => acheterVip(dur.type)}
-                disabled={vipStatus === 'pending' || pepitesOr < dur.pepites}
-              >
-                <span style={{color:'#1e0a16', fontSize:'13px', fontWeight:700}}>{dur.label}</span>
-                <span style={{color:'#c43070', fontSize:'12px', fontWeight:800}}>🪙 {dur.pepites}</span>
-              </button>
-            ))}
+            {VIP_DURATIONS.map(dur => {
+              const durDays = [7, 30, 90][dur.type] ?? 0;
+              // Désactiver les options plus courtes si VIP actif avec plus de jours restants
+              const isRedundant = isVip && vipRemainingDays >= durDays;
+              const resultingExpiry = isVip
+                ? new Date((vipExpiry + durDays * 86400) * 1000).toLocaleDateString('fr-FR')
+                : null;
+              const disabled = vipStatus === 'pending' || pepitesOr < dur.pepites || isRedundant;
+              return (
+                <button
+                  key={dur.type}
+                  style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', background: isRedundant ? 'rgba(0,0,0,0.03)' : 'rgba(196,48,112,0.07)', border: isRedundant ? '1px dashed rgba(196,48,112,0.15)' : '1px solid rgba(196,48,112,0.2)', borderRadius:10, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.45 : 1 }}
+                  onClick={() => acheterVip(dur.type)}
+                  disabled={disabled}
+                >
+                  <div style={{ textAlign:'left' }}>
+                    <span style={{color:'#1e0a16', fontSize:'13px', fontWeight:700}}>{dur.label}</span>
+                    {resultingExpiry && !isRedundant && (
+                      <span style={{display:'block', color:'#9a6080', fontSize:'9px'}}>→ expire le {resultingExpiry}</span>
+                    )}
+                    {isRedundant && (
+                      <span style={{display:'block', color:'#9a6080', fontSize:'9px'}}>Déjà couvert par votre VIP actuel</span>
+                    )}
+                  </div>
+                  <span style={{color:'#c43070', fontSize:'12px', fontWeight:800}}>🪙 {dur.pepites}</span>
+                </button>
+              );
+            })}
           </div>
           {vipStatus === 'success' && <p style={{color:'#6abf44', fontSize:'11px', margin:'8px 0 0'}}>✅ VIP activé !</p>}
         </div>

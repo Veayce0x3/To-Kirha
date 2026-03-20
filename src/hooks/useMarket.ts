@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useReadContract, useWriteContract, usePublicClient } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
 import { parseEther, formatEther } from 'viem';
 import { KIRHA_MARKET_ADDRESS, KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaMarketAbi from '../contracts/abis/KirhaMarket.json';
@@ -31,6 +32,7 @@ export function useMarket() {
   const villeId          = useGameStore(s => s.villeId);
   const retirerRessource = useGameStore(s => s.retirerRessource);
   const ajouterRessource = useGameStore(s => s.ajouterRessource);
+  const retirerKirha     = useGameStore(s => s.retirerKirha);
 
   const cityIdBn = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
 
@@ -130,6 +132,7 @@ export function useMarket() {
           abi:          KirhaMarketAbi,
           functionName: 'listResource',
           args:         [cityIdBn, BigInt(resourceId), BigInt(Math.floor(quantity)), parseEther(pricePerUnit.toString())],
+          chainId:      baseSepolia.id,
         });
         if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
@@ -173,6 +176,7 @@ export function useMarket() {
             items.map(i => BigInt(Math.floor(i.quantity))),
             items.map(i => parseEther(i.pricePerUnit.toString())),
           ],
+          chainId: baseSepolia.id,
         });
         if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
@@ -190,7 +194,7 @@ export function useMarket() {
   }, [cityIdBn, villeId, relayerActive, writeContractAsync, refetchListings, publicClient, retirerRessource]);
 
   // ── Acheter (unitaire) ────────────────────────────────────
-  const acheter = useCallback(async (listingId: bigint, quantity: number, resourceId: number) => {
+  const acheter = useCallback(async (listingId: bigint, quantity: number, resourceId: number, pricePerUnit = 0) => {
     if (!cityIdBn || !villeId) return;
     setError(null);
     setStatus('buying');
@@ -207,10 +211,12 @@ export function useMarket() {
           abi:          KirhaMarketAbi,
           functionName: 'buyResource',
           args:         [listingId, cityIdBn, BigInt(Math.floor(quantity))],
+          chainId:      baseSepolia.id,
         });
         if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
       ajouterRessource(resourceId as ResourceId, quantity);
+      if (pricePerUnit > 0) retirerKirha(quantity * pricePerUnit);
       await new Promise(resolve => setTimeout(resolve, 2000));
       await refetchListings();
       setStatus('success');
@@ -219,11 +225,11 @@ export function useMarket() {
       setError(err instanceof Error ? err.message : 'Erreur');
       setStatus('error');
     }
-  }, [cityIdBn, villeId, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource]);
+  }, [cityIdBn, villeId, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource, retirerKirha]);
 
   // ── Acheter (panier — batch) ───────────────────────────────
   const batchAcheter = useCallback(async (
-    items: { listingId: bigint; quantity: number; resourceId: number }[]
+    items: { listingId: bigint; quantity: number; resourceId: number; pricePerUnit?: number }[]
   ) => {
     if (!cityIdBn || !villeId || items.length === 0) return;
     setError(null);
@@ -247,11 +253,13 @@ export function useMarket() {
             items.map(i => i.listingId),
             items.map(i => BigInt(Math.floor(i.quantity))),
           ],
+          chainId: baseSepolia.id,
         });
         if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
       for (const item of items) {
         ajouterRessource(item.resourceId as ResourceId, item.quantity);
+        if (item.pricePerUnit && item.pricePerUnit > 0) retirerKirha(item.quantity * item.pricePerUnit);
       }
       await new Promise(resolve => setTimeout(resolve, 2000));
       await refetchListings();
@@ -261,7 +269,7 @@ export function useMarket() {
       setError(err instanceof Error ? err.message : 'Erreur');
       setStatus('error');
     }
-  }, [cityIdBn, villeId, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource]);
+  }, [cityIdBn, villeId, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource, retirerKirha]);
 
   // ── Activer le relayer (8h) ────────────────────────────────
   const activerRelayer = useCallback(async () => {
@@ -270,12 +278,14 @@ export function useMarket() {
     setError(null);
     try {
       const hash = await writeContractAsync({
-        address: KIRHA_GAME_ADDRESS,
-        abi: KirhaGameAbi,
+        address:  KIRHA_GAME_ADDRESS,
+        abi:      KirhaGameAbi,
         functionName: 'authorizeRelayer',
-        args: [cityIdBn, 28800n],
+        args:     [cityIdBn, 43200n],
+        chainId:  baseSepolia.id,
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      if (villeId) localStorage.setItem(`kirha_relayer_at_${villeId}`, Date.now().toString());
       setStatus('success');
       setTimeout(() => setStatus('idle'), 2000);
     } catch (err) {
@@ -297,6 +307,7 @@ export function useMarket() {
           abi:          KirhaMarketAbi,
           functionName: 'cancelListing',
           args:         [listingId],
+          chainId:      baseSepolia.id,
         });
         if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }

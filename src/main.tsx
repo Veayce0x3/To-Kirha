@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { WagmiProvider } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { wagmiConfig } from './config/wagmi';
@@ -16,6 +17,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
+          initialChain={baseSepolia}
           modalSize="compact"
           theme={darkTheme({
             accentColor:           '#ff6b9d',

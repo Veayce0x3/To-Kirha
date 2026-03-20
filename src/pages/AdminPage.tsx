@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAccount, usePublicClient } from 'wagmi';
 import { formatEther } from 'viem';
 import { KIRHA_GAME_ADDRESS, KIRHA_CITY_ADDRESS, KIRHA_MARKET_ADDRESS, RELAYER_ADDRESS } from '../contracts/addresses';
@@ -32,6 +33,7 @@ const METIER_NAMES = ['Bûcheron', 'Paysan', 'Pêcheur', 'Mineur', 'Alchimiste']
 const ADMIN_WORKER_URL = 'https://kirha-relayer.tokirha.workers.dev';
 
 export function AdminPage() {
+  const navigate     = useNavigate();
   const { address }  = useAccount();
   const publicClient = usePublicClient();
 
@@ -353,9 +355,17 @@ export function AdminPage() {
 
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, borderBottom:'1px solid rgba(196,48,112,0.3)', paddingBottom:12 }}>
-        <div>
-          <h1 style={{ color:'#ff6b9d', fontSize:20, fontWeight:900, margin:0 }}>⚙️ Admin — To-Kirha</h1>
-          <p style={{ color:'#7a4060', fontSize:10, margin:'4px 0 0' }}>{address?.slice(0,10)}…</p>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <button
+            onClick={() => navigate('/home')}
+            style={{ padding:'6px 12px', background:'rgba(196,48,112,0.12)', border:'1px solid rgba(196,48,112,0.3)', borderRadius:8, color:'#ff6b9d', fontSize:12, fontWeight:700, cursor:'pointer' }}
+          >
+            ← Retour
+          </button>
+          <div>
+            <h1 style={{ color:'#ff6b9d', fontSize:20, fontWeight:900, margin:0 }}>⚙️ Admin — To-Kirha</h1>
+            <p style={{ color:'#7a4060', fontSize:10, margin:'4px 0 0' }}>{address?.slice(0,10)}…</p>
+          </div>
         </div>
         <button
           onClick={charger}

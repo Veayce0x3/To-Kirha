@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useWriteContract, usePublicClient } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
 import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
 import { useGameStore } from '../store/gameStore';
@@ -37,9 +38,11 @@ export function useVip() {
     setError(null); setStatus('pending');
     try {
       const hash = await writeContractAsync({
-        address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
+        address:  KIRHA_GAME_ADDRESS,
+        abi:      KirhaGameAbi,
         functionName: 'buyPepites',
-        args: [BigInt(villeId), packType],
+        args:     [BigInt(villeId), packType],
+        chainId:  baseSepolia.id,
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       retirerKirha(pack.kirha);
@@ -57,9 +60,11 @@ export function useVip() {
     setError(null); setStatus('pending');
     try {
       const hash = await writeContractAsync({
-        address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
+        address:  KIRHA_GAME_ADDRESS,
+        abi:      KirhaGameAbi,
         functionName: 'buyVip',
-        args: [BigInt(villeId), durationType],
+        args:     [BigInt(villeId), durationType],
+        chainId:  baseSepolia.id,
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       // Sync vipExpiry from chain

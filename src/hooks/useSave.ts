@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useWriteContract, usePublicClient, useReadContract } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
 import { parseEther } from 'viem';
 import { useGameStore } from '../store/gameStore';
 import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
@@ -113,6 +114,7 @@ export function useSave() {
             metierXpTotals,
             kirhaWei,
           ],
+          chainId: baseSepolia.id,
         });
 
         if (publicClient) await publicClient.waitForTransactionReceipt({ hash });

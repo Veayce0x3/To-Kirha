@@ -71,6 +71,26 @@ function BeforeUnloadGuard() {
   return null;
 }
 
+function AutoSaveGuard() {
+  const derniereSauvegarde = useGameStore(s => s.derniere_sauvegarde);
+  const { sauvegarder, status } = useSave();
+
+  useEffect(() => {
+    const check = () => {
+      if (status !== 'idle') return;
+      const last = derniereSauvegarde ?? 0;
+      if (Date.now() - last >= 12 * 3600 * 1000) {
+        sauvegarder();
+      }
+    };
+    const id = setInterval(check, 60_000);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [derniereSauvegarde, status]);
+
+  return null;
+}
+
 const METIER_IDS_ARR: MetierId[] = ['bucheron', 'paysan', 'pecheur', 'mineur', 'alchimiste'];
 
 function VilleIdGuard() {
@@ -155,6 +175,7 @@ export default function App() {
       <HashRouter>
         <VersionGuard />
         <BeforeUnloadGuard />
+        <AutoSaveGuard />
         <VilleIdGuard />
         <div style={{ position:'relative', width:'100%', height:'100vh', overflow:'hidden' }}>
           <Routes>

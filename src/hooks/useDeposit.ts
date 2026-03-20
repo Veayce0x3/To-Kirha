@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useAccount, useReadContract, useWriteContract, usePublicClient } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
 import { parseEther, formatUnits } from 'viem';
 import { useGameStore } from '../store/gameStore';
 import { KIRHA_TOKEN_ADDRESS, KIRHA_GAME_ADDRESS } from '../contracts/addresses';
@@ -58,6 +59,7 @@ export function useDeposit() {
         abi:          KirhaGameAbi,
         functionName: 'depositKirha',
         args:         [BigInt(villeId), amountWei],
+        chainId:      baseSepolia.id,
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       ajouterKirha(montant);
