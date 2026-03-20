@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useDisconnect, useReadContract, useWriteContract, usePublicClient } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
 import { KirhaTokenImg } from '../assets/bucheron';
 import { useGameStore } from '../store/gameStore';
 import { useT } from '../utils/i18n';
@@ -37,18 +36,16 @@ export function ConnectPage() {
   const publicClient             = usePublicClient();
   const { t }                    = useT();
 
-  const setAddress  = useGameStore(s => s.setAddress);
-  const setPseudo   = useGameStore(s => s.setPseudo);
-  const setVilleId  = useGameStore(s => s.setVilleId);
+  const setAddress    = useGameStore(s => s.setAddress);
+  const setPseudo     = useGameStore(s => s.setPseudo);
+  const setVilleId    = useGameStore(s => s.setVilleId);
+  const resetGameData = useGameStore(s => s.resetGameData);
 
   // 'login' = joueur existant, 'register' = nouveau joueur
-  const [loginMode, setLoginMode]       = useState<'login' | 'register' | null>(null);
-  const [pseudoInput, setPseudoInput]   = useState('');
-  const [pseudoError, setPseudoError]   = useState<string | null>(null);
-  const [registering, setRegistering]   = useState(false);
-  const [relayerStep, setRelayerStep]   = useState<{ cityId: bigint; pseudo: string } | null>(null);
-  const [relayerSigning, setRelayerSigning] = useState(false);
-  const [relayerError, setRelayerError] = useState<string | null>(null);
+  const [loginMode, setLoginMode]     = useState<'login' | 'register' | null>(null);
+  const [pseudoInput, setPseudoInput] = useState('');
+  const [pseudoError, setPseudoError] = useState<string | null>(null);
+  const [registering, setRegistering] = useState(false);
 
   const { writeContractAsync } = useWriteContract();
 
@@ -78,16 +75,6 @@ export function ConnectPage() {
         }) as bigint | undefined;
         if (cityId !== undefined && cityId > 0n) {
           setVilleId(cityId.toString());
-          // Vérifier si le relayer est déjà actif
-          const relayerActive = await publicClient?.readContract({
-            address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
-            functionName: 'isRelayerActive', args: [cityId],
-          }) as boolean | undefined;
-          if (!relayerActive) {
-            // Proposer l'activation du relayer
-            setRelayerStep({ cityId, pseudo });
-            return;
-          }
         }
         setPseudo(pseudo);
         setAddress(address);
@@ -144,6 +131,7 @@ export function ConnectPage() {
       }
       setPseudo(val);
       setAddress(address);
+      resetGameData(); // remet à zéro les données de jeu (conserve villeId/pseudo/adresse/langue)
       navigate('/home', { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erreur';
@@ -158,80 +146,11 @@ export function ConnectPage() {
     }
   }
 
-  async function handleActiverRelayer() {
-    if (!relayerStep) return;
-    setRelayerSigning(true);
-    setRelayerError(null);
-    try {
-      const hash = await writeContractAsync({
-        address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
-        functionName: 'authorizeRelayer',
-        args: [relayerStep.cityId, 43200n],
-        chainId: baseSepolia.id,
-      });
-      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
-      if (relayerStep.cityId && address) localStorage.setItem(`kirha_relayer_at_${relayerStep.cityId.toString()}`, Date.now().toString());
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erreur';
-      if (msg.includes('User rejected') || msg.includes('user rejected')) {
-        // Skip comme si l'utilisateur avait cliqué "Passer"
-      } else {
-        setRelayerError(msg.slice(0, 80));
-        setRelayerSigning(false);
-        return;
-      }
-    }
-    setPseudo(relayerStep.pseudo);
-    setAddress(address!);
-    navigate('/home', { replace: true });
-  }
-
-  function handleSkipRelayer() {
-    if (!relayerStep || !address) return;
-    setPseudo(relayerStep.pseudo);
-    setAddress(address);
-    navigate('/home', { replace: true });
-  }
-
   function handleDisconnect() {
     disconnect();
     setLoginMode(null);
     setPseudoInput('');
     setPseudoError(null);
-    setRelayerStep(null);
-  }
-
-  // ── Écran : proposition activation relayer 12h ────────────
-  if (relayerStep) {
-    return (
-      <div style={s.page}>
-        <div style={s.pseudoCard}>
-          <span style={{ fontSize:44 }}>⚡</span>
-          <h2 style={s.pseudoTitle}>Transactions sans frais</h2>
-          <p style={{ ...s.pseudoSub, textAlign:'center' }}>
-            Autorise le relayer pour <strong>12h</strong> afin que toutes tes actions en jeu (récolte, marché, sauvegarde) se fassent <strong>sans popup wallet</strong> et sans gas.
-          </p>
-          <div style={{ background:'rgba(196,48,112,0.06)', border:'1px solid rgba(196,48,112,0.15)', borderRadius:12, padding:'12px 16px', width:'100%', boxSizing:'border-box' as const }}>
-            <p style={{ color:'#7a4060', fontSize:'11px', margin:0, lineHeight:1.6 }}>
-              ✅ Une seule signature requise<br/>
-              ✅ Gratuit (le relayer paie le gas)<br/>
-              ✅ Expire automatiquement après 12h
-            </p>
-          </div>
-          {relayerError && <p style={{ color:'#c43070', fontSize:'11px', margin:0 }}>{relayerError}</p>}
-          <button
-            onClick={handleActiverRelayer}
-            disabled={relayerSigning}
-            style={{ ...s.btnConfirm, opacity: relayerSigning ? 0.6 : 1 }}
-          >
-            {relayerSigning ? '⏳ Signature…' : '⚡ Activer le relayer 12h'}
-          </button>
-          <button onClick={handleSkipRelayer} style={s.btnBack}>
-            Passer (utiliser le wallet directement)
-          </button>
-        </div>
-      </div>
-    );
   }
 
   // ── Écran : chargement pseudo ──────────────────────────────

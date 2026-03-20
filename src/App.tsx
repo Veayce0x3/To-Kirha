@@ -95,24 +95,31 @@ const METIER_IDS_ARR: MetierId[] = ['bucheron', 'paysan', 'pecheur', 'mineur', '
 
 function VilleIdGuard() {
   const { isConnected, address } = useAccount();
-  const villeId     = useGameStore(s => s.villeId);
   const setVilleId  = useGameStore(s => s.setVilleId);
   const setPseudo   = useGameStore(s => s.setPseudo);
-  const setChainBalances    = useGameStore(s => s.setChainBalances);
-  const setMetierFromChain  = useGameStore(s => s.setMetierFromChain);
+  const setChainBalances       = useGameStore(s => s.setChainBalances);
+  const setMetierFromChain     = useGameStore(s => s.setMetierFromChain);
   const addInventaireFromChain = useGameStore(s => s.addInventaireFromChain);
+  const forceChainSync         = useGameStore(s => s.forceChainSync);
+  const resetGameData          = useGameStore(s => s.resetGameData);
+  const storeMetiers           = useGameStore(s => s.metiers);
+  const storeSoldeKirha        = useGameStore(s => s.soldeKirha);
   const publicClient = usePublicClient();
 
   useEffect(() => {
     if (!isConnected || !address || !publicClient) return;
-    // Toujours synchroniser depuis la chaîne à chaque connexion/rechargement
-    // (suppression du early return sur villeId — nécessaire pour recevoir les dons admin)
     (async () => {
       try {
         const cityId = await publicClient.readContract({
           address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
           functionName: 'playerCityId', args: [address],
         }) as bigint;
+        if (cityId === 0n) {
+          // Ville supprimée ou jamais créée — reset store et laisser Guard rediriger vers /
+          resetGameData();
+          setVilleId('0');
+          return;
+        }
         if (cityId > 0n) {
           setVilleId(cityId.toString());
           const pseudo = await publicClient.readContract({
@@ -127,21 +134,10 @@ function VilleIdGuard() {
             publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'vipExpiry', args: [cityId] }),
           ]) as [bigint, bigint, bigint];
 
-          setChainBalances(
-            parseFloat(formatEther(kirhaWei)),
-            Number(pepites),
-            Number(vipExp)
-          );
-
           const metiersChain = await publicClient.readContract({
             address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
             functionName: 'getCityMetiers', args: [cityId],
           }) as { metierId: number; level: number; xp: number; xpTotal: number }[];
-
-          for (const m of metiersChain) {
-            const mid = METIER_IDS_ARR[m.metierId];
-            if (mid) setMetierFromChain(mid, Number(m.level), Number(m.xp), Number(m.xpTotal));
-          }
 
           const allIds = Array.from({ length: 50 }, (_, i) => BigInt(i + 1));
           const resourcesChain = await publicClient.readContract({
@@ -149,9 +145,42 @@ function VilleIdGuard() {
             functionName: 'getCityResources', args: [cityId, allIds],
           }) as bigint[];
 
+          const chainKirha   = parseFloat(formatEther(kirhaWei));
+          const chainPepites = Number(pepites);
+          const chainVip     = Number(vipExp);
+          const chainMetiers = metiersChain.map(m => ({
+            metierId: METIER_IDS_ARR[m.metierId] as MetierId,
+            niveau:   Number(m.level),
+            xp:       Number(m.xp),
+            xpTotal:  Number(m.xpTotal),
+          })).filter(m => m.metierId);
+          const chainInventaire: Partial<Record<ResourceId, number>> = {};
           for (let i = 0; i < resourcesChain.length; i++) {
             const qty = Number(resourcesChain[i]) / 1e4;
-            if (qty > 0) addInventaireFromChain((i + 1) as ResourceId, qty);
+            if (qty > 0) chainInventaire[(i + 1) as ResourceId] = qty;
+          }
+
+          // Détecter un reset admin : on-chain tout à zéro/niveau 1
+          // mais le store local a des données plus élevées
+          const chainAllLevel1 = chainMetiers.every(m => m.niveau <= 1 && m.xpTotal === 0);
+          const chainNoResources = Object.keys(chainInventaire).length === 0;
+          const chainNoKirha = chainKirha === 0 && chainPepites === 0;
+          const localHasData = storeSoldeKirha > 0
+            || Object.values(storeMetiers).some(m => m.xp_total > 0)
+            || Object.values(storeMetiers).some(m => m.niveau > 1);
+
+          if (chainAllLevel1 && chainNoResources && chainNoKirha && localHasData) {
+            // Reset admin détecté — écraser le store local avec les données on-chain
+            forceChainSync(chainKirha, chainPepites, chainVip, chainMetiers, chainInventaire);
+          } else {
+            // Sync normale (Math.max — ne jamais downgrader)
+            setChainBalances(chainKirha, chainPepites, chainVip);
+            for (const m of chainMetiers) {
+              setMetierFromChain(m.metierId, m.niveau, m.xp, m.xpTotal);
+            }
+            for (const [rid, qty] of Object.entries(chainInventaire)) {
+              addInventaireFromChain(Number(rid) as ResourceId, qty as number);
+            }
           }
         }
       } catch {}

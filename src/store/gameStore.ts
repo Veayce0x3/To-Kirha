@@ -75,6 +75,8 @@ export interface GameState {
   setChainBalances:         (kirha: number, pepites: number, vipExpiry: number) => void;
   setMetierFromChain:       (metierId: MetierId, niveau: number, xp: number, xpTotal: number) => void;
   addInventaireFromChain:   (resourceId: ResourceId, qty: number) => void;
+  resetGameData:            () => void;
+  forceChainSync:           (kirha: number, pepites: number, vipExpiry: number, metiers: { metierId: MetierId; niveau: number; xp: number; xpTotal: number }[], inventaire: Partial<Record<ResourceId, number>>) => void;
 }
 
 // ============================================================
@@ -315,6 +317,46 @@ export const useGameStore = create<GameState>()(
           return { inventaire };
         }),
 
+      // Réinitialise toutes les données de jeu (garde adresse, villeId, pseudo, langue)
+      resetGameData: () =>
+        set((state) => ({
+          metiers:             Object.fromEntries(METIER_IDS.map(id => [id, initMetier(id)])) as Record<MetierId, MetierProgress>,
+          slots:               initSlots(),
+          inventaire:          {},
+          pending_mints:       [],
+          derniere_sauvegarde: null,
+          equipement:          {},
+          soldeKirha:          0,
+          kirhaEarned:         0,
+          pepitesOr:           0,
+          vipExpiry:           0,
+          templeCompletedDate: '',
+          templeCompleted:     [],
+          // Conserver
+          address:  state.address,
+          villeId:  state.villeId,
+          pseudo:   state.pseudo,
+          langue:   state.langue,
+        })),
+
+      // Sync forcée depuis la chaîne (écrase sans Math.max, utilisé après reset admin détecté)
+      forceChainSync: (kirha, pepites, vipExpiry, metiersList, inventaire) =>
+        set((state) => {
+          const newMetiers = { ...state.metiers };
+          for (const m of metiersList) {
+            newMetiers[m.metierId] = { id: m.metierId, niveau: Math.max(1, m.niveau), xp: m.xp, xp_total: m.xpTotal };
+          }
+          return {
+            soldeKirha: kirha,
+            pepitesOr:  pepites,
+            vipExpiry:  vipExpiry,
+            metiers:    newMetiers,
+            inventaire,
+            kirhaEarned: 0,
+            pending_mints: [],
+          };
+        }),
+
       setSlotSelectedResource: (metier, slotIndex, resourceId) =>
         set((state) => {
           const metierSlots = [...state.slots[metier]];
@@ -347,14 +389,15 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'to-kirha-game',
-      version: 8,
+      version: 9,
       migrate: (persistedState: unknown, _version: number) => {
         if (!persistedState || typeof persistedState !== 'object') return undefined;
         const state = persistedState as Partial<GameState>;
         // Migration douce: garder toutes les données existantes, compléter les champs manquants
+        // v9 : reset slots à 2 débloqués par métier (correctif bug 5 slots gratuits)
         return {
           ...state,
-          // S'assurer que les nouveaux champs existent
+          slots:               initSlots(),
           pepitesOr:           state.pepitesOr           ?? 0,
           vipExpiry:           state.vipExpiry            ?? 0,
           templeCompletedDate: state.templeCompletedDate  ?? '',

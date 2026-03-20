@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAccount, usePublicClient, useWriteContract, useSwitchChain } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
 import { useGameStore } from '../store/gameStore';
 import { SettingsModal } from '../components/SettingsModal';
 import { useT } from '../utils/i18n';
+import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
+import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
 
 
 export function HomePage() {
@@ -14,7 +18,56 @@ export function HomePage() {
   const vipExpiry  = useGameStore(s => s.vipExpiry);
   const [showSettings, setShowSettings] = useState(false);
   const [showVipInfo, setShowVipInfo] = useState(false);
+  const [showRelayer, setShowRelayer] = useState(false);
+  const [relayerSigning, setRelayerSigning] = useState(false);
+  const [relayerError, setRelayerError] = useState<string | null>(null);
   const { t } = useT();
+
+  const { address } = useAccount();
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
+  const { switchChainAsync } = useSwitchChain();
+
+  // Vérifier si le relayer est actif — proposer l'activation si non
+  useEffect(() => {
+    if (!villeId || villeId === '0' || !publicClient) return;
+    const key = `kirha_relayer_checked_${villeId}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    (async () => {
+      try {
+        const active = await publicClient.readContract({
+          address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
+          functionName: 'isRelayerActive', args: [BigInt(villeId)],
+        }) as boolean;
+        if (!active) setShowRelayer(true);
+      } catch {}
+    })();
+  }, [villeId, publicClient]);
+
+  async function handleActiverRelayer() {
+    if (!villeId || !address) return;
+    setRelayerSigning(true);
+    setRelayerError(null);
+    try {
+      try { await switchChainAsync({ chainId: baseSepolia.id }); } catch {}
+      const hash = await writeContractAsync({
+        address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
+        functionName: 'authorizeRelayer',
+        args: [BigInt(villeId), 43200n],
+        chainId: baseSepolia.id,
+      });
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (!msg.includes('User rejected') && !msg.includes('user rejected')) {
+        setRelayerError(msg.slice(0, 80));
+        setRelayerSigning(false);
+        return;
+      }
+    }
+    setShowRelayer(false);
+  }
 
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
 
@@ -30,6 +83,35 @@ export function HomePage() {
   return (
     <div style={s.page}>
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showRelayer && (
+        <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'#fdf0f5', borderRadius:18, padding:'28px 24px', width:'100%', maxWidth:320, display:'flex', flexDirection:'column', alignItems:'center', gap:14 }}>
+            <span style={{ fontSize:44 }}>⚡</span>
+            <h2 style={{ color:'#1e0a16', fontSize:20, fontWeight:800, margin:0 }}>Transactions sans frais</h2>
+            <p style={{ color:'#7a4060', fontSize:13, textAlign:'center', lineHeight:1.6, margin:0 }}>
+              Autorise le relayer pour <strong>12h</strong> afin que toutes tes actions en jeu (récolte, marché, sauvegarde) se fassent <strong>sans popup wallet</strong> et sans gas.
+            </p>
+            <div style={{ background:'rgba(196,48,112,0.06)', border:'1px solid rgba(196,48,112,0.15)', borderRadius:12, padding:'12px 16px', width:'100%', boxSizing:'border-box' as const }}>
+              <p style={{ color:'#7a4060', fontSize:11, margin:0, lineHeight:1.6 }}>
+                ✅ Une seule signature requise<br/>
+                ✅ Gratuit (le relayer paie le gas)<br/>
+                ✅ Expire automatiquement après 12h
+              </p>
+            </div>
+            {relayerError && <p style={{ color:'#c43070', fontSize:11, margin:0 }}>{relayerError}</p>}
+            <button
+              onClick={handleActiverRelayer}
+              disabled={relayerSigning}
+              style={{ width:'100%', padding:'13px 0', background:'#c43070', color:'#fff', border:'none', borderRadius:12, fontSize:15, fontWeight:700, cursor:'pointer', opacity: relayerSigning ? 0.6 : 1 }}
+            >
+              {relayerSigning ? '⏳ Signature…' : '⚡ Activer le relayer 12h'}
+            </button>
+            <button onClick={() => setShowRelayer(false)} style={{ background:'none', border:'none', color:'#7a4060', fontSize:13, cursor:'pointer', textDecoration:'underline' }}>
+              Passer (utiliser le wallet directement)
+            </button>
+          </div>
+        </div>
+      )}
       {showVipInfo && (
         <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.3)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => setShowVipInfo(false)}>
           <div style={{ background:'#fdf0f5', borderRadius:18, padding:'24px 20px', width:'100%', maxWidth:300 }} onClick={e => e.stopPropagation()}>

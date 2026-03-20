@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount, usePublicClient } from 'wagmi';
-import { formatEther } from 'viem';
+import { formatEther, parseEther } from 'viem';
 import { KIRHA_GAME_ADDRESS, KIRHA_CITY_ADDRESS, KIRHA_MARKET_ADDRESS, RELAYER_ADDRESS } from '../contracts/addresses';
 import KirhaGameAbi   from '../contracts/abis/KirhaGame.json';
 import KirhaCityAbi   from '../contracts/abis/KirhaCity.json';
@@ -29,6 +29,12 @@ interface PlayerData {
 
 const ALL_RESOURCE_IDS = Array.from({ length: 50 }, (_, i) => BigInt(i + 1));
 const METIER_NAMES = ['Bûcheron', 'Paysan', 'Pêcheur', 'Mineur', 'Alchimiste'];
+
+function xpTotalPourNiveau(n: number): number {
+  let total = 0;
+  for (let i = 1; i < n; i++) total += Math.round(i * i * 50);
+  return total;
+}
 
 const ADMIN_WORKER_URL = 'https://kirha-relayer.tokirha.workers.dev';
 
@@ -64,6 +70,7 @@ export function AdminPage() {
   const [giveResAmt, setGiveResAmt]     = useState<Record<number, string>>({});
   const [giveXpMetier, setGiveXpMetier] = useState<Record<number, string>>({});
   const [giveXpAmt, setGiveXpAmt]       = useState<Record<number, string>>({});
+  const [giveNiveauDir, setGiveNiveauDir] = useState<Record<number, string>>({});
   const [giveStatus, setGiveStatus]     = useState<Record<string, 'idle'|'pending'|'ok'|'err'>>({});
 
   const [search, setSearch] = useState('');
@@ -117,26 +124,30 @@ export function AdminPage() {
       const list: PlayerData[] = [];
       for (let cityId = 1; cityId <= n; cityId++) {
         const cid = BigInt(cityId);
-        const [wallet, pseudo, resourcesRaw, metiersRaw, kirhaWei, isBanned, pepitesBn] = await Promise.all([
-          publicClient.readContract({ address: KIRHA_CITY_ADDRESS, abi: KirhaCityAbi, functionName: 'ownerOf', args: [cid] }),
-          publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPseudo', args: [cid] }),
-          publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityResources', args: [cid, ALL_RESOURCE_IDS] }),
-          publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityMetiers', args: [cid] }),
-          publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityKirha', args: [cid] }),
-          publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'bannedCities', args: [cid] }),
-          publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPepites', args: [cid] }),
-        ]);
-        // resourcesRaw[0] = resource #1, ..., resourcesRaw[49] = resource #50
-        const resources = [0, ...(resourcesRaw as bigint[]).map(r => Number(r) / 1e4)];
-        const metiersArr = metiersRaw as { level: number; xp: number; xpTotal: number }[];
-        const levels    = metiersArr.map(m => Number(m.level));
-        const xp        = metiersArr.map(m => Number(m.xp));
-        const xpTotal   = metiersArr.map(m => Number(m.xpTotal));
-        list.push({
-          cityId, pseudo: pseudo as string, wallet: wallet as string,
-          kirhaWei: kirhaWei as bigint, resources, levels, xp, xpTotal,
-          isBanned: isBanned as boolean, pepites: Number(pepitesBn as bigint),
-        });
+        try {
+          const [wallet, pseudo, resourcesRaw, metiersRaw, kirhaWei, isBanned, pepitesBn] = await Promise.all([
+            publicClient.readContract({ address: KIRHA_CITY_ADDRESS, abi: KirhaCityAbi, functionName: 'ownerOf', args: [cid] }),
+            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPseudo', args: [cid] }),
+            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityResources', args: [cid, ALL_RESOURCE_IDS] }),
+            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityMetiers', args: [cid] }),
+            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityKirha', args: [cid] }),
+            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'bannedCities', args: [cid] }),
+            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPepites', args: [cid] }),
+          ]);
+          // resourcesRaw[0] = resource #1, ..., resourcesRaw[49] = resource #50
+          const resources = [0, ...(resourcesRaw as bigint[]).map(r => Number(r) / 1e4)];
+          const metiersArr = metiersRaw as { level: number; xp: number; xpTotal: number }[];
+          const levels    = metiersArr.map(m => Number(m.level));
+          const xp        = metiersArr.map(m => Number(m.xp));
+          const xpTotal   = metiersArr.map(m => Number(m.xpTotal));
+          list.push({
+            cityId, pseudo: pseudo as string, wallet: wallet as string,
+            kirhaWei: kirhaWei as bigint, resources, levels, xp, xpTotal,
+            isBanned: isBanned as boolean, pepites: Number(pepitesBn as bigint),
+          });
+        } catch {
+          // Ville supprimée ou inaccessible — ignorée
+        }
       }
       setPlayers(list);
 
@@ -287,7 +298,10 @@ export function AdminPage() {
       };
       setPlayers(prev => prev.map(p => p.cityId === cityId ? updated : p));
       setSnapshots(prev => ({ ...prev, [cityId]: updated }));
-    } catch {}
+    } catch {
+      // ownerOf revert = ville supprimée → retirer de la liste
+      setPlayers(prev => prev.filter(p => p.cityId !== cityId));
+    }
   }
 
   async function retirerMontant(p: PlayerData, key: string, type: 'kirha' | 'pepites' | 'resource', amount: number, resourceId?: number) {
@@ -305,7 +319,7 @@ export function AdminPage() {
         ? Math.max(0, parseFloat(formatEther(p.kirhaWei)) - amount)
         : parseFloat(formatEther(p.kirhaWei));
       if (newKirhaEther > 0) {
-        const newKirhaWei = BigInt(Math.round(newKirhaEther * 1e18));
+        const newKirhaWei = parseEther(newKirhaEther.toFixed(6));
         await fetch(`${ADMIN_WORKER_URL}/admin/give-kirha`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
@@ -593,8 +607,8 @@ export function AdminPage() {
                                 <button style={giveBtnStyle}
                                   disabled={!giveKirha[p.cityId]}
                                   onClick={() => {
-                                    const amtEther = parseFloat(giveKirha[p.cityId] || '0');
-                                    const amtWei = BigInt(Math.round(amtEther * 1e18));
+                                    const amtStr = (parseFloat(giveKirha[p.cityId] || '0')).toFixed(6);
+                                    const amtWei = parseEther(amtStr);
                                     adminWorkerCall(p.cityId, `kirha_${p.cityId}`, 'give-kirha', { amount: amtWei.toString() });
                                   }}
                                 >
@@ -671,17 +685,21 @@ export function AdminPage() {
 
                             {/* XP */}
                             <div>
-                              <p style={{ color:'#7a6cb0', fontSize:9, fontWeight:700, margin:'0 0 4px' }}>⭐ DONNER XP MÉTIER</p>
-                              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                              <p style={{ color:'#7a6cb0', fontSize:9, fontWeight:700, margin:'0 0 4px' }}>⭐ XP / NIVEAU MÉTIER</p>
+                              {/* Sélecteur métier commun */}
+                              <div style={{ marginBottom:6 }}>
                                 <select
                                   value={giveXpMetier[p.cityId] ?? '0'}
                                   onChange={e => setGiveXpMetier(prev => ({ ...prev, [p.cityId]: e.target.value }))}
-                                  style={{ ...inputStyle, flex:'none', width:100 }}
+                                  style={{ ...inputStyle, flex:'none', width:120 }}
                                 >
                                   {METIER_NAMES.map((name, i) => (
-                                    <option key={i} value={i}>{name}</option>
+                                    <option key={i} value={i}>{name} (Nv.{p.levels[i] ?? 1})</option>
                                   ))}
                                 </select>
+                              </div>
+                              {/* Ajouter XP */}
+                              <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:4 }}>
                                 <input type="number" min="1" placeholder="XP à ajouter"
                                   value={giveXpAmt[p.cityId] ?? ''}
                                   onChange={e => setGiveXpAmt(prev => ({ ...prev, [p.cityId]: e.target.value }))}
@@ -697,7 +715,31 @@ export function AdminPage() {
                                     adminWorkerCall(p.cityId, `xp_${p.cityId}`, 'set-metier-xp', { metierId: String(mid), level: String(p.levels[mid] ?? 1), xp: String(curXp), xpTotal: String(curXpTotal) });
                                   }}
                                 >
-                                  {giveStatus[`xp_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`xp_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
+                                  {giveStatus[`xp_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`xp_${p.cityId}`] === 'ok' ? '✅' : '+ XP'}
+                                </button>
+                              </div>
+                              {/* Niveau direct */}
+                              <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
+                                <input type="number" min="1" max="100" placeholder="Niveau cible"
+                                  value={giveNiveauDir[p.cityId] ?? ''}
+                                  onChange={e => setGiveNiveauDir(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={{ ...inputStyle, width:90 }}
+                                />
+                                {giveNiveauDir[p.cityId] && parseInt(giveNiveauDir[p.cityId]) >= 1 && (
+                                  <span style={{ color:'#9a6cb0', fontSize:9 }}>
+                                    xpTotal={xpTotalPourNiveau(parseInt(giveNiveauDir[p.cityId])).toLocaleString()}
+                                  </span>
+                                )}
+                                <button style={{ ...giveBtnStyle, background:'rgba(122,108,176,0.25)', color:'#9a6cb0' }}
+                                  disabled={!giveNiveauDir[p.cityId] || parseInt(giveNiveauDir[p.cityId]) < 1}
+                                  onClick={() => {
+                                    const mid = parseInt(giveXpMetier[p.cityId] ?? '0');
+                                    const niveau = Math.max(1, parseInt(giveNiveauDir[p.cityId] || '1'));
+                                    const total = xpTotalPourNiveau(niveau);
+                                    adminWorkerCall(p.cityId, `xp_${p.cityId}`, 'set-metier-xp', { metierId: String(mid), level: String(niveau), xp: '0', xpTotal: String(total) });
+                                  }}
+                                >
+                                  {giveStatus[`xp_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`xp_${p.cityId}`] === 'ok' ? '✅' : 'Définir niv.'}
                                 </button>
                               </div>
                             </div>
