@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useWriteContract, usePublicClient } from 'wagmi';
+import { useWriteContract, usePublicClient, useSwitchChain } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
 import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
@@ -22,6 +22,7 @@ export function useVip() {
   const [status, setStatus] = useState<'idle'|'pending'|'success'|'error'>('idle');
   const [error, setError]   = useState<string|null>(null);
   const { writeContractAsync } = useWriteContract();
+  const { switchChainAsync }   = useSwitchChain();
   const publicClient = usePublicClient();
   const villeId  = useGameStore(s => s.villeId);
   const setPepitesOr = useGameStore(s => s.setPepitesOr);
@@ -37,6 +38,7 @@ export function useVip() {
     if (soldeKirha < pack.kirha) { setError(`Solde insuffisant (${pack.kirha} $KIRHA requis)`); return; }
     setError(null); setStatus('pending');
     try {
+      try { await switchChainAsync({ chainId: baseSepolia.id }); } catch {}
       const hash = await writeContractAsync({
         address:  KIRHA_GAME_ADDRESS,
         abi:      KirhaGameAbi,
@@ -59,6 +61,7 @@ export function useVip() {
     if (pepitesOr < dur.pepites) { setError(`Pépites insuffisantes (${dur.pepites} requis)`); return; }
     setError(null); setStatus('pending');
     try {
+      try { await switchChainAsync({ chainId: baseSepolia.id }); } catch {}
       const hash = await writeContractAsync({
         address:  KIRHA_GAME_ADDRESS,
         abi:      KirhaGameAbi,

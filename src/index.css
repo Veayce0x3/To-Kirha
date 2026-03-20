@@ -63,6 +63,7 @@ img {
   max-width: 430px;
   height: 100vh;
   height: 100dvh;
+  height: 100svh;
   overflow: hidden;
   background: var(--bg-base);
 }
@@ -82,7 +83,7 @@ img {
 
 /* ── Safe area — barre de navigation Android/iOS ── */
 .bottom-menu {
-  padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+  padding-bottom: 52px !important;
 }
 
 /* ── Slots grid récolte — responsive ── */

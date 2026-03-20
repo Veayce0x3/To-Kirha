@@ -210,6 +210,21 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
             </div>
           )}
 
+          {/* Sync depuis la chaîne */}
+          <div style={ms.section}>
+            <span style={ms.sectionTitle}>🔗 Sync depuis la chaîne</span>
+            <p style={{ color:'#7a4060', fontSize:'11px', margin:'0 0 4px', lineHeight:'1.5' }}>
+              Recharge les données depuis la blockchain (KIRHA, Pépites, VIP, ressources). Utile après une action admin.
+            </p>
+            <button
+              style={{ ...ms.saveBtn, opacity: refreshing ? 0.6 : 1 }}
+              disabled={refreshing}
+              onClick={() => { setRefreshing(true); window.location.reload(); }}
+            >
+              {refreshing ? '⏳ Rechargement…' : '🔗 Sync depuis la chaîne'}
+            </button>
+          </div>
+
           {/* Actualiser le jeu */}
           <div style={ms.section}>
             <span style={ms.sectionTitle}>🎮 Actualiser le jeu</span>

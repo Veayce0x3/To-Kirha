@@ -296,8 +296,9 @@ export const useGameStore = create<GameState>()(
 
       setChainBalances: (kirha, pepites, vipExpiry) =>
         set((state) => ({
-          soldeKirha: Math.max(state.soldeKirha, kirha),
-          pepitesOr:  Math.max(state.pepitesOr, pepites),
+          // chain = source de vérité + gains PNJ non encore sauvegardés
+          soldeKirha: kirha + state.kirhaEarned,
+          pepitesOr:  pepites,
           vipExpiry:  Math.max(state.vipExpiry, vipExpiry),
         })),
 
