@@ -188,7 +188,7 @@ export function BottomMenu() {
   const { sauvegarder, status: saveStatus, error: saveError, pendingCount, reset: resetSave } = useSave();
 
   // Masqué sur la page de connexion
-  if (!isConnected || pathname === '/' || pathname === '/maison' || pathname === '/admin') return null;
+  if (!isConnected || pathname === '/' || pathname === '/maison' || pathname === '/kirha-gm-v4x9') return null;
 
   const saveBusy  = saveStatus === 'signing' || saveStatus === 'pending';
   const saveError_ = saveStatus === 'error';

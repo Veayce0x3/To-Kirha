@@ -298,6 +298,8 @@ export function useMarket() {
   const annulerListing = useCallback(async (listingId: bigint) => {
     setError(null);
     setStatus('cancelling');
+    // Retrouver les infos du listing pour restaurer la ressource
+    const listing = listings.find(l => l.listingId === listingId);
     try {
       if (relayerActive) {
         await relayerPost('/market/cancel', { listingId: listingId.toString() });
@@ -311,6 +313,8 @@ export function useMarket() {
         });
         if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
+      // Restaurer la ressource dans l'inventaire local
+      if (listing) ajouterRessource(listing.resourceId as ResourceId, listing.quantity);
       await refetchListings();
       setStatus('success');
       setTimeout(() => setStatus('idle'), 3000);
@@ -318,7 +322,7 @@ export function useMarket() {
       setError(err instanceof Error ? err.message : 'Erreur');
       setStatus('error');
     }
-  }, [relayerActive, writeContractAsync, refetchListings, publicClient]);
+  }, [listings, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource]);
 
   const myListings = listings.filter(l => cityIdBn && l.sellerCityId === cityIdBn);
 

@@ -81,8 +81,10 @@ export interface GameState {
 // XP requis par niveau
 // ============================================================
 
+// XP requis pour passer du niveau N au niveau N+1
+// Courbe quadratique : 50, 200, 450, 800, 1250, … (niveau² × 50)
 export function xpRequis(niveau: number): number {
-  return niveau * 100;
+  return Math.round(niveau * niveau * 50);
 }
 
 // ============================================================
@@ -90,6 +92,9 @@ export function xpRequis(niveau: number): number {
 // ============================================================
 
 export const SLOT_UNLOCK_CONDITIONS: Record<number, { ressources: number; kirha: number }> = {
+  2:  { ressources: 5,    kirha: 2    },
+  3:  { ressources: 10,   kirha: 5    },
+  4:  { ressources: 15,   kirha: 8    },
   5:  { ressources: 20,   kirha: 10   },
   6:  { ressources: 40,   kirha: 20   },
   7:  { ressources: 80,   kirha: 40   },
@@ -122,7 +127,7 @@ const initSlots = (): Record<MetierId, SlotRecolte[]> =>
     METIER_IDS.map(id => [id,
       Array.from({ length: 20 }, (_, i) => ({
         index:                i,
-        debloque:             i < 5,
+        debloque:             i < 2,
         resource_id:          null,
         termine_a:            null,
         selected_resource_id: null,
@@ -281,7 +286,8 @@ export const useGameStore = create<GameState>()(
       completerQueteTemple: (index) =>
         set((state) => {
           if (state.templeCompleted.includes(index)) return state;
-          return { templeCompleted: [...state.templeCompleted, index] };
+          const today = new Date().toISOString().slice(0, 10);
+          return { templeCompleted: [...state.templeCompleted, index], templeCompletedDate: today };
         }),
 
       resetTempleQuetes: () => set({ templeCompleted: [], templeCompletedDate: '' }),

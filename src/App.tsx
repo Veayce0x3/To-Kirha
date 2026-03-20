@@ -186,7 +186,7 @@ export default function App() {
             <Route path="/banque" element={<Guard><BanquePage /></Guard>} />
             <Route path="/maison" element={<Guard><MaisonPage /></Guard>} />
             <Route path="/craft"  element={<Guard><CraftPage /></Guard>} />
-            <Route path="/admin"  element={<Guard><AdminPage /></Guard>} />
+            <Route path="/kirha-gm-v4x9"  element={<Guard><AdminPage /></Guard>} />
             <Route path="/temple" element={<Guard><TemplePage /></Guard>} />
             <Route path="*"       element={<Navigate to="/home" replace />} />
           </Routes>

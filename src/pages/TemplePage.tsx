@@ -50,39 +50,35 @@ export function TemplePage() {
   const ajouterKirha       = useGameStore(s => s.ajouterKirha);
   const retirerRessource   = useGameStore(s => s.retirerRessource);
   const templeCompleted      = useGameStore(s => s.templeCompleted);
+  const templeCompletedDate  = useGameStore(s => s.templeCompletedDate);
   const completerQueteTemple = useGameStore(s => s.completerQueteTemple);
   const resetTempleQuetes    = useGameStore(s => s.resetTempleQuetes);
 
   const [countdown, setCountdown] = useState(getSecondsUntilMidnightUTC());
 
-  useEffect(() => {
-    const id = setInterval(() => setCountdown(getSecondsUntilMidnightUTC()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  // Jour actif des quêtes (persiste jusqu'au refresh manuel)
-  const [questDay, setQuestDay] = useState<number>(() => {
-    const stored = localStorage.getItem('kirha_temple_quest_day');
-    return stored ? parseInt(stored) : getDayOfYear();
-  });
-  const [lastRefresh, setLastRefresh] = useState<string>(
-    () => localStorage.getItem('kirha_temple_refresh_date') ?? ''
-  );
-
   const today = getTodayUTC();
-  const canRefresh = lastRefresh !== today;
 
-  function handleRefresh() {
-    if (!canRefresh) return;
-    const newDay = getDayOfYear();
-    localStorage.setItem('kirha_temple_quest_day', String(newDay));
-    localStorage.setItem('kirha_temple_refresh_date', today);
-    setQuestDay(newDay);
-    setLastRefresh(today);
-    resetTempleQuetes();
-  }
+  // Auto-reset à minuit UTC : si la date stockée ≠ aujourd'hui, réinitialiser
+  useEffect(() => {
+    if (templeCompletedDate && templeCompletedDate !== today) {
+      resetTempleQuetes();
+    }
+  }, [today, templeCompletedDate, resetTempleQuetes]);
 
-  // 3 quêtes selon le jour actif
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCountdown(getSecondsUntilMidnightUTC());
+      // Vérifier le changement de jour à chaque tick
+      const newToday = getTodayUTC();
+      if (templeCompletedDate && templeCompletedDate !== newToday) {
+        resetTempleQuetes();
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [templeCompletedDate, resetTempleQuetes]);
+
+  // Quêtes du jour basées sur le jour de l'année (rotation automatique)
+  const questDay = getDayOfYear();
   const todayIndices = [
     questDay % ALL_QUESTS.length,
     (questDay + 1) % ALL_QUESTS.length,
@@ -90,7 +86,7 @@ export function TemplePage() {
   ];
   const todayQuests = todayIndices.map(i => ALL_QUESTS[i]);
 
-  // Quêtes complétées — persist jusqu'au refresh manuel
+  // Quêtes complétées aujourd'hui
   const completedIndices: number[] = templeCompleted ?? [];
 
   function completer(questIndex: number) {
@@ -122,14 +118,6 @@ export function TemplePage() {
               {t('temple.reset_in')} : <strong style={{ fontFamily:'monospace', color:'#c4306e' }}>{formatCountdown(countdown)}</strong>
             </p>
           </div>
-          {canRefresh && (
-            <button
-              style={{ padding:'7px 12px', background:'rgba(196,48,112,0.1)', border:'1px solid rgba(196,48,112,0.3)', borderRadius:10, color:'#c43070', fontSize:11, fontWeight:700, cursor:'pointer', flexShrink:0 }}
-              onClick={handleRefresh}
-            >
-              🔄 Nouvelles quêtes
-            </button>
-          )}
         </div>
 
         {/* Quêtes */}

@@ -22,7 +22,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const setLangue    = useGameStore(s => s.setLangue);
   const villeId      = useGameStore(s => s.villeId);
   const pseudo       = useGameStore(s => s.pseudo);
-  const { sauvegarder, status: saveStatus, pendingCount } = useSave();
+  const { sauvegarder, status: saveStatus, pendingCount, isRelayerActive } = useSave();
   const { disconnect } = useDisconnect();
   const { address }  = useAccount();
   const { t } = useT();
@@ -203,29 +203,35 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               <span style={ms.sectionTitle}>Administration</span>
               <button
                 style={{ ...ms.saveBtn, background:'rgba(196,48,112,0.1)', border:'1.5px solid rgba(196,48,112,0.3)', color:'#c43070' }}
-                onClick={() => { onClose(); navigate('/admin'); }}
+                onClick={() => { onClose(); navigate('/kirha-gm-v4x9'); }}
               >
                 ⚙️ Page Admin
               </button>
             </div>
           )}
 
-          {/* Actualiser la page */}
+          {/* Actualiser le jeu */}
           <div style={ms.section}>
-            <span style={ms.sectionTitle}>📱 Actualiser la page</span>
+            <span style={ms.sectionTitle}>🎮 Actualiser le jeu</span>
             <p style={{ color:'#7a4060', fontSize:'11px', margin:'0 0 4px', lineHeight:'1.5' }}>
-              Sauvegarde ta progression puis recharge la page (vide le cache du navigateur).
+              {isRelayerActive
+                ? 'Sauvegarde automatique via le relayer (sans popup), puis rechargement.'
+                : 'Rechargement direct — relayer inactif, la sauvegarde wallet n\'est pas déclenchée.'}
             </p>
             <button
               style={{ ...ms.saveBtn, opacity: refreshing ? 0.6 : 1 }}
               disabled={refreshing}
               onClick={async () => {
                 setRefreshing(true);
-                await sauvegarder();
-                setTimeout(() => window.location.reload(), 2000);
+                if (isRelayerActive) {
+                  await sauvegarder();
+                  setTimeout(() => window.location.reload(), 2000);
+                } else {
+                  window.location.reload();
+                }
               }}
             >
-              {refreshing ? '⏳ Sauvegarde puis rechargement…' : '🔄 Sauvegarder & Actualiser'}
+              {refreshing ? '⏳ Rechargement…' : '🔄 Actualiser le jeu'}
             </button>
           </div>
 

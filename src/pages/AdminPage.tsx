@@ -697,6 +697,7 @@ export function AdminPage() {
                                   onChange={e => setRetirerKirha(prev => ({ ...prev, [p.cityId]: e.target.value }))}
                                   style={inputStyle}
                                 />
+                                <button style={maxBtnStyle} onClick={() => setRetirerKirha(prev => ({ ...prev, [p.cityId]: parseFloat(formatEther(p.kirhaWei)).toFixed(4) }))}>MAX</button>
                                 <button style={retirerBtnStyle}
                                   disabled={!retirerKirha[p.cityId] || retirerOpStatus[`rkirha_${p.cityId}`] === 'pending'}
                                   onClick={() => retirerMontant(p, `rkirha_${p.cityId}`, 'kirha', parseFloat(retirerKirha[p.cityId] || '0'))}
@@ -715,6 +716,7 @@ export function AdminPage() {
                                   onChange={e => setRetirerPepites(prev => ({ ...prev, [p.cityId]: e.target.value }))}
                                   style={inputStyle}
                                 />
+                                <button style={maxBtnStyle} onClick={() => setRetirerPepites(prev => ({ ...prev, [p.cityId]: String(p.pepites) }))}>MAX</button>
                                 <button style={retirerBtnStyle}
                                   disabled={!retirerPepites[p.cityId] || retirerOpStatus[`rpep_${p.cityId}`] === 'pending'}
                                   onClick={() => retirerMontant(p, `rpep_${p.cityId}`, 'pepites', parseInt(retirerPepites[p.cityId] || '0'))}
@@ -742,6 +744,10 @@ export function AdminPage() {
                                   onChange={e => setRetirerResAmt(prev => ({ ...prev, [p.cityId]: e.target.value }))}
                                   style={{ ...inputStyle, width:60 }}
                                 />
+                                <button style={maxBtnStyle} onClick={() => {
+                                  const rid = parseInt(retirerResId[p.cityId] ?? '1');
+                                  setRetirerResAmt(prev => ({ ...prev, [p.cityId]: String(Math.floor(p.resources[rid] ?? 0)) }));
+                                }}>MAX</button>
                                 <button style={retirerBtnStyle}
                                   disabled={!retirerResAmt[p.cityId] || retirerOpStatus[`rres_${p.cityId}`] === 'pending'}
                                   onClick={() => retirerMontant(p, `rres_${p.cityId}`, 'resource', parseInt(retirerResAmt[p.cityId] || '0'), parseInt(retirerResId[p.cityId] ?? '1'))}
@@ -856,4 +862,8 @@ const giveBtnStyle: React.CSSProperties = {
 const retirerBtnStyle: React.CSSProperties = {
   padding:'5px 10px', borderRadius:6, fontSize:10, fontWeight:700, cursor:'pointer',
   border:'none', background:'rgba(255,100,0,0.25)', color:'#ff6400', flexShrink:0,
+};
+const maxBtnStyle: React.CSSProperties = {
+  padding:'3px 7px', borderRadius:6, fontSize:9, fontWeight:800, cursor:'pointer',
+  border:'1px solid rgba(255,200,0,0.4)', background:'rgba(255,200,0,0.12)', color:'#ffc800', flexShrink:0,
 };

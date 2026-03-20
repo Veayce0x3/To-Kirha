@@ -94,96 +94,61 @@ export function BanquePage() {
           </button>
         </div>
 
-        {/* Retrait $KIRHA */}
+        {/* Retrait / Dépôt $KIRHA */}
         <div style={s.saveCard}>
-          <p style={{ color:'#1e0a16', fontSize:'14px', fontWeight:700, margin:'0 0 4px' }}>
-            {t('banque.withdraw_title')}
-          </p>
-          <p style={{ color:'#7a4060', fontSize:'11px', margin:'0 0 12px' }}>
-            {t('banque.withdraw_avail')} : {soldeKirha.toFixed(2)} $KIRHA
-          </p>
-          <div style={{ display:'flex', gap:'8px', marginBottom:'10px' }}>
-            <input
-              type="number"
-              min="0"
-              max={soldeKirha}
-              step="0.01"
-              value={montantRetrait}
-              onChange={e => setMontantRetrait(e.target.value)}
-              placeholder={t('banque.amount_placeholder')}
-              style={{
-                flex:1, padding:'10px 12px', borderRadius:10,
-                border:'1.5px solid rgba(212,100,138,0.3)',
-                background:'#ffffff', color:'#1e0a16',
-                fontSize:'13px', outline:'none',
-              }}
-            />
-            <button
-              style={{ ...s.saveBtn, width:'auto', flex:'none', padding:'10px 18px', opacity: withdrawStatus === 'pending' || withdrawStatus === 'signing' ? 0.6 : 1 }}
-              onClick={() => retirer(parseFloat(montantRetrait) || 0)}
-              disabled={!montantRetrait || parseFloat(montantRetrait) <= 0 || parseFloat(montantRetrait) > soldeKirha || withdrawStatus === 'pending' || withdrawStatus === 'signing'}
-            >
-              {withdrawStatus === 'pending' ? '⏳'
-                : withdrawStatus === 'signing' ? '✍️'
-                : withdrawStatus === 'success' ? '✅'
-                : '→'}
-            </button>
-          </div>
-          {withdrawError && (
-            <p style={{ color:'#c43070', fontSize:'10px', margin:0 }}>{withdrawError}</p>
-          )}
-          <button
-            style={{ ...s.saveBtn, fontSize:'10px', padding:'6px 12px', opacity:0.7 }}
-            onClick={() => setMontantRetrait(soldeKirha.toFixed(2))}
-          >
-            {t('banque.withdraw_all')}
-          </button>
-        </div>
+          <p style={{ color:'#1e0a16', fontSize:'14px', fontWeight:700, margin:'0 0 12px' }}>💠 $KIRHA — Retrait / Dépôt</p>
 
-        {/* Dépôt $KIRHA */}
-        <div style={s.saveCard}>
-          <p style={{ color:'#1e0a16', fontSize:'14px', fontWeight:700, margin:'0 0 4px' }}>
-            💠 Déposer $KIRHA
-          </p>
-          <p style={{ color:'#7a4060', fontSize:'11px', margin:'0 0 12px' }}>
-            Disponible en wallet : {balanceKirha.toFixed(2)} $KIRHA
-          </p>
-          <div style={{ display:'flex', gap:'8px', marginBottom:'10px' }}>
-            <input
-              type="number"
-              min="0"
-              max={balanceKirha}
-              step="0.01"
-              value={montantDepot}
-              onChange={e => setMontantDepot(e.target.value)}
-              placeholder="Montant à déposer"
-              style={{
-                flex:1, padding:'10px 12px', borderRadius:10,
-                border:'1.5px solid rgba(138,37,212,0.3)',
-                background:'#ffffff', color:'#1e0a16',
-                fontSize:'13px', outline:'none',
-              }}
-            />
-            <button
-              style={{ ...s.saveBtnPurple, width:'auto', flex:'none', padding:'10px 18px', opacity: depositStatus === 'pending' || depositStatus === 'signing' ? 0.6 : 1 }}
-              onClick={() => deposer(parseFloat(montantDepot) || 0)}
-              disabled={!montantDepot || parseFloat(montantDepot) <= 0 || parseFloat(montantDepot) > balanceKirha || depositStatus === 'pending' || depositStatus === 'signing'}
-            >
-              {depositStatus === 'pending' ? '⏳'
-                : depositStatus === 'signing' ? '✍️'
-                : depositStatus === 'success' ? '✅'
-                : '←'}
-            </button>
+          {/* Retrait */}
+          <div style={{ marginBottom:12 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+              <span style={{ color:'#7a4060', fontSize:'12px', fontWeight:700 }}>{t('banque.withdraw_title')} · {soldeKirha.toFixed(2)} $K dispo</span>
+              <button style={s.maxBtn} onClick={() => setMontantRetrait(soldeKirha.toFixed(2))}>MAX</button>
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <input
+                type="number" min="0" max={soldeKirha} step="0.01"
+                value={montantRetrait}
+                onChange={e => setMontantRetrait(e.target.value)}
+                placeholder={t('banque.amount_placeholder')}
+                style={s.inputField}
+              />
+              <button
+                style={{ ...s.actionBtn, background:'linear-gradient(135deg,#c43070,#8a25d4)', opacity: withdrawStatus === 'pending' || withdrawStatus === 'signing' ? 0.6 : 1 }}
+                onClick={() => retirer(parseFloat(montantRetrait) || 0)}
+                disabled={!montantRetrait || parseFloat(montantRetrait) <= 0 || parseFloat(montantRetrait) > soldeKirha || withdrawStatus === 'pending' || withdrawStatus === 'signing'}
+              >
+                {withdrawStatus === 'pending' ? '⏳' : withdrawStatus === 'signing' ? '✍️' : withdrawStatus === 'success' ? '✅' : '→ Retirer'}
+              </button>
+            </div>
+            {withdrawError && <p style={{ color:'#c43070', fontSize:'10px', margin:'4px 0 0' }}>{withdrawError}</p>}
           </div>
-          {depositError && (
-            <p style={{ color:'#c43070', fontSize:'10px', margin:0 }}>{depositError}</p>
-          )}
-          <button
-            style={{ ...s.saveBtnPurple, fontSize:'10px', padding:'6px 12px', opacity:0.7 }}
-            onClick={() => setMontantDepot(balanceKirha.toFixed(2))}
-          >
-            Tout déposer
-          </button>
+
+          <div style={{ height:1, background:'rgba(212,100,138,0.1)', margin:'4px 0 12px' }} />
+
+          {/* Dépôt */}
+          <div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+              <span style={{ color:'#7a4060', fontSize:'12px', fontWeight:700 }}>Déposer · {balanceKirha.toFixed(2)} $K wallet</span>
+              <button style={s.maxBtn} onClick={() => setMontantDepot(balanceKirha.toFixed(2))}>MAX</button>
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <input
+                type="number" min="0" max={balanceKirha} step="0.01"
+                value={montantDepot}
+                onChange={e => setMontantDepot(e.target.value)}
+                placeholder="Montant à déposer"
+                style={{ ...s.inputField, borderColor:'rgba(138,37,212,0.3)' }}
+              />
+              <button
+                style={{ ...s.actionBtn, background:'linear-gradient(135deg,#8a25d4,#5b10a0)', opacity: depositStatus === 'pending' || depositStatus === 'signing' ? 0.6 : 1 }}
+                onClick={() => deposer(parseFloat(montantDepot) || 0)}
+                disabled={!montantDepot || parseFloat(montantDepot) <= 0 || parseFloat(montantDepot) > balanceKirha || depositStatus === 'pending' || depositStatus === 'signing'}
+              >
+                {depositStatus === 'pending' ? '⏳' : depositStatus === 'signing' ? '✍️' : depositStatus === 'success' ? '✅' : '← Déposer'}
+              </button>
+            </div>
+            {depositError && <p style={{ color:'#c43070', fontSize:'10px', margin:'4px 0 0' }}>{depositError}</p>}
+          </div>
         </div>
 
         {/* Pépites d'or — achat avec $KIRHA */}
@@ -281,5 +246,8 @@ const s: Record<string, React.CSSProperties> = {
   saveCard: { background:'#ffffff', border:'1px solid rgba(212,100,138,0.2)', borderRadius:14, padding:'16px', marginBottom:12 },
   saveBtn: { width:'100%', padding:'12px', background:'linear-gradient(135deg, #c43070, #8a25d4)', color:'#fdf0f5', border:'none', borderRadius:12, fontSize:'14px', fontWeight:700, cursor:'pointer' },
   saveBtnPurple: { width:'100%', padding:'12px', background:'linear-gradient(135deg, #8a25d4, #5b10a0)', color:'#fdf0f5', border:'none', borderRadius:12, fontSize:'14px', fontWeight:700, cursor:'pointer' },
+  maxBtn: { padding:'3px 10px', borderRadius:8, border:'1px solid rgba(196,48,112,0.3)', background:'rgba(196,48,112,0.07)', color:'#c43070', fontSize:'10px', fontWeight:800, cursor:'pointer' },
+  inputField: { flex:1, padding:'10px 12px', borderRadius:10, border:'1.5px solid rgba(212,100,138,0.3)', background:'#ffffff', color:'#1e0a16', fontSize:'13px', outline:'none' } as React.CSSProperties,
+  actionBtn: { flex:'none', padding:'10px 14px', borderRadius:10, border:'none', color:'#fff', fontSize:'12px', fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' } as React.CSSProperties,
   comingCard: { display:'flex', alignItems:'center', gap:'12px', background:'rgba(212,100,138,0.04)', border:'1px solid rgba(212,100,138,0.13)', borderRadius:12, padding:'14px', marginBottom:10 },
 };
