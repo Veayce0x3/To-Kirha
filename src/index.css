@@ -80,6 +80,11 @@ img {
   height: 100vh;
 }
 
+/* ── Safe area — barre de navigation Android/iOS ── */
+.bottom-menu {
+  padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+}
+
 /* ── Slots grid récolte — responsive ── */
 .slots-grid {
   display: grid;

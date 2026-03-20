@@ -200,7 +200,7 @@ export function BottomMenu() {
       {showInventaire && <InventaireModal onClose={() => setShowInventaire(false)} />}
 
       {/* ── Barre de menu ─────────────────────────────────────── */}
-      <div style={s.menu}>
+      <div style={s.menu} className="bottom-menu">
         {/* Kirha-City */}
         <button style={{ ...s.btn, ...(homeActive ? s.btnActive : {}) }} onClick={() => navigate('/home')}>
           <span style={s.icon}>🏠</span>
@@ -248,8 +248,7 @@ const s: Record<string, React.CSSProperties> = {
     zIndex:         100,
     display:        'flex',
     gap:            '8px',
-    padding:        '10px 12px max(14px, env(safe-area-inset-bottom))',
-    paddingBottom:  'max(14px, env(safe-area-inset-bottom))' as string,
+    padding:        '10px 12px 16px',
     minHeight:      64,
     background:     'rgba(253,240,245,0.96)',
     borderTop:      '1px solid rgba(212,100,138,0.18)',
