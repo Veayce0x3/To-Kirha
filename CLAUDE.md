@@ -440,3 +440,5 @@ BASESCAN_API_KEY=                # Optionnel, vérification contrats
 - **Zustand version = 8** — ne jamais incrémenter sans vrai changement de structure
 - `villeId` ne vient **jamais** du localStorage — toujours de `playerCityId(address)` on-chain
 - `cityId.ts` dans utils est obsolète — ne plus l'utiliser
+- **Liste de corrections** : quand l'utilisateur donne une liste de points, créer les tâches avec TaskCreate et traiter **un point à la fois** dans l'ordre, sans en sauter
+- **Commits** : traiter tous les points un par un jusqu'à la fin, puis un seul commit+push quand toute la liste est terminée. La liste de tâches sert uniquement à ne rien oublier et à finir chaque point proprement avant de passer au suivant

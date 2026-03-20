@@ -67,6 +67,14 @@ export function AdminPage() {
   const [snapshots, setSnapshots] = useState<Record<number, PlayerData>>({});
   const [retirerStatus, setRetirerStatus] = useState<Record<number, 'idle'|'pending'|'ok'|'err'>>({});
 
+  // Retirer panel state per city
+  const [showRetirer, setShowRetirer] = useState<Record<number, boolean>>({});
+  const [retirerKirha, setRetirerKirha] = useState<Record<number, string>>({});
+  const [retirerPepites, setRetirerPepites] = useState<Record<number, string>>({});
+  const [retirerResId, setRetirerResId] = useState<Record<number, string>>({});
+  const [retirerResAmt, setRetirerResAmt] = useState<Record<number, string>>({});
+  const [retirerOpStatus, setRetirerOpStatus] = useState<Record<string, 'idle'|'pending'|'ok'|'err'>>({});
+
   const isAdmin = !!address && ADMIN_WALLETS.includes(address.toLowerCase());
 
   // ── Chargement des données ─────────────────────────────
@@ -177,6 +185,8 @@ export function AdminPage() {
       const data = await res.json() as { error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Erreur');
       setGiveStatus(prev => ({ ...prev, [key]: 'ok' }));
+      await new Promise(r => setTimeout(r, 1500));
+      await refreshPlayer(cityId);
       setTimeout(() => setGiveStatus(prev => ({ ...prev, [key]: 'idle' })), 2500);
     } catch (e) {
       setError(e instanceof Error ? e.message.slice(0, 80) : 'Erreur');
@@ -230,6 +240,88 @@ export function AdminPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur retirer');
       setRetirerStatus(prev => ({ ...prev, [p.cityId]: 'err' }));
+    }
+  }
+
+  async function refreshPlayer(cityId: number) {
+    if (!publicClient) return;
+    try {
+      const cid = BigInt(cityId);
+      const [wallet, pseudo, resourcesRaw, metiersRaw, kirhaWei, isBanned, pepitesBn] = await Promise.all([
+        publicClient.readContract({ address: KIRHA_CITY_ADDRESS, abi: KirhaCityAbi, functionName: 'ownerOf', args: [cid] }),
+        publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPseudo', args: [cid] }),
+        publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityResources', args: [cid, ALL_RESOURCE_IDS] }),
+        publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityMetiers', args: [cid] }),
+        publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityKirha', args: [cid] }),
+        publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'bannedCities', args: [cid] }),
+        publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPepites', args: [cid] }),
+      ]);
+      const resources = [0, ...(resourcesRaw as bigint[]).map(r => Number(r) / 1e4)];
+      const metiersArr = metiersRaw as { level: number; xp: number; xpTotal: number }[];
+      const updated: PlayerData = {
+        cityId, pseudo: pseudo as string, wallet: wallet as string,
+        kirhaWei: kirhaWei as bigint, resources,
+        levels: metiersArr.map(m => Number(m.level)),
+        xp: metiersArr.map(m => Number(m.xp)),
+        xpTotal: metiersArr.map(m => Number(m.xpTotal)),
+        isBanned: isBanned as boolean, pepites: Number(pepitesBn as bigint),
+      };
+      setPlayers(prev => prev.map(p => p.cityId === cityId ? updated : p));
+      setSnapshots(prev => ({ ...prev, [cityId]: updated }));
+    } catch {}
+  }
+
+  async function retirerMontant(p: PlayerData, key: string, type: 'kirha' | 'pepites' | 'resource', amount: number, resourceId?: number) {
+    if (!adminToken) { setError('Token admin requis'); return; }
+    setRetirerOpStatus(prev => ({ ...prev, [key]: 'pending' }));
+    try {
+      const res1 = await fetch(`${ADMIN_WORKER_URL}/admin/reset-city`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({ cityId: String(p.cityId) }),
+      });
+      if (!res1.ok) throw new Error('Reset échoué');
+
+      const newKirhaEther = type === 'kirha'
+        ? Math.max(0, parseFloat(formatEther(p.kirhaWei)) - amount)
+        : parseFloat(formatEther(p.kirhaWei));
+      if (newKirhaEther > 0) {
+        const newKirhaWei = BigInt(Math.round(newKirhaEther * 1e18));
+        await fetch(`${ADMIN_WORKER_URL}/admin/give-kirha`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+          body: JSON.stringify({ cityId: String(p.cityId), amount: newKirhaWei.toString() }),
+        });
+      }
+
+      const newPepites = type === 'pepites' ? Math.max(0, p.pepites - amount) : p.pepites;
+      if (newPepites > 0) {
+        await fetch(`${ADMIN_WORKER_URL}/admin/give-pepites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+          body: JSON.stringify({ cityId: String(p.cityId), amount: String(newPepites) }),
+        });
+      }
+
+      for (let rid = 1; rid <= 50; rid++) {
+        let qty = Math.floor(p.resources[rid] ?? 0);
+        if (type === 'resource' && rid === resourceId) qty = Math.max(0, qty - amount);
+        if (qty >= 1) {
+          await fetch(`${ADMIN_WORKER_URL}/admin/give-resource`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+            body: JSON.stringify({ cityId: String(p.cityId), resourceId: String(rid), amount: String(qty) }),
+          });
+        }
+      }
+
+      setRetirerOpStatus(prev => ({ ...prev, [key]: 'ok' }));
+      await new Promise(r => setTimeout(r, 1500));
+      await refreshPlayer(p.cityId);
+      setTimeout(() => setRetirerOpStatus(prev => ({ ...prev, [key]: 'idle' })), 2500);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur retrait');
+      setRetirerOpStatus(prev => ({ ...prev, [key]: 'err' }));
     }
   }
 
@@ -575,15 +667,81 @@ export function AdminPage() {
                           </div>
                         )}
 
-                        {/* Retirer les dons */}
-                        {snapshots[p.cityId] && (
-                          <button
-                            style={{ padding:'6px 12px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:'1px solid rgba(255,100,0,0.4)', background:'transparent', color:'#ff6400', alignSelf:'flex-start' }}
-                            onClick={() => retirerDons(p)}
-                            disabled={retirerStatus[p.cityId] === 'pending'}
-                          >
-                            {retirerStatus[p.cityId] === 'pending' ? '⏳ Retrait…' : retirerStatus[p.cityId] === 'ok' ? '✅ Retiré' : '↩️ Retirer les dons'}
-                          </button>
+                        {/* Retirer (panneau dépliant) */}
+                        <button
+                          style={{ padding:'6px 12px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:'1px solid rgba(255,100,0,0.4)', background:'transparent', color:'#ff6400', alignSelf:'flex-start' }}
+                          onClick={() => setShowRetirer(prev => ({ ...prev, [p.cityId]: !prev[p.cityId] }))}
+                        >
+                          ↩️ {showRetirer[p.cityId] ? 'Fermer retirer' : 'Retirer…'}
+                        </button>
+
+                        {showRetirer[p.cityId] && (
+                          <div style={{ background:'rgba(255,100,0,0.05)', border:'1px solid rgba(255,100,0,0.25)', borderRadius:10, padding:'10px 12px', display:'flex', flexDirection:'column', gap:10 }}>
+
+                            {/* Retirer $KIRHA */}
+                            <div>
+                              <p style={{ color:'#ff6400', fontSize:9, fontWeight:700, margin:'0 0 4px' }}>💠 RETIRER $KIRHA IN-GAME</p>
+                              <div style={{ display:'flex', gap:6 }}>
+                                <input type="number" min="0" placeholder={`Max: ${parseFloat(formatEther(p.kirhaWei)).toFixed(2)}`}
+                                  value={retirerKirha[p.cityId] ?? ''}
+                                  onChange={e => setRetirerKirha(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={inputStyle}
+                                />
+                                <button style={retirerBtnStyle}
+                                  disabled={!retirerKirha[p.cityId] || retirerOpStatus[`rkirha_${p.cityId}`] === 'pending'}
+                                  onClick={() => retirerMontant(p, `rkirha_${p.cityId}`, 'kirha', parseFloat(retirerKirha[p.cityId] || '0'))}
+                                >
+                                  {retirerOpStatus[`rkirha_${p.cityId}`] === 'pending' ? '⏳' : retirerOpStatus[`rkirha_${p.cityId}`] === 'ok' ? '✅' : 'Retirer'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Retirer Pépites */}
+                            <div>
+                              <p style={{ color:'#ff6400', fontSize:9, fontWeight:700, margin:'0 0 4px' }}>✨ RETIRER PÉPITES D'OR</p>
+                              <div style={{ display:'flex', gap:6 }}>
+                                <input type="number" min="0" placeholder={`Max: ${p.pepites}`}
+                                  value={retirerPepites[p.cityId] ?? ''}
+                                  onChange={e => setRetirerPepites(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={inputStyle}
+                                />
+                                <button style={retirerBtnStyle}
+                                  disabled={!retirerPepites[p.cityId] || retirerOpStatus[`rpep_${p.cityId}`] === 'pending'}
+                                  onClick={() => retirerMontant(p, `rpep_${p.cityId}`, 'pepites', parseInt(retirerPepites[p.cityId] || '0'))}
+                                >
+                                  {retirerOpStatus[`rpep_${p.cityId}`] === 'pending' ? '⏳' : retirerOpStatus[`rpep_${p.cityId}`] === 'ok' ? '✅' : 'Retirer'}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Retirer Ressource */}
+                            <div>
+                              <p style={{ color:'#ff6400', fontSize:9, fontWeight:700, margin:'0 0 4px' }}>📦 RETIRER RESSOURCE</p>
+                              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                                <select
+                                  value={retirerResId[p.cityId] ?? '1'}
+                                  onChange={e => setRetirerResId(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={{ ...inputStyle, flex:'none', width:100, fontSize:9 }}
+                                >
+                                  {Array.from({length:50}, (_, i) => i+1).map(id => (
+                                    <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')} (×{Math.floor(p.resources[id] ?? 0)})</option>
+                                  ))}
+                                </select>
+                                <input type="number" min="1" placeholder="Qté"
+                                  value={retirerResAmt[p.cityId] ?? ''}
+                                  onChange={e => setRetirerResAmt(prev => ({ ...prev, [p.cityId]: e.target.value }))}
+                                  style={{ ...inputStyle, width:60 }}
+                                />
+                                <button style={retirerBtnStyle}
+                                  disabled={!retirerResAmt[p.cityId] || retirerOpStatus[`rres_${p.cityId}`] === 'pending'}
+                                  onClick={() => retirerMontant(p, `rres_${p.cityId}`, 'resource', parseInt(retirerResAmt[p.cityId] || '0'), parseInt(retirerResId[p.cityId] ?? '1'))}
+                                >
+                                  {retirerOpStatus[`rres_${p.cityId}`] === 'pending' ? '⏳' : retirerOpStatus[`rres_${p.cityId}`] === 'ok' ? '✅' : 'Retirer'}
+                                </button>
+                              </div>
+                            </div>
+
+                          </div>
                         )}
 
                         {/* Suppression en 3 étapes */}
@@ -684,4 +842,8 @@ const inputStyle: React.CSSProperties = {
 const giveBtnStyle: React.CSSProperties = {
   padding:'5px 10px', borderRadius:6, fontSize:10, fontWeight:700, cursor:'pointer',
   border:'none', background:'rgba(106,191,68,0.25)', color:'#6abf44', flexShrink:0,
+};
+const retirerBtnStyle: React.CSSProperties = {
+  padding:'5px 10px', borderRadius:6, fontSize:10, fontWeight:700, cursor:'pointer',
+  border:'none', background:'rgba(255,100,0,0.25)', color:'#ff6400', flexShrink:0,
 };
