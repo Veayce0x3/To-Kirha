@@ -206,7 +206,7 @@ export default function App() {
         <BeforeUnloadGuard />
         <AutoSaveGuard />
         <VilleIdGuard />
-        <div style={{ position:'relative', width:'100%', height:'100%', overflow:'hidden' }}>
+        <div style={{ position:'relative', width:'100%', height:'100vh', overflow:'hidden' }}>
           <Routes>
             <Route path="/"       element={<ConnectPage />} />
             <Route path="/home"   element={<Guard><HomePage /></Guard>} />
