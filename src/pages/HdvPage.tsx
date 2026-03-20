@@ -248,6 +248,7 @@ function TabOnchain() {
 
   return (
     <div style={{ paddingBottom:90 }}>
+
       {/* Bannière relayer */}
       {!isRelayerActive && (
         <div style={{ margin:'12px 14px 0', padding:'12px 14px', background:'rgba(249,168,37,0.08)', border:'1px solid rgba(249,168,37,0.35)', borderRadius:12, display:'flex', gap:10, alignItems:'center' }}>
@@ -266,136 +267,172 @@ function TabOnchain() {
         </div>
       )}
 
-      {/* Sous-onglets */}
-      <div style={{ display:'flex', borderBottom:'1px solid rgba(212,100,138,0.15)', marginTop:8 }}>
+      {/* Stats bar */}
+      <div style={{ display:'flex', gap:8, padding:'12px 14px 0' }}>
+        <div style={ms.statCard}>
+          <span style={{ color:'#c43070', fontSize:17, fontWeight:900 }}>{listings.length}</span>
+          <span style={{ color:'#9a6080', fontSize:9, fontWeight:700, marginTop:1 }}>OFFRES</span>
+        </div>
+        <div style={ms.statCard}>
+          <span style={{ color:'#f9a825', fontSize:17, fontWeight:900 }}>{[...new Set(listings.map(l => l.resourceId))].length}</span>
+          <span style={{ color:'#9a6080', fontSize:9, fontWeight:700, marginTop:1 }}>RESSOURCES</span>
+        </div>
+        <div style={{ ...ms.statCard, flex:2 }}>
+          {isVip
+            ? <span style={{ color:'#f9a825', fontSize:11, fontWeight:700 }}>👑 VIP actif — Taxe 25%</span>
+            : <span style={{ color:'#9a6080', fontSize:11 }}>Taxe vendeur : 50%</span>
+          }
+        </div>
+      </div>
+
+      {/* Tab bar — pills */}
+      <div style={{ display:'flex', gap:6, padding:'12px 14px 0', overflowX:'auto', scrollbarWidth:'none' }}>
         {(['acheter','vendre','mesVentes','historique'] as const).map(tid => (
-          <button key={tid} style={{ flex:1, padding:'9px 2px', background:'none', border:'none', borderBottom: tab===tid ? '2px solid #c43070':'2px solid transparent', color: tab===tid ? '#c43070':'#7a4060', fontSize:'10px', fontWeight:700, cursor:'pointer' }} onClick={() => setTab(tid)}>
+          <button
+            key={tid}
+            style={{ padding:'8px 14px', background: tab===tid ? '#c43070' : 'rgba(196,48,112,0.07)', border: tab===tid ? 'none' : '1px solid rgba(196,48,112,0.2)', borderRadius:20, color: tab===tid ? '#fff' : '#9a6080', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+            onClick={() => setTab(tid)}
+          >
             {tid === 'acheter' ? '🛒 Acheter' : tid === 'vendre' ? '💰 Vendre' : tid === 'mesVentes' ? '📋 Mes ventes' : '📜 Historique'}
           </button>
         ))}
       </div>
 
-      <div style={{ padding:'14px' }}>
+      <div style={{ padding:'12px 14px' }}>
 
         {/* ── Acheter ── */}
         {tab === 'acheter' && (
           <>
-            <div style={{ marginBottom:12 }}>
-              <label style={s.label}>Quelle ressource cherches-tu ?</label>
-              <select
-                value={buyResourceId}
-                onChange={e => { setBuyResourceId(e.target.value); setBuyQty({}); }}
-                style={s.select}
-              >
-                <option value="">-- Choisir une ressource --</option>
-                {buyResourceIds.map(rid => (
-                  <option key={rid} value={rid}>
-                    {emojiByResourceId(rid)} {getNomRessource(rid, lang)} ({listings.filter(l => l.resourceId === rid).length} offre{listings.filter(l => l.resourceId === rid).length > 1 ? 's' : ''})
-                  </option>
-                ))}
-              </select>
-              {listings.length === 0 && (
-                <p style={{ color:'#9a6080', fontSize:'11px', margin:'6px 0 0' }}>Aucune offre sur le marché pour l'instant.</p>
-              )}
-            </div>
-
-            {buyResourceId !== '' && (
-              listingsSorted.length === 0 ? (
-                <div style={s.empty}>
-                  <span style={{ fontSize:'36px' }}>🏪</span>
-                  <p style={{ color:'#7a4060', fontSize:'13px', marginTop:10 }}>Aucune offre pour cette ressource.</p>
-                </div>
-              ) : (
-                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                  <p style={{ color:'#7a4060', fontSize:'11px', margin:'0 0 4px' }}>
-                    {listingsSorted.length} offre{listingsSorted.length > 1 ? 's' : ''} — triées du moins cher au plus cher
-                  </p>
-                  {listingsSorted.map((l, idx) => {
-                    const key = l.listingId.toString();
-                    const isMine = villeIdBn !== undefined && l.sellerCityId === villeIdBn;
-                    const isCheapest = idx === 0;
-                    const inCart = buyCart.some(c => c.listingId === l.listingId);
-                    const qtyVal = buyQty[key] ?? '1';
-
+            {listings.length === 0 ? (
+              <div style={s.empty}>
+                <span style={{ fontSize:40 }}>🏪</span>
+                <p style={{ color:'#7a4060', fontSize:13, marginTop:10 }}>Aucune offre sur le marché pour l'instant.</p>
+              </div>
+            ) : (
+              <>
+                {/* Grille ressources */}
+                <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'0 0 10px', letterSpacing:'0.06em' }}>🌸 RESSOURCES DISPONIBLES</p>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:16 }}>
+                  {buyResourceIds.map(rid => {
+                    const ridListings = listings.filter(l => l.resourceId === rid);
+                    const bestPrice = Math.min(...ridListings.map(l => l.pricePerUnit));
+                    const isSelected = buyResourceId === String(rid);
                     return (
-                      <div key={key} style={{ ...s.itemRow, opacity: isMine ? 0.7 : 1, border: isCheapest ? '1.5px solid rgba(106,191,68,0.5)' : '1px solid rgba(212,100,138,0.15)' }}>
-                        <div style={{ flex:1 }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
-                            <span style={{ color:'#c43070', fontSize:'15px', fontWeight:800 }}>{l.pricePerUnit.toFixed(4)} $K</span>
-                            <span style={{ color:'#7a4060', fontSize:'10px' }}>/unité</span>
-                            {isCheapest && !isMine && <span style={{ background:'rgba(106,191,68,0.15)', color:'#4a8f2a', fontSize:'9px', fontWeight:700, padding:'1px 6px', borderRadius:8 }}>Moins cher</span>}
-                          </div>
-                          <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>
-                            ×{l.quantity} disponible · {isMine ? <span style={{ color:'#6abf44', fontWeight:700 }}>Votre vente</span> : l.sellerPseudo}
+                      <button
+                        key={rid}
+                        onClick={() => { setBuyResourceId(isSelected ? '' : String(rid)); setBuyQty({}); }}
+                        style={{ background: isSelected ? 'linear-gradient(135deg, rgba(196,48,112,0.1), rgba(138,37,212,0.07))' : '#fff', border: isSelected ? '2px solid #c43070' : '1px solid rgba(212,100,138,0.2)', borderRadius:14, padding:'10px', cursor:'pointer', textAlign:'left', boxShadow: isSelected ? '0 2px 12px rgba(196,48,112,0.12)' : 'none' }}
+                      >
+                        <span style={{ fontSize:26, display:'block', marginBottom:4 }}>{emojiByResourceId(rid)}</span>
+                        <span style={{ color:'#1e0a16', fontSize:11, fontWeight:700, display:'block', marginBottom:4, lineHeight:1.2 }}>{getNomRessource(rid, lang)}</span>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <span style={{ background:'rgba(196,48,112,0.1)', color:'#c43070', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:8 }}>
+                            {ridListings.length} offre{ridListings.length > 1 ? 's' : ''}
                           </span>
+                          <span style={{ color:'#f9a825', fontSize:10, fontWeight:800 }}>{bestPrice.toFixed(4)} $K</span>
                         </div>
-                        {isMine ? (
-                          <span style={{ color:'#9a6080', fontSize:'10px', fontStyle:'italic' }}>En vente</span>
-                        ) : inCart ? (
-                          <span style={{ color:'#6abf44', fontSize:'10px', fontWeight:700 }}>✓ Dans le panier</span>
-                        ) : (
-                          <div style={{ display:'flex', flexDirection:'column', gap:4, alignItems:'flex-end' }}>
-                            <input
-                              type="number" min="1" max={l.quantity} value={qtyVal}
-                              onChange={e => setBuyQty(prev => ({ ...prev, [key]: e.target.value }))}
-                              style={{ width:44, padding:'4px 6px', border:'1px solid rgba(212,100,138,0.25)', borderRadius:8, fontSize:11, color:'#1e0a16', textAlign:'center' }}
-                            />
-                            <button
-                              style={{ ...s.sellBtn, background:'rgba(106,191,68,0.12)', borderColor:'rgba(106,191,68,0.3)', color:'#4a8f2a', whiteSpace:'nowrap' }}
-                              onClick={() => {
-                                const qty = Math.max(1, Math.min(l.quantity, parseInt(qtyVal) || 1));
-                                setBuyCart(prev => [...prev, { listingId: l.listingId, resourceId: l.resourceId, quantity: qty, pricePerUnit: l.pricePerUnit, maxQty: l.quantity }]);
-                              }}
-                            >
-                              + Panier
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
-              )
+
+                {/* Listings pour la ressource sélectionnée */}
+                {buyResourceId !== '' && (
+                  <div>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+                      <span style={{ fontSize:20 }}>{emojiByResourceId(parseInt(buyResourceId))}</span>
+                      <span style={{ color:'#1e0a16', fontSize:13, fontWeight:700 }}>{getNomRessource(parseInt(buyResourceId), lang)}</span>
+                      <span style={{ color:'#9a6080', fontSize:10 }}>{listingsSorted.length} offre{listingsSorted.length > 1 ? 's' : ''}</span>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      {listingsSorted.map((l, idx) => {
+                        const key = l.listingId.toString();
+                        const isMine = villeIdBn !== undefined && l.sellerCityId === villeIdBn;
+                        const isCheapest = idx === 0;
+                        const inCart = buyCart.some(c => c.listingId === l.listingId);
+                        const qtyVal = buyQty[key] ?? '1';
+                        return (
+                          <div key={key} style={{ background:'#fff', border: isCheapest && !isMine ? '1.5px solid rgba(106,191,68,0.45)' : '1px solid rgba(212,100,138,0.15)', borderRadius:14, padding:'12px', display:'flex', alignItems:'center', gap:10, opacity: isMine ? 0.65 : 1, boxShadow: isCheapest && !isMine ? '0 2px 10px rgba(106,191,68,0.08)' : 'none' }}>
+                            <div style={{ width:46, height:46, borderRadius:12, background: isCheapest ? 'rgba(106,191,68,0.1)' : 'rgba(196,48,112,0.05)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                              <span style={{ fontSize:24 }}>{emojiByResourceId(l.resourceId)}</span>
+                            </div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:2, flexWrap:'wrap' }}>
+                                <span style={{ color:'#c43070', fontSize:17, fontWeight:900, lineHeight:1 }}>{l.pricePerUnit.toFixed(4)}</span>
+                                <span style={{ color:'#9a6080', fontSize:10 }}>$K/u</span>
+                                {isCheapest && !isMine && <span style={{ background:'rgba(106,191,68,0.15)', color:'#4a8f2a', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:8 }}>🌸 Meilleur</span>}
+                              </div>
+                              <span style={{ color:'#9a6080', fontSize:10 }}>
+                                ×{l.quantity} dispo · {isMine ? <span style={{ color:'#6abf44', fontWeight:700 }}>Votre vente</span> : `🏪 ${l.sellerPseudo}`}
+                              </span>
+                            </div>
+                            {isMine ? (
+                              <span style={{ color:'#b08080', fontSize:10, fontStyle:'italic' }}>En vente</span>
+                            ) : inCart ? (
+                              <span style={{ color:'#6abf44', fontSize:11, fontWeight:700 }}>✓ Panier</span>
+                            ) : (
+                              <div style={{ display:'flex', flexDirection:'column', gap:5, alignItems:'flex-end' }}>
+                                <input
+                                  type="number" min="1" max={l.quantity} value={qtyVal}
+                                  onChange={e => setBuyQty(prev => ({ ...prev, [key]: e.target.value }))}
+                                  style={{ width:46, padding:'5px 6px', border:'1.5px solid rgba(212,100,138,0.3)', borderRadius:8, fontSize:12, color:'#1e0a16', textAlign:'center', outline:'none' }}
+                                />
+                                <button
+                                  style={{ background:'linear-gradient(135deg, #c43070, #8a25d4)', color:'#fff', border:'none', borderRadius:8, padding:'5px 10px', fontSize:10, fontWeight:700, cursor:'pointer' }}
+                                  onClick={() => {
+                                    const qty = Math.max(1, Math.min(l.quantity, parseInt(qtyVal) || 1));
+                                    setBuyCart(prev => [...prev, { listingId: l.listingId, resourceId: l.resourceId, quantity: qty, pricePerUnit: l.pricePerUnit, maxQty: l.quantity }]);
+                                  }}
+                                >
+                                  + Panier
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
+            {/* Panier achat */}
             {buyCart.length > 0 && (
               <div style={{ marginTop:16 }}>
-                <p style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700, margin:'0 0 8px' }}>Panier ({buyCart.length})</p>
+                <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 8px' }}>🛒 Panier ({buyCart.length})</p>
                 <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:10 }}>
                   {buyCart.map((item, i) => (
-                    <div key={i} style={{ ...s.itemRow, padding:'8px 10px' }}>
-                      <span style={{ fontSize:'18px' }}>{emojiByResourceId(item.resourceId)}</span>
+                    <div key={i} style={{ background:'#fff', border:'1px solid rgba(212,100,138,0.15)', borderRadius:12, padding:'8px 10px', display:'flex', alignItems:'center', gap:10 }}>
+                      <span style={{ fontSize:18 }}>{emojiByResourceId(item.resourceId)}</span>
                       <div style={{ flex:1 }}>
-                        <span style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700 }}>{getNomRessource(item.resourceId, lang)}</span>
-                        <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>×{item.quantity} · {item.pricePerUnit.toFixed(4)} $K/u</span>
+                        <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>{getNomRessource(item.resourceId, lang)}</span>
+                        <span style={{ color:'#7a4060', fontSize:10, display:'block' }}>×{item.quantity} · {item.pricePerUnit.toFixed(4)} $K/u</span>
                       </div>
-                      <span style={{ color:'#f9a825', fontSize:'12px', fontWeight:800, marginRight:8 }}>
+                      <span style={{ color:'#f9a825', fontSize:12, fontWeight:800, marginRight:8 }}>
                         {(item.quantity * item.pricePerUnit).toFixed(4)} $K
                       </span>
-                      <button
-                        style={{ color:'#c43070', background:'none', border:'none', cursor:'pointer', fontSize:'14px' }}
-                        onClick={() => setBuyCart(prev => prev.filter((_, j) => j !== i))}
-                      >✕</button>
+                      <button style={{ color:'#c43070', background:'none', border:'none', cursor:'pointer', fontSize:14 }} onClick={() => setBuyCart(prev => prev.filter((_, j) => j !== i))}>✕</button>
                     </div>
                   ))}
                 </div>
-                <div style={{ ...s.summary, marginBottom:10 }}>
+                <div style={{ background:'rgba(212,100,138,0.05)', border:'1px solid rgba(212,100,138,0.15)', borderRadius:12, padding:'12px 14px', marginBottom:10 }}>
                   <div style={{ display:'flex', justifyContent:'space-between' }}>
-                    <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:700 }}>Total</span>
-                    <span style={{ color:'#f9a825', fontSize:'14px', fontWeight:800 }}>
+                    <span style={{ color:'#1e0a16', fontSize:13, fontWeight:700 }}>Total</span>
+                    <span style={{ color:'#f9a825', fontSize:14, fontWeight:800 }}>
                       {buyCart.reduce((a, i) => a + i.quantity * i.pricePerUnit, 0).toFixed(4)} $K
                     </span>
                   </div>
                 </div>
                 <button
-                  style={{ ...s.mainBtn, background:'linear-gradient(135deg, #6abf44, #3a8f1e)', opacity: busy ? 0.5 : 1 }}
+                  style={{ width:'100%', padding:12, background: busy ? 'rgba(106,191,68,0.3)' : 'linear-gradient(135deg, #6abf44, #3a8f1e)', color:'#fff', border:'none', borderRadius:12, fontSize:14, fontWeight:700, cursor: busy ? 'default' : 'pointer' }}
                   disabled={busy}
                   onClick={() => batchAcheter(buyCart).then(() => { setBuyCart([]); setBuyResourceId(''); })}
                 >
                   {status === 'buying' ? '⏳ Achat en cours…' : `🛒 Acheter le panier (${buyCart.length} article${buyCart.length > 1 ? 's' : ''})`}
                 </button>
-                {status === 'success' && <p style={{ color:'#6abf44', fontSize:'12px', fontWeight:700, textAlign:'center', marginTop:8 }}>✅ Achat confirmé !</p>}
-                {error && <p style={{ color:'#c43070', fontSize:'10px', marginTop:4 }}>{error.slice(0,120)}</p>}
+                {status === 'success' && <p style={{ color:'#6abf44', fontSize:12, fontWeight:700, textAlign:'center', marginTop:8 }}>✅ Achat confirmé !</p>}
+                {error && <p style={{ color:'#c43070', fontSize:10, marginTop:4 }}>{error.slice(0,120)}</p>}
               </div>
             )}
           </>
@@ -404,25 +441,21 @@ function TabOnchain() {
         {/* ── Vendre ── */}
         {tab === 'vendre' && (
           <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', background: isVip ? 'rgba(249,168,37,0.08)' : 'rgba(212,100,138,0.05)', border:'1px solid rgba(212,100,138,0.15)', borderRadius:10 }}>
-              <span style={{ fontSize:'13px' }}>{isVip ? '👑' : 'ℹ️'}</span>
-              <span style={{ color: isVip ? '#f9a825' : '#7a4060', fontSize:'11px', fontWeight:700 }}>{taxLabel}</span>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', background: isVip ? 'rgba(249,168,37,0.1)' : 'rgba(196,48,112,0.07)', border: isVip ? '1px solid rgba(249,168,37,0.3)' : '1px solid rgba(196,48,112,0.2)', borderRadius:20, alignSelf:'flex-start' }}>
+              <span style={{ fontSize:13 }}>{isVip ? '👑' : 'ℹ️'}</span>
+              <span style={{ color: isVip ? '#f9a825' : '#9a6080', fontSize:11, fontWeight:700 }}>{taxLabel}</span>
             </div>
 
-            <div style={{ background:'rgba(212,100,138,0.04)', border:'1px solid rgba(212,100,138,0.13)', borderRadius:12, padding:'12px' }}>
-              <p style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700, margin:'0 0 10px' }}>Ajouter au panier</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            <div style={{ background:'#fff', border:'1px solid rgba(212,100,138,0.15)', borderRadius:14, padding:14 }}>
+              <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 12px' }}>Ajouter au panier de vente</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 <div>
                   <label style={s.label}>Ressource</label>
                   <select value={sellResourceId} onChange={e => setSellResourceId(e.target.value)} style={s.select}>
                     <option value="">-- Choisir --</option>
-                    {inventaireItems
-                      .filter(item => !cart.some(c => c.resourceId === item.id))
-                      .map(item => (
-                        <option key={item.id} value={item.id}>
-                          {emojiByResourceId(item.id)} {getNomRessource(item.id, lang)} (×{item.qty})
-                        </option>
-                      ))}
+                    {inventaireItems.filter(item => !cart.some(c => c.resourceId === item.id)).map(item => (
+                      <option key={item.id} value={item.id}>{emojiByResourceId(item.id)} {getNomRessource(item.id, lang)} (×{item.qty})</option>
+                    ))}
                   </select>
                 </div>
 
@@ -436,26 +469,21 @@ function TabOnchain() {
                       <div style={{ flex:1 }}>
                         <label style={s.label}>
                           Prix/unité ($K)
-                          {marketPrice !== null && <span style={{ color:'#6abf44', fontWeight:400 }}> ↳ marché: {marketPrice.toFixed(4)}</span>}
+                          {marketPrice !== null && <span style={{ color:'#6abf44', fontWeight:400 }}> ↳ {marketPrice.toFixed(4)}</span>}
                         </label>
                         <input type="number" min="0.0001" step="0.0001" value={sellPrice} onChange={e => setSellPrice(e.target.value)} style={s.input} />
                       </div>
                     </div>
-
                     {qtyNum > 0 && priceNum > 0 && (
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 8px', background:'rgba(106,191,68,0.07)', borderRadius:8 }}>
-                        <span style={{ color:'#7a4060', fontSize:'11px' }}>{qtyNum} × {priceNum.toFixed(4)} $K → vous recevez</span>
-                        <span style={{ color:'#6abf44', fontSize:'12px', fontWeight:800 }}>{totalNet.toFixed(4)} $K</span>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', background:'rgba(106,191,68,0.07)', border:'1px solid rgba(106,191,68,0.15)', borderRadius:10 }}>
+                        <span style={{ color:'#7a4060', fontSize:11 }}>{qtyNum} × {priceNum.toFixed(4)} $K</span>
+                        <span style={{ color:'#6abf44', fontSize:13, fontWeight:800 }}>→ {totalNet.toFixed(4)} $K</span>
                       </div>
                     )}
-
                     <button
-                      style={{ ...s.sellBtn, padding:'9px', textAlign:'center', opacity: (qtyNum < 1 || priceNum <= 0) ? 0.5 : 1 }}
+                      style={{ padding:'10px', background: (qtyNum < 1 || priceNum <= 0) ? 'rgba(196,48,112,0.06)' : 'rgba(196,48,112,0.1)', border:'1.5px solid rgba(196,48,112,0.3)', borderRadius:10, color:'#c43070', fontSize:12, fontWeight:700, cursor:'pointer', opacity: (qtyNum < 1 || priceNum <= 0) ? 0.4 : 1 }}
                       disabled={qtyNum < 1 || priceNum <= 0}
-                      onClick={() => {
-                        setCart(prev => [...prev, { resourceId: parseInt(sellResourceId), quantity: qtyNum, pricePerUnit: priceNum }]);
-                        setSellResourceId('');
-                      }}
+                      onClick={() => { setCart(prev => [...prev, { resourceId: parseInt(sellResourceId), quantity: qtyNum, pricePerUnit: priceNum }]); setSellResourceId(''); }}
                     >
                       + Ajouter au panier
                     </button>
@@ -466,49 +494,42 @@ function TabOnchain() {
 
             {cart.length > 0 && (
               <div>
-                <p style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700, margin:'0 0 8px' }}>Panier ({cart.length})</p>
+                <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 8px' }}>💰 Panier de vente ({cart.length})</p>
                 <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:10 }}>
                   {cart.map((item, i) => {
                     const brut = item.quantity * item.pricePerUnit;
                     return (
-                      <div key={i} style={{ ...s.itemRow, padding:'8px 10px' }}>
-                        <div style={s.itemIcon}>
-                          <span style={{ fontSize:'18px' }}>{emojiByResourceId(item.resourceId)}</span>
+                      <div key={i} style={{ background:'#fff', border:'1px solid rgba(212,100,138,0.15)', borderRadius:12, padding:'8px 10px', display:'flex', alignItems:'center', gap:10 }}>
+                        <div style={{ width:38, height:38, borderRadius:10, background:'rgba(212,100,138,0.06)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                          <span style={{ fontSize:20 }}>{emojiByResourceId(item.resourceId)}</span>
                         </div>
                         <div style={{ flex:1 }}>
-                          <span style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700 }}>{getNomRessource(item.resourceId, lang)}</span>
-                          <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>×{item.quantity} · {item.pricePerUnit.toFixed(4)} $K/u</span>
+                          <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>{getNomRessource(item.resourceId, lang)}</span>
+                          <span style={{ color:'#7a4060', fontSize:10, display:'block' }}>×{item.quantity} · {item.pricePerUnit.toFixed(4)} $K/u</span>
                         </div>
-                        <div style={{ textAlign:'right', marginRight:8 }}>
-                          <span style={{ color:'#6abf44', fontSize:'11px', fontWeight:700, display:'block' }}>{(brut * (1 - taxRate)).toFixed(4)} $K</span>
-                          <span style={{ color:'#9a6080', fontSize:'9px' }}>après taxe</span>
+                        <div style={{ textAlign:'right', marginRight:6 }}>
+                          <span style={{ color:'#6abf44', fontSize:11, fontWeight:700, display:'block' }}>{(brut * (1 - taxRate)).toFixed(4)} $K</span>
+                          <span style={{ color:'#b08080', fontSize:9 }}>après taxe</span>
                         </div>
-                        <button
-                          style={{ color:'#c43070', background:'none', border:'none', cursor:'pointer', fontSize:'14px', padding:'0 4px' }}
-                          onClick={() => setCart(prev => prev.filter((_, j) => j !== i))}
-                        >✕</button>
+                        <button style={{ color:'#c43070', background:'none', border:'none', cursor:'pointer', fontSize:14 }} onClick={() => setCart(prev => prev.filter((_, j) => j !== i))}>✕</button>
                       </div>
                     );
                   })}
                 </div>
-                <div style={{ ...s.summary, marginBottom:10 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between' }}>
-                    <span style={{ color:'#7a4060', fontSize:'12px' }}>Total brut</span>
-                    <span style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700 }}>
-                      {cart.reduce((acc, i) => acc + i.quantity * i.pricePerUnit, 0).toFixed(4)} $K
-                    </span>
+                <div style={{ background:'rgba(106,191,68,0.06)', border:'1px solid rgba(106,191,68,0.2)', borderRadius:12, padding:'12px 14px', marginBottom:10 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                    <span style={{ color:'#7a4060', fontSize:12 }}>Total brut</span>
+                    <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>{cart.reduce((acc, i) => acc + i.quantity * i.pricePerUnit, 0).toFixed(4)} $K</span>
                   </div>
-                  <div style={{ borderTop:'1px solid rgba(212,100,138,0.2)', marginTop:6, paddingTop:6, display:'flex', justifyContent:'space-between' }}>
-                    <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:700 }}>Vous recevez</span>
-                    <span style={{ color:'#6abf44', fontSize:'14px', fontWeight:800 }}>
-                      {(cart.reduce((acc, i) => acc + i.quantity * i.pricePerUnit, 0) * (1 - taxRate)).toFixed(4)} $K
-                    </span>
+                  <div style={{ display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(106,191,68,0.2)', paddingTop:6 }}>
+                    <span style={{ color:'#1e0a16', fontSize:13, fontWeight:700 }}>Vous recevez</span>
+                    <span style={{ color:'#6abf44', fontSize:14, fontWeight:800 }}>{(cart.reduce((acc, i) => acc + i.quantity * i.pricePerUnit, 0) * (1 - taxRate)).toFixed(4)} $K</span>
                   </div>
                 </div>
                 <button
-                  style={{ ...s.mainBtn, opacity: busy ? 0.5 : 1 }}
+                  style={{ width:'100%', padding:12, background: busy ? 'rgba(196,48,112,0.3)' : 'linear-gradient(135deg, #c43070, #8a25d4)', color:'#fff', border:'none', borderRadius:12, fontSize:14, fontWeight:700, cursor: busy ? 'default' : 'pointer' }}
                   disabled={busy}
-                  onClick={() => { batchMettrEnVente(cart).then(() => { setCart([]); setTab('mesVentes'); }); }}
+                  onClick={() => batchMettrEnVente(cart).then(() => { setCart([]); setTab('mesVentes'); })}
                 >
                   {status === 'listing' ? '⏳ Confirmation en cours…' : `💰 Publier ${cart.length} vente${cart.length > 1 ? 's' : ''}`}
                 </button>
@@ -517,13 +538,12 @@ function TabOnchain() {
 
             {cart.length === 0 && inventaireItems.length === 0 && (
               <div style={s.empty}>
-                <span style={{ fontSize:'36px' }}>📦</span>
-                <p style={{ color:'#7a4060', fontSize:'13px', marginTop:10 }}>Aucune ressource en stock.</p>
+                <span style={{ fontSize:40 }}>📦</span>
+                <p style={{ color:'#7a4060', fontSize:13, marginTop:10 }}>Aucune ressource en stock.</p>
               </div>
             )}
-
-            {status === 'success' && <p style={{ color:'#6abf44', fontSize:'12px', fontWeight:700, textAlign:'center', margin:0 }}>✅ Ventes publiées !</p>}
-            {error && <p style={{ color:'#c43070', fontSize:'10px', margin:0 }}>{error.slice(0,120)}</p>}
+            {status === 'success' && <p style={{ color:'#6abf44', fontSize:12, fontWeight:700, textAlign:'center', margin:0 }}>✅ Ventes publiées !</p>}
+            {error && <p style={{ color:'#c43070', fontSize:10, margin:0 }}>{error.slice(0,120)}</p>}
           </div>
         )}
 
@@ -532,31 +552,27 @@ function TabOnchain() {
           <>
             {myListings.length === 0 ? (
               <div style={s.empty}>
-                <span style={{ fontSize:'36px' }}>📋</span>
-                <p style={{ color:'#7a4060', fontSize:'13px', marginTop:10 }}>Aucune vente en cours.</p>
+                <span style={{ fontSize:40 }}>📋</span>
+                <p style={{ color:'#7a4060', fontSize:13, marginTop:10 }}>Aucune vente en cours.</p>
               </div>
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                 {myListings.map(l => {
                   const res = getResourceById(l.resourceId as ResourceId);
                   return (
-                    <div key={l.listingId.toString()} style={s.itemRow}>
-                      <div style={s.itemIcon}>
-                        <span style={{ fontSize:'20px' }}>{emojiByResourceId(l.resourceId)}</span>
+                    <div key={l.listingId.toString()} style={{ background:'#fff', border:'1px solid rgba(212,100,138,0.15)', borderRadius:14, padding:'12px', display:'flex', alignItems:'center', gap:10 }}>
+                      <div style={{ width:44, height:44, borderRadius:12, background:'rgba(212,100,138,0.06)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <span style={{ fontSize:22 }}>{emojiByResourceId(l.resourceId)}</span>
                       </div>
                       <div style={{ flex:1 }}>
-                        <span style={{ color:'#1e0a16', fontSize:'12px', fontWeight:700 }}>
+                        <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>
                           {res ? getNomRessource(l.resourceId, lang) : `Ressource #${l.resourceId}`}
                         </span>
-                        <span style={{ color:'#7a4060', fontSize:'10px', display:'block' }}>
-                          ×{l.quantity} · {l.pricePerUnit.toFixed(4)} $K/unité
-                        </span>
-                        <span style={{ color:'#6abf44', fontSize:'10px' }}>
-                          Vous recevrez : {(l.pricePerUnit * l.quantity * (1 - taxRate)).toFixed(4)} $K
-                        </span>
+                        <span style={{ color:'#7a4060', fontSize:10, display:'block' }}>×{l.quantity} · {l.pricePerUnit.toFixed(4)} $K/u</span>
+                        <span style={{ color:'#6abf44', fontSize:10 }}>Vous recevrez : {(l.pricePerUnit * l.quantity * (1 - taxRate)).toFixed(4)} $K</span>
                       </div>
                       <button
-                        style={{ ...s.sellBtn, background:'rgba(196,48,112,0.08)', borderColor:'rgba(196,48,112,0.25)', color:'#c43070' }}
+                        style={{ padding:'6px 12px', background:'rgba(196,48,112,0.08)', border:'1px solid rgba(196,48,112,0.25)', borderRadius:10, color:'#c43070', fontSize:11, fontWeight:700, cursor:'pointer' }}
                         onClick={() => annulerListing(l.listingId)}
                         disabled={busy}
                       >
@@ -597,6 +613,10 @@ export function HdvPage() {
     </div>
   );
 }
+
+const ms: Record<string, React.CSSProperties> = {
+  statCard: { flex:1, background:'rgba(196,48,112,0.06)', border:'1px solid rgba(196,48,112,0.15)', borderRadius:10, padding:'8px 10px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2 },
+};
 
 const s: Record<string, React.CSSProperties> = {
   page:    { position:'absolute', inset:0, background:'#fdf0f5', display:'flex', flexDirection:'column' },
