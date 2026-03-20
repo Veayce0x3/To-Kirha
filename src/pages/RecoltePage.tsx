@@ -304,6 +304,8 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
         key={slot.index}
         style={{
           ...s.slotCard,
+          borderStyle: isDone ? 'solid' : isHarvesting ? 'solid' : isFree && !highlightInHand ? 'dashed' : 'solid',
+          borderWidth: isDone ? 2 : 1.5,
           borderColor: isDone
             ? '#6abf44'
             : isHarvesting
@@ -312,16 +314,19 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
                 ? `${cfg.color}cc`
                 : isLocked
                   ? (isNextLock ? `${cfg.color}55` : 'rgba(212,100,138,0.08)')
-                  : 'rgba(212,100,138,0.18)',
+                  : 'rgba(212,100,138,0.3)',
           background: isDone
-            ? 'rgba(106,191,68,0.12)'
+            ? 'rgba(106,191,68,0.14)'
             : isHarvesting
-              ? `${cfg.color}10`
+              ? `${cfg.color}18`
               : highlightInHand
                 ? `${cfg.color}14`
                 : isLocked && !isNextLock
                   ? 'rgba(212,100,138,0.03)'
-                  : '#ffffff',
+                  : isFree
+                    ? 'rgba(212,100,138,0.04)'
+                    : '#ffffff',
+          boxShadow: isDone ? '0 0 0 3px rgba(106,191,68,0.2)' : isHarvesting ? `0 0 0 2px ${cfg.color}20` : 'none',
           opacity:     isLocked && !isNextLock ? 0.35 : 1,
           cursor:      isLocked && !isNextLock ? 'default' : isHarvesting && !resourceInHand ? 'default' : 'pointer',
           outline:     highlightInHand && !isLocked && resourceInHand ? `2px dashed ${cfg.color}99` : 'none',
@@ -364,8 +369,8 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
               </>
             ) : (
               <>
-                <span style={{ fontSize: '22px', margin: '4px 0 2px', opacity: 0.3 }}>{icons.idle}</span>
-                <span style={{ color: '#7a4060', fontSize: '8px', textAlign: 'center', marginTop: 2 }}>vide</span>
+                <span style={{ fontSize: '20px', color: 'rgba(196,48,112,0.35)', margin: '4px 0 2px', lineHeight: 1, fontWeight: 300 }}>＋</span>
+                <span style={{ color: 'rgba(196,48,112,0.6)', fontSize: '8px', fontWeight: 700, textAlign: 'center', marginTop: 2 }}>Planter</span>
               </>
             )}
           </>
@@ -374,17 +379,20 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
         {/* En cours */}
         {isHarvesting && res && (
           <>
-            <span style={{ fontSize: '24px', margin: '4px 0 2px', lineHeight: 1 }}>
-              {resourceInHand ? emojiByResourceId(resourceInHand) : icons.harvesting}
+            <span style={{ background: `${cfg.color}22`, borderRadius: 6, padding: '1px 5px', color: cfg.color, fontSize: '7px', fontWeight: 800, letterSpacing: '0.05em', marginBottom: 2 }}>
+              EN COURS
             </span>
-            <span style={{ color: '#1e0a16', fontSize: '9px', fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }}>
+            <span style={{ fontSize: '22px', margin: '2px 0 1px', lineHeight: 1 }}>
+              {resourceInHand ? emojiByResourceId(resourceInHand) : emojiByResourceId(res.id)}
+            </span>
+            <span style={{ color: '#1e0a16', fontSize: '8px', fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }}>
               {resourceInHand && resInHand ? getNomRessource(resInHand.id, lang) : getNomRessource(res.id, lang)}
             </span>
-            <span style={{ color: cfg.color, fontSize: '10px', fontWeight: 900, fontFamily: 'monospace', marginTop: 2 }}>
+            <span style={{ color: cfg.color, fontSize: '10px', fontWeight: 900, fontFamily: 'monospace', marginTop: 1 }}>
               {resourceInHand ? '↺' : (slot.secondes_restantes != null ? formatTimer(slot.secondes_restantes) : '')}
             </span>
             {!resourceInHand && (
-              <div style={{ width: '100%', height: 3, background: 'rgba(212,100,138,0.1)', borderRadius: 2, marginTop: 4, overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: 3, background: `${cfg.color}22`, borderRadius: 2, marginTop: 3, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${timerPct}%`, background: cfg.color, borderRadius: 2, transition: 'width 1s linear' }} />
               </div>
             )}
@@ -394,17 +402,20 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
         {/* Prêt */}
         {isDone && res && (
           <>
-            <span style={{ fontSize: '26px', margin: '4px 0 2px', lineHeight: 1 }}>
-              {resourceInHand && resInHand ? emojiByResourceId(resInHand.id) : icons.done}
+            <span style={{ background: 'rgba(106,191,68,0.2)', borderRadius: 6, padding: '1px 5px', color: '#4a8f2a', fontSize: '7px', fontWeight: 800, letterSpacing: '0.05em', marginBottom: 2 }}>
+              {resourceInHand ? 'REPLANTER' : 'PRÊT !'}
             </span>
-            <span style={{ color: '#1e0a16', fontSize: '9px', fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }}>
+            <span style={{ fontSize: '24px', margin: '2px 0 1px', lineHeight: 1 }}>
+              {resourceInHand && resInHand ? emojiByResourceId(resInHand.id) : emojiByResourceId(res.id)}
+            </span>
+            <span style={{ color: '#1e0a16', fontSize: '8px', fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }}>
               {resourceInHand && resInHand ? getNomRessource(resInHand.id, lang) : getNomRessource(res.id, lang)}
             </span>
-            <span style={{ color: resourceInHand ? cfg.color : '#6abf44', fontSize: '9px', fontWeight: 900, marginTop: 2 }}>
+            <span style={{ color: resourceInHand ? cfg.color : '#6abf44', fontSize: '10px', fontWeight: 900, marginTop: 1 }}>
               {resourceInHand ? '↺ Replanter' : '✓ Récolter'}
             </span>
             {!resourceInHand && (
-              <div style={{ width: '100%', height: 3, background: 'rgba(106,191,68,0.2)', borderRadius: 2, marginTop: 4 }}>
+              <div style={{ width: '100%', height: 3, background: 'rgba(106,191,68,0.2)', borderRadius: 2, marginTop: 3 }}>
                 <div style={{ height: '100%', width: '100%', background: '#6abf44', borderRadius: 2 }} />
               </div>
             )}
