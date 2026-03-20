@@ -27,6 +27,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const { t } = useT();
 
   // ── Transfert de ville ────────────────────────────────────
+  const [refreshing, setRefreshing] = useState(false);
+
   const [showTransfer, setShowTransfer]     = useState(false);
   const [transferTo, setTransferTo]         = useState('');
   const [transferStatus, setTransferStatus] = useState<'idle'|'signing'|'pending'|'success'|'error'>('idle');
@@ -205,6 +207,25 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               </button>
             </div>
           )}
+
+          {/* Actualiser la page */}
+          <div style={ms.section}>
+            <span style={ms.sectionTitle}>📱 Actualiser la page</span>
+            <p style={{ color:'#7a4060', fontSize:'11px', margin:'0 0 4px', lineHeight:'1.5' }}>
+              Sauvegarde ta progression puis recharge la page (vide le cache du navigateur).
+            </p>
+            <button
+              style={{ ...ms.saveBtn, opacity: refreshing ? 0.6 : 1 }}
+              disabled={refreshing}
+              onClick={async () => {
+                setRefreshing(true);
+                await sauvegarder();
+                setTimeout(() => window.location.reload(), 2000);
+              }}
+            >
+              {refreshing ? '⏳ Sauvegarde puis rechargement…' : '🔄 Sauvegarder & Actualiser'}
+            </button>
+          </div>
 
           {/* Déconnexion */}
           <div style={ms.section}>
