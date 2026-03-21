@@ -207,20 +207,6 @@ export function useMarket() {
     setError(null);
     setStatus('buying');
     try {
-      // Vérifier le solde on-chain avant d'envoyer la transaction
-      // pricePerUnit est en $KIRHA (float), quantity est l'unité réelle (pas ×1e4)
-      if (publicClient && pricePerUnit > 0) {
-        const kirhaWei = await publicClient.readContract({
-          address: KIRHA_GAME_ADDRESS,
-          abi: KirhaGameAbi,
-          functionName: 'cityKirha',
-          args: [cityIdBn],
-        }) as bigint;
-        const totalCostWei = parseEther((Math.floor(quantity) * pricePerUnit).toFixed(6));
-        if (kirhaWei < totalCostWei) {
-          throw new Error(`Solde $KIRHA on-chain insuffisant (${parseFloat(formatEther(kirhaWei)).toFixed(4)} $K disponibles). Sauvegarde tes gains avant d'acheter.`);
-        }
-      }
       if (relayerActive) {
         await relayerPost('/market/buy', {
           listingId:   listingId.toString(),

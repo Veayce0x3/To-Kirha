@@ -428,6 +428,16 @@ function TabOnchain() {
                                     onClick={() => setBuyQty(prev => ({ ...prev, [key]: String(Math.min(l.quantity, (parseInt(prev[key] ?? '1') || 1) + 1)) }))}
                                   >+</button>
                                 </div>
+                                {(() => {
+                                  const qty = Math.max(1, Math.min(l.quantity, parseInt(qtyVal) || 1));
+                                  const totalCost = qty * l.pricePerUnit;
+                                  const canAfford = soldeKirha >= totalCost;
+                                  return (
+                                    <span style={{ fontSize:9, fontWeight:700, color: canAfford ? '#4a8f2a' : '#c43070' }}>
+                                      {canAfford ? '✓' : '✗'} {totalCost.toFixed(4)} $K
+                                    </span>
+                                  );
+                                })()}
                                 <div style={{ display:'flex', gap:3 }}>
                                   <button
                                     style={{ background:'rgba(196,48,112,0.08)', color:'#c43070', border:'1px solid rgba(196,48,112,0.2)', borderRadius:6, padding:'3px 6px', fontSize:9, fontWeight:700, cursor:'pointer' }}
