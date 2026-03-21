@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePublicClient } from 'wagmi';
+import { usePublicClient, useReadContract } from 'wagmi';
 import { parseAbiItem, formatEther } from 'viem';
 import { useGameStore } from '../store/gameStore';
 import { getResourceById } from '../data/metiers';
@@ -198,15 +198,34 @@ function TabOnchain() {
   const [tab, setTab]               = useState<'acheter'|'vendre'|'mesVentes'|'historique'>('acheter');
   const [relayerSecondsLeft, setRelayerSecondsLeft] = useState<number | null>(null);
 
+  // Lire l'expiry réelle depuis le contrat (relayerSession public mapping)
+  const { data: relayerSessionData } = useReadContract({
+    address: KIRHA_GAME_ADDRESS,
+    abi:     KirhaGameAbi,
+    functionName: 'relayerSession',
+    args:    villeIdBn ? [villeIdBn] : undefined,
+    query:   { enabled: !!villeIdBn, refetchInterval: 30_000 },
+  });
+  const relayerExpirySec = relayerSessionData
+    ? Number((relayerSessionData as { relayer: string; expiry: bigint }).expiry)
+    : 0;
+
   useEffect(() => {
     if (!isRelayerActive || !villeId) { setRelayerSecondsLeft(null); return; }
-    const at = parseInt(localStorage.getItem(`kirha_relayer_at_${villeId}`) ?? '0');
-    const expiresAt = at ? at + 43200_000 : Date.now() + 43200_000;
-    const update = () => setRelayerSecondsLeft(Math.max(0, Math.round((expiresAt - Date.now()) / 1000)));
+    // Priorité : expiry on-chain (source de vérité), sinon fallback localStorage
+    const nowSec = Math.floor(Date.now() / 1000);
+    let expiresAtSec: number;
+    if (relayerExpirySec > nowSec) {
+      expiresAtSec = relayerExpirySec;
+    } else {
+      const at = parseInt(localStorage.getItem(`kirha_relayer_at_${villeId}`) ?? '0');
+      expiresAtSec = at ? Math.floor(at / 1000) + 43200 : nowSec + 43200;
+    }
+    const update = () => setRelayerSecondsLeft(Math.max(0, Math.round(expiresAtSec - Date.now() / 1000)));
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
-  }, [isRelayerActive, villeId]);
+  }, [isRelayerActive, villeId, relayerExpirySec]);
   const [sellResourceId, setSellResourceId] = useState('');
   const [sellQty, setSellQty]       = useState('');
   const [sellPrice, setSellPrice]   = useState('');

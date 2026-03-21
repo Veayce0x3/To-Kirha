@@ -86,8 +86,8 @@ export function TemplePage() {
   ];
   const todayQuests = todayIndices.map(i => ALL_QUESTS[i]);
 
-  // Quêtes complétées aujourd'hui
-  const completedIndices: number[] = templeCompleted ?? [];
+  // Quêtes complétées : seulement si la date correspond à aujourd'hui
+  const completedIndices: number[] = (templeCompletedDate === today) ? (templeCompleted ?? []) : [];
 
   function completer(questIndex: number) {
     const quest = todayQuests[questIndex];
