@@ -24,13 +24,13 @@ function InventaireModal({ onClose }: { onClose: () => void }) {
   const [sort, setSort] = useState<SortMode>('quantite');
   const { t, lang } = useT();
 
-  // Construire la liste des ressources possédées (entiers uniquement)
+  // Construire la liste des ressources possédées (y compris quantités < 1)
   const items = (Object.entries(inventaire) as [string, number][])
-    .filter(([, qty]) => Math.floor(qty) >= 1)
+    .filter(([, qty]) => qty > 0)
     .map(([id, qty]) => {
       const rid = Number(id) as ResourceId;
       const res = getResourceById(rid);
-      return { id: rid, qty: Math.floor(qty), res };
+      return { id: rid, qty, res };
     })
     .filter(item => item.res != null);
 
@@ -101,7 +101,9 @@ function InventaireModal({ onClose }: { onClose: () => void }) {
                       </span>
                     </div>
                     <div style={ms.itemRight}>
-                      <span style={{ color: '#1e0a16', fontSize: '14px', fontWeight: 800 }}>×{qty}</span>
+                      <span style={{ color: '#1e0a16', fontSize: '14px', fontWeight: 800 }}>
+                        ×{qty >= 1 ? Math.floor(qty) : qty.toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 );

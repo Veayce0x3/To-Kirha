@@ -58,6 +58,8 @@ export function HomePage() {
         chainId: baseSepolia.id,
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      // Persiste le timestamp de début de session pour le décompte 12h dans HdvPage
+      localStorage.setItem(`kirha_relayer_at_${villeId}`, Date.now().toString());
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (!msg.includes('User rejected') && !msg.includes('user rejected')) {

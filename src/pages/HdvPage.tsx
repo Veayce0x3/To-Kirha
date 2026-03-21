@@ -183,7 +183,10 @@ function TabOnchain() {
   const villeId     = useGameStore(s => s.villeId);
   const vipExpiry   = useGameStore(s => s.vipExpiry);
   const soldeKirha  = useGameStore(s => s.soldeKirha);
+  const kirhaEarned = useGameStore(s => s.kirhaEarned);
   const pepitesOr   = useGameStore(s => s.pepitesOr);
+  // Kirha réellement disponible on-chain (les gains PNJ non sauvegardés ne sont pas encore on-chain)
+  const onChainKirha = Math.max(0, soldeKirha - kirhaEarned);
   const { lang } = useT();
   const villeIdBn   = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
@@ -260,7 +263,7 @@ function TabOnchain() {
     .sort((a, b) => a.pricePerUnit - b.pricePerUnit);
 
   return (
-    <div style={{ paddingBottom:90 }}>
+    <div style={{ paddingBottom:130 }}>
 
       {/* Bannière relayer */}
       {isRelayerActive ? (
@@ -433,16 +436,26 @@ function TabOnchain() {
                                     style={{ background:'rgba(196,48,112,0.08)', color:'#c43070', border:'1px solid rgba(196,48,112,0.2)', borderRadius:6, padding:'3px 6px', fontSize:9, fontWeight:700, cursor:'pointer' }}
                                     onClick={() => setBuyQty(prev => ({ ...prev, [key]: String(l.quantity) }))}
                                   >MAX</button>
-                                  <button
-                                    style={{ background: busy ? 'rgba(106,191,68,0.3)' : 'linear-gradient(135deg, #6abf44, #3a8f1e)', color:'#fff', border:'none', borderRadius:7, padding:'4px 10px', fontSize:10, fontWeight:700, cursor: busy ? 'default' : 'pointer' }}
-                                    disabled={busy}
-                                    onClick={() => {
-                                      const qty = Math.max(1, Math.min(l.quantity, parseInt(qtyVal) || 1));
-                                      acheter(l.listingId, qty, l.resourceId, l.pricePerUnit);
-                                    }}
-                                  >
-                                    {status === 'buying' ? '⏳' : '✓ Acheter'}
-                                  </button>
+                                  {(() => {
+                                    const qty = Math.max(1, Math.min(l.quantity, parseInt(qtyVal) || 1));
+                                    const totalCost = qty * l.pricePerUnit;
+                                    const insuffisant = totalCost > onChainKirha;
+                                    return insuffisant ? (
+                                      <button
+                                        style={{ background:'rgba(196,48,112,0.08)', color:'#c43070', border:'1px solid rgba(196,48,112,0.3)', borderRadius:7, padding:'4px 8px', fontSize:9, fontWeight:700, cursor:'default' }}
+                                        disabled
+                                        title={`Solde on-chain insuffisant (${onChainKirha.toFixed(4)} $K). Sauvegarde tes gains PNJ d'abord.`}
+                                      >💾 Sauv. d'abord</button>
+                                    ) : (
+                                      <button
+                                        style={{ background: busy ? 'rgba(106,191,68,0.3)' : 'linear-gradient(135deg, #6abf44, #3a8f1e)', color:'#fff', border:'none', borderRadius:7, padding:'4px 10px', fontSize:10, fontWeight:700, cursor: busy ? 'default' : 'pointer' }}
+                                        disabled={busy}
+                                        onClick={() => acheter(l.listingId, qty, l.resourceId, l.pricePerUnit)}
+                                      >
+                                        {status === 'buying' ? '⏳' : '✓ Acheter'}
+                                      </button>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             )}
