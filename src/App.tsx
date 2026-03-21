@@ -53,20 +53,16 @@ function VersionGuard() {
 }
 
 function BeforeUnloadGuard() {
-  const pending      = useGameStore(s => s.pending_mints);
-  const kirhaEarned  = useGameStore(s => s.kirhaEarned);
   const { sauvegarder } = useSave();
 
   useEffect(() => {
     const handler = (_e: BeforeUnloadEvent) => {
-      if (pending.length === 0 && kirhaEarned === 0) return;
-      // Déclenche la sauvegarde on-chain via relayer si actif, sinon wallet
       sauvegarder();
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pending.length, kirhaEarned]);
+  }, []);
   return null;
 }
 
