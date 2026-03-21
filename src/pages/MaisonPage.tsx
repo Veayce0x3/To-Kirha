@@ -5,33 +5,10 @@ import { useGameStore, xpRequis } from '../store/gameStore';
 import { getResourceById, METIERS, MetierId } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
+import { emojiByResourceId } from '../utils/resourceUtils';
 
 type Tab = 'ressources' | 'metiers' | 'personnage';
 
-function emojiRessource(metier: string, nom: string): string {
-  const bucheron: Record<string, string> = {
-    'Frêne':'🪵', 'Séquoia':'🌲', 'Chêne':'🌳', 'Bouleau':'🌿', 'Érable':'🍁',
-    'Bambou':'🎋', 'Ginkgo':'🍃', 'Magnolia':'🌸', 'Cerisier Doré':'🌺', 'Sakura':'🌸',
-  };
-  const paysan: Record<string, string> = {
-    'Blé':'🌾', 'Orge':'🌾', 'Seigle':'🌿', 'Avoine':'🌾', 'Maïs':'🌽',
-    'Riz':'🍚', 'Millet':'🌾', 'Sarrasin':'🌿', 'Riz Violet':'🍚', 'Riz Sakura':'🍚',
-  };
-  const pecheur: Record<string, string> = {
-    'Carpe Japonaise':'🐟', 'Crabe':'🦀', 'Saumon':'🐠', 'Homard':'🦞', 'Naso':'🐡',
-    'Pieuvre':'🐙', 'Calmar':'🦑', 'Crevette Sakura':'🍤', 'Fugu':'🐡', 'Carpe Koï Dorée':'🐟',
-  };
-  const mineur: Record<string, string> = {
-    'Pierre':'🪨', 'Charbon':'⬛', 'Cuivre':'🟤', 'Fer':'⚙️', 'Topaze':'💛',
-    'Émeraude':'💚', 'Jade':'🟢', 'Diamant':'💎', 'Saphir Sakura':'💙', 'Cristal Koï':'🔮',
-  };
-  const alchimiste: Record<string, string> = {
-    'Pissenlit':'🌼', 'Menthe':'🌿', 'Ortie':'🌱', 'Lavande':'💜', 'Pivoine':'🌺',
-    'Wisteria':'🪻', 'Chrysanthème':'🌸', 'Ginseng':'🫚', 'Fleur de Lotus Sakura':'🪷', 'Herbe Koï':'🌿',
-  };
-  const map: Record<string, Record<string, string>> = { bucheron, paysan, pecheur, mineur, alchimiste };
-  return map[metier]?.[nom] ?? '📦';
-}
 type SortMode = 'quantite' | 'categorie';
 
 const METIER_CONFIG: Record<MetierId, { icon: string; color: string }> = {
@@ -110,7 +87,7 @@ export function MaisonPage() {
                 return (
                   <div key={id} style={s.itemRow}>
                     <div style={{ ...s.itemIcon, borderColor: '#d4648a' }}>
-                      <span style={{ fontSize:'20px' }}>{emojiRessource(res!.metier, res!.nom)}</span>
+                      <span style={{ fontSize:'20px' }}>{emojiByResourceId(id)}</span>
                     </div>
                     <div style={s.itemInfo}>
                       <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:600 }}>{res!.nom}</span>

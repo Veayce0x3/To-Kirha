@@ -144,18 +144,19 @@ mapping(address => uint256) public ownerToCityId;
 
 ---
 
-## Architecture des fichiers (état actuel — 19 mars 2026)
+## Architecture des fichiers (état actuel — 21 mars 2026)
 ```
 src/
 ├── App.tsx                  # Routes + Guards (VersionGuard v0.6.0, VilleIdGuard avec chain sync complet)
 │                            # Routes: /, /home, /recolte, /hdv, /banque, /maison, /craft, /admin, /temple
 ├── main.tsx                 # WagmiProvider + RainbowKitProvider + QueryClientProvider
-├── index.css                # Desktop max-width 820px, responsive slots-grid
+├── index.css                # Desktop max-width 820px, responsive slots-grid, height:100svh, bottom-menu 52px
 ├── components/
 │   ├── BottomMenu.tsx       # 3 boutons : Accueil / Inventaire (modal 2 onglets) / 💾 Sauvegarder
-│   │                        # Indicateur actif sur le bouton Home
+│   │                        # Indicateur actif sur le bouton Home, inventaire affiche ressources < 1
 │   ├── Character.tsx        # Personnage 6 calques CSS, 4 directions
 │   └── SettingsModal.tsx    # Paramètres : langue, save, transfert ville NFT, déconnexion
+│                            # Bouton "🔄 Actualiser et synchroniser" (visible à tous)
 │                            # Bouton "⚙️ Page Admin" visible uniquement wallet whitelist
 ├── contracts/
 │   ├── abis/
@@ -179,22 +180,20 @@ src/
 │   └── useVip.ts            # buyPepites(packType) + buyVip(durationType) on-chain
 ├── pages/
 │   ├── ConnectPage.tsx      # Landing + pseudo on-chain + LangToggle + register/login flow
-│   ├── HomePage.tsx         # Map principale (5 cards) + badge VIP + modal info VIP
+│   ├── HomePage.tsx         # Map principale (5 cards) + badge VIP + modal relayer + modal info VIP
 │   ├── RecoltePage.tsx      # Sélecteur métier (barre XP bleue/violette) + Zone récolte
-│   ├── HdvPage.tsx          # PNJ off-chain + On-chain (sellerPseudo, relayer ops)
+│   ├── HdvPage.tsx          # HDV On-chain (sellerPseudo, relayer ops, indicateur affordabilité $K)
 │   ├── BanquePage.tsx       # Retrait/Dépôt $KIRHA + Pépites d'or (4 packs) + VIP (3 durées)
 │   ├── MaisonPage.tsx       # Inventaire + stats métiers + perso
 │   ├── CraftPage.tsx        # WIP
 │   ├── AdminPage.tsx        # /admin — token worker, actions give/reset sans wallet popup
 │   │                        # Alerte solde relayer (rouge si < 0.05 ETH)
 │   └── TemplePage.tsx       # Quêtes journalières
-├── store/gameStore.ts       # Zustand persist v8, soft migration (jamais full reset)
+├── store/gameStore.ts       # Zustand persist v9, soft migration (jamais full reset)
 │                            # setChainBalances / setMetierFromChain / addInventaireFromChain
 └── utils/
     ├── i18n.ts              # Traductions FR/EN complètes (50 ressources + UI)
-    ├── resourceUtils.ts     # emojiByResourceId(), getNomRessource() — SOURCE UNIQUE
-    ├── grid.ts              # A* pathfinding (inactif, gardé pour usage futur)
-    └── tiled.ts             # Parser Tiled JSON (inactif, gardé pour usage futur)
+    └── resourceUtils.ts     # emojiByResourceId(), getNomRessource() — SOURCE UNIQUE
 
 contracts/
 ├── KirhaToken.sol           # ERC-20 $KIRHA, mintable par KirhaGame + KirhaMarket
@@ -271,6 +270,7 @@ scripts/
 - Struct `Listing` : `sellerCityId`, `resourceId`, `quantity`, `pricePerUnit`
 - Taxe 50% → 25% si vendeur est VIP
 - `getCityPseudos(cityIds[])` : batch getter pseudos vendeurs
+- Indicateur affordabilité sur chaque listing : ✓ (vert) ou ✗ (rouge) + coût total, mis à jour en temps réel
 
 ### Auto-switch réseau
 - Tous les hooks (`useSave`, `useWithdraw`, `useDeposit`, `useMarket`, `useVip`) appellent `switchChainAsync({ chainId: baseSepolia.id })` avant tout `writeContractAsync`
@@ -306,8 +306,8 @@ scripts/
 - give-kirha : utilise `parseEther(amtStr)` (précision exacte, pas BigInt flottant)
 
 ### SettingsModal
-- Bouton "Sync depuis la chaîne" : recharge la page → VilleIdGuard re-sync depuis blockchain
-  Utile après une action admin (give/retrait KIRHA, pépites, VIP) pour voir les changements immédiatement
+- Bouton "🔄 Actualiser et synchroniser" (visible à tous les joueurs) : sauvegarde si relayer actif, puis reload
+- VilleIdGuard re-sync depuis blockchain au rechargement → utile après action admin (give/retrait KIRHA, pépites, VIP)
 
 ### Multilingue (i18n)
 - FR/EN complet : navigation, UI, 50 noms de ressources
@@ -344,7 +344,7 @@ scripts/
 
 ---
 
-## État du projet (20 mars 2026)
+## État du projet (21 mars 2026)
 
 ### CE QUI EST FAIT ET FONCTIONNEL ✅
 | Composant                        | Fichier                        | État             |
@@ -354,7 +354,7 @@ scripts/
 | Page connexion + pseudo on-chain | ConnectPage.tsx                | ✅ Complet       |
 | Map principale (5 cards + VIP)   | HomePage.tsx                   | ✅ Complet       |
 | Récolte (sélecteur + zones)      | RecoltePage.tsx                | ✅ Complet       |
-| HDV PNJ + On-chain (relayer)     | HdvPage.tsx + useMarket        | ✅ Complet       |
+| HDV On-chain (relayer)           | HdvPage.tsx + useMarket        | ✅ Complet       |
 | Banque (retrait/dépôt/VIP/pép.)  | BanquePage.tsx + useVip        | ✅ Complet       |
 | Maison (inventaire+stats)        | MaisonPage.tsx                 | ✅ Complet       |
 | Menu bas (3 boutons + actif)     | BottomMenu.tsx                 | ✅ Complet       |
@@ -371,6 +371,12 @@ scripts/
 | Page Admin (worker, no popup)    | AdminPage.tsx                  | ✅ Complet       |
 | Relayer Cloudflare Workers       | kirha-relayer/                 | ✅ Déployé       |
 | CI/CD GitHub Pages + Worker      | .github/workflows/deploy.yml   | ✅ En place      |
+| Menu iOS/Android corrigé         | index.html + index.css         | ✅ 100svh + 52px |
+| Admin sync visible en jeu        | store/gameStore.ts             | ✅ Corrigé       |
+| Inventaire ressources < 1        | BottomMenu.tsx                 | ✅ Corrigé       |
+| Auto-save fermeture page         | App.tsx BeforeUnloadGuard      | ✅ Systématique  |
+| Décompte relayer 12h persistant  | HomePage + HdvPage             | ✅ localStorage  |
+| Indicateur affordabilité HDV     | HdvPage.tsx                    | ✅ ✓/✗ + coût   |
 
 ### CE QUI MANQUE / EST EN ATTENTE ⏳
 | Élément                           | Priorité   | Notes                                        |
@@ -455,14 +461,14 @@ BASESCAN_API_KEY=                # Optionnel, vérification contrats
 - Demander confirmation avant de modifier plusieurs fichiers à la fois
 - **Animations personnage EN PAUSE** — ne pas travailler dessus avant que le gameplay soit complet
 - `TEST_MODE = true` dans `metiers.ts` → temps de récolte 2s. Passer à `false` avant production
-- **Interface 100% cards/pages React** — plus de map Tiled, grid.ts et tiled.ts gardés mais inactifs
-- `resourceUtils.ts` est la **source unique** pour emojis et noms de ressources — ne jamais dupliquer
+- **Interface 100% cards/pages React** — pas de map Tiled, les fichiers grid/tiled/tmx/TileMap ont été supprimés
+- `resourceUtils.ts` est la **source unique** pour emojis et noms de ressources — ne jamais dupliquer dans d'autres fichiers
 - Le nom du jeu ($KIRHA, Pépites d'or) reste en français même en version EN
 - KirhaGame testnet : **ECDSA désactivé** — à réactiver avant mainnet avec nonce anti-replay
 - KirhaMarket : taxe **50% hardcodée** (TAX_BPS = 5000) — VIP réduit à 25% pour le vendeur
 - **Worker Cloudflare** : déployé auto par CI — ne jamais déployer manuellement sauf urgence
-- **Zustand version = 8** — ne jamais incrémenter sans vrai changement de structure
+- **Zustand version = 9** — ne jamais incrémenter sans vrai changement de structure
 - `villeId` ne vient **jamais** du localStorage — toujours de `playerCityId(address)` on-chain
-- `cityId.ts` dans utils est obsolète — ne plus l'utiliser
-- **Liste de corrections** : quand l'utilisateur donne une liste de points, créer les tâches avec TaskCreate et traiter **un point à la fois** dans l'ordre, sans en sauter
-- **Commits** : traiter tous les points un par un jusqu'à la fin, puis un seul commit+push quand toute la liste est terminée. La liste de tâches sert uniquement à ne rien oublier et à finir chaque point proprement avant de passer au suivant
+- `setChainBalances` : `soldeKirha = kirha + state.kirhaEarned`, `pepitesOr = pepites` (direct chaîne, pas Math.max)
+- **Liste de corrections** : quand l'utilisateur donne une liste de points, traiter **un point à la fois** dans l'ordre, sans en sauter
+- **Commits** : traiter tous les points un par un jusqu'à la fin, puis un seul commit+push quand toute la liste est terminée
