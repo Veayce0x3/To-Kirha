@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { MetierId } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { Equipement, TypeVetement } from '../data/vetements';
+import { ToolType } from '../data/outils';
 
 // ============================================================
 // Types
@@ -59,6 +60,12 @@ export interface GameState {
   puitsDerniereRecolte:      number;                    // timestamp ms de la dernière collecte d'eau
   animauxDerniereRecolte:    Record<string, number[]>;  // animalId → [timestamp ms par slot]
 
+  // Outils (craftés par Artisan, ne sont pas dans l'inventaire)
+  outils: Partial<Record<ToolType, { tierId: number; durabilite: number }>>;
+
+  // Métiers de craft (Artisan + Alchimiste craft)
+  craftMetiers: Record<'artisan' | 'alchimisteCraft', { niveau: number; xp: number; xpTotal: number }>;
+
   setAddress:               (address: string | null) => void;
   ajouterXp:                (metier: MetierId, xp: number) => void;
   ajouterXpPersonage:       (xp: number) => void;
@@ -67,6 +74,9 @@ export interface GameState {
   reinitialiserCompetences: () => void;
   setPuitsDerniereRecolte:  (timestamp: number) => void;
   setAnimauxDerniereRecolte:(animalId: string, slotIndex: number, timestamp: number) => void;
+  setOutil:                 (type: ToolType, tierId: number, durabiliteMax: number) => void;
+  decrementOutilDurabilite: (type: ToolType) => void;
+  ajouterXpCraft:           (metier: 'artisan' | 'alchimisteCraft', xp: number) => void;
   demarrerRecolte:          (metier: MetierId, slotIndex: number, resourceId: ResourceId, dureeMs: number) => void;
   terminerRecolte:          (metier: MetierId, slotIndex: number, quantite: number) => void;
   ajouterPendingMint:       (resourceId: ResourceId, quantite: number) => void;
@@ -189,6 +199,11 @@ export const useGameStore = create<GameState>()(
       competences:         {},
       puitsDerniereRecolte:   0,
       animauxDerniereRecolte: {},
+      outils:                 {},
+      craftMetiers: {
+        artisan:         { niveau: 1, xp: 0, xpTotal: 0 },
+        alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
+      },
 
       setAddress: (address) => set({ address }),
 
@@ -384,6 +399,11 @@ export const useGameStore = create<GameState>()(
           competences:         {},
           puitsDerniereRecolte:   0,
           animauxDerniereRecolte: {},
+          outils:                 {},
+          craftMetiers: {
+            artisan:         { niveau: 1, xp: 0, xpTotal: 0 },
+            alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
+          },
           // Conserver
           address:  state.address,
           villeId:  state.villeId,
@@ -456,6 +476,31 @@ export const useGameStore = create<GameState>()(
           };
         }),
 
+      setOutil: (type, tierId, durabiliteMax) =>
+        set((state) => ({
+          outils: { ...state.outils, [type]: { tierId, durabilite: durabiliteMax } },
+        })),
+
+      decrementOutilDurabilite: (type) =>
+        set((state) => {
+          const outil = state.outils[type];
+          if (!outil || outil.durabilite <= 0) return state;
+          return { outils: { ...state.outils, [type]: { ...outil, durabilite: Math.max(0, outil.durabilite - 1) } } };
+        }),
+
+      ajouterXpCraft: (metier, xp) =>
+        set((state) => {
+          const current = state.craftMetiers[metier];
+          let niveau = current.niveau;
+          let xpCurrent = current.xp + xp;
+          const xpTotal = current.xpTotal + xp;
+          while (niveau < 100 && xpCurrent >= xpRequis(niveau)) {
+            xpCurrent -= xpRequis(niveau);
+            niveau = Math.min(100, niveau + 1);
+          }
+          return { craftMetiers: { ...state.craftMetiers, [metier]: { niveau, xp: xpCurrent, xpTotal } } };
+        }),
+
       setPuitsDerniereRecolte: (timestamp) => set({ puitsDerniereRecolte: timestamp }),
 
       setAnimauxDerniereRecolte: (animalId, slotIndex, timestamp) =>
@@ -497,7 +542,7 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'to-kirha-game',
-      version: 11,
+      version: 12,
       migrate: (persistedState: unknown, version: number) => {
         if (!persistedState || typeof persistedState !== 'object') return undefined;
         const state = persistedState as Partial<GameState> & { animauxDerniereRecolte?: unknown };
@@ -505,6 +550,7 @@ export const useGameStore = create<GameState>()(
         // v9  : reset slots à 2 débloqués par métier
         // v10 : ajout personnage, compétences, ferme
         // v11 : animauxDerniereRecolte devient Record<string, number[]>, temple resets
+        // v12 : ajout outils, craftMetiers (Artisan, AlchimisteCraft)
         const oldRecolte = (state.animauxDerniereRecolte ?? {}) as Record<string, unknown>;
         const migratedRecolte: Record<string, number[]> = {};
         for (const [k, v] of Object.entries(oldRecolte)) {
@@ -527,6 +573,11 @@ export const useGameStore = create<GameState>()(
           competences:         (state as Partial<GameState>).competences           ?? {},
           puitsDerniereRecolte:   (state as Partial<GameState>).puitsDerniereRecolte   ?? 0,
           animauxDerniereRecolte: migratedRecolte,
+          outils:              (state as Partial<GameState>).outils               ?? {},
+          craftMetiers:        (state as Partial<GameState>).craftMetiers ?? {
+            artisan:         { niveau: 1, xp: 0, xpTotal: 0 },
+            alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
+          },
         };
       },
     }

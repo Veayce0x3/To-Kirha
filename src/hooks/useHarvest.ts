@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { METIERS, Ressource, MetierId } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { calculerBonus } from '../data/vetements';
+import { FREE_RESOURCE_IDS, METIER_TOOL_TYPE } from '../data/outils';
 
 export interface SlotAvecTimer {
   index:              number;
@@ -18,6 +19,7 @@ export interface UseHarvestReturn {
   niveau:                 number;
   xp:                     number;
   lastHarvested:          { qty: number; resourceId: ResourceId } | null;
+  outilManquant:          boolean; // true si un outil est requis mais absent/cassé
   // Plante une ressource sur le slot (fonctionne même si slot déjà actif → change la ressource)
   planterRessource:       (slotIndex: number, resourceId: ResourceId) => void;
   // Récolte le slot prêt puis relance automatiquement avec la même ressource
@@ -29,27 +31,35 @@ function quantiteRecolte(_niveauJoueur: number): number {
 }
 
 export function useHarvest(metierId: MetierId): UseHarvestReturn {
-  const metier          = METIERS[metierId];
-  const slots_store     = useGameStore(s => s.slots[metierId]);
-  const metier_progress = useGameStore(s => s.metiers[metierId]);
-  const equipement      = useGameStore(s => s.equipement);
-  const demarrerRecolte = useGameStore(s => s.demarrerRecolte);
-  const terminerRecolte = useGameStore(s => s.terminerRecolte);
-  const ajouterXp       = useGameStore(s => s.ajouterXp);
-  const ajouterPending  = useGameStore(s => s.ajouterPendingMint);
+  const metier                  = METIERS[metierId];
+  const slots_store             = useGameStore(s => s.slots[metierId]);
+  const metier_progress         = useGameStore(s => s.metiers[metierId]);
+  const equipement              = useGameStore(s => s.equipement);
+  const outils                  = useGameStore(s => s.outils);
+  const demarrerRecolte         = useGameStore(s => s.demarrerRecolte);
+  const terminerRecolte         = useGameStore(s => s.terminerRecolte);
+  const ajouterXp               = useGameStore(s => s.ajouterXp);
+  const ajouterPending          = useGameStore(s => s.ajouterPendingMint);
+  const decrementOutilDurabilite = useGameStore(s => s.decrementOutilDurabilite);
+
+  const toolType = METIER_TOOL_TYPE[metierId];
+  const outil = outils[toolType];
+  const outilDisponible = !!outil && outil.durabilite > 0;
 
   const bonus = calculerBonus(equipement);
 
   const competences = useGameStore(s => s.competences);
 
-  const slotsRef          = useRef(slots_store);
-  const bonusRef          = useRef(bonus);
-  const metierProgressRef = useRef(metier_progress);
-  const competencesRef    = useRef(competences);
-  slotsRef.current          = slots_store;
-  bonusRef.current          = bonus;
-  metierProgressRef.current = metier_progress;
-  competencesRef.current    = competences;
+  const slotsRef               = useRef(slots_store);
+  const bonusRef               = useRef(bonus);
+  const metierProgressRef      = useRef(metier_progress);
+  const competencesRef         = useRef(competences);
+  const outilDisponibleRef     = useRef(outilDisponible);
+  slotsRef.current             = slots_store;
+  bonusRef.current             = bonus;
+  metierProgressRef.current    = metier_progress;
+  competencesRef.current       = competences;
+  outilDisponibleRef.current   = outilDisponible;
 
   const [, setTick] = useState(0);
   const [lastHarvested, setLastHarvested] = useState<{ qty: number; resourceId: ResourceId } | null>(null);
@@ -85,7 +95,9 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     if (!slot.debloque) return;
     const ressource = metier.ressources.find(r => r.id === resourceId);
     if (!ressource || ressource.niveau_requis > metierProgressRef.current.niveau) return;
-    demarrerRecolte(metierId, slotIndex, resourceId, 30_000);
+    // Vérification outil : requis pour toute ressource non-libre
+    if (!FREE_RESOURCE_IDS.includes(resourceId) && !outilDisponibleRef.current) return;
+    demarrerRecolte(metierId, slotIndex, resourceId, ressource.temps_recolte_secondes * 1000);
   }, [metier.ressources, metierId, demarrerRecolte]);
 
   // Récolte le slot (s'il est prêt) puis relance immédiatement avec la même ressource
@@ -108,9 +120,17 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     });
     if (lastHarvestedTimerRef.current) clearTimeout(lastHarvestedTimerRef.current);
     lastHarvestedTimerRef.current = setTimeout(() => setLastHarvested(null), 2000);
-    // Relancer avec la même ressource
-    demarrerRecolte(metierId, slotIndex, rid, 30_000);
-  }, [metier.ressources, metierId, terminerRecolte, ajouterXp, ajouterPending, demarrerRecolte]);
+    // Décrémenter la durabilité de l'outil (sauf ressource libre)
+    if (!FREE_RESOURCE_IDS.includes(rid)) {
+      decrementOutilDurabilite(toolType);
+    }
+    // Relancer avec la même ressource (seulement si outil encore disponible après décrémentation)
+    demarrerRecolte(metierId, slotIndex, rid, ressource.temps_recolte_secondes * 1000);
+  }, [metier.ressources, metierId, toolType, terminerRecolte, ajouterXp, ajouterPending, demarrerRecolte, decrementOutilDurabilite]);
+
+  // outilManquant : vrai si le metier a des ressources non-libres disponibles mais pas d'outil
+  const hasNonFreeResources = metier.ressources.some(r => !FREE_RESOURCE_IDS.includes(r.id) && r.niveau_requis <= metier_progress.niveau);
+  const outilManquant = hasNonFreeResources && !outilDisponible;
 
   return {
     slots,
@@ -118,6 +138,7 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     niveau:           metier_progress.niveau,
     xp:               metier_progress.xp,
     lastHarvested,
+    outilManquant,
     planterRessource,
     collecterEtRelancer,
   };

@@ -6,6 +6,7 @@ import { METIERS, MetierId, Ressource } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
 import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
+import { METIER_TOOL_TYPE, OUTIL_TIERS } from '../data/outils';
 
 // ── Configs par métier ──────────────────────────────────────
 
@@ -247,10 +248,15 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
   const icons  = METIER_ICONS[metierId];
   const { t, lang } = useT();
 
-  const { slots, niveau, xp, planterRessource, collecterEtRelancer, lastHarvested } = useHarvest(metierId);
+  const { slots, niveau, xp, planterRessource, collecterEtRelancer, lastHarvested, outilManquant } = useHarvest(metierId);
   const debloquerSlot   = useGameStore(s => s.debloquerSlot);
   const inventaire      = useGameStore(s => s.inventaire);
   const soldeKirha      = useGameStore(s => s.soldeKirha);
+  const outils          = useGameStore(s => s.outils);
+
+  const toolType    = METIER_TOOL_TYPE[metierId];
+  const outil       = outils[toolType];
+  const outilTierInfo = outil ? OUTIL_TIERS[toolType]?.find(t => t.tierId === outil.tierId) : undefined;
 
   const totalInventaire = Object.values(inventaire).reduce((a, b) => a + Math.floor(b ?? 0), 0);
   const pct             = Math.min(100, (xp / xpRequis(niveau)) * 100);
@@ -289,15 +295,16 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
     const isLocked     = !slot.debloque;
     const isNextLock   = slot.index === prochainSlotVerrouille;
 
-    const timerPct = isHarvesting && slot.secondes_restantes != null
-      ? Math.max(0, 100 - (slot.secondes_restantes / 30) * 100)
-      : isDone ? 100 : 0;
-
     const highlightInHand = resourceInHand !== null && slot.debloque;
 
     const res = (isHarvesting || isDone)
       ? metier.ressources.find(r => r.id === slot.resource_id)
       : null;
+
+    const resDuration = res?.temps_recolte_secondes ?? 30;
+    const timerPct = isHarvesting && slot.secondes_restantes != null
+      ? Math.max(0, 100 - (slot.secondes_restantes / resDuration) * 100)
+      : isDone ? 100 : 0;
 
     return (
       <div
@@ -466,6 +473,19 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
               {xp}/{xpRequis(niveau)}
             </span>
           </div>
+          {/* Statut outil */}
+          {outilTierInfo && outil ? (
+            <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:2 }}>
+              <span style={{ fontSize:'10px' }}>{outilTierInfo.emoji}</span>
+              <span style={{ color: outil.durabilite <= 3 ? '#e53935' : outil.durabilite <= 8 ? '#f9a825' : '#6abf44', fontSize:'8px', fontWeight:700 }}>
+                {outilTierInfo.nom} — {outil.durabilite}/{outilTierInfo.durabiliteMax}
+              </span>
+            </div>
+          ) : outilManquant ? (
+            <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:2 }}>
+              <span style={{ color:'#e53935', fontSize:'8px', fontWeight:700 }}>⚠️ Outil requis (Craft/Artisan)</span>
+            </div>
+          ) : null}
         </div>
         <div style={{ width: 80 }} />
       </div>

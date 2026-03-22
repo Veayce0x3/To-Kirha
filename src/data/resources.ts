@@ -83,6 +83,19 @@ export enum ResourceId {
   GALETTE_SAKURA = 60,
   MIEL_SAKURA = 61,
   THE_WISTERIA = 62,
+
+  // --- Artisan (outputs) ---
+  TABLE_SAKURA = 63,
+  LANTERNE_BAMBOU = 64,
+
+  // --- Alchimiste craft (outputs) ---
+  POTION_VITALITE = 65,
+  ONGUENT_SAKURA = 66,
+  ELIXIR_RECOLTE = 67,
+
+  // --- Cuisine haut niveau (outputs) ---
+  SOUPE_PECHEUR = 68,
+  BENTO_IMPERIAL = 69,
 }
 
 /** Toutes les ressources par métier pour itération */
@@ -91,8 +104,10 @@ export const PAYSAN_IDS   = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20] as const;
 export const PECHEUR_IDS  = [21, 22, 23, 24, 25, 26, 27, 28, 29, 30] as const;
 export const MINEUR_IDS   = [31, 32, 33, 34, 35, 36, 37, 38, 39, 40] as const;
 export const ALCHIMISTE_IDS = [41, 42, 43, 44, 45, 46, 47, 48, 49, 50] as const;
-export const FERME_IDS    = [51, 52, 53, 54, 55, 56, 57] as const;
-export const CUISINE_IDS  = [58, 59, 60, 61, 62] as const;
+export const FERME_IDS         = [51, 52, 53, 54, 55, 56, 57] as const;
+export const CUISINE_IDS       = [58, 59, 60, 61, 62, 68, 69] as const;
+export const ARTISAN_IDS       = [63, 64] as const;
+export const ALCHIMISTE_CRAFT_IDS = [65, 66, 67] as const;
 
 /** IDs on-chain uniquement (1-50) */
 export const ALL_RESOURCE_IDS = [

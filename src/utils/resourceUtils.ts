@@ -71,6 +71,16 @@ const RESOURCE_NAMES: Record<number, { fr: string; en: string }> = {
   60: { fr: 'Galette Sakura',      en: 'Sakura Pancake'       },
   61: { fr: 'Miel Sakura',         en: 'Sakura Honey'         },
   62: { fr: 'Thé Wisteria',        en: 'Wisteria Tea'         },
+  // Artisan
+  63: { fr: 'Table Sakura',        en: 'Sakura Table'         },
+  64: { fr: 'Lanterne Bambou',     en: 'Bamboo Lantern'       },
+  // Alchimiste craft
+  65: { fr: 'Potion de Vitalité',  en: 'Vitality Potion'      },
+  66: { fr: 'Onguent Sakura',      en: 'Sakura Salve'         },
+  67: { fr: 'Élixir de Récolte',   en: 'Harvest Elixir'       },
+  // Cuisine haut niveau
+  68: { fr: 'Soupe du Pêcheur',    en: 'Fisher\'s Soup'       },
+  69: { fr: 'Bento Impérial',      en: 'Imperial Bento'       },
 };
 
 export function getNomRessource(id: number, lang: 'fr' | 'en' = 'fr'): string {
@@ -94,6 +104,12 @@ const RESOURCE_EMOJI: Record<number, string> = {
   56: '✨', 57: '🔮',
   // Cuisine
   58: '🍞', 59: '🍚', 60: '🥞', 61: '🍯', 62: '🍵',
+  // Artisan
+  63: '🪑', 64: '🏮',
+  // Alchimiste craft
+  65: '🧪', 66: '💆', 67: '⚗️',
+  // Cuisine haut niveau
+  68: '🍲', 69: '🎎',
 };
 
 export function emojiByResourceId(id: ResourceId | number): string {
