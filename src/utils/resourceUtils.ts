@@ -57,6 +57,20 @@ const RESOURCE_NAMES: Record<number, { fr: string; en: string }> = {
   48: { fr: 'Ginseng',             en: 'Ginseng'              },
   49: { fr: 'Fleur de Lotus Sakura', en: 'Sakura Lotus'       },
   50: { fr: 'Herbe Koï',           en: 'Koi Herb'             },
+  // Ferme
+  51: { fr: 'Eau',                 en: 'Water'                },
+  52: { fr: 'Fleur de Cerisier',   en: 'Cherry Blossom'       },
+  53: { fr: 'Œuf',                 en: 'Egg'                  },
+  54: { fr: 'Lait',                en: 'Milk'                 },
+  55: { fr: 'Miel',                en: 'Honey'                },
+  56: { fr: 'Musc Sakura',         en: 'Sakura Musk'          },
+  57: { fr: 'Écaille de Koï',      en: 'Koi Scale'            },
+  // Cuisine
+  58: { fr: 'Pain de Blé',         en: 'Wheat Bread'          },
+  59: { fr: 'Riz au Lait',         en: 'Rice Pudding'         },
+  60: { fr: 'Galette Sakura',      en: 'Sakura Pancake'       },
+  61: { fr: 'Miel Sakura',         en: 'Sakura Honey'         },
+  62: { fr: 'Thé Wisteria',        en: 'Wisteria Tea'         },
 };
 
 export function getNomRessource(id: number, lang: 'fr' | 'en' = 'fr'): string {
@@ -75,6 +89,11 @@ const RESOURCE_EMOJI: Record<number, string> = {
   36: '💚', 37: '🟢', 38: '💎', 39: '💙', 40: '🔮',
   41: '🌼', 42: '🌿', 43: '🌱', 44: '💜', 45: '🌺',
   46: '🪻', 47: '🌸', 48: '🫚', 49: '🪷', 50: '🌿',
+  // Ferme
+  51: '💧', 52: '🌸', 53: '🥚', 54: '🥛', 55: '🍯',
+  56: '✨', 57: '🔮',
+  // Cuisine
+  58: '🍞', 59: '🍚', 60: '🥞', 61: '🍯', 62: '🍵',
 };
 
 export function emojiByResourceId(id: ResourceId | number): string {

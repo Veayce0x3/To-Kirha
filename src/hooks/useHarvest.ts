@@ -40,12 +40,16 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
 
   const bonus = calculerBonus(equipement);
 
+  const competences = useGameStore(s => s.competences);
+
   const slotsRef          = useRef(slots_store);
   const bonusRef          = useRef(bonus);
   const metierProgressRef = useRef(metier_progress);
+  const competencesRef    = useRef(competences);
   slotsRef.current          = slots_store;
   bonusRef.current          = bonus;
   metierProgressRef.current = metier_progress;
+  competencesRef.current    = competences;
 
   const [, setTick] = useState(0);
   const [lastHarvested, setLastHarvested] = useState<{ qty: number; resourceId: ResourceId } | null>(null);
@@ -91,8 +95,9 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     const rid      = slot.resource_id;
     const ressource = metier.ressources.find(r => r.id === rid);
     if (!ressource) return;
-    const ratio   = quantiteRecolte(metierProgressRef.current.niveau);
-    const xpFinal = Math.round(ressource.xp_recolte * (1 + bonusRef.current.xp_bonus / 100));
+    const compBonus = (competencesRef.current[metierId] ?? 0) * 5; // +5% par point
+    const ratio   = Math.round(quantiteRecolte(metierProgressRef.current.niveau) * (1 + compBonus / 100) * 1e10) / 1e10;
+    const xpFinal = Math.round(ressource.xp_recolte * (1 + bonusRef.current.xp_bonus / 100) * (1 + compBonus / 100));
     // Collecter
     terminerRecolte(metierId, slotIndex, ratio);
     ajouterXp(metierId, xpFinal);

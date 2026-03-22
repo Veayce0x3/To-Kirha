@@ -74,12 +74,13 @@ export function HomePage() {
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
 
   const CARDS = [
-    { route: '/recolte', icon: '🌿', label: t('home.card_recolte'),  desc: t('home.card_recolte_desc'), color: '#6abf44' },
-    { route: '/hdv',     icon: '🏪', label: t('home.card_hdv'),      desc: t('home.card_hdv_desc'),     color: '#f9a825' },
-    { route: '/banque',  icon: '🏦', label: t('home.card_banque'),   desc: t('home.card_banque_desc'),  color: '#8a25d4' },
-    { route: '/maison',  icon: '🏠', label: t('home.card_maison'),   desc: t('home.card_maison_desc'),  color: '#c43070' },
-    { route: '/craft',   icon: '⚗️', label: t('home.card_craft'),    desc: t('home.card_craft_desc'),   color: '#8d6e63' },
-    { route: '/temple',  icon: '⛩️', label: t('home.card_temple'),   desc: t('home.card_temple_desc'),  color: '#c4306e' },
+    { route: '/recolte', icon: '🌿', label: t('home.card_recolte'),  desc: t('home.card_recolte_desc'), color: '#6abf44', locked: false },
+    { route: '/hdv',     icon: '🏪', label: t('home.card_hdv'),      desc: t('home.card_hdv_desc'),     color: '#f9a825', locked: false },
+    { route: '/banque',  icon: '🏦', label: t('home.card_banque'),   desc: t('home.card_banque_desc'),  color: '#8a25d4', locked: false },
+    { route: '/maison',  icon: '🏠', label: t('home.card_maison'),   desc: t('home.card_maison_desc'),  color: '#c43070', locked: false },
+    { route: '/craft',   icon: '⚗️', label: t('home.card_craft'),    desc: t('home.card_craft_desc'),   color: '#8d6e63', locked: false },
+    { route: '/temple',  icon: '⛩️', label: t('home.card_temple'),   desc: t('home.card_temple_desc'),  color: '#c4306e', locked: false },
+    { route: '/ferme',   icon: '🌾', label: t('home.card_ferme'),    desc: t('home.card_ferme_desc'),   color: '#a0522d', locked: false },
   ] as const;
 
   return (
@@ -176,14 +177,15 @@ export function HomePage() {
       {/* Cards */}
       <div style={s.cardGrid}>
         {CARDS.map(card => (
-          <button key={card.route} style={{ ...s.card, borderColor: `${card.color}44` }} onClick={() => navigate(card.route)}>
+          <button key={card.route} style={{ ...s.card, borderColor: `${card.color}44`, opacity: card.locked ? 0.55 : 1, cursor: card.locked ? 'default' : 'pointer' }} onClick={() => !card.locked && navigate(card.route)}>
             <div style={{ ...s.cardGlow, background: `radial-gradient(ellipse at top left, ${card.color}18, transparent 70%)` }} />
             <div style={s.cardTop}>
               <span style={{ ...s.cardIcon, filter: `drop-shadow(0 0 8px ${card.color}88)` }}>{card.icon}</span>
+              {card.locked && <span style={{ fontSize:12 }}>🔒</span>}
             </div>
             <span style={{ ...s.cardLabel, color: card.color }}>{card.label}</span>
-            <span style={s.cardDesc}>{card.desc}</span>
-            <span style={{ ...s.cardArrow, color: card.color }}>→</span>
+            <span style={s.cardDesc}>{card.locked ? 'Bientôt disponible' : card.desc}</span>
+            <span style={{ ...s.cardArrow, color: card.color }}>{card.locked ? '' : '→'}</span>
           </button>
         ))}
       </div>

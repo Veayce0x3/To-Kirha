@@ -29,7 +29,7 @@ export interface Metier {
 // Temps de récolte et XP selon le niveau de déblocage
 // TEST_MODE : temps de récolte réduit à 2s pour tester rapidement
 // Remettre TEST_MODE = false avant la production
-const TEST_MODE = true;
+export const TEST_MODE = true;
 
 const HARVEST_CONFIG: Record<number, { temps_recolte_secondes: number; xp_recolte: number }> = {
   1:  { temps_recolte_secondes: TEST_MODE ? 2 : 30,  xp_recolte: 10  },

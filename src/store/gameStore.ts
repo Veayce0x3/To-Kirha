@@ -46,8 +46,25 @@ export interface GameState {
   templeCompletedDate: string;   // date ISO du jour (UTC) des quêtes complétées
   templeCompleted:     number[]; // indices des quêtes complétées ce jour
 
+  // Personnage (niveau 1-100, XP via Cuisine)
+  personageNiveau:        number;
+  personageXp:            number;
+  personageXpTotal:       number;
+  competencesPoints:      number; // points non dépensés
+  competences:            Partial<Record<MetierId, number>>; // points dépensés par métier
+
+  // Ferme
+  puitsDerniereRecolte:      number; // timestamp ms de la dernière collecte d'eau
+  animauxDerniereRecolte:    Record<string, number>; // animalId → timestamp ms
+
   setAddress:               (address: string | null) => void;
   ajouterXp:                (metier: MetierId, xp: number) => void;
+  ajouterXpPersonage:       (xp: number) => void;
+  allouerCompetence:        (metier: MetierId) => void;
+  retirerCompetence:        (metier: MetierId) => void;
+  reinitialiserCompetences: () => void;
+  setPuitsDerniereRecolte:  (timestamp: number) => void;
+  setAnimauxDerniereRecolte:(animalId: string, timestamp: number) => void;
   demarrerRecolte:          (metier: MetierId, slotIndex: number, resourceId: ResourceId, dureeMs: number) => void;
   terminerRecolte:          (metier: MetierId, slotIndex: number, quantite: number) => void;
   ajouterPendingMint:       (resourceId: ResourceId, quantite: number) => void;
@@ -84,9 +101,9 @@ export interface GameState {
 // ============================================================
 
 // XP requis pour passer du niveau N au niveau N+1
-// Courbe quadratique : 50, 200, 450, 800, 1250, … (niveau² × 50)
+// Courbe exponentielle : 100 × N^1.8 (niveaux 1-5 rapides, puis mur exponentiel)
 export function xpRequis(niveau: number): number {
-  return Math.round(niveau * niveau * 50);
+  return Math.round(100 * Math.pow(niveau, 1.8));
 }
 
 // ============================================================
@@ -160,6 +177,13 @@ export const useGameStore = create<GameState>()(
       pseudo:              null,
       templeCompletedDate: '',
       templeCompleted:     [],
+      personageNiveau:     1,
+      personageXp:         0,
+      personageXpTotal:    0,
+      competencesPoints:   0,
+      competences:         {},
+      puitsDerniereRecolte:   0,
+      animauxDerniereRecolte: {},
 
       setAddress: (address) => set({ address }),
 
@@ -333,6 +357,13 @@ export const useGameStore = create<GameState>()(
           vipExpiry:           0,
           templeCompletedDate: '',
           templeCompleted:     [],
+          personageNiveau:     1,
+          personageXp:         0,
+          personageXpTotal:    0,
+          competencesPoints:   0,
+          competences:         {},
+          puitsDerniereRecolte:   0,
+          animauxDerniereRecolte: {},
           // Conserver
           address:  state.address,
           villeId:  state.villeId,
@@ -357,6 +388,60 @@ export const useGameStore = create<GameState>()(
             pending_mints: [],
           };
         }),
+
+      ajouterXpPersonage: (xp) =>
+        set((state) => {
+          let niveau = state.personageNiveau;
+          let xpCurrent = state.personageXp + xp;
+          const xpTotal = state.personageXpTotal + xp;
+          let points = state.competencesPoints;
+          while (niveau < 100 && xpCurrent >= xpRequis(niveau)) {
+            xpCurrent -= xpRequis(niveau);
+            niveau = Math.min(100, niveau + 1);
+            points += 1;
+          }
+          return { personageNiveau: niveau, personageXp: xpCurrent, personageXpTotal: xpTotal, competencesPoints: points };
+        }),
+
+      allouerCompetence: (metier) =>
+        set((state) => {
+          if (state.competencesPoints < 1) return state;
+          const current = state.competences[metier] ?? 0;
+          if (current >= 10) return state;
+          return {
+            competencesPoints: state.competencesPoints - 1,
+            competences: { ...state.competences, [metier]: current + 1 },
+          };
+        }),
+
+      retirerCompetence: (metier) =>
+        set((state) => {
+          const current = state.competences[metier] ?? 0;
+          if (current < 1) return state;
+          return {
+            competencesPoints: state.competencesPoints + 1,
+            competences: { ...state.competences, [metier]: current - 1 },
+          };
+        }),
+
+      reinitialiserCompetences: () =>
+        set((state) => {
+          const COUT_RESET = 100;
+          if (state.pepitesOr < COUT_RESET) return state;
+          const totalDepenses = Object.values(state.competences).reduce((a, b) => a + (b ?? 0), 0);
+          return {
+            pepitesOr: state.pepitesOr - COUT_RESET,
+            competencesPoints: state.competencesPoints + totalDepenses,
+            competences: {},
+          };
+        }),
+
+      setPuitsDerniereRecolte: (timestamp) => set({ puitsDerniereRecolte: timestamp }),
+
+      setAnimauxDerniereRecolte: (animalId, timestamp) =>
+        set((state) => ({
+          animauxDerniereRecolte: { ...state.animauxDerniereRecolte, [animalId]: timestamp },
+        })),
 
       setSlotSelectedResource: (metier, slotIndex, resourceId) =>
         set((state) => {
@@ -390,20 +475,28 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'to-kirha-game',
-      version: 9,
-      migrate: (persistedState: unknown, _version: number) => {
+      version: 10,
+      migrate: (persistedState: unknown, version: number) => {
         if (!persistedState || typeof persistedState !== 'object') return undefined;
         const state = persistedState as Partial<GameState>;
         // Migration douce: garder toutes les données existantes, compléter les champs manquants
-        // v9 : reset slots à 2 débloqués par métier (correctif bug 5 slots gratuits)
+        // v9 : reset slots à 2 débloqués par métier
+        // v10 : ajout personnage, compétences, ferme
         return {
           ...state,
-          slots:               initSlots(),
+          slots:               version < 9 ? initSlots() : (state.slots ?? initSlots()),
           pepitesOr:           state.pepitesOr           ?? 0,
           vipExpiry:           state.vipExpiry            ?? 0,
           templeCompletedDate: state.templeCompletedDate  ?? '',
           templeCompleted:     state.templeCompleted       ?? [],
           kirhaEarned:         state.kirhaEarned           ?? 0,
+          personageNiveau:     state.personageNiveau      ?? 1,
+          personageXp:         state.personageXp          ?? 0,
+          personageXpTotal:    state.personageXpTotal      ?? 0,
+          competencesPoints:   state.competencesPoints     ?? 0,
+          competences:         state.competences           ?? {},
+          puitsDerniereRecolte:   state.puitsDerniereRecolte   ?? 0,
+          animauxDerniereRecolte: state.animauxDerniereRecolte ?? {},
         };
       },
     }

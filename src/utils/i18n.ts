@@ -45,6 +45,8 @@ const TRANSLATIONS = {
     'home.card_maison_desc': 'Inventaire · Stats · Personnage',
     'home.card_craft':       'Craft',
     'home.card_craft_desc':  'Créez des objets avec vos ressources',
+    'home.card_ferme':       'Ferme',
+    'home.card_ferme_desc':  'Puits · Animaux · Productions',
 
     // --- RecoltePage ---
     'recolte.title':           '🌿 Récolte',
@@ -229,6 +231,8 @@ const TRANSLATIONS = {
     'home.card_maison_desc': 'Inventory · Stats · Character',
     'home.card_craft':       'Craft',
     'home.card_craft_desc':  'Craft items with your resources',
+    'home.card_ferme':       'Farm',
+    'home.card_ferme_desc':  'Well · Animals · Production',
 
     // --- RecoltePage ---
     'recolte.title':           '🌿 Harvest',

@@ -178,12 +178,17 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
 
 // ── Onglet HDV on-chain ─────────────────────────────────────
 
+// IDs > 50 : ressources hors chaîne, non vendables sur l'HDV
+const UNSELLABLE_ON_HDV = (id: number) => id > 50;
+
 function TabOnchain() {
   const inventaire  = useGameStore(s => s.inventaire);
   const villeId     = useGameStore(s => s.villeId);
   const vipExpiry   = useGameStore(s => s.vipExpiry);
   const soldeKirha  = useGameStore(s => s.soldeKirha);
   const pepitesOr   = useGameStore(s => s.pepitesOr);
+  const retirerKirha    = useGameStore(s => s.retirerKirha);
+  const ajouterRessource = useGameStore(s => s.ajouterRessource);
   const { lang } = useT();
   const villeIdBn   = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
@@ -195,7 +200,9 @@ function TabOnchain() {
   } = useMarket();
   const { sauvegarder, status: saveStatus, pendingCount } = useSave();
 
-  const [tab, setTab]               = useState<'acheter'|'vendre'|'mesVentes'|'historique'>('acheter');
+  const [tab, setTab]               = useState<'boutique'|'acheter'|'vendre'|'mesVentes'|'historique'>('boutique');
+  const [boutiqueQty, setBoutiqueQty] = useState(1);
+  const FLEUR_PRICE = 2; // $KIRHA par Fleur de Cerisier
   const [relayerSecondsLeft, setRelayerSecondsLeft] = useState<number | null>(null);
 
   // Lire l'expiry réelle depuis le contrat (relayerSession public mapping)
@@ -236,8 +243,10 @@ function TabOnchain() {
   type CartItem = { resourceId: number; quantity: number; pricePerUnit: number };
   const [cart, setCart] = useState<CartItem[]>([]);
 
+  // Seules les ressources on-chain (ID 1-50) peuvent être vendues sur le HDV
   const inventaireItems = (Object.entries(inventaire) as [string, number][])
     .filter(([, qty]) => Math.floor(qty) >= 1)
+    .filter(([id]) => !UNSELLABLE_ON_HDV(Number(id)))
     .map(([id, qty]) => ({ id: Number(id) as ResourceId, qty: Math.floor(qty) }));
 
   const selectedItem = inventaireItems.find(i => i.id === parseInt(sellResourceId));
@@ -350,18 +359,100 @@ function TabOnchain() {
 
       {/* Tab bar — pills */}
       <div style={{ display:'flex', gap:6, padding:'12px 14px 0', overflowX:'auto', scrollbarWidth:'none' }}>
-        {(['acheter','vendre','mesVentes','historique'] as const).map(tid => (
+        {(['boutique','acheter','vendre','mesVentes','historique'] as const).map(tid => (
           <button
             key={tid}
             style={{ padding:'8px 14px', background: tab===tid ? '#c43070' : 'rgba(196,48,112,0.07)', border: tab===tid ? 'none' : '1px solid rgba(196,48,112,0.2)', borderRadius:20, color: tab===tid ? '#fff' : '#9a6080', fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
             onClick={() => setTab(tid)}
           >
-            {tid === 'acheter' ? '🛒 Acheter' : tid === 'vendre' ? '💰 Vendre' : tid === 'mesVentes' ? '📋 Mes ventes' : '📜 Historique'}
+            {tid === 'boutique' ? '🌸 Boutique' : tid === 'acheter' ? '🛒 Acheter' : tid === 'vendre' ? '💰 Vendre' : tid === 'mesVentes' ? '📋 Mes ventes' : '📜 Historique'}
           </button>
         ))}
       </div>
 
       <div style={{ padding:'12px 14px' }}>
+
+        {/* ── Boutique PNJ ── */}
+        {tab === 'boutique' && (
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={{ padding:'10px 12px', background:'rgba(212,100,138,0.06)', border:'1px solid rgba(212,100,138,0.15)', borderRadius:12 }}>
+              <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 4px' }}>🌸 Boutique du Jardinier</p>
+              <p style={{ color:'#7a4060', fontSize:10, margin:0, lineHeight:1.5 }}>
+                Ressources exclusives disponibles en permanence. Achat direct en $KIRHA — ces ressources ne peuvent pas être revendues.
+              </p>
+            </div>
+
+            {/* Listing permanent — Fleur de Cerisier */}
+            <div style={{ background:'#fff', border:'1.5px solid rgba(196,48,112,0.25)', borderRadius:16, padding:'14px' }}>
+              <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+                <div style={{ width:56, height:56, borderRadius:14, background:'linear-gradient(135deg,rgba(196,48,112,0.1),rgba(138,37,212,0.07))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, flexShrink:0 }}>
+                  🌸
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
+                    <span style={{ color:'#1e0a16', fontSize:14, fontWeight:800 }}>Fleur de Cerisier</span>
+                    <span style={{ background:'rgba(196,48,112,0.12)', color:'#c43070', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:8 }}>🔒 Exclusive</span>
+                  </div>
+                  <p style={{ color:'#7a4060', fontSize:10, margin:'0 0 6px', lineHeight:1.4 }}>
+                    Fleur rare utilisée dans les recettes de Cuisine. Invendable après achat.
+                  </p>
+                  <span style={{ color:'#f9a825', fontSize:14, fontWeight:900 }}>{FLEUR_PRICE} $KIRHA</span>
+                  <span style={{ color:'#9a6080', fontSize:10 }}> / unité</span>
+                </div>
+              </div>
+              <div style={{ marginTop:12, display:'flex', alignItems:'center', gap:8 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                  <button
+                    style={{ width:26, height:26, background:'rgba(196,48,112,0.1)', border:'1px solid rgba(196,48,112,0.25)', borderRadius:7, color:'#c43070', fontSize:16, fontWeight:700, cursor:'pointer', lineHeight:1, padding:0 }}
+                    onClick={() => setBoutiqueQty(q => Math.max(1, q - 1))}
+                  >−</button>
+                  <input
+                    type="number" min="1" max="99" value={boutiqueQty}
+                    onChange={e => setBoutiqueQty(Math.max(1, Math.min(99, parseInt(e.target.value) || 1)))}
+                    style={{ width:44, padding:'4px', border:'1.5px solid rgba(212,100,138,0.3)', borderRadius:6, fontSize:13, color:'#1e0a16', textAlign:'center', outline:'none' }}
+                  />
+                  <button
+                    style={{ width:26, height:26, background:'rgba(196,48,112,0.1)', border:'1px solid rgba(196,48,112,0.25)', borderRadius:7, color:'#c43070', fontSize:16, fontWeight:700, cursor:'pointer', lineHeight:1, padding:0 }}
+                    onClick={() => setBoutiqueQty(q => Math.min(99, q + 1))}
+                  >+</button>
+                </div>
+                <div style={{ flex:1 }}>
+                  {(() => {
+                    const total = boutiqueQty * FLEUR_PRICE;
+                    const canAfford = soldeKirha >= total;
+                    return (
+                      <span style={{ fontSize:10, fontWeight:700, color: canAfford ? '#2a7a10' : '#c43070' }}>
+                        {canAfford ? '✓' : '✗'} Total : {total.toFixed(1)} $KIRHA
+                      </span>
+                    );
+                  })()}
+                </div>
+                <button
+                  style={{ padding:'8px 16px', background: soldeKirha >= boutiqueQty * FLEUR_PRICE ? 'linear-gradient(135deg,#c43070,#8a25d4)' : 'rgba(212,100,138,0.08)', border: soldeKirha >= boutiqueQty * FLEUR_PRICE ? 'none' : '1px solid rgba(212,100,138,0.2)', borderRadius:10, color: soldeKirha >= boutiqueQty * FLEUR_PRICE ? '#fff' : '#9a6080', fontSize:11, fontWeight:700, cursor: soldeKirha >= boutiqueQty * FLEUR_PRICE ? 'pointer' : 'default' }}
+                  disabled={soldeKirha < boutiqueQty * FLEUR_PRICE}
+                  onClick={() => {
+                    const total = boutiqueQty * FLEUR_PRICE;
+                    if (soldeKirha < total) return;
+                    retirerKirha(total);
+                    ajouterRessource(ResourceId.FLEUR_CERISIER, boutiqueQty);
+                  }}
+                >
+                  🌸 Acheter
+                </button>
+              </div>
+            </div>
+
+            {/* Rappel inventaire actuel */}
+            {(inventaire[ResourceId.FLEUR_CERISIER] ?? 0) > 0 && (
+              <div style={{ padding:'8px 12px', background:'rgba(106,191,68,0.08)', border:'1px solid rgba(106,191,68,0.3)', borderRadius:10, display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ fontSize:16 }}>🌸</span>
+                <span style={{ color:'#2a7a10', fontSize:12, fontWeight:700 }}>
+                  En stock : ×{Math.floor(inventaire[ResourceId.FLEUR_CERISIER] ?? 0)} Fleur de Cerisier
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Acheter ── */}
         {tab === 'acheter' && (
