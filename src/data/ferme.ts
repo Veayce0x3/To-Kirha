@@ -1,18 +1,12 @@
-import { TEST_MODE } from './metiers';
 import { ResourceId } from './resources';
 
 // ============================================================
 // Configuration du Puits
 // ============================================================
 
-// En TEST_MODE : rechargement après 30s
-// En production : rechargement quotidien à 00h00 heure française
-export const PUITS_COOLDOWN_MS = TEST_MODE ? 30_000 : 0; // 0 = mode journalier
-
+// Reset quotidien à 00h00 heure française (Europe/Paris)
 export function canCollectPuits(lastCollect: number): boolean {
   if (lastCollect === 0) return true;
-  if (TEST_MODE) return Date.now() - lastCollect >= PUITS_COOLDOWN_MS;
-  // Production : vérifie si minuit Paris a été dépassé depuis la dernière collecte
   const toParisDate = (ts: number) =>
     new Date(ts).toLocaleDateString('fr-FR', {
       timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -20,12 +14,7 @@ export function canCollectPuits(lastCollect: number): boolean {
   return toParisDate(lastCollect) !== toParisDate(Date.now());
 }
 
-export function getSecondsUntilPuitsReset(lastCollect: number): number {
-  if (TEST_MODE) {
-    if (lastCollect === 0) return 0;
-    return Math.max(0, Math.ceil((lastCollect + PUITS_COOLDOWN_MS - Date.now()) / 1000));
-  }
-  // Production : secondes jusqu'à minuit Paris
+export function getSecondsUntilPuitsReset(): number {
   const now = new Date();
   const fmt = new Intl.DateTimeFormat('fr-FR', {
     timeZone: 'Europe/Paris', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false,
@@ -45,10 +34,12 @@ export interface Animal {
   id: string;
   emoji: string;
   nom: string;
+  nomBatiment: string;  // nom du bâtiment (ex: "Poulailler")
   niveauPersonnageRequis: number;
   resourceId: ResourceId;
   cooldownMs: number;
-  production: number; // unités par récolte
+  production: number; // unités par récolte par slot
+  slotLevels: number[]; // niveaux personnage pour débloquer chacun des 10 emplacements
 }
 
 export const ANIMALS: Animal[] = [
@@ -56,45 +47,55 @@ export const ANIMALS: Animal[] = [
     id: 'poule',
     emoji: '🐔',
     nom: 'Poule',
+    nomBatiment: 'Poulailler',
     niveauPersonnageRequis: 5,
     resourceId: ResourceId.OEUF,
-    cooldownMs: TEST_MODE ? 10_000 : 4 * 3_600_000,
+    cooldownMs: 4 * 3_600_000,
     production: 1,
+    slotLevels: [5, 8, 12, 16, 22, 28, 36, 45, 55, 67],
   },
   {
     id: 'vache',
     emoji: '🐄',
     nom: 'Vache',
+    nomBatiment: 'Étable',
     niveauPersonnageRequis: 15,
     resourceId: ResourceId.LAIT,
-    cooldownMs: TEST_MODE ? 20_000 : 6 * 3_600_000,
+    cooldownMs: 6 * 3_600_000,
     production: 1,
+    slotLevels: [15, 20, 27, 35, 44, 54, 64, 74, 84, 93],
   },
   {
     id: 'abeilles',
     emoji: '🐝',
     nom: 'Abeilles',
+    nomBatiment: 'Ruche',
     niveauPersonnageRequis: 30,
     resourceId: ResourceId.MIEL_ANIMAL,
-    cooldownMs: TEST_MODE ? 30_000 : 8 * 3_600_000,
+    cooldownMs: 8 * 3_600_000,
     production: 1,
+    slotLevels: [30, 38, 47, 57, 67, 77, 85, 91, 96, 100],
   },
   {
     id: 'cerf_sakura',
     emoji: '🦌',
     nom: 'Cerf Sakura',
+    nomBatiment: 'Enclos Sakura',
     niveauPersonnageRequis: 60,
     resourceId: ResourceId.MUSC_SAKURA,
-    cooldownMs: TEST_MODE ? 60_000 : 24 * 3_600_000,
+    cooldownMs: 24 * 3_600_000,
     production: 1,
+    slotLevels: [60, 66, 72, 78, 84, 88, 92, 95, 98, 100],
   },
   {
     id: 'koi_doree',
     emoji: '🐟',
     nom: 'Koï Dorée',
+    nomBatiment: 'Bassin Koï',
     niveauPersonnageRequis: 90,
     resourceId: ResourceId.ECAILLE_KOI,
-    cooldownMs: TEST_MODE ? 120_000 : 48 * 3_600_000,
+    cooldownMs: 48 * 3_600_000,
     production: 1,
+    slotLevels: [90, 92, 94, 95, 96, 97, 97, 98, 99, 100],
   },
 ];

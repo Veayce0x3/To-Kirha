@@ -39,60 +39,69 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
     setLoading(true);
     try {
       const latestBlock = await publicClient.getBlockNumber();
-      const fromBlock = latestBlock > 100000n ? latestBlock - 100000n : 0n;
+      const fromBlock = latestBlock > 50000n ? latestBlock - 50000n : 0n;
 
-      const logs = await publicClient.getLogs({
-        address: KIRHA_MARKET_ADDRESS,
-        event: parseAbiItem('event ResourceSold(uint256 indexed listingId, uint256 indexed buyerCityId, uint256 quantity, uint256 totalPaid, uint256 sellerReceives)'),
-        fromBlock,
-        toBlock: latestBlock,
-      });
+      // Récupérer les deux events en parallèle
+      const [soldLogs, listedLogs] = await Promise.all([
+        publicClient.getLogs({
+          address: KIRHA_MARKET_ADDRESS,
+          event: parseAbiItem('event ResourceSold(uint256 indexed listingId, uint256 indexed buyerCityId, uint256 quantity, uint256 totalPaid, uint256 sellerReceives)'),
+          fromBlock, toBlock: latestBlock,
+        }),
+        publicClient.getLogs({
+          address: KIRHA_MARKET_ADDRESS,
+          event: parseAbiItem('event ResourceListed(uint256 indexed listingId, uint256 indexed sellerCityId, uint256 resourceId, uint256 quantity, uint256 pricePerUnit)'),
+          fromBlock, toBlock: latestBlock,
+        }),
+      ]);
 
-      if (logs.length === 0) { setHistory([]); setLoading(false); return; }
+      if (soldLogs.length === 0) { setHistory([]); setLoading(false); return; }
 
-      const uniqueListingIds = [...new Set(logs.map(l => l.args.listingId!))];
-      const listingDetails = await Promise.all(
-        uniqueListingIds.map(async (lid) => {
-          try {
-            const listing = await publicClient.readContract({
-              address: KIRHA_MARKET_ADDRESS,
-              abi: KirhaMarketAbi,
-              functionName: 'getListing',
-              args: [lid],
-            }) as { sellerCityId: bigint; resourceId: bigint; quantity: bigint; pricePerUnit: bigint; active: boolean };
-            return { listingId: lid, sellerCityId: listing.sellerCityId, resourceId: Number(listing.resourceId) };
-          } catch { return { listingId: lid, sellerCityId: 0n, resourceId: 0 }; }
-        })
+      // Construire la map listingId → { sellerCityId, resourceId } depuis ResourceListed
+      const listedMap = new Map(
+        listedLogs.map(l => [
+          l.args.listingId!,
+          { sellerCityId: l.args.sellerCityId!, resourceId: Number(l.args.resourceId!) },
+        ])
       );
 
-      const listingMap = new Map(listingDetails.map(l => [l.listingId, l]));
+      // Fallback getListing pour les listings non trouvés dans listedLogs
+      const missingIds = [...new Set(soldLogs.map(l => l.args.listingId!))].filter(id => !listedMap.has(id));
+      if (missingIds.length > 0) {
+        await Promise.all(missingIds.map(async (lid) => {
+          try {
+            const listing = await publicClient.readContract({
+              address: KIRHA_MARKET_ADDRESS, abi: KirhaMarketAbi,
+              functionName: 'getListing', args: [lid],
+            }) as { sellerCityId: bigint; resourceId: bigint };
+            listedMap.set(lid, { sellerCityId: listing.sellerCityId, resourceId: Number(listing.resourceId) });
+          } catch {}
+        }));
+      }
 
       const allCityIds = [...new Set([
-        ...logs.map(l => l.args.buyerCityId!),
-        ...listingDetails.map(l => l.sellerCityId).filter(id => id > 0n),
+        ...soldLogs.map(l => l.args.buyerCityId!),
+        ...[...listedMap.values()].map(l => l.sellerCityId).filter(id => id > 0n),
       ])];
 
       const pseudos = allCityIds.length > 0
         ? await publicClient.readContract({
-            address: KIRHA_GAME_ADDRESS,
-            abi: KirhaGameAbi,
-            functionName: 'getCityPseudos',
-            args: [allCityIds],
+            address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
+            functionName: 'getCityPseudos', args: [allCityIds],
           }) as string[]
         : [];
-
       const pseudoMap = new Map(allCityIds.map((id, i) => [id, pseudos[i] ?? '?']));
 
-      const records: SaleRecord[] = [...logs].reverse().map(log => {
-        const listing = listingMap.get(log.args.listingId!);
-        const sellerCityId = listing?.sellerCityId ?? 0n;
+      const records: SaleRecord[] = [...soldLogs].reverse().map(log => {
+        const info = listedMap.get(log.args.listingId!);
+        const sellerCityId = info?.sellerCityId ?? 0n;
         return {
           listingId:    log.args.listingId!,
           sellerCityId,
           sellerPseudo: pseudoMap.get(sellerCityId) ?? '?',
           buyerCityId:  log.args.buyerCityId!,
           buyerPseudo:  pseudoMap.get(log.args.buyerCityId!) ?? '?',
-          resourceId:   listing?.resourceId ?? 0,
+          resourceId:   info?.resourceId ?? 0,
           quantity:     Number(log.args.quantity!) / 1e4,
           totalPaid:    parseFloat(formatEther(log.args.totalPaid!)),
           txHash:       log.transactionHash ?? '',
@@ -331,12 +340,6 @@ function TabOnchain() {
           <span style={{ color:'#f9a825', fontSize:17, fontWeight:900 }}>{[...new Set(listings.map(l => l.resourceId))].length}</span>
           <span style={{ color:'#9a6080', fontSize:9, fontWeight:700, marginTop:1 }}>RESSOURCES</span>
         </div>
-        <div style={{ ...ms.statCard, flex:2 }}>
-          {isVip
-            ? <span style={{ color:'#f9a825', fontSize:11, fontWeight:700 }}>👑 VIP actif — Taxe 25%</span>
-            : <span style={{ color:'#9a6080', fontSize:11 }}>Taxe vendeur : 50%</span>
-          }
-        </div>
       </div>
 
       {/* Soldes */}
@@ -390,11 +393,11 @@ function TabOnchain() {
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
-                    <span style={{ color:'#1e0a16', fontSize:14, fontWeight:800 }}>Fleur de Cerisier</span>
+                    <span style={{ color:'#1e0a16', fontSize:14, fontWeight:800 }}>Branche de Fleur de Cerisier</span>
                     <span style={{ background:'rgba(196,48,112,0.12)', color:'#c43070', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:8 }}>🔒 Exclusive</span>
                   </div>
                   <p style={{ color:'#7a4060', fontSize:10, margin:'0 0 6px', lineHeight:1.4 }}>
-                    Fleur rare utilisée dans les recettes de Cuisine. Invendable après achat.
+                    Branche rare utilisée dans les recettes de Cuisine. Invendable après achat.
                   </p>
                   <span style={{ color:'#f9a825', fontSize:14, fontWeight:900 }}>{FLEUR_PRICE} $KIRHA</span>
                   <span style={{ color:'#9a6080', fontSize:10 }}> / unité</span>
@@ -447,7 +450,7 @@ function TabOnchain() {
               <div style={{ padding:'8px 12px', background:'rgba(106,191,68,0.08)', border:'1px solid rgba(106,191,68,0.3)', borderRadius:10, display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ fontSize:16 }}>🌸</span>
                 <span style={{ color:'#2a7a10', fontSize:12, fontWeight:700 }}>
-                  En stock : ×{Math.floor(inventaire[ResourceId.FLEUR_CERISIER] ?? 0)} Fleur de Cerisier
+                  En stock : ×{Math.floor(inventaire[ResourceId.FLEUR_CERISIER] ?? 0)} Branche de Fleur de Cerisier
                 </span>
               </div>
             )}

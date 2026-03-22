@@ -47,12 +47,15 @@ export function TemplePage() {
   const navigate    = useNavigate();
   const { t }       = useT();
   const inventaire  = useGameStore(s => s.inventaire);
-  const ajouterKirha       = useGameStore(s => s.ajouterKirha);
-  const retirerRessource   = useGameStore(s => s.retirerRessource);
-  const templeCompleted      = useGameStore(s => s.templeCompleted);
-  const templeCompletedDate  = useGameStore(s => s.templeCompletedDate);
-  const completerQueteTemple = useGameStore(s => s.completerQueteTemple);
-  const resetTempleQuetes    = useGameStore(s => s.resetTempleQuetes);
+  const ajouterKirha          = useGameStore(s => s.ajouterKirha);
+  const retirerRessource      = useGameStore(s => s.retirerRessource);
+  const templeCompleted       = useGameStore(s => s.templeCompleted);
+  const templeCompletedDate   = useGameStore(s => s.templeCompletedDate);
+  const templeResetUsed       = useGameStore(s => s.templeResetUsed);
+  const templeResetDate       = useGameStore(s => s.templeResetDate);
+  const completerQueteTemple  = useGameStore(s => s.completerQueteTemple);
+  const resetTempleQuetes     = useGameStore(s => s.resetTempleQuetes);
+  const resetQueteTempleManuel = useGameStore(s => s.resetQueteTempleManuel);
 
   const [countdown, setCountdown] = useState(getSecondsUntilMidnightUTC());
 
@@ -88,6 +91,8 @@ export function TemplePage() {
 
   // Quêtes complétées : seulement si la date correspond à aujourd'hui
   const completedIndices: number[] = (templeCompletedDate === today) ? (templeCompleted ?? []) : [];
+  // Resets disponibles aujourd'hui
+  const resetsLeft = 2 - (templeResetDate === today ? templeResetUsed : 0);
 
   function completer(questIndex: number) {
     const quest = todayQuests[questIndex];
@@ -120,6 +125,24 @@ export function TemplePage() {
           </div>
         </div>
 
+        {/* Resets disponibles */}
+        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background: resetsLeft > 0 ? 'rgba(249,168,37,0.08)' : 'rgba(212,100,138,0.04)', border:`1px solid ${resetsLeft > 0 ? 'rgba(249,168,37,0.3)' : 'rgba(212,100,138,0.12)'}`, borderRadius:12, marginBottom:12 }}>
+          <span style={{ fontSize:20 }}>🔄</span>
+          <div style={{ flex:1 }}>
+            <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700, display:'block' }}>
+              Resets journaliers
+            </span>
+            <span style={{ color:'#7a4060', fontSize:10 }}>
+              {resetsLeft > 0
+                ? `${resetsLeft} reset${resetsLeft > 1 ? 's' : ''} disponible${resetsLeft > 1 ? 's' : ''} aujourd'hui`
+                : 'Resets épuisés pour aujourd\'hui'}
+            </span>
+          </div>
+          <span style={{ background: resetsLeft > 0 ? 'rgba(249,168,37,0.2)' : 'rgba(212,100,138,0.1)', color: resetsLeft > 0 ? '#b07010' : '#9a6080', fontSize:13, fontWeight:900, padding:'4px 10px', borderRadius:20 }}>
+            {resetsLeft}/2
+          </span>
+        </div>
+
         {/* Quêtes */}
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {todayQuests.map((quest, i) => {
@@ -127,6 +150,7 @@ export function TemplePage() {
             const stock = Math.floor(inventaire[quest.rid] ?? 0);
             const canComplete = !isCompleted && stock >= quest.qty;
             const insufficient = !isCompleted && stock < quest.qty;
+            const canReset = isCompleted && resetsLeft > 0;
 
             return (
               <div key={i} style={{
@@ -144,18 +168,28 @@ export function TemplePage() {
                     <span style={{ color:'#9a6080', fontSize:'10px' }}>· Stock: {stock}</span>
                   </div>
                 </div>
-                <div style={{ textAlign:'right' }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:4, alignItems:'flex-end' }}>
                   {isCompleted ? (
-                    <span style={{ color:'#6abf44', fontSize:'11px', fontWeight:800 }}>{t('temple.completed')}</span>
+                    <>
+                      <span style={{ color:'#6abf44', fontSize:'11px', fontWeight:800 }}>{t('temple.completed')}</span>
+                      {canReset && (
+                        <button
+                          style={{ padding:'4px 8px', background:'rgba(249,168,37,0.15)', border:'1px solid rgba(249,168,37,0.4)', borderRadius:8, color:'#b07010', fontSize:9, fontWeight:700, cursor:'pointer' }}
+                          onClick={() => resetQueteTempleManuel(i)}
+                        >
+                          🔄 Reset
+                        </button>
+                      )}
+                    </>
                   ) : (
                     <button
                       style={{
                         ...s.offrirBtn,
-                        opacity:          canComplete ? 1 : 0.45,
-                        cursor:           canComplete ? 'pointer' : 'not-allowed',
-                        background:       canComplete ? 'linear-gradient(135deg,#c4306e,#8a25d4)' : 'rgba(212,100,138,0.1)',
-                        color:            canComplete ? '#fff' : '#7a4060',
-                        border:           canComplete ? 'none' : '1px solid rgba(212,100,138,0.2)',
+                        opacity:    canComplete ? 1 : 0.45,
+                        cursor:     canComplete ? 'pointer' : 'not-allowed',
+                        background: canComplete ? 'linear-gradient(135deg,#c4306e,#8a25d4)' : 'rgba(212,100,138,0.1)',
+                        color:      canComplete ? '#fff' : '#7a4060',
+                        border:     canComplete ? 'none' : '1px solid rgba(212,100,138,0.2)',
                       }}
                       disabled={!canComplete}
                       onClick={() => completer(i)}

@@ -59,7 +59,7 @@ const RESOURCE_NAMES: Record<number, { fr: string; en: string }> = {
   50: { fr: 'Herbe Koï',           en: 'Koi Herb'             },
   // Ferme
   51: { fr: 'Eau',                 en: 'Water'                },
-  52: { fr: 'Fleur de Cerisier',   en: 'Cherry Blossom'       },
+  52: { fr: 'Branche de Fleur de Cerisier', en: 'Cherry Blossom Branch' },
   53: { fr: 'Œuf',                 en: 'Egg'                  },
   54: { fr: 'Lait',                en: 'Milk'                 },
   55: { fr: 'Miel',                en: 'Honey'                },

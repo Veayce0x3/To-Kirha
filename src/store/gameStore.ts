@@ -45,6 +45,8 @@ export interface GameState {
   pseudo:              string | null;
   templeCompletedDate: string;   // date ISO du jour (UTC) des quêtes complétées
   templeCompleted:     number[]; // indices des quêtes complétées ce jour
+  templeResetUsed:     number;   // resets manuels utilisés aujourd'hui (max 2)
+  templeResetDate:     string;   // date UTC des resets (pour reset quotidien)
 
   // Personnage (niveau 1-100, XP via Cuisine)
   personageNiveau:        number;
@@ -54,8 +56,8 @@ export interface GameState {
   competences:            Partial<Record<MetierId, number>>; // points dépensés par métier
 
   // Ferme
-  puitsDerniereRecolte:      number; // timestamp ms de la dernière collecte d'eau
-  animauxDerniereRecolte:    Record<string, number>; // animalId → timestamp ms
+  puitsDerniereRecolte:      number;                    // timestamp ms de la dernière collecte d'eau
+  animauxDerniereRecolte:    Record<string, number[]>;  // animalId → [timestamp ms par slot]
 
   setAddress:               (address: string | null) => void;
   ajouterXp:                (metier: MetierId, xp: number) => void;
@@ -64,7 +66,7 @@ export interface GameState {
   retirerCompetence:        (metier: MetierId) => void;
   reinitialiserCompetences: () => void;
   setPuitsDerniereRecolte:  (timestamp: number) => void;
-  setAnimauxDerniereRecolte:(animalId: string, timestamp: number) => void;
+  setAnimauxDerniereRecolte:(animalId: string, slotIndex: number, timestamp: number) => void;
   demarrerRecolte:          (metier: MetierId, slotIndex: number, resourceId: ResourceId, dureeMs: number) => void;
   terminerRecolte:          (metier: MetierId, slotIndex: number, quantite: number) => void;
   ajouterPendingMint:       (resourceId: ResourceId, quantite: number) => void;
@@ -87,8 +89,9 @@ export interface GameState {
   setPepitesOr:             (amount: number) => void;
   ajouterPepites:           (amount: number) => void;
   retirerPepites:           (amount: number) => void;
-  completerQueteTemple:     (index: number) => void;
-  resetTempleQuetes:        () => void;
+  completerQueteTemple:       (index: number) => void;
+  resetTempleQuetes:          () => void;
+  resetQueteTempleManuel:     (questIndex: number) => void;
   setChainBalances:         (kirha: number, pepites: number, vipExpiry: number) => void;
   setMetierFromChain:       (metierId: MetierId, niveau: number, xp: number, xpTotal: number) => void;
   addInventaireFromChain:   (resourceId: ResourceId, qty: number) => void;
@@ -177,6 +180,8 @@ export const useGameStore = create<GameState>()(
       pseudo:              null,
       templeCompletedDate: '',
       templeCompleted:     [],
+      templeResetUsed:     0,
+      templeResetDate:     '',
       personageNiveau:     1,
       personageXp:         0,
       personageXpTotal:    0,
@@ -318,6 +323,19 @@ export const useGameStore = create<GameState>()(
 
       resetTempleQuetes: () => set({ templeCompleted: [], templeCompletedDate: '' }),
 
+      resetQueteTempleManuel: (questIndex) =>
+        set((state) => {
+          const today = new Date().toISOString().slice(0, 10);
+          const usedToday = state.templeResetDate === today ? state.templeResetUsed : 0;
+          if (usedToday >= 2) return state;
+          if (!state.templeCompleted.includes(questIndex)) return state;
+          return {
+            templeCompleted: state.templeCompleted.filter(i => i !== questIndex),
+            templeResetUsed: usedToday + 1,
+            templeResetDate: today,
+          };
+        }),
+
       setChainBalances: (kirha, pepites, vipExpiry) =>
         set((state) => ({
           // chain = source de vérité + gains PNJ non encore sauvegardés
@@ -357,6 +375,8 @@ export const useGameStore = create<GameState>()(
           vipExpiry:           0,
           templeCompletedDate: '',
           templeCompleted:     [],
+          templeResetUsed:     0,
+          templeResetDate:     '',
           personageNiveau:     1,
           personageXp:         0,
           personageXpTotal:    0,
@@ -438,10 +458,12 @@ export const useGameStore = create<GameState>()(
 
       setPuitsDerniereRecolte: (timestamp) => set({ puitsDerniereRecolte: timestamp }),
 
-      setAnimauxDerniereRecolte: (animalId, timestamp) =>
-        set((state) => ({
-          animauxDerniereRecolte: { ...state.animauxDerniereRecolte, [animalId]: timestamp },
-        })),
+      setAnimauxDerniereRecolte: (animalId, slotIndex, timestamp) =>
+        set((state) => {
+          const current = [...(state.animauxDerniereRecolte[animalId] ?? [])];
+          current[slotIndex] = timestamp;
+          return { animauxDerniereRecolte: { ...state.animauxDerniereRecolte, [animalId]: current } };
+        }),
 
       setSlotSelectedResource: (metier, slotIndex, resourceId) =>
         set((state) => {
@@ -475,28 +497,36 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'to-kirha-game',
-      version: 10,
+      version: 11,
       migrate: (persistedState: unknown, version: number) => {
         if (!persistedState || typeof persistedState !== 'object') return undefined;
-        const state = persistedState as Partial<GameState>;
+        const state = persistedState as Partial<GameState> & { animauxDerniereRecolte?: unknown };
         // Migration douce: garder toutes les données existantes, compléter les champs manquants
-        // v9 : reset slots à 2 débloqués par métier
+        // v9  : reset slots à 2 débloqués par métier
         // v10 : ajout personnage, compétences, ferme
+        // v11 : animauxDerniereRecolte devient Record<string, number[]>, temple resets
+        const oldRecolte = (state.animauxDerniereRecolte ?? {}) as Record<string, unknown>;
+        const migratedRecolte: Record<string, number[]> = {};
+        for (const [k, v] of Object.entries(oldRecolte)) {
+          migratedRecolte[k] = Array.isArray(v) ? (v as number[]) : [v as number];
+        }
         return {
           ...state,
-          slots:               version < 9 ? initSlots() : (state.slots ?? initSlots()),
-          pepitesOr:           state.pepitesOr           ?? 0,
-          vipExpiry:           state.vipExpiry            ?? 0,
-          templeCompletedDate: state.templeCompletedDate  ?? '',
-          templeCompleted:     state.templeCompleted       ?? [],
-          kirhaEarned:         state.kirhaEarned           ?? 0,
-          personageNiveau:     state.personageNiveau      ?? 1,
-          personageXp:         state.personageXp          ?? 0,
-          personageXpTotal:    state.personageXpTotal      ?? 0,
-          competencesPoints:   state.competencesPoints     ?? 0,
-          competences:         state.competences           ?? {},
-          puitsDerniereRecolte:   state.puitsDerniereRecolte   ?? 0,
-          animauxDerniereRecolte: state.animauxDerniereRecolte ?? {},
+          slots:               version < 9 ? initSlots() : ((state as Partial<GameState>).slots ?? initSlots()),
+          pepitesOr:           (state as Partial<GameState>).pepitesOr           ?? 0,
+          vipExpiry:           (state as Partial<GameState>).vipExpiry            ?? 0,
+          templeCompletedDate: (state as Partial<GameState>).templeCompletedDate  ?? '',
+          templeCompleted:     (state as Partial<GameState>).templeCompleted       ?? [],
+          templeResetUsed:     (state as Partial<GameState>).templeResetUsed      ?? 0,
+          templeResetDate:     (state as Partial<GameState>).templeResetDate      ?? '',
+          kirhaEarned:         (state as Partial<GameState>).kirhaEarned           ?? 0,
+          personageNiveau:     (state as Partial<GameState>).personageNiveau      ?? 1,
+          personageXp:         (state as Partial<GameState>).personageXp          ?? 0,
+          personageXpTotal:    (state as Partial<GameState>).personageXpTotal      ?? 0,
+          competencesPoints:   (state as Partial<GameState>).competencesPoints     ?? 0,
+          competences:         (state as Partial<GameState>).competences           ?? {},
+          puitsDerniereRecolte:   (state as Partial<GameState>).puitsDerniereRecolte   ?? 0,
+          animauxDerniereRecolte: migratedRecolte,
         };
       },
     }

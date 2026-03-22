@@ -27,21 +27,17 @@ export interface Metier {
 // ============================================================
 
 // Temps de récolte et XP selon le niveau de déblocage
-// TEST_MODE : temps de récolte réduit à 2s pour tester rapidement
-// Remettre TEST_MODE = false avant la production
-export const TEST_MODE = true;
-
 const HARVEST_CONFIG: Record<number, { temps_recolte_secondes: number; xp_recolte: number }> = {
-  1:  { temps_recolte_secondes: TEST_MODE ? 2 : 30,  xp_recolte: 10  },
-  10: { temps_recolte_secondes: TEST_MODE ? 2 : 45,  xp_recolte: 15  },
-  20: { temps_recolte_secondes: TEST_MODE ? 2 : 60,  xp_recolte: 25  },
-  30: { temps_recolte_secondes: TEST_MODE ? 2 : 90,  xp_recolte: 40  },
-  40: { temps_recolte_secondes: TEST_MODE ? 2 : 120, xp_recolte: 60  },
-  50: { temps_recolte_secondes: TEST_MODE ? 2 : 180, xp_recolte: 90  },
-  60: { temps_recolte_secondes: TEST_MODE ? 2 : 300, xp_recolte: 150 },
-  70: { temps_recolte_secondes: TEST_MODE ? 2 : 420, xp_recolte: 210 },
-  80: { temps_recolte_secondes: TEST_MODE ? 2 : 600, xp_recolte: 350 },
-  90: { temps_recolte_secondes: TEST_MODE ? 2 : 900, xp_recolte: 500 },
+  1:  { temps_recolte_secondes: 30,  xp_recolte: 10  },
+  10: { temps_recolte_secondes: 45,  xp_recolte: 15  },
+  20: { temps_recolte_secondes: 60,  xp_recolte: 25  },
+  30: { temps_recolte_secondes: 90,  xp_recolte: 40  },
+  40: { temps_recolte_secondes: 120, xp_recolte: 60  },
+  50: { temps_recolte_secondes: 180, xp_recolte: 90  },
+  60: { temps_recolte_secondes: 300, xp_recolte: 150 },
+  70: { temps_recolte_secondes: 420, xp_recolte: 210 },
+  80: { temps_recolte_secondes: 600, xp_recolte: 350 },
+  90: { temps_recolte_secondes: 900, xp_recolte: 500 },
 };
 
 function cfg(niveau: number) {

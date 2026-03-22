@@ -196,7 +196,7 @@ export function HomePage() {
 const s: Record<string, React.CSSProperties> = {
   page: {
     position:'absolute', inset:0, background:'#fdf0f5',
-    overflowY:'auto', paddingBottom:20,
+    overflowY:'auto', paddingBottom:90,
   },
   topbar: {
     display:'flex', alignItems:'center', justifyContent:'space-between',
