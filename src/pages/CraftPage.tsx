@@ -48,7 +48,7 @@ interface RecetteOutil {
 type Recette = RecetteInventaire | RecetteOutil;
 
 // ============================================================
-// Recettes de Cuisine (Branche requise dans toutes)
+// Recettes de Cuisine (Parchemin Ancien requis dans toutes)
 // ============================================================
 
 const RECETTES_CUISINE: RecetteInventaire[] = [
@@ -187,7 +187,7 @@ const RECETTES_CUISINE: RecetteInventaire[] = [
 // ============================================================
 
 const RECETTES_ARTISAN: Recette[] = [
-  // ── Outils T1 (sans Branche)
+  // ── Outils T1 (sans Parchemin Ancien)
   {
     kind: 'outil',
     id: 'hache_t1',
@@ -261,7 +261,7 @@ const RECETTES_ARTISAN: Recette[] = [
     description: 'Permet de préparer des plantes au-delà du Pissenlit.',
     descriptionEn: 'Allows preparing plants beyond Dandelion.',
   },
-  // ── Outils T2 (avec Branche)
+  // ── Outils T2 (avec Parchemin Ancien)
   {
     kind: 'outil',
     id: 'hache_t2',
@@ -452,8 +452,9 @@ export function CraftPage() {
   const personageNiveau    = useGameStore(s => s.personageNiveau);
   const personageXp        = useGameStore(s => s.personageXp);
   const personageXpTotal   = useGameStore(s => s.personageXpTotal);
-  const craftMetiers       = useGameStore(s => s.craftMetiers);
-  const outils             = useGameStore(s => s.outils);
+  const craftMetiersRaw    = useGameStore(s => s.craftMetiers);
+  const craftMetiers       = craftMetiersRaw ?? { artisan: { niveau: 1, xp: 0, xpTotal: 0 }, alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 } };
+  const outils             = useGameStore(s => s.outils) ?? {};
   const retirerRessource   = useGameStore(s => s.retirerRessource);
   const ajouterRessource   = useGameStore(s => s.ajouterRessource);
   const ajouterXpPersonage = useGameStore(s => s.ajouterXpPersonage);
@@ -613,7 +614,7 @@ export function CraftPage() {
           <>
             <XpBar label={`🔨 Artisan — Niv. ${artisanNiveau}`} xp={artisanXp} xpReq={artisanXpReq} xpTotal={craftMetiers.artisan.xpTotal} pct={pctArtisan} color="#6abf44" />
             <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'10px 0 4px', letterSpacing:'0.05em' }}>
-              {lang === 'en' ? 'TOOLS (T1 — no Branche required)' : 'OUTILS (T1 — sans Branche)'}
+              {lang === 'en' ? 'TOOLS (T1 — no Parchment required)' : 'OUTILS (T1 — sans Parchemin)'}
             </p>
             <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:14 }}>
               {RECETTES_ARTISAN.filter(r => r.kind === 'outil' && (r as RecetteOutil).tierId === 1).map(r => (
@@ -629,7 +630,7 @@ export function CraftPage() {
               ))}
             </div>
             <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'0 0 4px', letterSpacing:'0.05em' }}>
-              {lang === 'en' ? 'TOOLS (T2 — Branche required)' : 'OUTILS (T2 — Branche requise)'}
+              {lang === 'en' ? 'TOOLS (T2 — Parchment required)' : 'OUTILS (T2 — Parchemin requis)'}
             </p>
             <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:14 }}>
               {RECETTES_ARTISAN.filter(r => r.kind === 'outil' && (r as RecetteOutil).tierId === 2).map(r => (

@@ -389,15 +389,15 @@ function TabOnchain() {
             <div style={{ background:'#fff', border:'1.5px solid rgba(196,48,112,0.25)', borderRadius:16, padding:'14px' }}>
               <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
                 <div style={{ width:56, height:56, borderRadius:14, background:'linear-gradient(135deg,rgba(196,48,112,0.1),rgba(138,37,212,0.07))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, flexShrink:0 }}>
-                  🌸
+                  📜
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
-                    <span style={{ color:'#1e0a16', fontSize:14, fontWeight:800 }}>Branche de Fleur de Cerisier</span>
+                    <span style={{ color:'#1e0a16', fontSize:14, fontWeight:800 }}>Parchemin Ancien</span>
                     <span style={{ background:'rgba(196,48,112,0.12)', color:'#c43070', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:8 }}>🔒 Exclusive</span>
                   </div>
                   <p style={{ color:'#7a4060', fontSize:10, margin:'0 0 6px', lineHeight:1.4 }}>
-                    Branche rare utilisée dans les recettes de Cuisine. Invendable après achat.
+                    Parchemin rare utilisé dans les recettes de Cuisine. Invendable après achat.
                   </p>
                   <span style={{ color:'#f9a825', fontSize:14, fontWeight:900 }}>{FLEUR_PRICE} $KIRHA</span>
                   <span style={{ color:'#9a6080', fontSize:10 }}> / unité</span>
@@ -448,9 +448,9 @@ function TabOnchain() {
             {/* Rappel inventaire actuel */}
             {(inventaire[ResourceId.FLEUR_CERISIER] ?? 0) > 0 && (
               <div style={{ padding:'8px 12px', background:'rgba(106,191,68,0.08)', border:'1px solid rgba(106,191,68,0.3)', borderRadius:10, display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ fontSize:16 }}>🌸</span>
+                <span style={{ fontSize:16 }}>📜</span>
                 <span style={{ color:'#2a7a10', fontSize:12, fontWeight:700 }}>
-                  En stock : ×{Math.floor(inventaire[ResourceId.FLEUR_CERISIER] ?? 0)} Branche de Fleur de Cerisier
+                  En stock : ×{Math.floor(inventaire[ResourceId.FLEUR_CERISIER] ?? 0)} Parchemin Ancien
                 </span>
               </div>
             )}

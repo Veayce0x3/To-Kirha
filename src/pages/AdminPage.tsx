@@ -91,7 +91,8 @@ export function AdminPage() {
 
   // ── Store local (off-chain) ─────────────────────────────
   const localInventaire    = useGameStore(s => s.inventaire);
-  const localCraftMetiers  = useGameStore(s => s.craftMetiers);
+  const localCraftMetiersRaw = useGameStore(s => s.craftMetiers);
+  const localCraftMetiers    = localCraftMetiersRaw ?? { artisan: { niveau: 1, xp: 0, xpTotal: 0 }, alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 } };
   const localPersonageNiv  = useGameStore(s => s.personageNiveau);
   const ajouterRessource   = useGameStore(s => s.ajouterRessource);
   const retirerRessourceLocal = useGameStore(s => s.retirerRessource);
@@ -101,7 +102,7 @@ export function AdminPage() {
 
   const OFF_CHAIN_RESOURCES: { id: ResourceId; label: string }[] = [
     { id: ResourceId.EAU,              label: 'Eau' },
-    { id: ResourceId.FLEUR_CERISIER,   label: 'Branche de Fleur de Cerisier' },
+    { id: ResourceId.FLEUR_CERISIER,   label: 'Parchemin Ancien' },
     { id: ResourceId.OEUF,             label: 'Œuf' },
     { id: ResourceId.LAIT,             label: 'Lait' },
     { id: ResourceId.MIEL_ANIMAL,      label: 'Miel' },

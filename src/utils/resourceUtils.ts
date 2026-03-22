@@ -59,7 +59,7 @@ const RESOURCE_NAMES: Record<number, { fr: string; en: string }> = {
   50: { fr: 'Herbe Koï',           en: 'Koi Herb'             },
   // Ferme
   51: { fr: 'Eau',                 en: 'Water'                },
-  52: { fr: 'Branche de Fleur de Cerisier', en: 'Cherry Blossom Branch' },
+  52: { fr: 'Parchemin Ancien', en: 'Ancient Parchment' },
   53: { fr: 'Œuf',                 en: 'Egg'                  },
   54: { fr: 'Lait',                en: 'Milk'                 },
   55: { fr: 'Miel',                en: 'Honey'                },
@@ -100,7 +100,7 @@ const RESOURCE_EMOJI: Record<number, string> = {
   41: '🌼', 42: '🌿', 43: '🌱', 44: '💜', 45: '🌺',
   46: '🪻', 47: '🌸', 48: '🫚', 49: '🪷', 50: '🌿',
   // Ferme
-  51: '💧', 52: '🌸', 53: '🥚', 54: '🥛', 55: '🍯',
+  51: '💧', 52: '📜', 53: '🥚', 54: '🥛', 55: '🍯',
   56: '✨', 57: '🔮',
   // Cuisine
   58: '🍞', 59: '🍚', 60: '🥞', 61: '🍯', 62: '🍵',
