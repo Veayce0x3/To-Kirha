@@ -58,13 +58,14 @@ npx tsc --project tsconfig.hardhat.json && npx hardhat run dist-hardhat/scripts/
 ConnectPage (/)
   └── HomePage (/home)
         ├── Récolte     (/recolte)    → Sélecteur métier → Zone ressources + timer
-        ├── HDV         (/hdv)        → Vente PNJ + HDV on-chain KirhaMarket
+        ├── HDV         (/hdv)        → Boutique PNJ + HDV on-chain KirhaMarket
         ├── Banque      (/banque)     → Retrait/Dépôt $KIRHA + Pépites + VIP + Sauvegarde on-chain
-        ├── Maison      (/maison)     → Inventaire + Stats + Perso
-        └── Craft       (/craft)      → Crafting (WIP)
+        ├── Maison      (/maison)     → Inventaire + Stats + Personnage + Arbre de compétences
+        ├── Craft       (/craft)      → Cuisine (5 recettes) + futures catégories
+        ├── Ferme       (/ferme)      → Puits (eau quotidienne) + Animaux (Poule/Vache/Abeilles/Cerf/Koï)
+        └── Temple      (/temple)     → Quêtes journalières
 
 /admin  → AdminPage (wallet whitelist uniquement, token requis)
-/temple → TemplePage (quêtes journalières)
 ```
 
 ---
@@ -144,11 +145,11 @@ mapping(address => uint256) public ownerToCityId;
 
 ---
 
-## Architecture des fichiers (état actuel — 21 mars 2026)
+## Architecture des fichiers (état actuel — 22 mars 2026)
 ```
 src/
 ├── App.tsx                  # Routes + Guards (VersionGuard v0.6.0, VilleIdGuard avec chain sync complet)
-│                            # Routes: /, /home, /recolte, /hdv, /banque, /maison, /craft, /admin, /temple
+│                            # Routes: /, /home, /recolte, /hdv, /banque, /maison, /craft, /ferme, /admin, /temple
 ├── main.tsx                 # WagmiProvider + RainbowKitProvider + QueryClientProvider
 ├── index.css                # Desktop max-width 820px, responsive slots-grid, height:100svh, bottom-menu 52px
 ├── components/
@@ -168,32 +169,44 @@ src/
 │   │   └── KirhaMarket.json # listResource / buyResource / cancelListing / getActiveListings
 │   └── addresses.ts         # 5 contrats + RELAYER_ADDRESS
 ├── data/
-│   ├── metiers.ts           # 5 métiers × 10 ressources = 50 IDs | TEST_MODE=true → 2s
-│   ├── resources.ts         # Enum ResourceId (1-50)
+│   ├── metiers.ts           # 5 métiers × 10 ressources = 50 IDs | TEST_MODE exported → true (2s)
+│   ├── resources.ts         # Enum ResourceId (1-62) : 1-50 on-chain, 51-62 off-chain (Ferme+Cuisine)
+│   │                        # FERME_IDS [51-57], CUISINE_IDS [58-62] — NE PAS ajouter à ALL_RESOURCE_IDS
+│   ├── ferme.ts             # Config Puits (cooldown, canCollectPuits, getSecondsUntilPuitsReset)
+│   │                        # ANIMALS[] : Poule(5), Vache(15), Abeilles(30), Cerf Sakura(60), Koï(90)
 │   └── vetements.ts
 ├── hooks/
 │   ├── useHarvest.ts        # Timer, planterRessource(), collecterEtRelancer() — PAS d'auto-collect
+│   │                        # Applique le bonus de compétences (+5%/point rendement et XP)
 │   ├── useSave.ts           # batchSave on-chain via relayer (fallback wallet direct)
+│   │                        # NB: seules les ressources ID 1-50 sont sauvegardées on-chain
 │   ├── useWithdraw.ts       # withdrawKirha(cityId, amount)
 │   ├── useDeposit.ts        # depositKirha(cityId, amount)
 │   ├── useMarket.ts         # HDV on-chain via relayer (list/buy/cancel)
 │   └── useVip.ts            # buyPepites(packType) + buyVip(durationType) on-chain
 ├── pages/
 │   ├── ConnectPage.tsx      # Landing + pseudo on-chain + LangToggle + register/login flow
-│   ├── HomePage.tsx         # Map principale (5 cards) + badge VIP + modal relayer + modal info VIP
+│   ├── HomePage.tsx         # Map principale (7 cards) + badge VIP + modal relayer + modal info VIP
+│   │                        # Cards avec prop locked (grayed out + "Bientôt disponible")
 │   ├── RecoltePage.tsx      # Sélecteur métier (barre XP bleue/violette) + Zone récolte
-│   ├── HdvPage.tsx          # HDV On-chain (sellerPseudo, relayer ops, indicateur affordabilité $K)
+│   ├── HdvPage.tsx          # Onglets : Boutique PNJ (Fleur de Cerisier) + Acheter + Vendre + Mes ventes + Historique
+│   │                        # Ressources ID>50 filtrées de l'onglet Vendre (non vendables on-chain)
 │   ├── BanquePage.tsx       # Retrait/Dépôt $KIRHA + Pépites d'or (4 packs) + VIP (3 durées)
-│   ├── MaisonPage.tsx       # Inventaire + stats métiers + perso
-│   ├── CraftPage.tsx        # WIP
+│   ├── MaisonPage.tsx       # Inventaire (toutes ressources y compris ID>50) + stats métiers
+│   │                        # Onglet Personnage : niveau, XP, arbre de compétences (allouer/retirer/reset)
+│   ├── CraftPage.tsx        # Grille catégories → Cuisine (5 recettes) + barre XP personnage
+│   │                        # Recettes : Pain de Blé, Riz au Lait, Galette Sakura, Miel Sakura, Thé Wisteria
+│   ├── FermePage.tsx        # Puits (1 eau/jour, reset 00h00 Paris) + Animaux (timer + récolte manuelle)
 │   ├── AdminPage.tsx        # /admin — token worker, actions give/reset sans wallet popup
 │   │                        # Alerte solde relayer (rouge si < 0.05 ETH)
 │   └── TemplePage.tsx       # Quêtes journalières
-├── store/gameStore.ts       # Zustand persist v9, soft migration (jamais full reset)
+├── store/gameStore.ts       # Zustand persist v10, soft migration (jamais full reset)
 │                            # setChainBalances / setMetierFromChain / addInventaireFromChain
+│                            # ajouterXpPersonage / allouerCompetence / retirerCompetence / reinitialiserCompetences
+│                            # setPuitsDerniereRecolte / setAnimauxDerniereRecolte
 └── utils/
-    ├── i18n.ts              # Traductions FR/EN complètes (50 ressources + UI)
-    └── resourceUtils.ts     # emojiByResourceId(), getNomRessource() — SOURCE UNIQUE
+    ├── i18n.ts              # Traductions FR/EN complètes (62 ressources + UI + Ferme/Cuisine)
+    └── resourceUtils.ts     # emojiByResourceId(), getNomRessource() — SOURCE UNIQUE (IDs 1-62)
 
 contracts/
 ├── KirhaToken.sol           # ERC-20 $KIRHA, mintable par KirhaGame + KirhaMarket
@@ -231,13 +244,14 @@ scripts/
 /banque   → BanquePage (Guard)
 /maison   → MaisonPage (Guard)
 /craft    → CraftPage (Guard)
+/ferme    → FermePage (Guard)
 /admin    → AdminPage (Guard + whitelist wallet)
 /temple   → TemplePage (Guard)
 ```
 
 ---
 
-## Fonctionnalités implémentées (19 mars 2026)
+## Fonctionnalités implémentées (22 mars 2026)
 
 ### Connexion / Inscription (ConnectPage)
 - Login : lit `playerCityId(address)` + `cityPseudo(cityId)` on-chain → `/home`
@@ -310,16 +324,68 @@ scripts/
 - VilleIdGuard re-sync depuis blockchain au rechargement → utile après action admin (give/retrait KIRHA, pépites, VIP)
 
 ### Multilingue (i18n)
-- FR/EN complet : navigation, UI, 50 noms de ressources
+- FR/EN complet : navigation, UI, 62 noms de ressources (50 on-chain + 12 off-chain)
 - `useT()` hook → `t(key)` + `lang`
 - Sélecteur 🇫🇷/🇬🇧 sur ConnectPage + SettingsModal
 
+### Système de Personnage (niv. 1-100)
+- Niveau et XP indépendants des métiers
+- XP gagnée **uniquement via le Craft Cuisine** (volontaire — force l'utilisation de l'HDV)
+- Chaque niveau débloque 1 point de compétence
+- Affiché dans l'onglet Personnage de la Maison + barre dans CraftPage
+- Courbe XP : `100 × N^1.8` (identique aux métiers)
+
+### Arbre de compétences (MaisonPage — onglet Personnage)
+- 5 métiers × max 10 points → +5%/point de rendement et XP de récolte
+- Bonus appliqué en temps réel dans `useHarvest`
+- `allouerCompetence(metier)` / `retirerCompetence(metier)` dans le store
+- Réinitialisation complète : coûte **100 Pépites d'or** (`reinitialiserCompetences()`)
+
+### Page Ferme (/ferme)
+- **Le Puits** : 1 💧 Eau par jour, reset à 00h00 heure française. TEST_MODE : cooldown 30s
+- **Animaux** débloqués par niveau personnage :
+  | Animal       | Niv. requis | Production   | Cooldown (réel) |
+  |--------------|-------------|--------------|-----------------|
+  | Poule 🐔      | 5           | Œuf 🥚        | 4h              |
+  | Vache 🐄      | 15          | Lait 🥛       | 6h              |
+  | Abeilles 🐝   | 30          | Miel 🍯       | 8h              |
+  | Cerf Sakura 🦌| 60          | Musc Sakura ✨| 24h             |
+  | Koï Dorée 🐟  | 90          | Écaille de Koï 🔮| 48h          |
+- Toutes les productions ajoutées directement à l'inventaire (off-chain)
+
+### Cuisine (CraftPage)
+- Grille de catégories → Cuisine active + Alchimie (placeholder)
+- 5 recettes disponibles :
+  | Recette          | Ingrédients                         | XP perso |
+  |------------------|-------------------------------------|----------|
+  | Pain de Blé 🍞   | 5 Blé + 2 Eau                       | 20       |
+  | Riz au Lait 🍚   | 5 Riz + 2 Lait + 1 Eau             | 35       |
+  | Galette Sakura 🥞| 3 Sarrasin + 2 Eau + 1 Miel        | 50       |
+  | Miel Sakura 🍯   | 3 Miel + 2 Fleur de Cerisier        | 75       |
+  | Thé Wisteria 🍵  | 3 Wisteria + 1 Fleur de Cerisier + 2 Eau | 60  |
+- Indicateur vert/rouge par ingrédient selon stock disponible
+
+### Fleur de Cerisier (HdvPage — onglet Boutique)
+- Ressource exclusive, achetée uniquement via la **Boutique PNJ** dans HdvPage (onglet par défaut)
+- Prix : **2 $KIRHA/unité** — transaction locale (pas de popup wallet, pas de gas)
+- **Invendable** sur le HDV player-to-player (toutes ressources ID > 50 filtrées de l'onglet Vendre)
+- Utilisée dans les recettes Miel Sakura et Thé Wisteria
+
+### Courbe XP exponentielle (métiers + personnage)
+- `xpRequis(N) = Math.round(100 × N^1.8)`
+- Niveaux 1-5 rapides (100→1838 XP), mur exponentiel à partir du niveau 6
+- Remplace l'ancienne formule quadratique `N² × 50`
+
 ---
 
-## Zustand Store v9 — Règles
-- **Version actuelle : 9** — ne jamais incrémenter sans changement de structure
+## Zustand Store v10 — Règles
+- **Version actuelle : 10** — ne jamais incrémenter sans changement de structure
 - **Migration douce** : `migrate()` remplit les champs manquants avec valeurs par défaut, ne retourne JAMAIS `undefined`
+- La migration v9→v10 conserve les slots (reset slots uniquement si version < 9)
 - Champs clés : `villeId`, `soldeKirha`, `pepitesOr`, `vipExpiry`, `pseudo`, `inventaire`, `metiers`, `kirhaEarned`
+- Champs personnage : `personageNiveau`, `personageXp`, `personageXpTotal`
+- Champs compétences : `competencesPoints`, `competences` (Partial<Record<MetierId, number>>)
+- Champs ferme : `puitsDerniereRecolte` (timestamp ms), `animauxDerniereRecolte` (Record<animalId, timestamp>)
 - `setChainBalances(kirha, pepites, vipExpiry)` :
   - `soldeKirha = kirha + state.kirhaEarned` (chaîne autoritaire + gains PNJ non sauvegardés)
   - `pepitesOr = pepites` (direct depuis chaîne — reflète les actions admin)
@@ -328,10 +394,15 @@ scripts/
 - `addInventaireFromChain(resourceId, qty)` : merge Math.max
 - `forceChainSync(...)` : écrase tout le local depuis la chaîne (reset admin détecté)
 - `resetGameData()` : remet à zéro toutes les données de jeu (garde address/villeId/pseudo/langue)
+- `ajouterXpPersonage(xp)` : incrémente XP personnage, level-up auto + +1 competencesPoints par niveau
+- `allouerCompetence(metier)` / `retirerCompetence(metier)` : dépense/récupère 1 point (max 10/métier)
+- `reinitialiserCompetences()` : remet tout à 0, coûte 100 Pépites
 
 ---
 
-## ERC-1155 — IDs ressources on-chain
+## Ressources — IDs complets
+
+### IDs 1-50 — On-chain (ERC-1155 KirhaResources)
 | Métier      | IDs   | Ressources (niveau 1→90)                                                              |
 |-------------|-------|---------------------------------------------------------------------------------------|
 | Bûcheron    | 1-10  | Frêne, Séquoia, Chêne, Bouleau, Érable, Bambou, Ginkgo, Magnolia, Cerisier Doré, Sakura |
@@ -342,9 +413,29 @@ scripts/
 
 **Metier IDs on-chain** : bucheron=0, paysan=1, pecheur=2, mineur=3, alchimiste=4
 
+### IDs 51-62 — Off-chain (localStorage uniquement, NON sauvegardés on-chain)
+> À intégrer dans les smart contracts lors du prochain redéploiement
+
+| ID  | Ressource         | Source                  |
+|-----|-------------------|-------------------------|
+| 51  | Eau 💧             | Puits (Ferme)           |
+| 52  | Fleur de Cerisier 🌸 | Boutique PNJ (HDV)   |
+| 53  | Œuf 🥚             | Poule (Ferme)           |
+| 54  | Lait 🥛            | Vache (Ferme)           |
+| 55  | Miel 🍯            | Abeilles (Ferme)        |
+| 56  | Musc Sakura ✨     | Cerf Sakura (Ferme)     |
+| 57  | Écaille de Koï 🔮  | Koï Dorée (Ferme)       |
+| 58  | Pain de Blé 🍞     | Recette Cuisine         |
+| 59  | Riz au Lait 🍚     | Recette Cuisine         |
+| 60  | Galette Sakura 🥞  | Recette Cuisine         |
+| 61  | Miel Sakura 🍯     | Recette Cuisine         |
+| 62  | Thé Wisteria 🍵    | Recette Cuisine         |
+
+**Règle** : `ALL_RESOURCE_IDS` dans resources.ts contient **uniquement les IDs 1-50**. Les IDs 51+ sont dans `FERME_IDS` et `CUISINE_IDS`. Ne jamais les ajouter à `ALL_RESOURCE_IDS` (utilisé dans VilleIdGuard pour les requêtes on-chain).
+
 ---
 
-## État du projet (21 mars 2026)
+## État du projet (22 mars 2026)
 
 ### CE QUI EST FAIT ET FONCTIONNEL ✅
 | Composant                        | Fichier                        | État             |
@@ -352,41 +443,47 @@ scripts/
 | Routing + Guards + chain sync    | App.tsx                        | ✅ v0.6.0        |
 | Architecture City NFT complète   | KirhaCity + KirhaGame          | ✅ Déployée v4   |
 | Page connexion + pseudo on-chain | ConnectPage.tsx                | ✅ Complet       |
-| Map principale (5 cards + VIP)   | HomePage.tsx                   | ✅ Complet       |
+| Map principale (7 cards + VIP)   | HomePage.tsx                   | ✅ Complet       |
 | Récolte (sélecteur + zones)      | RecoltePage.tsx                | ✅ Complet       |
-| HDV On-chain (relayer)           | HdvPage.tsx + useMarket        | ✅ Complet       |
+| HDV On-chain + Boutique PNJ      | HdvPage.tsx + useMarket        | ✅ Complet       |
 | Banque (retrait/dépôt/VIP/pép.)  | BanquePage.tsx + useVip        | ✅ Complet       |
-| Maison (inventaire+stats)        | MaisonPage.tsx                 | ✅ Complet       |
+| Maison (inventaire+stats+perso)  | MaisonPage.tsx                 | ✅ Complet       |
+| Arbre de compétences             | MaisonPage.tsx + gameStore     | ✅ Complet       |
+| Cuisine (5 recettes)             | CraftPage.tsx                  | ✅ Complet       |
+| Page Ferme (Puits + Animaux)     | FermePage.tsx + data/ferme.ts  | ✅ Complet       |
+| Système personnage niv. 1-100    | gameStore.ts                   | ✅ Complet       |
+| Courbe XP exponentielle          | gameStore.ts (xpRequis)        | ✅ 100×N^1.8     |
+| Ressources off-chain (51-62)     | resources.ts + resourceUtils   | ✅ Ferme+Cuisine |
 | Menu bas (3 boutons + actif)     | BottomMenu.tsx                 | ✅ Complet       |
 | SettingsModal + transfert ville  | SettingsModal.tsx              | ✅ Complet       |
-| Personnage (Maison)              | Character.tsx                  | ✅ 4 dirs        |
+| Personnage (Character.tsx)       | Character.tsx                  | ✅ 4 dirs        |
 | Hook sauvegarde (relayer)        | hooks/useSave.ts               | ✅ On-chain      |
 | Hook retrait                     | hooks/useWithdraw.ts           | ✅ On-chain      |
 | Hook dépôt                       | hooks/useDeposit.ts            | ✅ On-chain      |
 | Hook marché (relayer)            | hooks/useMarket.ts             | ✅ Complet       |
 | Hook VIP + Pépites               | hooks/useVip.ts                | ✅ Complet       |
-| Traductions FR/EN                | utils/i18n.ts                  | ✅ 50 res.       |
+| Bonus compétences dans récolte   | hooks/useHarvest.ts            | ✅ +5%/point     |
+| Traductions FR/EN                | utils/i18n.ts                  | ✅ 62 res.       |
 | Emojis/noms ressources           | utils/resourceUtils.ts         | ✅ Centralisé    |
-| Store Zustand                    | store/gameStore.ts             | ✅ v9 soft migr. |
+| Store Zustand                    | store/gameStore.ts             | ✅ v10 soft migr.|
 | Page Admin (worker, no popup)    | AdminPage.tsx                  | ✅ Complet       |
 | Relayer Cloudflare Workers       | kirha-relayer/                 | ✅ Déployé       |
 | CI/CD GitHub Pages + Worker      | .github/workflows/deploy.yml   | ✅ En place      |
 | Menu iOS/Android corrigé         | index.html + index.css         | ✅ 100svh + 52px |
-| Admin sync visible en jeu        | store/gameStore.ts             | ✅ Corrigé       |
-| Inventaire ressources < 1        | BottomMenu.tsx                 | ✅ Corrigé       |
 | Auto-save fermeture page         | App.tsx BeforeUnloadGuard      | ✅ Systématique  |
 | Décompte relayer 12h persistant  | HomePage + HdvPage             | ✅ localStorage  |
 | Indicateur affordabilité HDV     | HdvPage.tsx                    | ✅ ✓/✗ + coût   |
 
 ### CE QUI MANQUE / EST EN ATTENTE ⏳
-| Élément                           | Priorité   | Notes                                        |
-|-----------------------------------|------------|----------------------------------------------|
-| TEST_MODE → false                 | Haute      | Avant production (timers réels ~30 min)      |
-| Vérification ECDSA on-chain       | Haute      | Avant mainnet (KirhaGame, nonce anti-replay) |
-| Sprites ressources pixel art      | Moyenne    | 50 assets à créer                            |
-| CraftPage (contenu)               | Basse      | À concevoir                                  |
-| MaisonPage — vêtements/bonus      | Basse      | Système équipement à brancher                |
-| Frames animation marche/récolte   | Basse      | Après gameplay complet (EN PAUSE)            |
+| Élément                                    | Priorité   | Notes                                               |
+|--------------------------------------------|------------|-----------------------------------------------------|
+| TEST_MODE → false                          | Haute      | Avant production (timers réels ~30 min + Ferme)     |
+| Vérification ECDSA on-chain                | Haute      | Avant mainnet (KirhaGame, nonce anti-replay)        |
+| Contrats mis à jour (IDs 51-62 on-chain)   | Haute      | Redéploiement nécessaire pour sauvegarder Ferme/Cuisine |
+| Sprites ressources pixel art               | Moyenne    | 62 assets à créer                                   |
+| MaisonPage — vêtements/bonus               | Basse      | Système équipement à brancher                       |
+| Frames animation marche/récolte            | Basse      | Après gameplay complet (EN PAUSE)                   |
+| Alchimie CraftPage                         | Basse      | Placeholder visible, logique à concevoir            |
 
 ---
 
