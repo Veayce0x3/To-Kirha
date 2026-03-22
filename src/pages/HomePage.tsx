@@ -9,6 +9,20 @@ import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
 
 
+function getSecondsUntilMidnightParis(): number {
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Paris',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date());
+  const h = parseInt(parts.find(p => p.type === 'hour')!.value);
+  const m = parseInt(parts.find(p => p.type === 'minute')!.value);
+  const s = parseInt(parts.find(p => p.type === 'second')!.value);
+  let secs = 86400 - (h * 3600 + m * 60 + s);
+  if (secs < 3600) secs += 86400; // au moins 1h de validité
+  return secs;
+}
+
 export function HomePage() {
   const navigate   = useNavigate();
   const soldeKirha = useGameStore(s => s.soldeKirha);
@@ -51,15 +65,16 @@ export function HomePage() {
     setRelayerError(null);
     try {
       try { await switchChainAsync({ chainId: baseSepolia.id }); } catch {}
+      const durationSecs = getSecondsUntilMidnightParis();
       const hash = await writeContractAsync({
         address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
         functionName: 'authorizeRelayer',
-        args: [BigInt(villeId), 43200n],
+        args: [BigInt(villeId), BigInt(durationSecs)],
         chainId: baseSepolia.id,
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
-      // Persiste le timestamp de début de session pour le décompte 12h dans HdvPage
-      localStorage.setItem(`kirha_relayer_at_${villeId}`, Date.now().toString());
+      // Persiste le timestamp d'expiration (minuit Paris)
+      localStorage.setItem(`kirha_relayer_expires_${villeId}`, String(Math.floor(Date.now() / 1000) + durationSecs));
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (!msg.includes('User rejected') && !msg.includes('user rejected')) {
@@ -87,18 +102,18 @@ export function HomePage() {
     <div style={s.page}>
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showRelayer && (
-        <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
           <div style={{ background:'#fdf0f5', borderRadius:18, padding:'28px 24px', width:'100%', maxWidth:320, display:'flex', flexDirection:'column', alignItems:'center', gap:14 }}>
             <span style={{ fontSize:44 }}>⚡</span>
             <h2 style={{ color:'#1e0a16', fontSize:20, fontWeight:800, margin:0 }}>Transactions sans frais</h2>
             <p style={{ color:'#7a4060', fontSize:13, textAlign:'center', lineHeight:1.6, margin:0 }}>
-              Autorise le relayer pour <strong>12h</strong> afin que toutes tes actions en jeu (récolte, marché, sauvegarde) se fassent <strong>sans popup wallet</strong> et sans gas.
+              Autorise le relayer jusqu'à <strong>minuit</strong> (heure française) pour que toutes tes actions en jeu (récolte, marché, sauvegarde) se fassent <strong>sans popup wallet</strong> et sans gas.
             </p>
             <div style={{ background:'rgba(196,48,112,0.06)', border:'1px solid rgba(196,48,112,0.15)', borderRadius:12, padding:'12px 16px', width:'100%', boxSizing:'border-box' as const }}>
               <p style={{ color:'#7a4060', fontSize:11, margin:0, lineHeight:1.6 }}>
                 ✅ Une seule signature requise<br/>
                 ✅ Gratuit (le relayer paie le gas)<br/>
-                ✅ Expire automatiquement après 12h
+                ✅ Expire automatiquement à minuit (heure française)
               </p>
             </div>
             {relayerError && <p style={{ color:'#c43070', fontSize:11, margin:0 }}>{relayerError}</p>}
@@ -107,7 +122,7 @@ export function HomePage() {
               disabled={relayerSigning}
               style={{ width:'100%', padding:'13px 0', background:'#c43070', color:'#fff', border:'none', borderRadius:12, fontSize:15, fontWeight:700, cursor:'pointer', opacity: relayerSigning ? 0.6 : 1 }}
             >
-              {relayerSigning ? '⏳ Signature…' : '⚡ Activer le relayer 12h'}
+              {relayerSigning ? '⏳ Signature…' : '⚡ Activer jusqu\'à minuit'}
             </button>
             <button onClick={() => setShowRelayer(false)} style={{ background:'none', border:'none', color:'#7a4060', fontSize:13, cursor:'pointer', textDecoration:'underline' }}>
               Passer (utiliser le wallet directement)
@@ -116,7 +131,7 @@ export function HomePage() {
         </div>
       )}
       {showVipInfo && (
-        <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.3)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => setShowVipInfo(false)}>
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.3)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => setShowVipInfo(false)}>
           <div style={{ background:'#fdf0f5', borderRadius:18, padding:'24px 20px', width:'100%', maxWidth:300 }} onClick={e => e.stopPropagation()}>
             <p style={{ color:'#f9a825', fontSize:'18px', fontWeight:800, margin:'0 0 8px' }}>👑 VIP Actif</p>
             <p style={{ color:'#7a4060', fontSize:'12px', margin:'0 0 16px' }}>Taxe HDV réduite : 25% (au lieu de 50%)</p>

@@ -48,6 +48,7 @@ export interface GameState {
   templeCompleted:     number[]; // indices des quêtes complétées ce jour
   templeResetUsed:     number;   // resets manuels utilisés aujourd'hui (max 2)
   templeResetDate:     string;   // date UTC des resets (pour reset quotidien)
+  templeSlotRerolls:   number[];  // rerolls utilisés par slot aujourd'hui (réinitialisé avec les quêtes)
 
   // Personnage (niveau 1-100, XP via Cuisine)
   personageNiveau:        number;
@@ -171,6 +172,10 @@ const initSlots = (): Record<MetierId, SlotRecolte[]> =>
 // Store — persist via localStorage
 // ============================================================
 
+function getParisDate(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+}
+
 export const useGameStore = create<GameState>()(
   persist(
     (set) => ({
@@ -192,6 +197,7 @@ export const useGameStore = create<GameState>()(
       templeCompleted:     [],
       templeResetUsed:     0,
       templeResetDate:     '',
+      templeSlotRerolls:   [0, 0, 0],
       personageNiveau:     1,
       personageXp:         0,
       personageXpTotal:    0,
@@ -332,20 +338,22 @@ export const useGameStore = create<GameState>()(
       completerQueteTemple: (index) =>
         set((state) => {
           if (state.templeCompleted.includes(index)) return state;
-          const today = new Date().toISOString().slice(0, 10);
+          const today = getParisDate();
           return { templeCompleted: [...state.templeCompleted, index], templeCompletedDate: today };
         }),
 
-      resetTempleQuetes: () => set({ templeCompleted: [], templeCompletedDate: '' }),
+      resetTempleQuetes: () => set({ templeCompleted: [], templeCompletedDate: '', templeSlotRerolls: [0, 0, 0] }),
 
       resetQueteTempleManuel: (questIndex) =>
         set((state) => {
-          const today = new Date().toISOString().slice(0, 10);
+          const today = getParisDate();
           const usedToday = state.templeResetDate === today ? state.templeResetUsed : 0;
           if (usedToday >= 2) return state;
-          if (!state.templeCompleted.includes(questIndex)) return state;
+          const newRerolls = [...(state.templeSlotRerolls ?? [0, 0, 0])];
+          newRerolls[questIndex] = (newRerolls[questIndex] ?? 0) + 1;
           return {
             templeCompleted: state.templeCompleted.filter(i => i !== questIndex),
+            templeSlotRerolls: newRerolls,
             templeResetUsed: usedToday + 1,
             templeResetDate: today,
           };
@@ -392,6 +400,7 @@ export const useGameStore = create<GameState>()(
           templeCompleted:     [],
           templeResetUsed:     0,
           templeResetDate:     '',
+          templeSlotRerolls:   [0, 0, 0],
           personageNiveau:     1,
           personageXp:         0,
           personageXpTotal:    0,
@@ -542,7 +551,7 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'to-kirha-game',
-      version: 12,
+      version: 13,
       migrate: (persistedState: unknown, version: number) => {
         if (!persistedState || typeof persistedState !== 'object') return undefined;
         const state = persistedState as Partial<GameState> & { animauxDerniereRecolte?: unknown };
@@ -551,6 +560,7 @@ export const useGameStore = create<GameState>()(
         // v10 : ajout personnage, compétences, ferme
         // v11 : animauxDerniereRecolte devient Record<string, number[]>, temple resets
         // v12 : ajout outils, craftMetiers (Artisan, AlchimisteCraft)
+        // v13 : ajout templeSlotRerolls (reroll quêtes), dates temple Paris
         const oldRecolte = (state.animauxDerniereRecolte ?? {}) as Record<string, unknown>;
         const migratedRecolte: Record<string, number[]> = {};
         for (const [k, v] of Object.entries(oldRecolte)) {
@@ -561,10 +571,11 @@ export const useGameStore = create<GameState>()(
           slots:               version < 9 ? initSlots() : ((state as Partial<GameState>).slots ?? initSlots()),
           pepitesOr:           (state as Partial<GameState>).pepitesOr           ?? 0,
           vipExpiry:           (state as Partial<GameState>).vipExpiry            ?? 0,
-          templeCompletedDate: (state as Partial<GameState>).templeCompletedDate  ?? '',
-          templeCompleted:     (state as Partial<GameState>).templeCompleted       ?? [],
-          templeResetUsed:     (state as Partial<GameState>).templeResetUsed      ?? 0,
-          templeResetDate:     (state as Partial<GameState>).templeResetDate      ?? '',
+          templeCompletedDate: '',
+          templeCompleted:     [],
+          templeResetUsed:     0,
+          templeResetDate:     '',
+          templeSlotRerolls:   [0, 0, 0],
           kirhaEarned:         (state as Partial<GameState>).kirhaEarned           ?? 0,
           personageNiveau:     (state as Partial<GameState>).personageNiveau      ?? 1,
           personageXp:         (state as Partial<GameState>).personageXp          ?? 0,

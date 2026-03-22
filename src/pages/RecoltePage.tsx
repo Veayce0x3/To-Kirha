@@ -591,7 +591,7 @@ const s: Record<string, React.CSSProperties> = {
 };
 
 const ps: Record<string, React.CSSProperties> = {
-  overlay:     { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 400, display: 'flex', alignItems: 'flex-end' },
+  overlay:     { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 400, display: 'flex', alignItems: 'flex-end' },
   sheet:       { background: '#ffffff', borderRadius: '22px 22px 0 0', width: '100%', maxHeight: '75vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   sheetHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px', borderBottom: '1px solid rgba(212,100,138,0.15)', flexShrink: 0 },
   sheetTitle:  { color: '#1e0a16', fontSize: '16px', fontWeight: 700 },
@@ -601,7 +601,7 @@ const ps: Record<string, React.CSSProperties> = {
 };
 
 const up: Record<string, React.CSSProperties> = {
-  overlay:   { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' },
+  overlay:   { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' },
   modal:     { background: '#fdf0f5', border: '1px solid rgba(212,100,138,0.2)', borderRadius: 20, width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   header:    { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px', borderBottom: '1px solid rgba(212,100,138,0.15)', flexShrink: 0 },
   title:     { color: '#1e0a16', fontSize: '15px', fontWeight: 700 },

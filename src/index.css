@@ -65,6 +65,7 @@ img {
   height: 100dvh;
   height: 100svh;
   overflow: hidden;
+  overscroll-behavior: none;
   background: var(--bg-base);
 }
 

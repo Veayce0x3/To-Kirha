@@ -254,7 +254,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
 const ms: Record<string, React.CSSProperties> = {
   overlay: {
-    position:'absolute', inset:0, background:'rgba(0,0,0,0.35)',
+    position:'fixed', inset:0, background:'rgba(0,0,0,0.35)',
     zIndex:300, display:'flex', alignItems:'flex-end',
   },
   panel: {

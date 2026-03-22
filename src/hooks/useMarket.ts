@@ -22,6 +22,20 @@ export interface OnChainListing {
 
 export type MarketStatus = 'idle' | 'listing' | 'buying' | 'cancelling' | 'success' | 'error';
 
+function getSecondsUntilMidnightParis(): number {
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Paris',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date());
+  const h = parseInt(parts.find(p => p.type === 'hour')!.value);
+  const m = parseInt(parts.find(p => p.type === 'minute')!.value);
+  const s = parseInt(parts.find(p => p.type === 'second')!.value);
+  let secs = 86400 - (h * 3600 + m * 60 + s);
+  if (secs < 3600) secs += 86400;
+  return secs;
+}
+
 export function useMarket() {
   const [status, setStatus] = useState<MarketStatus>('idle');
   const [error, setError]   = useState<string | null>(null);
@@ -281,22 +295,23 @@ export function useMarket() {
     }
   }, [cityIdBn, villeId, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource, retirerKirha]);
 
-  // ── Activer le relayer (8h) ────────────────────────────────
+  // ── Activer le relayer (jusqu'à minuit Paris) ─────────────────
   const activerRelayer = useCallback(async () => {
     if (!cityIdBn) return;
     setStatus('listing');
     setError(null);
     try {
       await ensureChain();
+      const durationSecs = getSecondsUntilMidnightParis();
       const hash = await writeContractAsync({
         address:  KIRHA_GAME_ADDRESS,
         abi:      KirhaGameAbi,
         functionName: 'authorizeRelayer',
-        args:     [cityIdBn, 43200n],
+        args:     [cityIdBn, BigInt(durationSecs)],
         chainId:  baseSepolia.id,
       });
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
-      if (villeId) localStorage.setItem(`kirha_relayer_at_${villeId}`, Date.now().toString());
+      if (villeId) localStorage.setItem(`kirha_relayer_expires_${villeId}`, String(Math.floor(Date.now() / 1000) + durationSecs));
       setStatus('success');
       setTimeout(() => setStatus('idle'), 2000);
     } catch (err) {

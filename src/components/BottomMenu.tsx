@@ -127,7 +127,7 @@ function InventaireModal({ onClose }: { onClose: () => void }) {
 
 const ms: Record<string, React.CSSProperties> = {
   overlay: {
-    position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)',
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
     zIndex: 200, display: 'flex', alignItems: 'flex-end',
   },
   panel: {

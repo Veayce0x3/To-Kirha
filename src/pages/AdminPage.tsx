@@ -7,8 +7,6 @@ import KirhaGameAbi   from '../contracts/abis/KirhaGame.json';
 import KirhaCityAbi   from '../contracts/abis/KirhaCity.json';
 import KirhaMarketAbi from '../contracts/abis/KirhaMarket.json';
 import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
-import { useGameStore, xpRequis } from '../store/gameStore';
-import { ResourceId } from '../data/resources';
 
 // ── Whitelist admin ────────────────────────────────────────
 const ADMIN_WALLETS = [
@@ -21,7 +19,7 @@ interface PlayerData {
   pseudo:    string;
   wallet:    string;
   kirhaWei:  bigint;
-  resources: number[];   // index 0 = unused, 1-50 = quantités réelles (÷1e4)
+  resources: number[];   // index 0 = unused, 1-62 = quantités réelles (÷1e4)
   levels:    number[];   // 0-4 = 5 métiers
   xp:        number[];   // 0-4 = 5 métiers
   xpTotal:   number[];   // 0-4 = 5 métiers
@@ -29,7 +27,7 @@ interface PlayerData {
   pepites:   number;
 }
 
-const ALL_RESOURCE_IDS = Array.from({ length: 50 }, (_, i) => BigInt(i + 1));
+const ALL_RESOURCE_IDS = Array.from({ length: 62 }, (_, i) => BigInt(i + 1));
 const METIER_NAMES = ['Bûcheron', 'Paysan', 'Pêcheur', 'Mineur', 'Alchimiste'];
 
 function xpTotalPourNiveau(n: number): number {
@@ -88,39 +86,6 @@ export function AdminPage() {
   const [retirerOpStatus, setRetirerOpStatus] = useState<Record<string, 'idle'|'pending'|'ok'|'err'>>({});
 
   const isAdmin = !!address && ADMIN_WALLETS.includes(address.toLowerCase());
-
-  // ── Store local (off-chain) ─────────────────────────────
-  const localInventaire    = useGameStore(s => s.inventaire);
-  const localCraftMetiersRaw = useGameStore(s => s.craftMetiers);
-  const localCraftMetiers    = localCraftMetiersRaw ?? { artisan: { niveau: 1, xp: 0, xpTotal: 0 }, alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 } };
-  const localPersonageNiv  = useGameStore(s => s.personageNiveau);
-  const ajouterRessource   = useGameStore(s => s.ajouterRessource);
-  const retirerRessourceLocal = useGameStore(s => s.retirerRessource);
-  const ajouterXpCraft     = useGameStore(s => s.ajouterXpCraft);
-  const ajouterXpPersonage = useGameStore(s => s.ajouterXpPersonage);
-  const [localResAmt, setLocalResAmt] = useState<Record<number, string>>({});
-
-  const OFF_CHAIN_RESOURCES: { id: ResourceId; label: string }[] = [
-    { id: ResourceId.EAU,              label: 'Eau' },
-    { id: ResourceId.FLEUR_CERISIER,   label: 'Parchemin Ancien' },
-    { id: ResourceId.OEUF,             label: 'Œuf' },
-    { id: ResourceId.LAIT,             label: 'Lait' },
-    { id: ResourceId.MIEL_ANIMAL,      label: 'Miel' },
-    { id: ResourceId.MUSC_SAKURA,      label: 'Musc Sakura' },
-    { id: ResourceId.ECAILLE_KOI,      label: 'Écaille Koï' },
-    { id: ResourceId.PAIN_BLE,         label: 'Pain de Blé' },
-    { id: ResourceId.RIZ_AU_LAIT,      label: 'Riz au Lait' },
-    { id: ResourceId.GALETTE_SAKURA,   label: 'Galette Sakura' },
-    { id: ResourceId.MIEL_SAKURA,      label: 'Miel Sakura' },
-    { id: ResourceId.THE_WISTERIA,     label: 'Thé Wisteria' },
-    { id: ResourceId.TABLE_SAKURA,     label: 'Table Sakura' },
-    { id: ResourceId.LANTERNE_BAMBOU,  label: 'Lanterne Bambou' },
-    { id: ResourceId.POTION_VITALITE,  label: 'Potion de Vitalité' },
-    { id: ResourceId.ONGUENT_SAKURA,   label: 'Onguent Sakura' },
-    { id: ResourceId.ELIXIR_RECOLTE,   label: 'Élixir de Récolte' },
-    { id: ResourceId.SOUPE_PECHEUR,    label: 'Soupe du Pêcheur' },
-    { id: ResourceId.BENTO_IMPERIAL,   label: 'Bento Impérial' },
-  ];
 
   // ── Tester le token ────────────────────────────────────
   async function testerToken() {
@@ -290,7 +255,7 @@ export function AdminPage() {
         if (!res3.ok) throw new Error('Restore pepites échoué');
       }
       // 4. Restore resources
-      for (let rid = 1; rid <= 50; rid++) {
+      for (let rid = 1; rid <= 62; rid++) {
         const qty = Math.floor(snap.resources[rid] ?? 0);
         if (qty >= 1) {
           await fetch(`${ADMIN_WORKER_URL}/admin/give-resource`, {
@@ -371,7 +336,7 @@ export function AdminPage() {
         });
       }
 
-      for (let rid = 1; rid <= 50; rid++) {
+      for (let rid = 1; rid <= 62; rid++) {
         let qty = Math.floor(p.resources[rid] ?? 0);
         if (type === 'resource' && rid === resourceId) qty = Math.max(0, qty - amount);
         if (qty >= 1) {
@@ -394,13 +359,13 @@ export function AdminPage() {
   }
 
   // ── Stats globales des ressources ──────────────────────
-  const resourceTotals: number[] = Array(51).fill(0);
+  const resourceTotals: number[] = Array(63).fill(0);
   for (const p of players) {
-    for (let rid = 1; rid <= 50; rid++) {
+    for (let rid = 1; rid <= 62; rid++) {
       resourceTotals[rid] += p.resources[rid] ?? 0;
     }
   }
-  const topResources = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, qty: resourceTotals[i + 1] }))
+  const topResources = Array.from({ length: 62 }, (_, i) => ({ id: i + 1, qty: resourceTotals[i + 1] }))
     .filter(r => r.qty > 0)
     .sort((a, b) => b.qty - a.qty)
     .slice(0, 15);
@@ -700,7 +665,7 @@ export function AdminPage() {
                                   onChange={e => setGiveResId(prev => ({ ...prev, [p.cityId]: e.target.value }))}
                                   style={{ ...inputStyle, flex:'none', width:100, fontSize:9 }}
                                 >
-                                  {Array.from({length:50}, (_, i) => i+1).map(id => (
+                                  {Array.from({length:62}, (_, i) => i+1).map(id => (
                                     <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')}</option>
                                   ))}
                                 </select>
@@ -840,7 +805,7 @@ export function AdminPage() {
                                   onChange={e => setRetirerResId(prev => ({ ...prev, [p.cityId]: e.target.value }))}
                                   style={{ ...inputStyle, flex:'none', width:100, fontSize:9 }}
                                 >
-                                  {Array.from({length:50}, (_, i) => i+1).map(id => (
+                                  {Array.from({length:62}, (_, i) => i+1).map(id => (
                                     <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')} (×{Math.floor(p.resources[id] ?? 0)})</option>
                                   ))}
                                 </select>
@@ -952,59 +917,8 @@ export function AdminPage() {
         </div>
       )}
 
-      {/* ── Section locale (off-chain) ── */}
-      <div style={{ marginTop:24, padding:'14px', background:'rgba(0,0,0,0.25)', borderRadius:12, border:'1px solid rgba(255,255,0,0.12)' }}>
-        <p style={{ color:'#ffd600', fontSize:11, fontWeight:800, margin:'0 0 12px', letterSpacing:'0.05em' }}>🧪 TEST LOCAL (DONNÉES HORS-CHAÎNE)</p>
-        <p style={{ color:'#a08060', fontSize:9, margin:'0 0 12px' }}>Ces modifications ne touchent que votre localStorage. Non sauvegardées on-chain.</p>
-
-        {/* Ressources off-chain */}
-        <p style={{ color:'#c9a0b4', fontSize:10, fontWeight:700, margin:'0 0 8px' }}>Ressources Ferme + Craft</p>
-        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-          {OFF_CHAIN_RESOURCES.map(res => {
-            const stock = localInventaire[res.id] ?? 0;
-            const amtStr = localResAmt[res.id] ?? '1';
-            const amt = parseFloat(amtStr) || 0;
-            return (
-              <div key={res.id} style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 8px', background:'rgba(255,255,255,0.04)', borderRadius:8 }}>
-                <span style={{ fontSize:15, width:20 }}>{emojiByResourceId(res.id)}</span>
-                <span style={{ color:'#e0c8d8', fontSize:10, flex:1 }}>{res.label}</span>
-                <span style={{ color:'#9a6080', fontSize:9, marginRight:4 }}>×{Math.floor(stock)}</span>
-                <input
-                  value={amtStr}
-                  onChange={e => setLocalResAmt(prev => ({ ...prev, [res.id]: e.target.value }))}
-                  style={{ width:40, padding:'3px 5px', borderRadius:4, border:'1px solid rgba(255,255,0,0.2)', background:'rgba(0,0,0,0.4)', color:'#e0c8d8', fontSize:10, textAlign:'center' }}
-                />
-                <button onClick={() => ajouterRessource(res.id, amt)} style={localBtnStyle('#6abf44')}>+</button>
-                <button onClick={() => retirerRessourceLocal(res.id, amt)} style={localBtnStyle('#ff6400')}>−</button>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* XP craft */}
-        <p style={{ color:'#c9a0b4', fontSize:10, fontWeight:700, margin:'14px 0 8px' }}>XP Métiers de Craft</p>
-        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-          {[
-            { key: 'artisan' as const, label: '🔨 Artisan', niveau: localCraftMetiers.artisan.niveau, xpTotal: localCraftMetiers.artisan.xpTotal },
-            { key: 'alchimisteCraft' as const, label: '⚗️ Alchimiste', niveau: localCraftMetiers.alchimisteCraft.niveau, xpTotal: localCraftMetiers.alchimisteCraft.xpTotal },
-          ].map(cm => (
-            <div key={cm.key} style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 8px', background:'rgba(255,255,255,0.04)', borderRadius:8 }}>
-              <span style={{ color:'#e0c8d8', fontSize:10, flex:1 }}>{cm.label} Niv.{cm.niveau}</span>
-              <button onClick={() => ajouterXpCraft(cm.key, xpRequis(cm.niveau))} style={localBtnStyle('#ab47bc')}>+1 Niv.</button>
-            </div>
-          ))}
-          <div style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 8px', background:'rgba(255,255,255,0.04)', borderRadius:8 }}>
-            <span style={{ color:'#e0c8d8', fontSize:10, flex:1 }}>👤 Personnage Niv.{localPersonageNiv}</span>
-            <button onClick={() => ajouterXpPersonage(xpRequis(localPersonageNiv))} style={localBtnStyle('#c43070')}>+1 Niv.</button>
-          </div>
-        </div>
-      </div>
     </div>
   );
-}
-
-function localBtnStyle(color: string): React.CSSProperties {
-  return { padding:'3px 8px', borderRadius:6, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background:`${color}33`, color, flexShrink:0 };
 }
 
 const inputStyle: React.CSSProperties = {

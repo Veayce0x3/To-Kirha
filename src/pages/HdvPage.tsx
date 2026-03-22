@@ -234,8 +234,8 @@ function TabOnchain() {
     if (relayerExpirySec > nowSec) {
       expiresAtSec = relayerExpirySec;
     } else {
-      const at = parseInt(localStorage.getItem(`kirha_relayer_at_${villeId}`) ?? '0');
-      expiresAtSec = at ? Math.floor(at / 1000) + 43200 : nowSec + 43200;
+      const exp = parseInt(localStorage.getItem(`kirha_relayer_expires_${villeId}`) ?? '0');
+      expiresAtSec = exp > nowSec ? exp : nowSec + 86400;
     }
     const update = () => setRelayerSecondsLeft(Math.max(0, Math.round(expiresAtSec - Date.now() / 1000)));
     update();
@@ -318,14 +318,14 @@ function TabOnchain() {
           <span style={{ fontSize:20 }}>⚡</span>
           <div style={{ flex:1 }}>
             <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 2px' }}>Mode gasless désactivé</p>
-            <p style={{ color:'#7a4060', fontSize:10, margin:0 }}>Autorise le relayer une fois (12h) pour des transactions sans frais.</p>
+            <p style={{ color:'#7a4060', fontSize:10, margin:0 }}>Autorise le relayer jusqu'à minuit (heure française) pour des transactions sans frais.</p>
           </div>
           <button
             style={{ padding:'7px 12px', background:'#f9a825', color:'#1e0a16', border:'none', borderRadius:10, fontSize:11, fontWeight:700, cursor: relayerActivating ? 'default' : 'pointer', opacity: relayerActivating ? 0.6 : 1 }}
             onClick={activerRelayer}
             disabled={relayerActivating}
           >
-            {relayerActivating ? '⏳…' : 'Activer (12h)'}
+            {relayerActivating ? '⏳…' : 'Activer'}
           </button>
         </div>
       )}

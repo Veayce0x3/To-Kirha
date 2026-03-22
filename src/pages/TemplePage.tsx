@@ -19,21 +19,28 @@ const ALL_QUESTS = [
   { rid: 3  as ResourceId, qty: 2, reward: 1.2,  label: '2 Chêne' },
 ];
 
-function getDayOfYear(): number {
-  const now = new Date();
-  const start = new Date(Date.UTC(now.getUTCFullYear(), 0, 0));
-  const diff = now.getTime() - start.getTime();
-  return Math.floor(diff / 86_400_000);
+function getParisDate(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
 }
 
-function getTodayUTC(): string {
-  return new Date().toISOString().slice(0, 10);
+function getDayOfYearParis(): number {
+  const paris = getParisDate();
+  const [y, m, d] = paris.split('-').map(Number);
+  const start = new Date(y, 0, 0);
+  const current = new Date(y, m - 1, d);
+  return Math.round((current.getTime() - start.getTime()) / 86_400_000);
 }
 
-function getSecondsUntilMidnightUTC(): number {
-  const now = new Date();
-  const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
-  return Math.floor((midnight.getTime() - now.getTime()) / 1000);
+function getSecondsUntilMidnightParis(): number {
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Paris',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date());
+  const h = parseInt(parts.find(p => p.type === 'hour')!.value);
+  const m = parseInt(parts.find(p => p.type === 'minute')!.value);
+  const s = parseInt(parts.find(p => p.type === 'second')!.value);
+  return 86400 - (h * 3600 + m * 60 + s);
 }
 
 function formatCountdown(secs: number): string {
@@ -53,15 +60,16 @@ export function TemplePage() {
   const templeCompletedDate   = useGameStore(s => s.templeCompletedDate);
   const templeResetUsed       = useGameStore(s => s.templeResetUsed);
   const templeResetDate       = useGameStore(s => s.templeResetDate);
+  const templeSlotRerolls     = useGameStore(s => s.templeSlotRerolls);
   const completerQueteTemple  = useGameStore(s => s.completerQueteTemple);
   const resetTempleQuetes     = useGameStore(s => s.resetTempleQuetes);
   const resetQueteTempleManuel = useGameStore(s => s.resetQueteTempleManuel);
 
-  const [countdown, setCountdown] = useState(getSecondsUntilMidnightUTC());
+  const [countdown, setCountdown] = useState(getSecondsUntilMidnightParis());
 
-  const today = getTodayUTC();
+  const today = getParisDate();
 
-  // Auto-reset à minuit UTC : si la date stockée ≠ aujourd'hui, réinitialiser
+  // Auto-reset à minuit Paris : si la date stockée ≠ aujourd'hui, réinitialiser
   useEffect(() => {
     if (templeCompletedDate && templeCompletedDate !== today) {
       resetTempleQuetes();
@@ -70,9 +78,9 @@ export function TemplePage() {
 
   useEffect(() => {
     const id = setInterval(() => {
-      setCountdown(getSecondsUntilMidnightUTC());
+      setCountdown(getSecondsUntilMidnightParis());
       // Vérifier le changement de jour à chaque tick
-      const newToday = getTodayUTC();
+      const newToday = getParisDate();
       if (templeCompletedDate && templeCompletedDate !== newToday) {
         resetTempleQuetes();
       }
@@ -80,13 +88,13 @@ export function TemplePage() {
     return () => clearInterval(id);
   }, [templeCompletedDate, resetTempleQuetes]);
 
-  // Quêtes du jour basées sur le jour de l'année (rotation automatique)
-  const questDay = getDayOfYear();
-  const todayIndices = [
-    questDay % ALL_QUESTS.length,
-    (questDay + 1) % ALL_QUESTS.length,
-    (questDay + 2) % ALL_QUESTS.length,
-  ];
+  // Quêtes du jour basées sur le jour de l'année Paris (rotation automatique + rerolls)
+  const questDay = getDayOfYearParis();
+  const todayIndices = [0, 1, 2].map(i => {
+    const base = (questDay + i) % ALL_QUESTS.length;
+    const rerolls = templeSlotRerolls?.[i] ?? 0;
+    return (base + rerolls) % ALL_QUESTS.length;
+  });
   const todayQuests = todayIndices.map(i => ALL_QUESTS[i]);
 
   // Quêtes complétées : seulement si la date correspond à aujourd'hui
@@ -120,7 +128,7 @@ export function TemplePage() {
           <div style={{ flex:1 }}>
             <p style={{ color:'#1e0a16', fontSize:'14px', fontWeight:800, margin:0 }}>{t('temple.subtitle')}</p>
             <p style={{ color:'#7a4060', fontSize:'11px', margin:'4px 0 0' }}>
-              {t('temple.reset_in')} : <strong style={{ fontFamily:'monospace', color:'#c4306e' }}>{formatCountdown(countdown)}</strong>
+              Prochain reset (minuit 🇫🇷) : <strong style={{ fontFamily:'monospace', color:'#c4306e' }}>{formatCountdown(countdown)}</strong>
             </p>
           </div>
         </div>
@@ -150,7 +158,6 @@ export function TemplePage() {
             const stock = Math.floor(inventaire[quest.rid] ?? 0);
             const canComplete = !isCompleted && stock >= quest.qty;
             const insufficient = !isCompleted && stock < quest.qty;
-            const canReset = isCompleted && resetsLeft > 0;
 
             return (
               <div key={i} style={{
@@ -170,17 +177,7 @@ export function TemplePage() {
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:4, alignItems:'flex-end' }}>
                   {isCompleted ? (
-                    <>
-                      <span style={{ color:'#6abf44', fontSize:'11px', fontWeight:800 }}>{t('temple.completed')}</span>
-                      {canReset && (
-                        <button
-                          style={{ padding:'4px 8px', background:'rgba(249,168,37,0.15)', border:'1px solid rgba(249,168,37,0.4)', borderRadius:8, color:'#b07010', fontSize:9, fontWeight:700, cursor:'pointer' }}
-                          onClick={() => resetQueteTempleManuel(i)}
-                        >
-                          🔄 Reset
-                        </button>
-                      )}
-                    </>
+                    <span style={{ color:'#6abf44', fontSize:'11px', fontWeight:800 }}>{t('temple.completed')}</span>
                   ) : (
                     <button
                       style={{
@@ -197,6 +194,14 @@ export function TemplePage() {
                       {insufficient ? t('temple.insufficient') : t('temple.quest_label')}
                     </button>
                   )}
+                  {resetsLeft > 0 && (
+                    <button
+                      style={{ padding:'4px 8px', background:'rgba(249,168,37,0.12)', border:'1px solid rgba(249,168,37,0.35)', borderRadius:8, color:'#b07010', fontSize:9, fontWeight:700, cursor:'pointer' }}
+                      onClick={() => resetQueteTempleManuel(i)}
+                    >
+                      🔄 Changer
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -206,7 +211,7 @@ export function TemplePage() {
         {/* Info */}
         <div style={{ marginTop:16, padding:'12px 14px', background:'rgba(196,48,112,0.04)', border:'1px solid rgba(196,48,112,0.12)', borderRadius:12 }}>
           <p style={{ color:'#9a6080', fontSize:'11px', margin:0, lineHeight:1.6 }}>
-            Les offrandes sont renouvelées chaque jour à minuit UTC. Complétez les 3 quêtes quotidiennes pour gagner des $KIRHA.
+            Les offrandes sont renouvelées chaque jour à minuit (heure française). Complétez les 3 quêtes quotidiennes pour gagner des $KIRHA. Le bouton "Changer" permet de remplacer une quête par une autre.
           </p>
         </div>
       </div>
