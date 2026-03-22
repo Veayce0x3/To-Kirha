@@ -12,6 +12,14 @@ import './index.css';
 
 const queryClient = new QueryClient();
 
+// Supprime les rejets WalletConnect relay (Origin not allowed) — non critique
+window.addEventListener('unhandledrejection', (e) => {
+  const msg = String(e.reason?.message ?? e.reason ?? '');
+  if (msg.includes('Origin not allowed') || msg.includes('origin not allowed')) {
+    e.preventDefault();
+  }
+});
+
 class RootErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { error: Error | null }
