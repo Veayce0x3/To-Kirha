@@ -30,6 +30,7 @@ typechain-types/
 
 # Claude local settings (peut contenir des clés privées)
 .claude/
+CLAUDE.md
 
 # Secrets supplémentaires
 *.secret
