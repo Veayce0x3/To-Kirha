@@ -131,8 +131,11 @@ const RESOURCE_IMAGES: Partial<Record<number, Partial<Record<ResourceImgType, st
   8:  { idle: 'metiers/bucheron/magnolia/arbre.png',     done: 'metiers/bucheron/magnolia/tronc_coupe.png',     inventory: 'metiers/bucheron/magnolia/inventaire.png'     },
   9:  { idle: 'metiers/bucheron/cerisier_dore/arbre.png',done: 'metiers/bucheron/cerisier_dore/tronc_coupe.png',inventory: 'metiers/bucheron/cerisier_dore/inventaire.png'},
   10: { idle: 'metiers/bucheron/sakura/arbre.png',       done: 'metiers/bucheron/sakura/tronc_coupe.png',       inventory: 'metiers/bucheron/sakura/inventaire.png'       },
-  // Paysan — Blé uniquement
-  11: { idle: 'metiers/paysan/ble/arbre.png', done: 'metiers/paysan/ble/tronc_coupe.png' },
+  // Paysan
+  11: { idle: 'metiers/paysan/ble/arbre.png',    done: 'metiers/paysan/ble/tronc_coupe.png',    inventory: 'metiers/paysan/ble/inventaire.png'    },
+  12: { idle: 'metiers/paysan/orge/arbre.png',   done: 'metiers/paysan/orge/tronc_coupe.png',   inventory: 'metiers/paysan/orge/inventaire.png'   },
+  13: { idle: 'metiers/paysan/seigle/arbre.png', done: 'metiers/paysan/seigle/tronc_coupe.png', inventory: 'metiers/paysan/seigle/inventaire.png' },
+  14: { idle: 'metiers/paysan/avoine/arbre.png', done: 'metiers/paysan/avoine/tronc_coupe.png', inventory: 'metiers/paysan/avoine/inventaire.png' },
 };
 
 export function imageByResourceId(id: number, type: ResourceImgType): string | null {

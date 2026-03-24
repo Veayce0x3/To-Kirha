@@ -206,14 +206,12 @@ export function BottomMenu() {
       <div style={s.menu} className="bottom-menu">
         {/* Kirha-City */}
         <button style={{ ...s.btn, ...(homeActive ? s.btnActive : {}) }} onClick={() => navigate('/home')}>
-          <img src={uiAssetPath('ui/pages/kirha_city.png')} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
-          <span style={s.label}>{t('nav.home')}</span>
+          <img src={uiAssetPath('ui/pages/kirha_city.png')} alt="" style={{ width: 30, height: 30, objectFit: 'contain' }} />
         </button>
 
         {/* Inventaire */}
         <button style={s.btn} onClick={() => setShowInventaire(true)}>
-          <img src={uiAssetPath('ui/pages/inventaire.png')} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
-          <span style={s.label}>{t('nav.inventory')}</span>
+          <img src={uiAssetPath('ui/pages/inventaire.png')} alt="" style={{ width: 30, height: 30, objectFit: 'contain' }} />
         </button>
 
         {/* Sauvegarder */}
@@ -233,10 +231,7 @@ export function BottomMenu() {
             <span style={{ position:'absolute', top:6, right:8, width:7, height:7, background:'#6abf44', borderRadius:'50%' }} />
           )}
           <span style={s.icon}>
-            {saveBusy ? '⏳' : saveStatus === 'success' ? '✅' : saveError_ ? '❌' : <img src={uiAssetPath('ui/pages/sauvegarde.png')} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />}
-          </span>
-          <span style={{ ...s.label, color: saveError_ ? '#c43070' : pendingCount > 0 ? '#4a8f2a' : undefined }}>
-            {saveBusy ? 'Sauvegarde…' : saveError_ ? 'Erreur ↺' : 'Sauvegarder'}
+            {saveBusy ? '⏳' : saveStatus === 'success' ? '✅' : saveError_ ? '❌' : <img src={uiAssetPath('ui/pages/sauvegarde.png')} alt="" style={{ width: 30, height: 30, objectFit: 'contain' }} />}
           </span>
         </button>
       </div>

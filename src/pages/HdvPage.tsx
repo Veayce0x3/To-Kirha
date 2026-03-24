@@ -8,7 +8,7 @@ import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
 import { useMarket } from '../hooks/useMarket';
 import { useSave } from '../hooks/useSave';
-import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
+import { emojiByResourceId, getNomRessource, uiAssetPath } from '../utils/resourceUtils';
 import { KIRHA_MARKET_ADDRESS, KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaMarketAbi from '../contracts/abis/KirhaMarket.json';
 import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
@@ -345,14 +345,14 @@ function TabOnchain() {
       {/* Soldes */}
       <div style={{ display:'flex', gap:8, padding:'8px 14px 0' }}>
         <div style={{ ...ms.statCard, flex:1, flexDirection:'row', gap:6, alignItems:'center', justifyContent:'center' }}>
-          <span style={{ fontSize:14 }}>💠</span>
+          <img src={uiAssetPath('ui/token.png')} alt="" style={{ width:18, height:18, objectFit:'contain' }} />
           <div>
             <span style={{ color:'#1e0a16', fontSize:13, fontWeight:800 }}>{soldeKirha > 0 ? soldeKirha.toFixed(4) : '—'}</span>
             <span style={{ color:'#9a6080', fontSize:9, display:'block', fontWeight:700 }}>$KIRHA</span>
           </div>
         </div>
         <div style={{ ...ms.statCard, flex:1, flexDirection:'row', gap:6, alignItems:'center', justifyContent:'center' }}>
-          <span style={{ fontSize:14 }}>🪙</span>
+          <img src={uiAssetPath('ui/pepites/50.png')} alt="" style={{ width:18, height:18, objectFit:'contain' }} />
           <div>
             <span style={{ color:'#f9a825', fontSize:13, fontWeight:800 }}>{pepitesOr > 0 ? pepitesOr.toFixed(0) : '—'}</span>
             <span style={{ color:'#9a6080', fontSize:9, display:'block', fontWeight:700 }}>PÉPITES</span>
@@ -603,7 +603,7 @@ function TabOnchain() {
               </div>
             )}
             <div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', background: isVip ? 'rgba(249,168,37,0.1)' : 'rgba(196,48,112,0.07)', border: isVip ? '1px solid rgba(249,168,37,0.3)' : '1px solid rgba(196,48,112,0.2)', borderRadius:20, alignSelf:'flex-start' }}>
-              <span style={{ fontSize:13 }}>{isVip ? '👑' : 'ℹ️'}</span>
+              {isVip ? <img src={uiAssetPath('ui/vip.png')} alt="" style={{ width:16, height:16, objectFit:'contain' }} /> : <span style={{ fontSize:13 }}>ℹ️</span>}
               <span style={{ color: isVip ? '#f9a825' : '#9a6080', fontSize:11, fontWeight:700 }}>{taxLabel}</span>
             </div>
 

@@ -62,12 +62,12 @@ export function BanquePage() {
         {/* Récap soldes */}
         <div style={{ display:'flex', gap:10, marginBottom:12 }}>
           <div style={{ flex:1, background:'linear-gradient(135deg, rgba(196,48,112,0.08), rgba(138,37,212,0.05))', border:'1px solid rgba(196,48,112,0.2)', borderRadius:14, padding:'12px 14px', display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
-            <span style={{ fontSize:20 }}>💠</span>
+            <img src={uiAssetPath('ui/token.png')} alt="" style={{ width: 28, height: 28, objectFit: 'contain' }} />
             <span style={{ color:'#1e0a16', fontSize:18, fontWeight:900 }}>{soldeKirhaStore > 0 ? soldeKirhaStore.toFixed(4) : '0'}</span>
             <span style={{ color:'#9a6080', fontSize:10, fontWeight:700 }}>$KIRHA IN-GAME</span>
           </div>
           <div style={{ flex:1, background:'linear-gradient(135deg, rgba(249,168,37,0.1), rgba(196,48,112,0.04))', border:'1px solid rgba(249,168,37,0.25)', borderRadius:14, padding:'12px 14px', display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
-            <span style={{ fontSize:20 }}>🪙</span>
+            <img src={uiAssetPath('ui/pepites/50.png')} alt="" style={{ width: 28, height: 28, objectFit: 'contain' }} />
             <span style={{ color:'#f9a825', fontSize:18, fontWeight:900 }}>{pepitesOr > 0 ? pepitesOr.toFixed(0) : '0'}</span>
             <span style={{ color:'#9a6080', fontSize:10, fontWeight:700 }}>PÉPITES D'OR</span>
           </div>
@@ -97,7 +97,10 @@ export function BanquePage() {
 
         {/* Retrait / Dépôt $KIRHA */}
         <div style={s.saveCard}>
-          <p style={{ color:'#1e0a16', fontSize:'14px', fontWeight:700, margin:'0 0 12px' }}>💠 $KIRHA — Retrait / Dépôt</p>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:12 }}>
+            <img src={uiAssetPath('ui/token.png')} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+            <p style={{ color:'#1e0a16', fontSize:'14px', fontWeight:700, margin:0 }}>$KIRHA — Retrait / Dépôt</p>
+          </div>
 
           {/* Retrait */}
           <div style={{ marginBottom:12 }}>
@@ -154,7 +157,10 @@ export function BanquePage() {
 
         {/* Pépites d'or — achat avec $KIRHA */}
         <div style={s.saveCard}>
-          <p style={{ color:'#f9a825', fontSize:'14px', fontWeight:700, margin:'0 0 4px' }}>🪙 Pépites d'or</p>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
+            <img src={uiAssetPath('ui/pepites/50.png')} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+            <p style={{ color:'#f9a825', fontSize:'14px', fontWeight:700, margin:0 }}>Pépites d'or</p>
+          </div>
           <p style={{ color:'#7a4060', fontSize:'11px', margin:'0 0 12px' }}>
             Solde : <strong style={{color:'#f9a825'}}>{pepitesOr.toFixed(0)}</strong> pépites · {soldeKirhaStore.toFixed(2)} $KIRHA disponibles
           </p>
@@ -227,7 +233,10 @@ export function BanquePage() {
                       <span style={{display:'block', color:'#9a6080', fontSize:'9px'}}>Déjà couvert par votre VIP actuel</span>
                     )}
                   </div>
-                  <span style={{color:'#c43070', fontSize:'12px', fontWeight:800}}>🪙 {dur.pepites}</span>
+                  <span style={{display:'flex', alignItems:'center', gap:4, color:'#c43070', fontSize:'12px', fontWeight:800}}>
+                    <img src={uiAssetPath('ui/pepites/50.png')} alt="" style={{width:14, height:14, objectFit:'contain'}} />
+                    {dur.pepites}
+                  </span>
                 </button>
               );
             })}

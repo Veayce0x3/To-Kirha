@@ -90,11 +90,11 @@ export function HomePage() {
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
 
   const CARDS = [
-    { route: '/recolte', icon: '🌿', imgSrc: null,                       label: t('home.card_recolte'),  desc: t('home.card_recolte_desc'), color: '#6abf44', locked: false },
+    { route: '/recolte', icon: '🌿', imgSrc: 'ui/pages/recolte.png',     label: t('home.card_recolte'),  desc: t('home.card_recolte_desc'), color: '#6abf44', locked: false },
     { route: '/hdv',     icon: '🏪', imgSrc: 'ui/pages/hdv.png',         label: t('home.card_hdv'),      desc: t('home.card_hdv_desc'),     color: '#f9a825', locked: false },
     { route: '/banque',  icon: '🏦', imgSrc: 'ui/pages/banque.png',      label: t('home.card_banque'),   desc: t('home.card_banque_desc'),  color: '#8a25d4', locked: false },
     { route: '/maison',  icon: '🏠', imgSrc: 'ui/pages/maison.png',      label: t('home.card_maison'),   desc: t('home.card_maison_desc'),  color: '#c43070', locked: false },
-    { route: '/craft',   icon: '⚗️', imgSrc: 'ui/pages/craft.jpg',       label: t('home.card_craft'),    desc: t('home.card_craft_desc'),   color: '#8d6e63', locked: false },
+    { route: '/craft',   icon: '⚗️', imgSrc: 'ui/pages/craft.png',       label: t('home.card_craft'),    desc: t('home.card_craft_desc'),   color: '#8d6e63', locked: false },
     { route: '/temple',  icon: '⛩️', imgSrc: 'ui/pages/temple.png',      label: t('home.card_temple'),   desc: t('home.card_temple_desc'),  color: '#c4306e', locked: false },
     { route: '/ferme',   icon: '🌾', imgSrc: 'ui/pages/ferme.png',       label: t('home.card_ferme'),    desc: t('home.card_ferme_desc'),   color: '#a0522d', locked: false },
   ];
@@ -134,7 +134,10 @@ export function HomePage() {
       {showVipInfo && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.3)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => setShowVipInfo(false)}>
           <div style={{ background:'#fdf0f5', borderRadius:18, padding:'24px 20px', width:'100%', maxWidth:300 }} onClick={e => e.stopPropagation()}>
-            <p style={{ color:'#f9a825', fontSize:'18px', fontWeight:800, margin:'0 0 8px' }}>👑 VIP Actif</p>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+              <img src={uiAssetPath('ui/vip.png')} alt="" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+              <p style={{ color:'#f9a825', fontSize:'18px', fontWeight:800, margin:0 }}>VIP Actif</p>
+            </div>
             <p style={{ color:'#7a4060', fontSize:'12px', margin:'0 0 16px' }}>Taxe HDV réduite : 25% (au lieu de 50%)</p>
             <p style={{ color:'#1e0a16', fontSize:'13px', fontWeight:700, margin:0 }}>Expire le {new Date(vipExpiry * 1000).toLocaleDateString('fr-FR')}</p>
             <button style={{ marginTop:16, width:'100%', padding:'10px', borderRadius:12, background:'rgba(249,168,37,0.15)', border:'1px solid rgba(249,168,37,0.3)', color:'#f9a825', fontWeight:700, cursor:'pointer' }} onClick={() => { setShowVipInfo(false); navigate('/banque'); }}>Prolonger le VIP</button>
@@ -160,20 +163,22 @@ export function HomePage() {
               {villeId ? `Ville #${villeId}` : '…'}
             </span>
           </div>
-          <button style={s.settingsBtn} onClick={() => setShowSettings(true)}>⚙️</button>
+          <button style={s.settingsBtn} onClick={() => setShowSettings(true)}>
+            <img src={uiAssetPath('ui/parametre.png')} alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+          </button>
         </div>
       </div>
 
       {/* Soldes */}
       <div style={s.soldesRow}>
         <div style={s.soldeItem}>
-          <span style={s.soldeIcon}>🪙</span>
+          <img src={uiAssetPath('ui/pepites/50.png')} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
           <span style={s.soldeLabel}>{t('home.pepites')}</span>
           <span style={s.soldeValue}>{pepitesOr > 0 ? pepitesOr.toFixed(0) : '—'}</span>
         </div>
         <div style={s.soldeDivider} />
         <div style={s.soldeItem}>
-          <span style={s.soldeIcon}>💠</span>
+          <img src={uiAssetPath('ui/token.png')} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
           <span style={s.soldeLabel}>$KIRHA</span>
           <span style={s.soldeValue}>{soldeKirha > 0 ? soldeKirha.toFixed(4) : '—'}</span>
         </div>
@@ -197,7 +202,7 @@ export function HomePage() {
             <div style={{ ...s.cardGlow, background: `radial-gradient(ellipse at top left, ${card.color}18, transparent 70%)` }} />
             <div style={s.cardTop}>
               {card.imgSrc
-                ? <img src={uiAssetPath(card.imgSrc)} alt="" style={{ width: 56, height: 56, objectFit: 'contain', filter: `drop-shadow(0 0 8px ${card.color}88)` }} />
+                ? <img src={uiAssetPath(card.imgSrc)} alt="" style={{ width: 80, height: 80, objectFit: 'contain', filter: `drop-shadow(0 0 10px ${card.color}99)` }} />
                 : <span style={{ ...s.cardIcon, filter: `drop-shadow(0 0 8px ${card.color}88)` }}>{card.icon}</span>
               }
               {card.locked && <span style={{ fontSize:12 }}>🔒</span>}

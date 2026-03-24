@@ -5,7 +5,7 @@ import { useHarvest, formatTimer, SlotAvecTimer } from '../hooks/useHarvest';
 import { METIERS, MetierId, Ressource } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
-import { emojiByResourceId, getNomRessource, metierIconPath } from '../utils/resourceUtils';
+import { emojiByResourceId, getNomRessource, metierIconPath, uiAssetPath } from '../utils/resourceUtils';
 import { ResourceIcon } from '../components/ResourceIcon';
 import { METIER_TOOL_TYPE, OUTIL_TIERS } from '../data/outils';
 
@@ -65,8 +65,8 @@ function ResourcePickerPopup({
                 onClick={() => { if (!locked) { onPick(res.id); onClose(); } }}
                 disabled={locked}
               >
-                <span style={{ width: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {locked ? '🔒' : <ResourceIcon id={res.id} type="inventory" size={22} />}
+                <span style={{ width: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {locked ? '🔒' : <ResourceIcon id={res.id} type="inventory" size={30} />}
                 </span>
                 <div style={{ flex: 1, textAlign: 'left' }}>
                   <span style={{ color: locked ? '#7a4060' : '#1e0a16', fontSize: '13px', fontWeight: 600 }}>
@@ -123,7 +123,7 @@ function UnlockPopup({
             <span>{totalInventaire >= cond.ressources ? '✓' : '✗'}</span>
           </div>
           <div style={{ ...up.condRow, color: soldeKirha >= cond.kirha ? '#6abf44' : '#c43070' }}>
-            <span>💠</span>
+            <img src={uiAssetPath('ui/token.png')} alt="" style={{ width:16, height:16, objectFit:'contain' }} />
             <span style={{ fontSize: '13px', flex: 1 }}>
               {cond.kirha} $KIRHA — {t('recolte.you_have')} : {soldeKirha.toFixed(2)}
             </span>
@@ -193,8 +193,8 @@ function MetierSelector({ onSelect }: { onSelect: (id: MetierId) => void }) {
             >
               <div style={{ ...s.metierCardGlow, background: `radial-gradient(ellipse at left, ${cfg.color}14, transparent 70%)` }} />
               {metierImg
-                ? <img src={metierImg} alt="" style={{ width: 36, height: 36, objectFit: 'contain', filter: `drop-shadow(0 0 6px ${cfg.color}66)`, flexShrink: 0 }} />
-                : <span style={{ fontSize: '26px', filter: `drop-shadow(0 0 6px ${cfg.color}66)` }}>{cfg.icon}</span>
+                ? <img src={metierImg} alt="" style={{ width: 52, height: 52, objectFit: 'contain', filter: `drop-shadow(0 0 8px ${cfg.color}88)`, flexShrink: 0 }} />
+                : <span style={{ fontSize: '32px', filter: `drop-shadow(0 0 6px ${cfg.color}66)` }}>{cfg.icon}</span>
               }
               <div style={s.metierInfo}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -354,8 +354,8 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
               {t('recolte.unlock_btn')}
             </span>
             {SLOT_UNLOCK_CONDITIONS[slot.index] && (
-              <span style={{ color: '#7a4060', fontSize: '8px', textAlign: 'center', marginTop: 2, lineHeight: 1.3 }}>
-                📦{SLOT_UNLOCK_CONDITIONS[slot.index].ressources} · 💠{SLOT_UNLOCK_CONDITIONS[slot.index].kirha}
+              <span style={{ color: '#7a4060', fontSize: '8px', textAlign: 'center', marginTop: 2, lineHeight: 1.3, display:'flex', alignItems:'center', justifyContent:'center', gap:2 }}>
+                📦{SLOT_UNLOCK_CONDITIONS[slot.index].ressources} · <img src={uiAssetPath('ui/token.png')} alt="" style={{ width:9, height:9, objectFit:'contain', display:'inline-block' }} />{SLOT_UNLOCK_CONDITIONS[slot.index].kirha}
               </span>
             )}
           </>
@@ -392,7 +392,7 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
             <span style={{ background: `${cfg.color}22`, borderRadius: 6, padding: '1px 5px', color: cfg.color, fontSize: '7px', fontWeight: 800, letterSpacing: '0.05em', marginBottom: 2 }}>
               EN COURS
             </span>
-            <ResourceIcon id={resourceInHand ?? res.id} type={resourceInHand ? 'inventory' : 'idle'} size={28} style={{ margin: '2px 0 1px' }} />
+            <ResourceIcon id={resourceInHand ?? res.id} type={resourceInHand ? 'inventory' : 'idle'} size={48} style={{ margin: '2px 0 1px' }} />
             <span style={{ color: '#1e0a16', fontSize: '8px', fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }}>
               {resourceInHand && resInHand ? getNomRessource(resInHand.id, lang) : getNomRessource(res.id, lang)}
             </span>
@@ -413,7 +413,7 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
             <span style={{ background: 'rgba(106,191,68,0.2)', borderRadius: 6, padding: '1px 5px', color: '#4a8f2a', fontSize: '7px', fontWeight: 800, letterSpacing: '0.05em', marginBottom: 2 }}>
               {resourceInHand ? 'REPLANTER' : 'PRÊT !'}
             </span>
-            <ResourceIcon id={resourceInHand && resInHand ? resInHand.id : res.id} type={resourceInHand ? 'inventory' : 'done'} size={32} style={{ margin: '2px 0 1px' }} />
+            <ResourceIcon id={resourceInHand && resInHand ? resInHand.id : res.id} type={resourceInHand ? 'inventory' : 'done'} size={52} style={{ margin: '2px 0 1px' }} />
             <span style={{ color: '#1e0a16', fontSize: '8px', fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }}>
               {resourceInHand && resInHand ? getNomRessource(resInHand.id, lang) : getNomRessource(res.id, lang)}
             </span>
@@ -456,9 +456,9 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
       <div style={{ ...s.header, borderBottomColor: `${cfg.color}33` }}>
         <button style={{ ...s.backBtn, color: cfg.color }} onClick={onBack}>{t('recolte.back')}</button>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-          <span style={{ color: '#1e0a16', fontSize: '15px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ color: '#1e0a16', fontSize: '15px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
             {metierIconPath(metierId)
-              ? <img src={metierIconPath(metierId)!} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              ? <img src={metierIconPath(metierId)!} alt="" style={{ width: 28, height: 28, objectFit: 'contain' }} />
               : cfg.icon
             } {t(`metier.${metierId}` as `metier.${MetierId}`)}
           </span>
@@ -587,7 +587,7 @@ const s: Record<string, React.CSSProperties> = {
   slotCard: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     border: '1.5px solid', borderRadius: 12,
-    padding: '10px 6px 8px', minHeight: 88,
+    padding: '10px 6px 8px', minHeight: 120,
     transition: 'border-color 0.15s, background 0.15s, outline 0.1s',
   },
 };
