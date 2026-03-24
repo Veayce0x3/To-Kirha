@@ -5,7 +5,8 @@ import { useGameStore, xpRequis } from '../store/gameStore';
 import { METIERS, MetierId } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
-import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
+import { getNomRessource } from '../utils/resourceUtils';
+import { ResourceIcon } from '../components/ResourceIcon';
 import { getResourceById } from '../data/metiers';
 
 type Tab = 'ressources' | 'metiers' | 'personnage';
@@ -114,7 +115,7 @@ export function MaisonPage() {
                 return (
                   <div key={id} style={s.itemRow}>
                     <div style={{ ...s.itemIcon, borderColor: metierCfg ? metierCfg.color + '66' : '#d4648a66' }}>
-                      <span style={{ fontSize:'20px' }}>{emojiByResourceId(id)}</span>
+                      <ResourceIcon id={id} type="inventory" size={24} />
                     </div>
                     <div style={s.itemInfo}>
                       <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:600 }}>{nom}</span>

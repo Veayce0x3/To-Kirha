@@ -6,6 +6,7 @@ import { useDeposit } from '../hooks/useDeposit';
 import { useVip, VIP_PACKS, VIP_DURATIONS } from '../hooks/useVip';
 import { useGameStore } from '../store/gameStore';
 import { useT } from '../utils/i18n';
+import { uiAssetPath } from '../utils/resourceUtils';
 import { KIRHA_TOKEN_ADDRESS } from '../contracts/addresses';
 
 export function BanquePage() {
@@ -166,8 +167,11 @@ export function BanquePage() {
                 disabled={vipStatus === 'pending' || soldeKirhaStore < pack.kirha}
               >
                 <div style={{textAlign:'left'}}>
-                  <span style={{color:'#f9a825', fontSize:'13px', fontWeight:700}}>🪙 {pack.pepites} pépites</span>
-                  {pack.bonus && <span style={{marginLeft:6, color:'#6abf44', fontSize:'9px', fontWeight:700}}>{pack.bonus}</span>}
+                  <div style={{display:'flex', alignItems:'center', gap:6}}>
+                    <img src={uiAssetPath(`ui/pepites/${pack.pepites}.png`)} alt="" style={{width:28, height:28, objectFit:'contain'}} />
+                    <span style={{color:'#f9a825', fontSize:'13px', fontWeight:700}}>{pack.pepites} pépites</span>
+                    {pack.bonus && <span style={{color:'#6abf44', fontSize:'9px', fontWeight:700}}>{pack.bonus}</span>}
+                  </div>
                   <span style={{display:'block', color:'#7a4060', fontSize:'10px'}}>Pack {pack.label}</span>
                 </div>
                 <span style={{color:'#1e0a16', fontSize:'12px', fontWeight:800}}>{pack.kirha} $K</span>
@@ -180,7 +184,7 @@ export function BanquePage() {
         {/* VIP — achat avec pépites */}
         <div style={s.saveCard}>
           <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
-            <span style={{fontSize:'20px'}}>👑</span>
+            <img src={uiAssetPath('ui/vip.png')} alt="" style={{width:24, height:24, objectFit:'contain'}} />
             <p style={{ color:'#c43070', fontSize:'14px', fontWeight:700, margin:0 }}>Statut VIP</p>
             {isVip && <span style={{ background:'linear-gradient(135deg,#f9a825,#c43070)', color:'#fff', fontSize:'9px', fontWeight:800, padding:'2px 7px', borderRadius:6 }}>ACTIF ✨</span>}
           </div>

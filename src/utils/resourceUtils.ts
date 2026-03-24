@@ -115,3 +115,49 @@ const RESOURCE_EMOJI: Record<number, string> = {
 export function emojiByResourceId(id: ResourceId | number): string {
   return RESOURCE_EMOJI[id] ?? '📦';
 }
+
+// ── Images par ResourceId ─────────────────────────────────────
+export type ResourceImgType = 'idle' | 'done' | 'inventory';
+
+const RESOURCE_IMAGES: Partial<Record<number, Partial<Record<ResourceImgType, string>>>> = {
+  // Bûcheron
+  1:  { idle: 'metiers/bucheron/frene/arbre.png',        done: 'metiers/bucheron/frene/tronc_coupe.png',        inventory: 'metiers/bucheron/frene/inventaire.png'        },
+  2:  { idle: 'metiers/bucheron/sequoia/arbre.png',      done: 'metiers/bucheron/sequoia/tronc_coupe.png',      inventory: 'metiers/bucheron/sequoia/inventaire.png'      },
+  3:  { idle: 'metiers/bucheron/chene/arbre.png',        done: 'metiers/bucheron/chene/tronc_coupe.png',        inventory: 'metiers/bucheron/chene/inventaire.png'        },
+  4:  { idle: 'metiers/bucheron/bouleau/arbre.png',      done: 'metiers/bucheron/bouleau/tronc_coupe.png',      inventory: 'metiers/bucheron/bouleau/inventaire.png'      },
+  5:  { idle: 'metiers/bucheron/erable/arbre.png',       done: 'metiers/bucheron/erable/tronc_coupe.png',       inventory: 'metiers/bucheron/erable/inventaire.png'       },
+  6:  { idle: 'metiers/bucheron/bambou/arbre.png',       done: 'metiers/bucheron/bambou/tronc_coupe.png',       inventory: 'metiers/bucheron/bambou/inventaire.png'       },
+  7:  { idle: 'metiers/bucheron/ginkgo/arbre.png',       done: 'metiers/bucheron/ginkgo/tronc_coupe.png',       inventory: 'metiers/bucheron/ginkgo/inventaire.png'       },
+  8:  { idle: 'metiers/bucheron/magnolia/arbre.png',     done: 'metiers/bucheron/magnolia/tronc_coupe.png',     inventory: 'metiers/bucheron/magnolia/inventaire.png'     },
+  9:  { idle: 'metiers/bucheron/cerisier_dore/arbre.png',done: 'metiers/bucheron/cerisier_dore/tronc_coupe.png',inventory: 'metiers/bucheron/cerisier_dore/inventaire.png'},
+  10: { idle: 'metiers/bucheron/sakura/arbre.png',       done: 'metiers/bucheron/sakura/tronc_coupe.png',       inventory: 'metiers/bucheron/sakura/inventaire.png'       },
+  // Paysan — Blé uniquement
+  11: { idle: 'metiers/paysan/ble/arbre.png', done: 'metiers/paysan/ble/tronc_coupe.png' },
+};
+
+export function imageByResourceId(id: number, type: ResourceImgType): string | null {
+  const paths = RESOURCE_IMAGES[id];
+  if (!paths) return null;
+  const rel = paths[type];
+  if (!rel) return null;
+  return `${import.meta.env.BASE_URL}assets/${rel}`;
+}
+
+// ── Icônes métiers ────────────────────────────────────────────
+const METIER_ICON_PATHS: Record<string, string> = {
+  bucheron:   'metiers/bucheron/icone.png',
+  paysan:     'metiers/paysan/icone.png',
+  pecheur:    'metiers/pecheur/icone.png',
+  mineur:     'metiers/mineur/icone.png',
+  alchimiste: 'metiers/alchimiste/icone.png',
+};
+
+export function metierIconPath(metierId: string): string | null {
+  const rel = METIER_ICON_PATHS[metierId];
+  return rel ? `${import.meta.env.BASE_URL}assets/${rel}` : null;
+}
+
+// ── Assets UI génériques ──────────────────────────────────────
+export function uiAssetPath(rel: string): string {
+  return `${import.meta.env.BASE_URL}assets/${rel}`;
+}

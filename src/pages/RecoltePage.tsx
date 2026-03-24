@@ -5,7 +5,8 @@ import { useHarvest, formatTimer, SlotAvecTimer } from '../hooks/useHarvest';
 import { METIERS, MetierId, Ressource } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
-import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
+import { emojiByResourceId, getNomRessource, metierIconPath } from '../utils/resourceUtils';
+import { ResourceIcon } from '../components/ResourceIcon';
 import { METIER_TOOL_TYPE, OUTIL_TIERS } from '../data/outils';
 
 // ── Configs par métier ──────────────────────────────────────
@@ -64,8 +65,8 @@ function ResourcePickerPopup({
                 onClick={() => { if (!locked) { onPick(res.id); onClose(); } }}
                 disabled={locked}
               >
-                <span style={{ fontSize: '22px', width: 30, textAlign: 'center' }}>
-                  {locked ? '🔒' : emojiByResourceId(res.id)}
+                <span style={{ width: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {locked ? '🔒' : <ResourceIcon id={res.id} type="inventory" size={22} />}
                 </span>
                 <div style={{ flex: 1, textAlign: 'left' }}>
                   <span style={{ color: locked ? '#7a4060' : '#1e0a16', fontSize: '13px', fontWeight: 600 }}>
@@ -183,6 +184,7 @@ function MetierSelector({ onSelect }: { onSelect: (id: MetierId) => void }) {
             ? Math.ceil((Math.max(...runningSlots.map(sl => sl.termine_a!)) - now) / 1000)
             : 0;
 
+          const metierImg = metierIconPath(id);
           return (
             <button
               key={id}
@@ -190,7 +192,10 @@ function MetierSelector({ onSelect }: { onSelect: (id: MetierId) => void }) {
               onClick={() => onSelect(id)}
             >
               <div style={{ ...s.metierCardGlow, background: `radial-gradient(ellipse at left, ${cfg.color}14, transparent 70%)` }} />
-              <span style={{ fontSize: '26px', filter: `drop-shadow(0 0 6px ${cfg.color}66)` }}>{cfg.icon}</span>
+              {metierImg
+                ? <img src={metierImg} alt="" style={{ width: 36, height: 36, objectFit: 'contain', filter: `drop-shadow(0 0 6px ${cfg.color}66)`, flexShrink: 0 }} />
+                : <span style={{ fontSize: '26px', filter: `drop-shadow(0 0 6px ${cfg.color}66)` }}>{cfg.icon}</span>
+              }
               <div style={s.metierInfo}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <span style={{ color: '#1e0a16', fontSize: '14px', fontWeight: 800 }}>
@@ -366,9 +371,7 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
           <>
             {resourceInHand && resInHand ? (
               <>
-                <span style={{ fontSize: '24px', margin: '4px 0 2px', lineHeight: 1 }}>
-                  {emojiByResourceId(resInHand.id)}
-                </span>
+                <ResourceIcon id={resInHand.id} type="inventory" size={30} style={{ margin: '4px 0 2px' }} />
                 <span style={{ color: cfg.color, fontSize: '8px', fontWeight: 800, textAlign: 'center', lineHeight: 1.2 }}>
                   {getNomRessource(resInHand.id, lang)}
                 </span>
@@ -389,9 +392,7 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
             <span style={{ background: `${cfg.color}22`, borderRadius: 6, padding: '1px 5px', color: cfg.color, fontSize: '7px', fontWeight: 800, letterSpacing: '0.05em', marginBottom: 2 }}>
               EN COURS
             </span>
-            <span style={{ fontSize: '22px', margin: '2px 0 1px', lineHeight: 1 }}>
-              {resourceInHand ? emojiByResourceId(resourceInHand) : emojiByResourceId(res.id)}
-            </span>
+            <ResourceIcon id={resourceInHand ?? res.id} type={resourceInHand ? 'inventory' : 'idle'} size={28} style={{ margin: '2px 0 1px' }} />
             <span style={{ color: '#1e0a16', fontSize: '8px', fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }}>
               {resourceInHand && resInHand ? getNomRessource(resInHand.id, lang) : getNomRessource(res.id, lang)}
             </span>
@@ -412,9 +413,7 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
             <span style={{ background: 'rgba(106,191,68,0.2)', borderRadius: 6, padding: '1px 5px', color: '#4a8f2a', fontSize: '7px', fontWeight: 800, letterSpacing: '0.05em', marginBottom: 2 }}>
               {resourceInHand ? 'REPLANTER' : 'PRÊT !'}
             </span>
-            <span style={{ fontSize: '24px', margin: '2px 0 1px', lineHeight: 1 }}>
-              {resourceInHand && resInHand ? emojiByResourceId(resInHand.id) : emojiByResourceId(res.id)}
-            </span>
+            <ResourceIcon id={resourceInHand && resInHand ? resInHand.id : res.id} type={resourceInHand ? 'inventory' : 'done'} size={32} style={{ margin: '2px 0 1px' }} />
             <span style={{ color: '#1e0a16', fontSize: '8px', fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }}>
               {resourceInHand && resInHand ? getNomRessource(resInHand.id, lang) : getNomRessource(res.id, lang)}
             </span>
@@ -457,8 +456,11 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
       <div style={{ ...s.header, borderBottomColor: `${cfg.color}33` }}>
         <button style={{ ...s.backBtn, color: cfg.color }} onClick={onBack}>{t('recolte.back')}</button>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-          <span style={{ color: '#1e0a16', fontSize: '15px', fontWeight: 800 }}>
-            {cfg.icon} {t(`metier.${metierId}` as `metier.${MetierId}`)}
+          <span style={{ color: '#1e0a16', fontSize: '15px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+            {metierIconPath(metierId)
+              ? <img src={metierIconPath(metierId)!} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              : cfg.icon
+            } {t(`metier.${metierId}` as `metier.${MetierId}`)}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ ...s.levelBadge, borderColor: cfg.color, color: cfg.color }}>{t('recolte.level')} {niveau}</span>
@@ -506,7 +508,7 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
                 padding: '9px 14px', background: `${cfg.color}14`,
                 border: `2px solid ${cfg.color}`, borderRadius: 12,
               }}>
-                <span style={{ fontSize: '20px' }}>{emojiByResourceId(resInHand.id)}</span>
+                <ResourceIcon id={resInHand.id} type="inventory" size={24} />
                 <div style={{ flex: 1 }}>
                   <span style={{ color: '#1e0a16', fontSize: '12px', fontWeight: 800 }}>
                     {getNomRessource(resInHand.id, lang)}

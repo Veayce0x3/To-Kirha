@@ -5,7 +5,8 @@ import { useGameStore } from '../store/gameStore';
 import { getResourceById } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
-import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
+import { getNomRessource, uiAssetPath } from '../utils/resourceUtils';
+import { ResourceIcon } from './ResourceIcon';
 import { useSave } from '../hooks/useSave';
 
 // ============================================================
@@ -90,7 +91,7 @@ function InventaireModal({ onClose }: { onClose: () => void }) {
                 return (
                   <div key={id} style={ms.item}>
                     <div style={{ ...ms.itemIcon, borderColor: '#d4648a' }}>
-                      <span style={{ fontSize: '20px' }}>{emojiByResourceId(id)}</span>
+                      <ResourceIcon id={id} type="inventory" size={24} />
                     </div>
                     <div style={ms.itemInfo}>
                       <span style={{ color: '#1e0a16', fontSize: '13px', fontWeight: 600 }}>
@@ -205,13 +206,13 @@ export function BottomMenu() {
       <div style={s.menu} className="bottom-menu">
         {/* Kirha-City */}
         <button style={{ ...s.btn, ...(homeActive ? s.btnActive : {}) }} onClick={() => navigate('/home')}>
-          <span style={s.icon}>🏠</span>
+          <img src={uiAssetPath('ui/pages/kirha_city.png')} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
           <span style={s.label}>{t('nav.home')}</span>
         </button>
 
         {/* Inventaire */}
         <button style={s.btn} onClick={() => setShowInventaire(true)}>
-          <span style={s.icon}>🎒</span>
+          <img src={uiAssetPath('ui/pages/inventaire.png')} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
           <span style={s.label}>{t('nav.inventory')}</span>
         </button>
 
@@ -232,7 +233,7 @@ export function BottomMenu() {
             <span style={{ position:'absolute', top:6, right:8, width:7, height:7, background:'#6abf44', borderRadius:'50%' }} />
           )}
           <span style={s.icon}>
-            {saveBusy ? '⏳' : saveStatus === 'success' ? '✅' : saveError_ ? '❌' : '💾'}
+            {saveBusy ? '⏳' : saveStatus === 'success' ? '✅' : saveError_ ? '❌' : <img src={uiAssetPath('ui/pages/sauvegarde.png')} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />}
           </span>
           <span style={{ ...s.label, color: saveError_ ? '#c43070' : pendingCount > 0 ? '#4a8f2a' : undefined }}>
             {saveBusy ? 'Sauvegarde…' : saveError_ ? 'Erreur ↺' : 'Sauvegarder'}
