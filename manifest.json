@@ -1,0 +1,24 @@
+{
+  "name": "To-Kirha",
+  "short_name": "To-Kirha",
+  "description": "Jeu Web3 thème sakura",
+  "start_url": "/To-Kirha/",
+  "display": "standalone",
+  "background_color": "#1e0a16",
+  "theme_color": "#c43070",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/To-Kirha/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/To-Kirha/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
