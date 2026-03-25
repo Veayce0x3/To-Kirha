@@ -194,7 +194,7 @@ export function TemplePage() {
                       {insufficient ? t('temple.insufficient') : t('temple.quest_label')}
                     </button>
                   )}
-                  {resetsLeft > 0 && (
+                  {!isCompleted && resetsLeft > 0 && (
                     <button
                       style={{ padding:'4px 8px', background:'rgba(249,168,37,0.12)', border:'1px solid rgba(249,168,37,0.35)', borderRadius:8, color:'#b07010', fontSize:9, fontWeight:700, cursor:'pointer' }}
                       onClick={() => resetQueteTempleManuel(i)}

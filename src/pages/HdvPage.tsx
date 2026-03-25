@@ -39,7 +39,8 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
     setLoading(true);
     try {
       const latestBlock = await publicClient.getBlockNumber();
-      const fromBlock = latestBlock > 50000n ? latestBlock - 50000n : 0n;
+      // Limité à 2000 blocs pour éviter les timeouts RPC
+      const fromBlock = latestBlock > 2000n ? latestBlock - 2000n : 0n;
 
       // Récupérer les deux events en parallèle
       const [soldLogs, listedLogs] = await Promise.all([
@@ -74,7 +75,9 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
               address: KIRHA_MARKET_ADDRESS, abi: KirhaMarketAbi,
               functionName: 'getListing', args: [lid],
             }) as { sellerCityId: bigint; resourceId: bigint };
-            listedMap.set(lid, { sellerCityId: listing.sellerCityId, resourceId: Number(listing.resourceId) });
+            if (listing.sellerCityId > 0n) {
+              listedMap.set(lid, { sellerCityId: listing.sellerCityId, resourceId: Number(listing.resourceId) });
+            }
           } catch {}
         }));
       }
@@ -84,13 +87,20 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
         ...[...listedMap.values()].map(l => l.sellerCityId).filter(id => id > 0n),
       ])];
 
-      const pseudos = allCityIds.length > 0
-        ? await publicClient.readContract({
+      // Résolution des pseudos optionnelle — l'historique fonctionne même si ça échoue
+      let pseudoMap = new Map<bigint, string>();
+      try {
+        if (allCityIds.length > 0) {
+          const pseudos = await publicClient.readContract({
             address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
             functionName: 'getCityPseudos', args: [allCityIds],
-          }) as string[]
-        : [];
-      const pseudoMap = new Map(allCityIds.map((id, i) => [id, pseudos[i] ?? '?']));
+          }) as string[];
+          pseudoMap = new Map(allCityIds.map((id, i) => [id, pseudos[i] ?? `#${id}`]));
+        }
+      } catch {
+        // Pseudos non disponibles, on affiche les IDs de ville
+        allCityIds.forEach(id => pseudoMap.set(id, `#${id}`));
+      }
 
       const records: SaleRecord[] = [...soldLogs].reverse().map(log => {
         const info = listedMap.get(log.args.listingId!);
@@ -98,9 +108,9 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
         return {
           listingId:    log.args.listingId!,
           sellerCityId,
-          sellerPseudo: pseudoMap.get(sellerCityId) ?? '?',
+          sellerPseudo: pseudoMap.get(sellerCityId) ?? `#${sellerCityId}`,
           buyerCityId:  log.args.buyerCityId!,
-          buyerPseudo:  pseudoMap.get(log.args.buyerCityId!) ?? '?',
+          buyerPseudo:  pseudoMap.get(log.args.buyerCityId!) ?? `#${log.args.buyerCityId}`,
           resourceId:   info?.resourceId ?? 0,
           quantity:     Number(log.args.quantity!) / 1e4,
           totalPaid:    parseFloat(formatEther(log.args.totalPaid!)),
@@ -111,6 +121,7 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
       setHistory(records);
     } catch (e) {
       console.error('History fetch error:', e);
+      setHistory([]);
     } finally {
       setLoading(false);
     }
@@ -195,7 +206,7 @@ function TabOnchain() {
   const villeId     = useGameStore(s => s.villeId);
   const vipExpiry   = useGameStore(s => s.vipExpiry);
   const soldeKirha  = useGameStore(s => s.soldeKirha);
-  const pepitesOr   = useGameStore(s => s.pepitesOr);
+
   const retirerKirha    = useGameStore(s => s.retirerKirha);
   const ajouterRessource = useGameStore(s => s.ajouterRessource);
   const { lang } = useT();
@@ -351,13 +362,6 @@ function TabOnchain() {
             <span style={{ color:'#9a6080', fontSize:9, display:'block', fontWeight:700 }}>$KIRHA</span>
           </div>
         </div>
-        <div style={{ ...ms.statCard, flex:1, flexDirection:'row', gap:6, alignItems:'center', justifyContent:'center' }}>
-          <img src={uiAssetPath('ui/pepites/50.png')} alt="" style={{ width:18, height:18, objectFit:'contain' }} />
-          <div>
-            <span style={{ color:'#f9a825', fontSize:13, fontWeight:800 }}>{pepitesOr > 0 ? pepitesOr.toFixed(0) : '—'}</span>
-            <span style={{ color:'#9a6080', fontSize:9, display:'block', fontWeight:700 }}>PÉPITES</span>
-          </div>
-        </div>
       </div>
 
       {/* Tab bar — pills */}
@@ -388,8 +392,8 @@ function TabOnchain() {
             {/* Listing permanent — Fleur de Cerisier */}
             <div style={{ background:'#fff', border:'1.5px solid rgba(196,48,112,0.25)', borderRadius:16, padding:'14px' }}>
               <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
-                <div style={{ width:56, height:56, borderRadius:14, background:'linear-gradient(135deg,rgba(196,48,112,0.1),rgba(138,37,212,0.07))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, flexShrink:0 }}>
-                  📜
+                <div style={{ width:56, height:56, borderRadius:14, background:'linear-gradient(135deg,rgba(196,48,112,0.1),rgba(138,37,212,0.07))', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <img src={uiAssetPath('ui/parchemin.png')} alt="" style={{ width:44, height:44, objectFit:'contain' }} />
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
@@ -448,7 +452,7 @@ function TabOnchain() {
             {/* Rappel inventaire actuel */}
             {(inventaire[ResourceId.FLEUR_CERISIER] ?? 0) > 0 && (
               <div style={{ padding:'8px 12px', background:'rgba(106,191,68,0.08)', border:'1px solid rgba(106,191,68,0.3)', borderRadius:10, display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ fontSize:16 }}>📜</span>
+                <img src={uiAssetPath('ui/parchemin.png')} alt="" style={{ width:22, height:22, objectFit:'contain' }} />
                 <span style={{ color:'#2a7a10', fontSize:12, fontWeight:700 }}>
                   En stock : ×{Math.floor(inventaire[ResourceId.FLEUR_CERISIER] ?? 0)} Parchemin Ancien
                 </span>

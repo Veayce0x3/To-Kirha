@@ -321,24 +321,24 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
           borderColor: isDone
             ? '#6abf44'
             : isHarvesting
-              ? cfg.color
+              ? '#f9a825'
               : highlightInHand
                 ? `${cfg.color}cc`
                 : isLocked
                   ? (isNextLock ? `${cfg.color}55` : 'rgba(212,100,138,0.08)')
-                  : 'rgba(212,100,138,0.3)',
+                  : '#e53935',
           background: isDone
             ? 'rgba(106,191,68,0.14)'
             : isHarvesting
-              ? `${cfg.color}18`
+              ? 'rgba(249,168,37,0.1)'
               : highlightInHand
                 ? `${cfg.color}14`
                 : isLocked && !isNextLock
                   ? 'rgba(212,100,138,0.03)'
                   : isFree
-                    ? 'rgba(212,100,138,0.04)'
+                    ? 'rgba(229,57,53,0.06)'
                     : '#ffffff',
-          boxShadow: isDone ? '0 0 0 3px rgba(106,191,68,0.2)' : isHarvesting ? `0 0 0 2px ${cfg.color}20` : 'none',
+          boxShadow: isDone ? '0 0 0 3px rgba(106,191,68,0.2)' : isHarvesting ? '0 0 0 2px rgba(249,168,37,0.25)' : isFree ? '0 0 0 1px rgba(229,57,53,0.15)' : 'none',
           opacity:     isLocked && !isNextLock ? 0.35 : 1,
           cursor:      isLocked && !isNextLock ? 'default' : isHarvesting && !resourceInHand ? 'default' : 'pointer',
           outline:     highlightInHand && !isLocked && resourceInHand ? `2px dashed ${cfg.color}99` : 'none',
@@ -392,7 +392,7 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
             <span style={{ background: `${cfg.color}22`, borderRadius: 6, padding: '1px 5px', color: cfg.color, fontSize: '7px', fontWeight: 800, letterSpacing: '0.05em', marginBottom: 2 }}>
               EN COURS
             </span>
-            <ResourceIcon id={resourceInHand ?? res.id} type={resourceInHand ? 'inventory' : 'idle'} size={48} style={{ margin: '2px 0 1px' }} />
+            <ResourceIcon id={resourceInHand ?? res.id} type={resourceInHand ? 'inventory' : 'done'} size={56} style={{ margin: '2px 0 1px' }} />
             <span style={{ color: '#1e0a16', fontSize: '8px', fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }}>
               {resourceInHand && resInHand ? getNomRessource(resInHand.id, lang) : getNomRessource(res.id, lang)}
             </span>
@@ -413,7 +413,7 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
             <span style={{ background: 'rgba(106,191,68,0.2)', borderRadius: 6, padding: '1px 5px', color: '#4a8f2a', fontSize: '7px', fontWeight: 800, letterSpacing: '0.05em', marginBottom: 2 }}>
               {resourceInHand ? 'REPLANTER' : 'PRÊT !'}
             </span>
-            <ResourceIcon id={resourceInHand && resInHand ? resInHand.id : res.id} type={resourceInHand ? 'inventory' : 'done'} size={52} style={{ margin: '2px 0 1px' }} />
+            <ResourceIcon id={resourceInHand && resInHand ? resInHand.id : res.id} type={resourceInHand ? 'inventory' : 'idle'} size={60} style={{ margin: '2px 0 1px' }} />
             <span style={{ color: '#1e0a16', fontSize: '8px', fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }}>
               {resourceInHand && resInHand ? getNomRessource(resInHand.id, lang) : getNomRessource(res.id, lang)}
             </span>

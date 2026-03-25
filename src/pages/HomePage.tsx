@@ -172,14 +172,12 @@ export function HomePage() {
       {/* Soldes */}
       <div style={s.soldesRow}>
         <div style={s.soldeItem}>
-          <img src={uiAssetPath('ui/pepites/50.png')} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
-          <span style={s.soldeLabel}>{t('home.pepites')}</span>
+          <img src={uiAssetPath('ui/pepites/50.png')} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} />
           <span style={s.soldeValue}>{pepitesOr > 0 ? pepitesOr.toFixed(0) : '—'}</span>
         </div>
         <div style={s.soldeDivider} />
         <div style={s.soldeItem}>
-          <img src={uiAssetPath('ui/token.png')} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
-          <span style={s.soldeLabel}>$KIRHA</span>
+          <img src={uiAssetPath('ui/token.png')} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} />
           <span style={s.soldeValue}>{soldeKirha > 0 ? soldeKirha.toFixed(4) : '—'}</span>
         </div>
         <div style={s.soldeDivider} />
@@ -187,11 +185,7 @@ export function HomePage() {
           style={{ ...s.soldeItem, cursor:'pointer', background:'none', border:'none' }}
           onClick={() => isVip ? setShowVipInfo(true) : navigate('/banque')}
         >
-          <img src={uiAssetPath('ui/vip.png')} alt="" style={{ width: 16, height: 16, objectFit: 'contain', filter: isVip ? 'none' : 'grayscale(1) opacity(0.4)' }} />
-          <span style={{ ...s.soldeLabel, color: isVip ? '#f9a825' : '#9a6080' }}>VIP</span>
-          <span style={{ ...s.soldeValue, color: isVip ? '#f9a825' : '#9a6080', fontSize:'11px' }}>
-            {isVip ? '✨' : 'OFF'}
-          </span>
+          <img src={uiAssetPath('ui/vip.png')} alt="" style={{ width: 22, height: 22, objectFit: 'contain', filter: isVip ? 'none' : 'grayscale(1) opacity(0.4)' }} />
         </button>
       </div>
 
@@ -202,14 +196,12 @@ export function HomePage() {
             <div style={{ ...s.cardGlow, background: `radial-gradient(ellipse at top left, ${card.color}18, transparent 70%)` }} />
             <div style={s.cardTop}>
               {card.imgSrc
-                ? <img src={uiAssetPath(card.imgSrc)} alt="" style={{ width: 80, height: 80, objectFit: 'contain', filter: `drop-shadow(0 0 10px ${card.color}99)` }} />
+                ? <img src={uiAssetPath(card.imgSrc)} alt="" style={{ width: 110, height: 110, objectFit: 'contain', filter: `drop-shadow(0 0 14px ${card.color}99)` }} />
                 : <span style={{ ...s.cardIcon, filter: `drop-shadow(0 0 8px ${card.color}88)` }}>{card.icon}</span>
               }
-              {card.locked && <span style={{ fontSize:12 }}>🔒</span>}
+              {card.locked && <span style={{ fontSize:12, position:'absolute', top:10, right:10 }}>🔒</span>}
             </div>
-            <span style={{ ...s.cardLabel, color: card.color }}>{card.label}</span>
-            <span style={s.cardDesc}>{card.locked ? 'Bientôt disponible' : card.desc}</span>
-            <span style={{ ...s.cardArrow, color: card.color }}>{card.locked ? '' : '→'}</span>
+            <span style={{ ...s.cardLabel, color: card.color }}>{card.locked ? 'Bientôt disponible' : card.label}</span>
           </button>
         ))}
       </div>
@@ -257,14 +249,12 @@ const s: Record<string, React.CSSProperties> = {
   card: {
     position:'relative', overflow:'hidden',
     background:'#ffffff', border:'1px solid',
-    borderRadius:18, padding:'18px 14px 14px',
-    display:'flex', flexDirection:'column', alignItems:'flex-start', gap:'4px',
-    cursor:'pointer', textAlign:'left',
+    borderRadius:18, padding:'14px 10px 14px',
+    display:'flex', flexDirection:'column', alignItems:'center', gap:'6px',
+    cursor:'pointer', textAlign:'center',
   },
   cardGlow: { position:'absolute', inset:0, pointerEvents:'none' },
-  cardTop: { display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%' },
-  cardIcon: { fontSize:'32px', lineHeight:1 },
-  cardLabel: { fontSize:'15px', fontWeight:800, marginTop:'4px' },
-  cardDesc: { color:'#7a4060', fontSize:'10px', lineHeight:1.4 },
-  cardArrow: { fontSize:'16px', marginTop:'4px', alignSelf:'flex-end' },
+  cardTop: { display:'flex', alignItems:'center', justifyContent:'center', width:'100%' },
+  cardIcon: { fontSize:'48px', lineHeight:1 },
+  cardLabel: { fontSize:'13px', fontWeight:800, marginTop:'2px' },
 };
