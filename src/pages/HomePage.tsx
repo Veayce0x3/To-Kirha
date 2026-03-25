@@ -191,12 +191,11 @@ export function HomePage() {
       {/* Cards */}
       <div style={s.cardGrid}>
         {CARDS.map(card => (
-          <button key={card.route} style={{ ...s.card, borderColor: `${card.color}44`, opacity: card.locked ? 0.55 : 1, cursor: card.locked ? 'default' : 'pointer' }} onClick={() => !card.locked && navigate(card.route)}>
-            <div style={{ ...s.cardGlow, background: `radial-gradient(ellipse at top left, ${card.color}18, transparent 70%)` }} />
+          <button key={card.route} style={{ ...s.card, borderColor: `${card.color}33`, opacity: card.locked ? 0.55 : 1, cursor: card.locked ? 'default' : 'pointer' }} onClick={() => !card.locked && navigate(card.route)}>
             <div style={s.cardTop}>
               {card.imgSrc
-                ? <img src={uiAssetPath(card.imgSrc)} alt="" style={{ width: 110, height: 110, objectFit: 'contain', filter: `drop-shadow(0 0 14px ${card.color}99)` }} />
-                : <span style={{ ...s.cardIcon, filter: `drop-shadow(0 0 8px ${card.color}88)` }}>{card.icon}</span>
+                ? <img src={uiAssetPath(card.imgSrc)} alt="" style={{ width: 110, height: 110, objectFit: 'contain' }} />
+                : <span style={{ ...s.cardIcon }}>{card.icon}</span>
               }
               {card.locked && <span style={{ fontSize:12, position:'absolute', top:10, right:10 }}>🔒</span>}
             </div>
@@ -252,7 +251,6 @@ const s: Record<string, React.CSSProperties> = {
     display:'flex', flexDirection:'column', alignItems:'center', gap:'6px',
     cursor:'pointer', textAlign:'center',
   },
-  cardGlow: { position:'absolute', inset:0, pointerEvents:'none' },
   cardTop: { display:'flex', alignItems:'center', justifyContent:'center', width:'100%' },
   cardIcon: { fontSize:'48px', lineHeight:1 },
   cardLabel: { fontSize:'13px', fontWeight:800, marginTop:'2px' },
