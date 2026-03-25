@@ -148,8 +148,7 @@ export function HomePage() {
       {/* TopBar */}
       <div style={s.topbar}>
         <div style={s.logoRow}>
-          <span style={s.logoIcon}>🌸</span>
-          <span style={s.logoTitle}>To-Kirha</span>
+          <img src={uiAssetPath('ui/logo.jpg')} alt="To-Kirha" style={{ height: 36, objectFit: 'contain' }} />
         </div>
         <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
           <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end' }}>
