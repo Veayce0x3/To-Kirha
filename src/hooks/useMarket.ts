@@ -306,15 +306,21 @@ export function useMarket() {
     const expiresAt = Math.floor(Date.now() / 1000) + durationSecs;
     if (villeId) localStorage.setItem(`kirha_relayer_expires_${villeId}`, String(expiresAt));
     try {
-      // Pas de ensureChain() ici : envoyer 2 requêtes WalletConnect séquentielles sur mobile
-      // (chain switch + tx) casse le flux — wagmi gère le chainId directement
-      const hash = await writeContractAsync({
+      // Pas de chainId ici : évite que wagmi envoie d'abord wallet_switchEthereumChain
+      // via WalletConnect (2 requêtes séquentielles = MetaMask ne voit que la 1ère)
+      const txPromise = writeContractAsync({
         address:  KIRHA_GAME_ADDRESS,
         abi:      KirhaGameAbi,
         functionName: 'authorizeRelayer',
         args:     [cityIdBn, BigInt(durationSecs)],
-        chainId:  baseSepolia.id,
       });
+      // Timeout 30s — si WalletConnect ne répond pas (session fantôme), on fail proprement
+      const hash = await Promise.race([
+        txPromise,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Délai dépassé (30s). Déconnecte et reconnecte ton wallet.')), 30_000)
+        ),
+      ]);
       setStatus('success');
       setTimeout(() => setStatus('idle'), 3000);
       // Attendre la confirmation en arrière-plan (non-bloquant)

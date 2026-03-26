@@ -378,6 +378,11 @@ function TabOnchain() {
           </div>
         </div>
       )}
+      {status === 'error' && error && !isRelayerActive && (
+        <div style={{ margin:'8px 14px 0', padding:'8px 12px', background:'rgba(196,48,112,0.1)', border:'1px solid rgba(196,48,112,0.4)', borderRadius:10 }}>
+          <p style={{ color:'#c43070', fontSize:11, fontWeight:700, margin:0 }}>⚠️ {error}</p>
+        </div>
+      )}
 
       {/* Stats bar */}
       <div style={{ display:'flex', gap:8, padding:'12px 14px 0' }}>
