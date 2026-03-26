@@ -201,16 +201,27 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
 // IDs > 50 : ressources hors chaîne, non vendables sur l'HDV
 const UNSELLABLE_ON_HDV = (id: number) => id > 50;
 
-function TabOnchain() {
-  const inventaire      = useGameStore(s => s.inventaire);
-  const villeId         = useGameStore(s => s.villeId);
-  const vipExpiry       = useGameStore(s => s.vipExpiry);
-  const soldeKirha      = useGameStore(s => s.soldeKirha);
-  const personageNiveau = useGameStore(s => s.personageNiveau);
+const RELAYER_URL = 'https://kirha-relayer.tokirha.workers.dev';
 
-  const retirerKirha    = useGameStore(s => s.retirerKirha);
+function TabOnchain() {
+  const inventaire        = useGameStore(s => s.inventaire);
+  const villeId           = useGameStore(s => s.villeId);
+  const vipExpiry         = useGameStore(s => s.vipExpiry);
+  const soldeKirha        = useGameStore(s => s.soldeKirha);
+  const personageNiveau   = useGameStore(s => s.personageNiveau);
+  const setParcheminPrice = useGameStore(s => s.setParcheminPrice);
+
+  const retirerKirha     = useGameStore(s => s.retirerKirha);
   const ajouterRessource = useGameStore(s => s.ajouterRessource);
   const { lang } = useT();
+
+  // Sync parcheminPrice depuis le worker au montage
+  useEffect(() => {
+    fetch(`${RELAYER_URL}/config`)
+      .then(r => r.json() as Promise<{ parcheminPrice?: number }>)
+      .then(data => { if (data.parcheminPrice) setParcheminPrice(data.parcheminPrice); })
+      .catch(() => {/* fallback store value */});
+  }, [setParcheminPrice]);
   const villeIdBn   = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
   const taxRate = calculerTaxeMarche(personageNiveau, isVip);

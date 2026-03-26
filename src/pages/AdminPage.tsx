@@ -88,10 +88,38 @@ export function AdminPage() {
 
   const isAdmin = !!address && ADMIN_WALLETS.includes(address.toLowerCase());
 
-  // ── Paramètres jeu (store local) ───────────────────────
+  // ── Paramètres jeu ─────────────────────────────────────
   const parcheminPrice    = useGameStore(s => s.parcheminPrice ?? 10);
   const setParcheminPrice = useGameStore(s => s.setParcheminPrice);
   const [parcheminInput, setParcheminInput] = useState<string>('');
+  const [configStatus, setConfigStatus] = useState<'idle'|'pending'|'ok'|'err'>('idle');
+
+  // Sync depuis le worker au montage
+  React.useEffect(() => {
+    fetch(`${ADMIN_WORKER_URL}/config`)
+      .then(r => r.json() as Promise<{ parcheminPrice?: number }>)
+      .then(data => { if (data.parcheminPrice) setParcheminPrice(data.parcheminPrice); })
+      .catch(() => {});
+  }, [setParcheminPrice]);
+
+  async function appliquerParcheminPrice(price: number) {
+    if (!adminToken) { setError('Token admin requis'); return; }
+    setConfigStatus('pending');
+    try {
+      const res = await fetch(`${ADMIN_WORKER_URL}/admin/set-config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({ parcheminPrice: String(price) }),
+      });
+      if (!res.ok) { const d = await res.json() as { error?: string }; throw new Error(d.error); }
+      setParcheminPrice(price);
+      setConfigStatus('ok');
+      setTimeout(() => setConfigStatus('idle'), 2000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message.slice(0, 80) : 'Erreur set-config');
+      setConfigStatus('err');
+    }
+  }
 
   // ── Tester le token ────────────────────────────────────
   async function testerToken() {
@@ -471,17 +499,17 @@ export function AdminPage() {
                 style={{ flex:1, padding:'5px 8px', borderRadius:6, border:'1px solid rgba(249,168,37,0.3)', background:'rgba(0,0,0,0.4)', color:'#e0c8d8', fontSize:11, fontFamily:'monospace', minWidth:0 }}
               />
               <button
-                disabled={!parcheminInput || parseInt(parcheminInput) < 1}
+                disabled={!parcheminInput || parseInt(parcheminInput) < 1 || configStatus === 'pending'}
                 onClick={() => {
                   const val = parseInt(parcheminInput);
-                  if (val >= 1) { setParcheminPrice(val); setParcheminInput(''); }
+                  if (val >= 1) { appliquerParcheminPrice(val); setParcheminInput(''); }
                 }}
                 style={{ padding:'5px 12px', borderRadius:6, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background:'rgba(249,168,37,0.3)', color:'#f9a825', flexShrink:0 }}
               >
-                Appliquer
+                {configStatus === 'pending' ? '⏳' : configStatus === 'ok' ? '✅' : 'Appliquer'}
               </button>
               {[5, 10, 20, 50].map(v => (
-                <button key={v} onClick={() => { setParcheminPrice(v); setParcheminInput(''); }}
+                <button key={v} onClick={() => { appliquerParcheminPrice(v); setParcheminInput(''); }}
                   style={{ padding:'4px 8px', borderRadius:6, fontSize:10, fontWeight:700, cursor:'pointer', border:'1px solid rgba(249,168,37,0.25)', background: parcheminPrice === v ? 'rgba(249,168,37,0.3)' : 'transparent', color:'#f9a825', flexShrink:0 }}
                 >
                   {v}
@@ -489,7 +517,7 @@ export function AdminPage() {
               ))}
             </div>
             <p style={{ color:'#7a6020', fontSize:9, margin:'4px 0 0' }}>
-              Ce prix est stocké localement (localStorage). Sur testnet il est identique pour tous les testeurs sur leur appareil.
+              Stocké dans le KV Cloudflare — partagé pour tous les joueurs en temps réel.
             </p>
           </div>
 

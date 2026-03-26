@@ -67,7 +67,7 @@ function corsHeaders(origin: string, allowedOrigin: string) {
     : allowedOrigin;
   return {
     'Access-Control-Allow-Origin': allowed,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token',
     'Access-Control-Max-Age': '86400',
   };
@@ -99,12 +99,21 @@ export default {
       return new Response(null, { status: 204, headers: cors });
     }
 
+    const url      = new URL(request.url);
+    const pathname = url.pathname;
+
+    // ════════════════════════════════════════════════════════
+    // GET /config  — paramètres jeu publics (parcheminPrice, etc.)
+    // ════════════════════════════════════════════════════════
+    if (request.method === 'GET' && pathname === '/config') {
+      const priceStr = await env.RATE_LIMITER.get('game:parcheminPrice');
+      const parcheminPrice = priceStr ? parseInt(priceStr, 10) : 10;
+      return jsonResponse(cors, { parcheminPrice });
+    }
+
     if (request.method !== 'POST') {
       return jsonResponse(cors, { error: 'Method not allowed' }, 405);
     }
-
-    const url      = new URL(request.url);
-    const pathname = url.pathname;
 
     // ── Parse body ───────────────────────────────────────────
     let body: unknown;
@@ -279,6 +288,17 @@ export default {
       }
 
       const p = body as Record<string, string>;
+
+      // ── Paramètres jeu (KV, pas de tx on-chain) ───────────
+      if (action === 'set-config') {
+        const updates: Record<string, string> = {};
+        if (p.parcheminPrice !== undefined) {
+          const price = Math.max(1, parseInt(p.parcheminPrice, 10) || 10);
+          await env.RATE_LIMITER.put('game:parcheminPrice', String(price));
+          updates.parcheminPrice = String(price);
+        }
+        return jsonResponse(cors, { success: true, updated: updates });
+      }
 
       try {
         const provider = new ethers.JsonRpcProvider(env.RPC_URL);
