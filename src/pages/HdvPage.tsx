@@ -174,15 +174,14 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
                   <span style={{ fontSize:18 }}>{emojiByResourceId(r.resourceId)}</span>
                 </div>
                 <div style={{ flex:1 }}>
-                  <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>{getNomRessource(r.resourceId, lang)}</span>
-                  <span style={{ color:'#7a4060', fontSize:10, display:'block' }}>
-                    ×{r.quantity.toFixed(1)} · {r.sellerPseudo} → {r.buyerPseudo}
-                  </span>
+                  <span style={{ color:'#1e0a16', fontSize:13, fontWeight:800 }}>{getNomRessource(r.resourceId, lang)}</span>
+                  <span style={{ color:'#c43070', fontSize:12, fontWeight:700, display:'block' }}>×{r.quantity.toFixed(2)}</span>
+                  <span style={{ color:'#9a6080', fontSize:10, display:'block' }}>{r.sellerPseudo} → {r.buyerPseudo}</span>
                 </div>
                 <div style={{ textAlign:'right' }}>
-                  <span style={{ color:'#f9a825', fontSize:12, fontWeight:800, display:'block' }}>{r.totalPaid.toFixed(4)} $K</span>
+                  <span style={{ color:'#f9a825', fontSize:14, fontWeight:900, display:'block' }}>{r.totalPaid.toFixed(4)} $K</span>
                   {(isMySale || isMyBuy) && (
-                    <span style={{ fontSize:9, fontWeight:700, color: isMySale ? '#6abf44' : '#29b6f6' }}>
+                    <span style={{ fontSize:10, fontWeight:700, color: isMySale ? '#6abf44' : '#29b6f6', background: isMySale ? 'rgba(106,191,68,0.12)' : 'rgba(41,182,246,0.12)', padding:'1px 5px', borderRadius:5 }}>
                       {isMySale ? '💰 Vendu' : '🛒 Acheté'}
                     </span>
                   )}
@@ -346,13 +345,20 @@ function TabOnchain() {
             <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 2px' }}>Mode gasless désactivé</p>
             <p style={{ color:'#7a4060', fontSize:10, margin:0 }}>Autorise le relayer jusqu'à minuit (heure française) pour des transactions sans frais.</p>
           </div>
-          <button
-            style={{ padding:'7px 12px', background:'#f9a825', color:'#1e0a16', border:'none', borderRadius:10, fontSize:11, fontWeight:700, cursor: relayerActivating ? 'default' : 'pointer', opacity: relayerActivating ? 0.6 : 1 }}
-            onClick={activerRelayer}
-            disabled={relayerActivating}
-          >
-            {relayerActivating ? '⏳…' : 'Activer'}
-          </button>
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end' }}>
+            <button
+              style={{ padding:'7px 12px', background:'#f9a825', color:'#1e0a16', border:'none', borderRadius:10, fontSize:11, fontWeight:700, cursor: relayerActivating ? 'default' : 'pointer', opacity: relayerActivating ? 0.6 : 1 }}
+              onClick={activerRelayer}
+              disabled={relayerActivating}
+            >
+              {relayerActivating ? '⏳…' : 'Activer'}
+            </button>
+            {relayerActivating && (
+              <a href="metamask://" style={{ display:'block', marginTop:6, color:'#f9a825', fontSize:11, fontWeight:700, textDecoration:'none' }}>
+                📱 Ouvre MetaMask pour approuver →
+              </a>
+            )}
+          </div>
         </div>
       )}
 

@@ -154,9 +154,6 @@ export function HomePage() {
           <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end' }}>
             <div style={{ display:'flex', alignItems:'center', gap:5 }}>
               <span style={{ color:'#1e0a16', fontSize:'13px', fontWeight:800 }}>{pseudo ?? '—'}</span>
-              {isVip && (
-                <span style={{ background:'linear-gradient(135deg,#f9a825,#c43070)', color:'#fff', fontSize:'8px', fontWeight:800, padding:'1px 5px', borderRadius:6 }}>VIP ✨</span>
-              )}
             </div>
             <span style={{ color:'#9a6080', fontSize:'9px' }}>
               {villeId ? `Ville #${villeId}` : '…'}
@@ -184,7 +181,7 @@ export function HomePage() {
           style={{ ...s.soldeItem, cursor:'pointer', background:'none', border:'none' }}
           onClick={() => isVip ? setShowVipInfo(true) : navigate('/banque')}
         >
-          <img src={uiAssetPath('ui/vip.png')} alt="" style={{ width: 22, height: 22, objectFit: 'contain', filter: isVip ? 'none' : 'grayscale(1) opacity(0.4)' }} />
+          <img src={uiAssetPath('ui/vip.png')} alt="" style={{ width: 32, height: 32, objectFit: 'contain', filter: isVip ? 'none' : 'grayscale(1) opacity(0.4)' }} />
         </button>
       </div>
 
