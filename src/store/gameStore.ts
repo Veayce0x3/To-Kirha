@@ -123,9 +123,9 @@ export interface GameState {
 // ============================================================
 
 // XP requis pour passer du niveau N au niveau N+1
-// Métiers/Craft : 100 × N^2 — mur dès le début, cohérent avec récoltes multiples/jour
+// Métiers/Craft : 100 × N^1.7 — progression fluide en début/milieu, mur raisonnable au haut niveau
 export function xpRequis(niveau: number): number {
-  return Math.round(100 * Math.pow(niveau, 2.0));
+  return Math.round(100 * Math.pow(niveau, 1.7));
 }
 
 // XP requis pour le Personnage uniquement (source = cuisine seulement)

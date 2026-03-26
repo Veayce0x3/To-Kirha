@@ -41,6 +41,8 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
   const ajouterXp               = useGameStore(s => s.ajouterXp);
   const ajouterPending          = useGameStore(s => s.ajouterPendingMint);
   const decrementOutilDurabilite = useGameStore(s => s.decrementOutilDurabilite);
+  const vipExpiry               = useGameStore(s => s.vipExpiry);
+  const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
 
   const toolType = METIER_TOOL_TYPE[metierId];
   const outil = outils[toolType];
@@ -55,11 +57,13 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
   const metierProgressRef      = useRef(metier_progress);
   const competencesRef         = useRef(competences);
   const outilDisponibleRef     = useRef(outilDisponible);
+  const isVipRef               = useRef(isVip);
   slotsRef.current             = slots_store;
   bonusRef.current             = bonus;
   metierProgressRef.current    = metier_progress;
   competencesRef.current       = competences;
   outilDisponibleRef.current   = outilDisponible;
+  isVipRef.current             = isVip;
 
   const [, setTick] = useState(0);
   const [lastHarvested, setLastHarvested] = useState<{ qty: number; resourceId: ResourceId } | null>(null);
@@ -107,9 +111,10 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     const rid      = slot.resource_id;
     const ressource = metier.ressources.find(r => r.id === rid);
     if (!ressource) return;
-    const compBonus = (competencesRef.current[metierId] ?? 0) * 5; // +5% par point
-    const ratio   = Math.round(quantiteRecolte(metierProgressRef.current.niveau) * (1 + compBonus / 100) * 1e10) / 1e10;
-    const xpFinal = Math.round(ressource.xp_recolte * (1 + bonusRef.current.xp_bonus / 100) * (1 + compBonus / 100));
+    const compBonus   = (competencesRef.current[metierId] ?? 0) * 5; // +5% par point
+    const vipBonus    = isVipRef.current ? 0.25 : 0;                 // VIP +25% XP métier
+    const ratio       = Math.round(quantiteRecolte(metierProgressRef.current.niveau) * (1 + compBonus / 100) * 1e10) / 1e10;
+    const xpFinal     = Math.round(ressource.xp_recolte * (1 + bonusRef.current.xp_bonus / 100) * (1 + compBonus / 100) * (1 + vipBonus));
     // Collecter
     terminerRecolte(metierId, slotIndex, ratio);
     ajouterXp(metierId, xpFinal);
