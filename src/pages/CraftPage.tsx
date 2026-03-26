@@ -26,6 +26,7 @@ interface RecetteInventaire {
   resultatId: ResourceId;
   resultatQte: number;
   xp: number;
+  niveauRequis?: number; // niveau personnage requis
   description: string;
   descriptionEn: string;
 }
@@ -48,115 +49,190 @@ interface RecetteOutil {
 type Recette = RecetteInventaire | RecetteOutil;
 
 // ============================================================
-// Recettes de Cuisine (Parchemin Ancien requis dans toutes)
+// Recettes de Cuisine — chaîne progressive
+// Chaque recette consomme l'output de la précédente + nouvelles ressources
+// Parchemin des Anciens requis à partir de la recette 2 (acheté au PNJ HDV)
 // ============================================================
 
 const RECETTES_CUISINE: RecetteInventaire[] = [
   {
     kind: 'inventaire',
-    id: 'pain_ble',
+    id: 'pain_mie',
     emoji: '🍞',
-    nom: 'Pain de Blé',
-    nomEn: 'Wheat Bread',
+    nom: 'Pain de Mie',
+    nomEn: 'White Bread',
+    niveauRequis: 1,
     ingredients: [
-      { resourceId: ResourceId.BLE,           quantite: 5 },
-      { resourceId: ResourceId.EAU,           quantite: 2 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 1 },
+      { resourceId: ResourceId.BLE, quantite: 5 },
     ],
-    resultatId: ResourceId.PAIN_BLE,
-    resultatQte: 1,
-    xp: 25,
-    description: 'Une miche dorée, base de tout repas.',
-    descriptionEn: 'A golden loaf, the base of every meal.',
-  },
-  {
-    kind: 'inventaire',
-    id: 'riz_au_lait',
-    emoji: '🍚',
-    nom: 'Riz au Lait',
-    nomEn: 'Rice Pudding',
-    ingredients: [
-      { resourceId: ResourceId.RIZ,           quantite: 5 },
-      { resourceId: ResourceId.LAIT,          quantite: 2 },
-      { resourceId: ResourceId.EAU,           quantite: 1 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 1 },
-    ],
-    resultatId: ResourceId.RIZ_AU_LAIT,
-    resultatQte: 1,
-    xp: 40,
-    description: 'Crémeux et doux, parfait après la récolte.',
-    descriptionEn: 'Creamy and sweet, perfect after harvesting.',
-  },
-  {
-    kind: 'inventaire',
-    id: 'galette_sakura',
-    emoji: '🥞',
-    nom: 'Galette Sakura',
-    nomEn: 'Sakura Pancake',
-    ingredients: [
-      { resourceId: ResourceId.SARRASIN,      quantite: 3 },
-      { resourceId: ResourceId.EAU,           quantite: 2 },
-      { resourceId: ResourceId.MIEL_ANIMAL,   quantite: 1 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 2 },
-    ],
-    resultatId: ResourceId.GALETTE_SAKURA,
-    resultatQte: 1,
-    xp: 55,
-    description: 'Galette parfumée au miel, spécialité de la Ferme.',
-    descriptionEn: 'Honey-scented pancake, a Farm specialty.',
-  },
-  {
-    kind: 'inventaire',
-    id: 'miel_sakura',
-    emoji: '🍯',
-    nom: 'Miel Sakura',
-    nomEn: 'Sakura Honey',
-    ingredients: [
-      { resourceId: ResourceId.MIEL_ANIMAL,   quantite: 3 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 3 },
-    ],
-    resultatId: ResourceId.MIEL_SAKURA,
-    resultatQte: 1,
-    xp: 80,
-    description: 'Miel infusé de fleurs de cerisier, rare et précieux.',
-    descriptionEn: 'Honey infused with cherry blossoms, rare and precious.',
-  },
-  {
-    kind: 'inventaire',
-    id: 'the_wisteria',
-    emoji: '🍵',
-    nom: 'Thé Wisteria',
-    nomEn: 'Wisteria Tea',
-    ingredients: [
-      { resourceId: ResourceId.WISTERIA,      quantite: 3 },
-      { resourceId: ResourceId.EAU,           quantite: 2 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 2 },
-    ],
-    resultatId: ResourceId.THE_WISTERIA,
-    resultatQte: 1,
-    xp: 65,
-    description: 'Infusion florale aux arômes délicats de Wisteria.',
-    descriptionEn: 'Floral infusion with delicate Wisteria aromas.',
-  },
-  {
-    kind: 'inventaire',
-    id: 'soupe_pecheur',
-    emoji: '🍲',
-    nom: 'Soupe du Pêcheur',
-    nomEn: "Fisher's Soup",
-    ingredients: [
-      { resourceId: ResourceId.SAUMON,        quantite: 2 },
-      { resourceId: ResourceId.BLE,           quantite: 2 },
-      { resourceId: ResourceId.PIERRE,        quantite: 1 },
-      { resourceId: ResourceId.PISSENLIT,     quantite: 2 },
-      { resourceId: ResourceId.EAU,           quantite: 3 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 2 },
-    ],
-    resultatId: ResourceId.SOUPE_PECHEUR,
+    resultatId: ResourceId.PAIN_MIE,
     resultatQte: 1,
     xp: 150,
-    description: 'Soupe roborative mêlant les saveurs des 4 métiers de récolte.',
-    descriptionEn: 'Hearty soup blending flavors from 4 harvest professions.',
+    description: 'Base de toute cuisine. Simple mais fondamental.',
+    descriptionEn: 'The foundation of all cooking. Simple but essential.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'bouillie_orge',
+    emoji: '🥣',
+    nom: "Bouillie d'Orge",
+    nomEn: 'Barley Porridge',
+    niveauRequis: 10,
+    ingredients: [
+      { resourceId: ResourceId.PAIN_MIE,          quantite: 1 },
+      { resourceId: ResourceId.ORGE,              quantite: 3 },
+      { resourceId: ResourceId.EAU,               quantite: 1 },
+      { resourceId: ResourceId.LAIT,              quantite: 1 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 1 },
+    ],
+    resultatId: ResourceId.BOUILLIE_ORGE,
+    resultatQte: 1,
+    xp: 400,
+    description: 'Bouillie nourrissante à base d\'orge et de lait frais.',
+    descriptionEn: 'Hearty porridge made from barley and fresh milk.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'crepe_seigle',
+    emoji: '🥞',
+    nom: 'Crêpe de Seigle',
+    nomEn: 'Rye Crepe',
+    niveauRequis: 20,
+    ingredients: [
+      { resourceId: ResourceId.BOUILLIE_ORGE,     quantite: 1 },
+      { resourceId: ResourceId.SEIGLE,            quantite: 3 },
+      { resourceId: ResourceId.OEUF,              quantite: 1 },
+      { resourceId: ResourceId.CARPE_JAPONAISE,   quantite: 2 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 2 },
+    ],
+    resultatId: ResourceId.CREPE_SEIGLE,
+    resultatQte: 1,
+    xp: 900,
+    description: 'Crêpe rustique enrichie d\'œuf et de carpe japonaise.',
+    descriptionEn: 'Rustic crepe enriched with egg and Japanese carp.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'porridge_avoine',
+    emoji: '🥣',
+    nom: "Porridge d'Avoine",
+    nomEn: 'Oat Porridge',
+    niveauRequis: 30,
+    ingredients: [
+      { resourceId: ResourceId.CREPE_SEIGLE,      quantite: 1 },
+      { resourceId: ResourceId.AVOINE,            quantite: 3 },
+      { resourceId: ResourceId.CRABE,             quantite: 2 },
+      { resourceId: ResourceId.PISSENLIT,         quantite: 2 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 3 },
+    ],
+    resultatId: ResourceId.PORRIDGE_AVOINE,
+    resultatQte: 1,
+    xp: 2000,
+    description: 'Porridge raffiné aux herbes sauvages et crabe des rivières.',
+    descriptionEn: 'Refined porridge with wild herbs and river crab.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'galette_mais',
+    emoji: '🌽',
+    nom: 'Galette de Maïs',
+    nomEn: 'Corn Cake',
+    niveauRequis: 40,
+    ingredients: [
+      { resourceId: ResourceId.PORRIDGE_AVOINE,   quantite: 1 },
+      { resourceId: ResourceId.MAIS,              quantite: 3 },
+      { resourceId: ResourceId.SAUMON,            quantite: 2 },
+      { resourceId: ResourceId.MENTHE,            quantite: 2 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 4 },
+    ],
+    resultatId: ResourceId.GALETTE_MAIS,
+    resultatQte: 1,
+    xp: 4500,
+    description: 'Galette dorée au saumon et menthe fraîche des jardins.',
+    descriptionEn: 'Golden cake with salmon and fresh garden mint.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'riz_au_miel',
+    emoji: '🍚',
+    nom: 'Riz au Miel',
+    nomEn: 'Honey Rice',
+    niveauRequis: 50,
+    ingredients: [
+      { resourceId: ResourceId.GALETTE_MAIS,      quantite: 1 },
+      { resourceId: ResourceId.RIZ,               quantite: 3 },
+      { resourceId: ResourceId.MIEL_ANIMAL,       quantite: 1 },
+      { resourceId: ResourceId.HOMARD,            quantite: 2 },
+      { resourceId: ResourceId.ORTIE,             quantite: 2 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 5 },
+    ],
+    resultatId: ResourceId.RIZ_AU_MIEL,
+    resultatQte: 1,
+    xp: 10000,
+    description: 'Riz gluant au miel de ruche, parfumé à l\'ortie et au homard.',
+    descriptionEn: 'Sticky rice with hive honey, scented with nettle and lobster.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'soupe_millet',
+    emoji: '🍲',
+    nom: 'Soupe du Millet',
+    nomEn: 'Millet Soup',
+    niveauRequis: 58,
+    ingredients: [
+      { resourceId: ResourceId.RIZ_AU_MIEL,       quantite: 1 },
+      { resourceId: ResourceId.MILLET,            quantite: 3 },
+      { resourceId: ResourceId.NASO,              quantite: 2 },
+      { resourceId: ResourceId.LAVANDE,           quantite: 2 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 6 },
+    ],
+    resultatId: ResourceId.SOUPE_MILLET,
+    resultatQte: 1,
+    xp: 22000,
+    description: 'Soupe ancestrale de millet et naso, apaisée à la lavande.',
+    descriptionEn: 'Ancestral millet and naso soup, soothed with lavender.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'sarrasin_fume',
+    emoji: '🥘',
+    nom: 'Sarrasin Fumé',
+    nomEn: 'Smoked Buckwheat',
+    niveauRequis: 66,
+    ingredients: [
+      { resourceId: ResourceId.SOUPE_MILLET,      quantite: 1 },
+      { resourceId: ResourceId.SARRASIN,          quantite: 3 },
+      { resourceId: ResourceId.PIEUVRE,           quantite: 2 },
+      { resourceId: ResourceId.PIVOINE,           quantite: 2 },
+      { resourceId: ResourceId.BACON,             quantite: 1 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 7 },
+    ],
+    resultatId: ResourceId.SARRASIN_FUME,
+    resultatQte: 1,
+    xp: 50000,
+    description: 'Cassoulet de sarrasin fumé au bacon, garni de pivoine et pieuvre.',
+    descriptionEn: 'Smoked buckwheat stew with bacon, peony and octopus.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'riz_violet_royal',
+    emoji: '🍱',
+    nom: 'Riz Violet Royal',
+    nomEn: 'Royal Purple Rice',
+    niveauRequis: 75,
+    ingredients: [
+      { resourceId: ResourceId.SARRASIN_FUME,     quantite: 1 },
+      { resourceId: ResourceId.RIZ_VIOLET,        quantite: 3 },
+      { resourceId: ResourceId.CALMAR,            quantite: 2 },
+      { resourceId: ResourceId.WISTERIA,          quantite: 2 },
+      { resourceId: ResourceId.LAINE,             quantite: 1 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 8 },
+    ],
+    resultatId: ResourceId.RIZ_VIOLET_ROYAL,
+    resultatQte: 1,
+    xp: 110000,
+    description: 'Riz violet fumé enveloppé de laine dorée et parfumé au wisteria.',
+    descriptionEn: 'Smoked purple rice wrapped in golden wool, scented with wisteria.',
   },
   {
     kind: 'inventaire',
@@ -164,21 +240,41 @@ const RECETTES_CUISINE: RecetteInventaire[] = [
     emoji: '🎎',
     nom: 'Bento Impérial',
     nomEn: 'Imperial Bento',
+    niveauRequis: 90,
     ingredients: [
-      { resourceId: ResourceId.SAKURA,              quantite: 1 },
-      { resourceId: ResourceId.RIZ_SAKURA,          quantite: 2 },
-      { resourceId: ResourceId.FUGU,                quantite: 1 },
-      { resourceId: ResourceId.CRISTAL_KOI,         quantite: 1 },
-      { resourceId: ResourceId.FLEUR_LOTUS_SAKURA,  quantite: 1 },
-      { resourceId: ResourceId.FLEUR_CERISIER,      quantite: 3 },
-      { resourceId: ResourceId.LAIT,                quantite: 2 },
-      { resourceId: ResourceId.MIEL_SAKURA,         quantite: 1 },
+      { resourceId: ResourceId.RIZ_VIOLET_ROYAL,  quantite: 1 },
+      { resourceId: ResourceId.RIZ_SAKURA,        quantite: 3 },
+      { resourceId: ResourceId.CREVETTE_SAKURA,   quantite: 2 },
+      { resourceId: ResourceId.CHRYSANTHEME,      quantite: 2 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 10 },
     ],
     resultatId: ResourceId.BENTO_IMPERIAL,
     resultatQte: 1,
-    xp: 350,
-    description: 'Chef-d\'œuvre culinaire exigeant les 5 professions de récolte.',
-    descriptionEn: 'Culinary masterpiece requiring all 5 harvest professions.',
+    xp: 250000,
+    description: 'Chef-d\'œuvre de la cuisine Kirha, digne des grandes cérémonies.',
+    descriptionEn: 'Culinary masterpiece of Kirha cuisine, worthy of grand ceremonies.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'festin_legendaire',
+    emoji: '👑',
+    nom: 'Festin Légendaire',
+    nomEn: 'Legendary Feast',
+    niveauRequis: 99,
+    ingredients: [
+      { resourceId: ResourceId.BENTO_IMPERIAL,    quantite: 1 },
+      { resourceId: ResourceId.FUGU,              quantite: 1 },
+      { resourceId: ResourceId.CARPE_KOI_DOREE,   quantite: 1 },
+      { resourceId: ResourceId.GINSENG,           quantite: 2 },
+      { resourceId: ResourceId.FLEUR_LOTUS_SAKURA, quantite: 2 },
+      { resourceId: ResourceId.HERBE_KOI,         quantite: 2 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 15 },
+    ],
+    resultatId: ResourceId.FESTIN_LEGENDAIRE,
+    resultatQte: 1,
+    xp: 500000,
+    description: 'Le repas des dieux. Seuls les plus grands cuisiniers peuvent l\'accomplir. Atteindre le niveau 100 débloque 1 Parchemin des Anciens offert par jour.',
+    descriptionEn: 'The meal of gods. Only the greatest chefs can achieve it. Reaching level 100 grants 1 free Ancient Parchment per day.',
   },
 ];
 
@@ -271,7 +367,7 @@ const RECETTES_ARTISAN: Recette[] = [
     ingredients: [
       { resourceId: ResourceId.SEQUOIA,       quantite: 3 },
       { resourceId: ResourceId.CHARBON,       quantite: 2 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 1 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 1 },
     ],
     toolType: 'hache', tierId: 2,
     xp: 60,
@@ -287,7 +383,7 @@ const RECETTES_ARTISAN: Recette[] = [
     ingredients: [
       { resourceId: ResourceId.ORGE,          quantite: 3 },
       { resourceId: ResourceId.CUIVRE,        quantite: 3 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 1 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 1 },
     ],
     toolType: 'faucille', tierId: 2,
     xp: 60,
@@ -303,7 +399,7 @@ const RECETTES_ARTISAN: Recette[] = [
     ingredients: [
       { resourceId: ResourceId.CHENE,         quantite: 2 },
       { resourceId: ResourceId.CUIVRE,        quantite: 2 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 1 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 1 },
     ],
     toolType: 'canne', tierId: 2,
     xp: 60,
@@ -319,7 +415,7 @@ const RECETTES_ARTISAN: Recette[] = [
     ingredients: [
       { resourceId: ResourceId.BOULEAU,       quantite: 2 },
       { resourceId: ResourceId.FER,           quantite: 3 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 1 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 1 },
     ],
     toolType: 'pioche', tierId: 2,
     xp: 60,
@@ -335,7 +431,7 @@ const RECETTES_ARTISAN: Recette[] = [
     ingredients: [
       { resourceId: ResourceId.SEQUOIA,       quantite: 2 },
       { resourceId: ResourceId.EMERAUDE,      quantite: 1 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 1 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 1 },
     ],
     toolType: 'mortier', tierId: 2,
     xp: 60,
@@ -351,7 +447,7 @@ const RECETTES_ARTISAN: Recette[] = [
     nomEn: 'Sakura Table',
     ingredients: [
       { resourceId: ResourceId.CHENE,         quantite: 3 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 2 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 2 },
     ],
     resultatId: ResourceId.TABLE_SAKURA,
     resultatQte: 1,
@@ -367,7 +463,7 @@ const RECETTES_ARTISAN: Recette[] = [
     nomEn: 'Bamboo Lantern',
     ingredients: [
       { resourceId: ResourceId.BAMBOU,        quantite: 4 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 2 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 2 },
     ],
     resultatId: ResourceId.LANTERNE_BAMBOU,
     resultatQte: 1,
@@ -408,7 +504,7 @@ const RECETTES_ALCHIMISTE: RecetteInventaire[] = [
     ingredients: [
       { resourceId: ResourceId.PIVOINE,      quantite: 2 },
       { resourceId: ResourceId.MIEL_ANIMAL,  quantite: 1 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 1 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 1 },
     ],
     resultatId: ResourceId.ONGUENT_SAKURA,
     resultatQte: 1,
@@ -426,7 +522,7 @@ const RECETTES_ALCHIMISTE: RecetteInventaire[] = [
       { resourceId: ResourceId.GINSENG,       quantite: 2 },
       { resourceId: ResourceId.LAVANDE,       quantite: 2 },
       { resourceId: ResourceId.CUIVRE,        quantite: 1 },
-      { resourceId: ResourceId.FLEUR_CERISIER, quantite: 2 },
+      { resourceId: ResourceId.PARCHEMIN_ANCIENS, quantite: 2 },
     ],
     resultatId: ResourceId.ELIXIR_RECOLTE,
     resultatQte: 1,
@@ -467,6 +563,7 @@ export function CraftPage() {
 
   function craftCuisine(recette: RecetteInventaire) {
     if (!canCraftRecette(recette)) return;
+    if (recette.niveauRequis && personageNiveau < recette.niveauRequis) return;
     for (const ing of recette.ingredients) retirerRessource(ing.resourceId, ing.quantite);
     ajouterRessource(recette.resultatId, recette.resultatQte);
     ajouterXpPersonage(recette.xp);
@@ -500,7 +597,7 @@ export function CraftPage() {
     setTimeout(() => setNotification(null), 3000);
   }
 
-  const xpRequisPersonage = Math.round(100 * Math.pow(personageNiveau, 1.8));
+  const xpRequisPersonage = personageNiveau >= 100 ? xpRequis(99) : xpRequis(personageNiveau);
   const pctPersonage = personageNiveau >= 100 ? 100 : Math.min(100, (personageXp / xpRequisPersonage) * 100);
 
   const artisanNiveau    = craftMetiers.artisan.niveau;
@@ -594,17 +691,26 @@ export function CraftPage() {
               {lang === 'en' ? 'CUISINE RECIPES' : 'RECETTES DE CUISINE'}
             </p>
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              {RECETTES_CUISINE.map(r => (
-                <RecetteCard
-                  key={r.id}
-                  recette={r}
-                  inventaire={inventaire}
-                  lang={lang}
-                  onCraft={() => craftCuisine(r)}
-                  btnLabel={lang === 'en' ? '🍳 Cook' : '🍳 Cuisiner'}
-                  outilActuel={undefined}
-                />
-              ))}
+              {RECETTES_CUISINE.map(r => {
+                const locked = !!(r.niveauRequis && personageNiveau < r.niveauRequis);
+                return (
+                  <div key={r.id} style={{ opacity: locked ? 0.5 : 1, position: 'relative' }}>
+                    {locked && (
+                      <div style={{ position:'absolute', top:8, right:10, background:'rgba(100,60,30,0.85)', borderRadius:8, padding:'2px 8px', fontSize:10, fontWeight:800, color:'#f9a825', zIndex:1 }}>
+                        🔒 Lv. {r.niveauRequis} requis
+                      </div>
+                    )}
+                    <RecetteCard
+                      recette={r}
+                      inventaire={inventaire}
+                      lang={lang}
+                      onCraft={() => craftCuisine(r)}
+                      btnLabel={locked ? '🔒 Verrouillé' : (lang === 'en' ? '🍳 Cook' : '🍳 Cuisiner')}
+                      outilActuel={undefined}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </>
         )}

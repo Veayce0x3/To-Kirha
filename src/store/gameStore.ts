@@ -67,6 +67,9 @@ export interface GameState {
   // Métiers de craft (Artisan + Alchimiste craft)
   craftMetiers: Record<'artisan' | 'alchimisteCraft', { niveau: number; xp: number; xpTotal: number }>;
 
+  // Bonus Lv100 : 1 Parchemin des Anciens offert par jour
+  parcheminsLv100LastDate: string;
+
   setAddress:               (address: string | null) => void;
   ajouterXp:                (metier: MetierId, xp: number) => void;
   ajouterXpPersonage:       (xp: number) => void;
@@ -103,6 +106,7 @@ export interface GameState {
   completerQueteTemple:       (index: number) => void;
   resetTempleQuetes:          () => void;
   resetQueteTempleManuel:     (questIndex: number) => void;
+  collectParcheminsLv100:   () => boolean;
   setChainBalances:         (kirha: number, pepites: number, vipExpiry: number) => void;
   setMetierFromChain:       (metierId: MetierId, niveau: number, xp: number, xpTotal: number) => void;
   addInventaireFromChain:   (resourceId: ResourceId, qty: number) => void;
@@ -218,6 +222,7 @@ export const useGameStore = create<GameState>()(
         artisan:         { niveau: 1, xp: 0, xpTotal: 0 },
         alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
       },
+      parcheminsLv100LastDate: '',
 
       setAddress: (address) => set({ address }),
 
@@ -367,6 +372,21 @@ export const useGameStore = create<GameState>()(
           };
         }),
 
+      collectParcheminsLv100: () => {
+        let collected = false;
+        set((state) => {
+          if (state.personageNiveau < 100) return state;
+          const today = getParisDate();
+          if (state.parcheminsLv100LastDate === today) return state;
+          const inventaire = { ...state.inventaire };
+          const current = inventaire[52] ?? 0; // ResourceId.PARCHEMIN_ANCIENS
+          inventaire[52] = Math.round((current + 1) * 1e10) / 1e10;
+          collected = true;
+          return { inventaire, parcheminsLv100LastDate: today };
+        });
+        return collected;
+      },
+
       setChainBalances: (kirha, pepites, vipExpiry) =>
         set((state) => ({
           // chain = source de vérité + gains PNJ non encore sauvegardés
@@ -421,6 +441,7 @@ export const useGameStore = create<GameState>()(
             artisan:         { niveau: 1, xp: 0, xpTotal: 0 },
             alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
           },
+          parcheminsLv100LastDate: '',
           // Conserver
           address:  state.address,
           villeId:  state.villeId,
@@ -559,7 +580,6 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'to-kirha-game',
-      version: 13,
       migrate: (persistedState: unknown, version: number) => {
         if (!persistedState || typeof persistedState !== 'object') return undefined;
         const state = persistedState as Partial<GameState> & { animauxDerniereRecolte?: unknown };
@@ -569,6 +589,7 @@ export const useGameStore = create<GameState>()(
         // v11 : animauxDerniereRecolte devient Record<string, number[]>, temple resets
         // v12 : ajout outils, craftMetiers (Artisan, AlchimisteCraft)
         // v13 : ajout templeSlotRerolls (reroll quêtes), dates temple Paris
+        // v14 : Mouton/Cochon ferme, chaîne cuisine, parcheminsLv100LastDate
         const oldRecolte = (state.animauxDerniereRecolte ?? {}) as Record<string, unknown>;
         const migratedRecolte: Record<string, number[]> = {};
         for (const [k, v] of Object.entries(oldRecolte)) {
@@ -597,8 +618,10 @@ export const useGameStore = create<GameState>()(
             artisan:         { niveau: 1, xp: 0, xpTotal: 0 },
             alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
           },
+          parcheminsLv100LastDate: (state as Partial<GameState>).parcheminsLv100LastDate ?? '',
         };
       },
+      version: 14,
     }
   )
 );

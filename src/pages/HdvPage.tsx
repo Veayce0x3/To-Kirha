@@ -445,7 +445,7 @@ function TabOnchain() {
                     const total = boutiqueQty * FLEUR_PRICE;
                     if (soldeKirha < total) return;
                     retirerKirha(total);
-                    ajouterRessource(ResourceId.FLEUR_CERISIER, boutiqueQty);
+                    ajouterRessource(ResourceId.PARCHEMIN_ANCIENS, boutiqueQty);
                   }}
                 >
                   🌸 Acheter
@@ -454,11 +454,11 @@ function TabOnchain() {
             </div>
 
             {/* Rappel inventaire actuel */}
-            {(inventaire[ResourceId.FLEUR_CERISIER] ?? 0) > 0 && (
+            {(inventaire[ResourceId.PARCHEMIN_ANCIENS] ?? 0) > 0 && (
               <div style={{ padding:'8px 12px', background:'rgba(106,191,68,0.08)', border:'1px solid rgba(106,191,68,0.3)', borderRadius:10, display:'flex', alignItems:'center', gap:8 }}>
                 <img src={uiAssetPath('ui/parchemin.png')} alt="" style={{ width:22, height:22, objectFit:'contain' }} />
                 <span style={{ color:'#2a7a10', fontSize:12, fontWeight:700 }}>
-                  En stock : ×{Math.floor(inventaire[ResourceId.FLEUR_CERISIER] ?? 0)} Parchemin Ancien
+                  En stock : ×{Math.floor(inventaire[ResourceId.PARCHEMIN_ANCIENS] ?? 0)} Parchemin Ancien
                 </span>
               </div>
             )}

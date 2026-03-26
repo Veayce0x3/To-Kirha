@@ -70,19 +70,19 @@ export enum ResourceId {
 
   // --- Ferme ---
   EAU = 51,
-  FLEUR_CERISIER = 52,
+  PARCHEMIN_ANCIENS = 52,
   OEUF = 53,
   LAIT = 54,
   MIEL_ANIMAL = 55,
-  MUSC_SAKURA = 56,
-  ECAILLE_KOI = 57,
+  LAINE = 56,
+  BACON = 57,
 
-  // --- Cuisine (outputs) ---
-  PAIN_BLE = 58,
-  RIZ_AU_LAIT = 59,
-  GALETTE_SAKURA = 60,
-  MIEL_SAKURA = 61,
-  THE_WISTERIA = 62,
+  // --- Cuisine (outputs chaîne) ---
+  PAIN_MIE = 58,
+  BOUILLIE_ORGE = 59,
+  CREPE_SEIGLE = 60,
+  PORRIDGE_AVOINE = 61,
+  GALETTE_MAIS = 62,
 
   // --- Artisan (outputs) ---
   TABLE_SAKURA = 63,
@@ -93,9 +93,13 @@ export enum ResourceId {
   ONGUENT_SAKURA = 66,
   ELIXIR_RECOLTE = 67,
 
-  // --- Cuisine haut niveau (outputs) ---
-  SOUPE_PECHEUR = 68,
-  BENTO_IMPERIAL = 69,
+  // --- Cuisine haut niveau (outputs chaîne) ---
+  RIZ_AU_MIEL = 68,
+  SOUPE_MILLET = 69,
+  SARRASIN_FUME = 70,
+  RIZ_VIOLET_ROYAL = 71,
+  BENTO_IMPERIAL = 72,
+  FESTIN_LEGENDAIRE = 73,
 }
 
 /** Toutes les ressources par métier pour itération */
@@ -105,7 +109,7 @@ export const PECHEUR_IDS  = [21, 22, 23, 24, 25, 26, 27, 28, 29, 30] as const;
 export const MINEUR_IDS   = [31, 32, 33, 34, 35, 36, 37, 38, 39, 40] as const;
 export const ALCHIMISTE_IDS = [41, 42, 43, 44, 45, 46, 47, 48, 49, 50] as const;
 export const FERME_IDS         = [51, 52, 53, 54, 55, 56, 57] as const;
-export const CUISINE_IDS       = [58, 59, 60, 61, 62, 68, 69] as const;
+export const CUISINE_IDS       = [58, 59, 60, 61, 62, 68, 69, 70, 71, 72, 73] as const;
 export const ARTISAN_IDS       = [63, 64] as const;
 export const ALCHIMISTE_CRAFT_IDS = [65, 66, 67] as const;
 

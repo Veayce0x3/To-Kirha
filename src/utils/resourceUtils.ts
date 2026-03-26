@@ -58,29 +58,33 @@ const RESOURCE_NAMES: Record<number, { fr: string; en: string }> = {
   49: { fr: 'Fleur de Lotus Sakura', en: 'Sakura Lotus'       },
   50: { fr: 'Herbe Koï',           en: 'Koi Herb'             },
   // Ferme
-  51: { fr: 'Eau',                 en: 'Water'                },
-  52: { fr: 'Parchemin Ancien', en: 'Ancient Parchment' },
-  53: { fr: 'Œuf',                 en: 'Egg'                  },
-  54: { fr: 'Lait',                en: 'Milk'                 },
-  55: { fr: 'Miel',                en: 'Honey'                },
-  56: { fr: 'Musc Sakura',         en: 'Sakura Musk'          },
-  57: { fr: 'Écaille de Koï',      en: 'Koi Scale'            },
-  // Cuisine
-  58: { fr: 'Pain de Blé',         en: 'Wheat Bread'          },
-  59: { fr: 'Riz au Lait',         en: 'Rice Pudding'         },
-  60: { fr: 'Galette Sakura',      en: 'Sakura Pancake'       },
-  61: { fr: 'Miel Sakura',         en: 'Sakura Honey'         },
-  62: { fr: 'Thé Wisteria',        en: 'Wisteria Tea'         },
+  51: { fr: 'Eau',                    en: 'Water'                  },
+  52: { fr: 'Parchemin des Anciens',  en: 'Ancient Parchment'      },
+  53: { fr: 'Œuf',                    en: 'Egg'                    },
+  54: { fr: 'Lait',                   en: 'Milk'                   },
+  55: { fr: 'Miel',                   en: 'Honey'                  },
+  56: { fr: 'Laine',                  en: 'Wool'                   },
+  57: { fr: 'Bacon',                  en: 'Bacon'                  },
+  // Cuisine — chaîne
+  58: { fr: 'Pain de Mie',            en: 'White Bread'            },
+  59: { fr: "Bouillie d'Orge",        en: 'Barley Porridge'        },
+  60: { fr: 'Crêpe de Seigle',        en: 'Rye Crepe'              },
+  61: { fr: "Porridge d'Avoine",      en: 'Oat Porridge'           },
+  62: { fr: 'Galette de Maïs',        en: 'Corn Cake'              },
   // Artisan
-  63: { fr: 'Table Sakura',        en: 'Sakura Table'         },
-  64: { fr: 'Lanterne Bambou',     en: 'Bamboo Lantern'       },
+  63: { fr: 'Table Sakura',           en: 'Sakura Table'           },
+  64: { fr: 'Lanterne Bambou',        en: 'Bamboo Lantern'         },
   // Alchimiste craft
-  65: { fr: 'Potion de Vitalité',  en: 'Vitality Potion'      },
-  66: { fr: 'Onguent Sakura',      en: 'Sakura Salve'         },
-  67: { fr: 'Élixir de Récolte',   en: 'Harvest Elixir'       },
-  // Cuisine haut niveau
-  68: { fr: 'Soupe du Pêcheur',    en: 'Fisher\'s Soup'       },
-  69: { fr: 'Bento Impérial',      en: 'Imperial Bento'       },
+  65: { fr: 'Potion de Vitalité',     en: 'Vitality Potion'        },
+  66: { fr: 'Onguent Sakura',         en: 'Sakura Salve'           },
+  67: { fr: 'Élixir de Récolte',      en: 'Harvest Elixir'         },
+  // Cuisine haut niveau — chaîne
+  68: { fr: 'Riz au Miel',            en: 'Honey Rice'             },
+  69: { fr: 'Soupe du Millet',        en: 'Millet Soup'            },
+  70: { fr: 'Sarrasin Fumé',          en: 'Smoked Buckwheat'       },
+  71: { fr: 'Riz Violet Royal',       en: 'Royal Purple Rice'      },
+  72: { fr: 'Bento Impérial',         en: 'Imperial Bento'         },
+  73: { fr: 'Festin Légendaire',      en: 'Legendary Feast'        },
 };
 
 export function getNomRessource(id: number, lang: 'fr' | 'en' = 'fr'): string {
@@ -101,15 +105,15 @@ const RESOURCE_EMOJI: Record<number, string> = {
   46: '🪻', 47: '🌸', 48: '🫚', 49: '🪷', 50: '🌿',
   // Ferme
   51: '💧', 52: '📜', 53: '🥚', 54: '🥛', 55: '🍯',
-  56: '✨', 57: '🔮',
-  // Cuisine
-  58: '🍞', 59: '🍚', 60: '🥞', 61: '🍯', 62: '🍵',
+  56: '🧶', 57: '🥓',
+  // Cuisine — chaîne
+  58: '🍞', 59: '🥣', 60: '🥞', 61: '🥣', 62: '🌽',
   // Artisan
   63: '🪑', 64: '🏮',
   // Alchimiste craft
   65: '🧪', 66: '💆', 67: '⚗️',
-  // Cuisine haut niveau
-  68: '🍲', 69: '🎎',
+  // Cuisine haut niveau — chaîne
+  68: '🍚', 69: '🍲', 70: '🥘', 71: '🍱', 72: '🎎', 73: '👑',
 };
 
 export function emojiByResourceId(id: ResourceId | number): string {
