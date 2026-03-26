@@ -17,22 +17,16 @@ const PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? 'YOUR_PROJEC
 const connectors = connectorsForWallets(
   [
     {
-      // MetaMask en premier : utilise metamask://wc deep links natifs → signing Android fonctionne
-      groupName: 'Recommandé',
+      groupName: 'Mobile & Desktop',
       wallets: [
+        walletConnectWallet,
         metaMaskWallet,
         coinbaseWallet,
         trustWallet,
         rainbowWallet,
+        braveWallet,
         okxWallet,
         bybitWallet,
-      ],
-    },
-    {
-      groupName: 'Autre',
-      wallets: [
-        walletConnectWallet,
-        braveWallet,
       ],
     },
   ],
@@ -40,7 +34,6 @@ const connectors = connectorsForWallets(
     appName:        'To-Kirha',
     appDescription: 'Jeu Web3 thème sakura — récoltez, vendez, progressez.',
     appUrl:         'https://veayce0x3.github.io/To-Kirha',
-    appIcon:        'https://veayce0x3.github.io/To-Kirha/assets/icons/icon-192.png',
     projectId:      PROJECT_ID,
   }
 );
@@ -49,5 +42,5 @@ export const wagmiConfig = createConfig({
   connectors,
   chains:    [baseSepolia],
   transports: { [baseSepolia.id]: http() },
-  ssr:        false,
+  ssr:       false,
 });
