@@ -115,9 +115,17 @@ export interface GameState {
 // ============================================================
 
 // XP requis pour passer du niveau N au niveau N+1
-// Courbe exponentielle : 100 × N^1.8 (niveaux 1-5 rapides, puis mur exponentiel)
+// Courbe quadratique : 100 × N^2 — friction dès les premiers niveaux, mur au mid-game
 export function xpRequis(niveau: number): number {
-  return Math.round(100 * Math.pow(niveau, 1.8));
+  return Math.round(100 * Math.pow(niveau, 2.0));
+}
+
+// Taxe HDV selon niveau Personnage + statut VIP
+// Free : 50% (Lv1) → 20% (Lv100) — VIP divise par 2 (min 10%)
+export function calculerTaxeMarche(niveau: number, isVip: boolean): number {
+  const reduction = 0.30 * Math.pow(Math.max(1, niveau) / 100, 0.6);
+  const taxeBase = Math.max(0.10, 0.50 - reduction);
+  return isVip ? Math.max(0.10, taxeBase / 2) : taxeBase;
 }
 
 // ============================================================

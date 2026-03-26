@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePublicClient, useReadContract } from 'wagmi';
 import { parseAbiItem, formatEther } from 'viem';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, calculerTaxeMarche } from '../store/gameStore';
 import { getResourceById } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
@@ -202,18 +202,22 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
 const UNSELLABLE_ON_HDV = (id: number) => id > 50;
 
 function TabOnchain() {
-  const inventaire  = useGameStore(s => s.inventaire);
-  const villeId     = useGameStore(s => s.villeId);
-  const vipExpiry   = useGameStore(s => s.vipExpiry);
-  const soldeKirha  = useGameStore(s => s.soldeKirha);
+  const inventaire      = useGameStore(s => s.inventaire);
+  const villeId         = useGameStore(s => s.villeId);
+  const vipExpiry       = useGameStore(s => s.vipExpiry);
+  const soldeKirha      = useGameStore(s => s.soldeKirha);
+  const personageNiveau = useGameStore(s => s.personageNiveau);
 
   const retirerKirha    = useGameStore(s => s.retirerKirha);
   const ajouterRessource = useGameStore(s => s.ajouterRessource);
   const { lang } = useT();
   const villeIdBn   = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
-  const taxRate = isVip ? 0.25 : 0.5;
-  const taxLabel = isVip ? 'Taxe: 25% (VIP)' : 'Taxe: 50%';
+  const taxRate = calculerTaxeMarche(personageNiveau, isVip);
+  const taxPct  = Math.round(taxRate * 100);
+  const taxLabel = isVip
+    ? `Taxe: ${taxPct}% ✨ VIP (Lv. ${personageNiveau})`
+    : `Taxe: ${taxPct}% (Lv. Personnage ${personageNiveau})`;
   const {
     listings, myListings, status, error, isRelayerActive,
     activerRelayer, acheter, batchMettrEnVente, annulerListing,
