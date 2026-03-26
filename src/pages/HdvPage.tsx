@@ -316,21 +316,6 @@ function TabOnchain() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [refetchRelayer, refetchListings]);
 
-  // Sur mobile : ouvre MetaMask automatiquement 700ms après le début de l'activation
-  // (laisser le temps à WalletConnect d'envoyer la requête au relais avant de switcher d'app)
-  useEffect(() => {
-    if (!relayerActivating) return;
-    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-    if (!isMobile) return;
-    const t = setTimeout(() => {
-      const a = document.createElement('a');
-      a.href = 'metamask://';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }, 700);
-    return () => clearTimeout(t);
-  }, [relayerActivating]);
 
   const priceNum = parseFloat(sellPrice || '0');
   const qtyNum   = parseInt(sellQty || '0');
@@ -385,9 +370,9 @@ function TabOnchain() {
             {relayerActivating && (
               <a
                 href="metamask://"
-                style={{ display:'block', marginTop:8, padding:'6px 10px', background:'#f9a825', color:'#1e0a16', fontSize:11, fontWeight:800, textDecoration:'none', borderRadius:8, textAlign:'center' }}
+                style={{ display:'block', marginTop:8, padding:'8px 12px', background:'#c43070', color:'#fff', fontSize:12, fontWeight:800, textDecoration:'none', borderRadius:8, textAlign:'center', letterSpacing:0.3 }}
               >
-                📱 Ouvrir MetaMask →
+                ✅ Ouvrir MetaMask
               </a>
             )}
           </div>
