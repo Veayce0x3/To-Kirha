@@ -57,12 +57,12 @@ export function useMarket() {
   const cityIdBn = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
 
   // ── État relayer pour cette ville ─────────────────────────
-  const { data: relayerActive } = useReadContract({
+  const { data: relayerActive, refetch: refetchRelayer } = useReadContract({
     address:      KIRHA_GAME_ADDRESS,
     abi:          KirhaGameAbi,
     functionName: 'isRelayerActive',
     args:         cityIdBn ? [cityIdBn] : undefined,
-    query: { enabled: !!cityIdBn, refetchInterval: 60_000 },
+    query: { enabled: !!cityIdBn, refetchInterval: 5_000 },
   });
 
   // ── Lire les listings actifs ───────────────────────────────
@@ -310,15 +310,30 @@ export function useMarket() {
         args:     [cityIdBn, BigInt(durationSecs)],
         chainId:  baseSepolia.id,
       });
-      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
-      if (villeId) localStorage.setItem(`kirha_relayer_expires_${villeId}`, String(Math.floor(Date.now() / 1000) + durationSecs));
+      // Sauvegarder l'expiry immédiatement — avant waitForReceipt
+      // Sur Android, la tab peut être rechargée au retour de MetaMask
+      const expiresAt = Math.floor(Date.now() / 1000) + durationSecs;
+      if (villeId) localStorage.setItem(`kirha_relayer_expires_${villeId}`, String(expiresAt));
       setStatus('success');
-      setTimeout(() => setStatus('idle'), 2000);
+      setTimeout(() => setStatus('idle'), 3000);
+      // Attendre la confirmation en arrière-plan (non-bloquant)
+      // Le refetchInterval de 5s sur isRelayerActive s'en charge côté UI
+      if (publicClient) {
+        publicClient.waitForTransactionReceipt({ hash }).then(() => {
+          refetchRelayer();
+        }).catch(() => { /* ignoré — l'expiry localStorage est déjà défini */ });
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur');
-      setStatus('error');
+      const msg = err instanceof Error ? err.message : 'Erreur';
+      // Sur mobile, si le user revient sur la page et le relayer est déjà actif, ignorer l'erreur
+      if ((relayerActive as boolean)) {
+        setStatus('idle');
+      } else {
+        setError(msg.includes('rejected') || msg.includes('denied') ? 'Transaction annulée.' : msg.slice(0, 80));
+        setStatus('error');
+      }
     }
-  }, [cityIdBn, writeContractAsync, publicClient]);
+  }, [cityIdBn, writeContractAsync, publicClient, villeId, relayerActive, refetchRelayer]);
 
   // ── Annuler un listing ─────────────────────────────────────
   const annulerListing = useCallback(async (listingId: bigint) => {
