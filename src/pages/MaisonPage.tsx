@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
-import { useGameStore, xpRequis } from '../store/gameStore';
+import { useGameStore, xpRequis, xpRequisPersonage } from '../store/gameStore';
 import { METIERS, MetierId } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
@@ -66,7 +66,7 @@ export function MaisonPage() {
 
   const totalItems = parseFloat(items.reduce((acc, i) => acc + i.qty, 0).toFixed(2));
 
-  const xpRequisNiveau = personageNiveau < 100 ? xpRequis(personageNiveau) : 1;
+  const xpRequisNiveau = personageNiveau < 100 ? xpRequisPersonage(personageNiveau) : 1;
   const pctPersonage   = personageNiveau >= 100 ? 100 : Math.min(100, (personageXp / xpRequisNiveau) * 100);
   const totalCompetencesDepenses = Object.values(competences).reduce((a, b) => a + (b ?? 0), 0);
 

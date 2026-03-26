@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGameStore, xpRequis } from '../store/gameStore';
+import { useGameStore, xpRequis, xpRequisPersonage } from '../store/gameStore';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
 import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
@@ -597,8 +597,8 @@ export function CraftPage() {
     setTimeout(() => setNotification(null), 3000);
   }
 
-  const xpRequisPersonage = personageNiveau >= 100 ? xpRequis(99) : xpRequis(personageNiveau);
-  const pctPersonage = personageNiveau >= 100 ? 100 : Math.min(100, (personageXp / xpRequisPersonage) * 100);
+  const xpReqPersonage = personageNiveau >= 100 ? xpRequisPersonage(99) : xpRequisPersonage(personageNiveau);
+  const pctPersonage = personageNiveau >= 100 ? 100 : Math.min(100, (personageXp / xpReqPersonage) * 100);
 
   const artisanNiveau    = craftMetiers.artisan.niveau;
   const artisanXp        = craftMetiers.artisan.xp;
@@ -686,7 +686,7 @@ export function CraftPage() {
         {view === 'cuisine' && (
           <>
             {/* Barre XP personnage */}
-            <XpBar label={`👤 Personnage — Niv. ${personageNiveau}`} xp={personageXp} xpReq={xpRequisPersonage} xpTotal={personageXpTotal} pct={pctPersonage} color="#c43070" />
+            <XpBar label={`👤 Personnage — Niv. ${personageNiveau}`} xp={personageXp} xpReq={xpReqPersonage} xpTotal={personageXpTotal} pct={pctPersonage} color="#c43070" />
             <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'10px 0 8px', letterSpacing:'0.05em' }}>
               {lang === 'en' ? 'CUISINE RECIPES' : 'RECETTES DE CUISINE'}
             </p>

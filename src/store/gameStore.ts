@@ -119,9 +119,15 @@ export interface GameState {
 // ============================================================
 
 // XP requis pour passer du niveau N au niveau N+1
-// Courbe quadratique : 100 × N^2 — friction dès les premiers niveaux, mur au mid-game
+// Métiers/Craft : 100 × N^2 — mur dès le début, cohérent avec récoltes multiples/jour
 export function xpRequis(niveau: number): number {
   return Math.round(100 * Math.pow(niveau, 2.0));
+}
+
+// XP requis pour le Personnage uniquement (source = cuisine seulement)
+// 100 × N^1.65 — accroche rapide Lv1-10, mur progressif au mid-game (modèle Sunflower)
+export function xpRequisPersonage(niveau: number): number {
+  return Math.round(100 * Math.pow(niveau, 1.65));
 }
 
 // Taxe HDV selon niveau Personnage + statut VIP
@@ -473,8 +479,8 @@ export const useGameStore = create<GameState>()(
           let xpCurrent = state.personageXp + xp;
           const xpTotal = state.personageXpTotal + xp;
           let points = state.competencesPoints;
-          while (niveau < 100 && xpCurrent >= xpRequis(niveau)) {
-            xpCurrent -= xpRequis(niveau);
+          while (niveau < 100 && xpCurrent >= xpRequisPersonage(niveau)) {
+            xpCurrent -= xpRequisPersonage(niveau);
             niveau = Math.min(100, niveau + 1);
             points += 1;
           }
