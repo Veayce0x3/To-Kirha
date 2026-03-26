@@ -226,7 +226,7 @@ function TabOnchain() {
 
   const [tab, setTab]               = useState<'boutique'|'acheter'|'vendre'|'mesVentes'|'historique'>('boutique');
   const [boutiqueQty, setBoutiqueQty] = useState(1);
-  const FLEUR_PRICE = 2; // $KIRHA par Fleur de Cerisier
+  const FLEUR_PRICE = useGameStore(s => s.parcheminPrice ?? 10);
   const [relayerSecondsLeft, setRelayerSecondsLeft] = useState<number | null>(null);
 
   // Lire l'expiry réelle depuis le contrat (relayerSession public mapping)

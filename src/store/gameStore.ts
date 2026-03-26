@@ -70,6 +70,9 @@ export interface GameState {
   // Bonus Lv100 : 1 Parchemin des Anciens offert par jour
   parcheminsLv100LastDate: string;
 
+  // Prix du Parchemin des Anciens en $KIRHA (ajustable par admin)
+  parcheminPrice: number;
+
   setAddress:               (address: string | null) => void;
   ajouterXp:                (metier: MetierId, xp: number) => void;
   ajouterXpPersonage:       (xp: number) => void;
@@ -107,6 +110,7 @@ export interface GameState {
   resetTempleQuetes:          () => void;
   resetQueteTempleManuel:     (questIndex: number) => void;
   collectParcheminsLv100:   () => boolean;
+  setParcheminPrice:        (price: number) => void;
   setChainBalances:         (kirha: number, pepites: number, vipExpiry: number) => void;
   setMetierFromChain:       (metierId: MetierId, niveau: number, xp: number, xpTotal: number) => void;
   addInventaireFromChain:   (resourceId: ResourceId, qty: number) => void;
@@ -229,6 +233,7 @@ export const useGameStore = create<GameState>()(
         alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
       },
       parcheminsLv100LastDate: '',
+      parcheminPrice: 10,
 
       setAddress: (address) => set({ address }),
 
@@ -392,6 +397,8 @@ export const useGameStore = create<GameState>()(
         });
         return collected;
       },
+
+      setParcheminPrice: (price) => set({ parcheminPrice: Math.max(1, Math.round(price)) }),
 
       setChainBalances: (kirha, pepites, vipExpiry) =>
         set((state) => ({
@@ -596,6 +603,7 @@ export const useGameStore = create<GameState>()(
         // v12 : ajout outils, craftMetiers (Artisan, AlchimisteCraft)
         // v13 : ajout templeSlotRerolls (reroll quêtes), dates temple Paris
         // v14 : Mouton/Cochon ferme, chaîne cuisine, parcheminsLv100LastDate
+        // v15 : parcheminPrice configurable admin (défaut 10)
         const oldRecolte = (state.animauxDerniereRecolte ?? {}) as Record<string, unknown>;
         const migratedRecolte: Record<string, number[]> = {};
         for (const [k, v] of Object.entries(oldRecolte)) {
@@ -625,9 +633,10 @@ export const useGameStore = create<GameState>()(
             alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
           },
           parcheminsLv100LastDate: (state as Partial<GameState>).parcheminsLv100LastDate ?? '',
+          parcheminPrice: (state as Partial<GameState>).parcheminPrice ?? 10,
         };
       },
-      version: 14,
+      version: 15,
     }
   )
 );

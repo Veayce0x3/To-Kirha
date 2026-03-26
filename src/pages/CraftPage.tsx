@@ -544,18 +544,20 @@ export function CraftPage() {
   const [view, setView] = useState<View>('categories');
   const [notification, setNotification] = useState<string | null>(null);
 
-  const inventaire         = useGameStore(s => s.inventaire);
-  const personageNiveau    = useGameStore(s => s.personageNiveau);
-  const personageXp        = useGameStore(s => s.personageXp);
-  const personageXpTotal   = useGameStore(s => s.personageXpTotal);
-  const craftMetiersRaw    = useGameStore(s => s.craftMetiers);
-  const craftMetiers       = craftMetiersRaw ?? { artisan: { niveau: 1, xp: 0, xpTotal: 0 }, alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 } };
-  const outils             = useGameStore(s => s.outils) ?? {};
-  const retirerRessource   = useGameStore(s => s.retirerRessource);
-  const ajouterRessource   = useGameStore(s => s.ajouterRessource);
-  const ajouterXpPersonage = useGameStore(s => s.ajouterXpPersonage);
-  const ajouterXpCraft     = useGameStore(s => s.ajouterXpCraft);
-  const setOutil           = useGameStore(s => s.setOutil);
+  const inventaire              = useGameStore(s => s.inventaire);
+  const personageNiveau         = useGameStore(s => s.personageNiveau);
+  const personageXp             = useGameStore(s => s.personageXp);
+  const personageXpTotal        = useGameStore(s => s.personageXpTotal);
+  const parcheminsLv100LastDate = useGameStore(s => s.parcheminsLv100LastDate);
+  const craftMetiersRaw         = useGameStore(s => s.craftMetiers);
+  const craftMetiers            = craftMetiersRaw ?? { artisan: { niveau: 1, xp: 0, xpTotal: 0 }, alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 } };
+  const outils                  = useGameStore(s => s.outils) ?? {};
+  const retirerRessource        = useGameStore(s => s.retirerRessource);
+  const ajouterRessource        = useGameStore(s => s.ajouterRessource);
+  const ajouterXpPersonage      = useGameStore(s => s.ajouterXpPersonage);
+  const ajouterXpCraft          = useGameStore(s => s.ajouterXpCraft);
+  const setOutil                = useGameStore(s => s.setOutil);
+  const collectParcheminsLv100  = useGameStore(s => s.collectParcheminsLv100);
 
   function canCraftRecette(recette: Recette): boolean {
     return recette.ingredients.every(ing => (inventaire[ing.resourceId] ?? 0) >= ing.quantite);
@@ -687,6 +689,34 @@ export function CraftPage() {
           <>
             {/* Barre XP personnage */}
             <XpBar label={`👤 Personnage — Niv. ${personageNiveau}`} xp={personageXp} xpReq={xpReqPersonage} xpTotal={personageXpTotal} pct={pctPersonage} color="#c43070" />
+
+            {/* Bonus Lv100 : 1 Parchemin des Anciens par jour */}
+            {personageNiveau >= 100 && (() => {
+              const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+              const alreadyCollected = parcheminsLv100LastDate === today;
+              return (
+                <div style={{ margin:'8px 0', padding:'10px 14px', background: alreadyCollected ? 'rgba(196,48,112,0.06)' : 'rgba(212,170,50,0.1)', border:`1px solid ${alreadyCollected ? 'rgba(196,48,112,0.2)' : 'rgba(212,170,50,0.4)'}`, borderRadius:12, display:'flex', alignItems:'center', gap:12 }}>
+                  <span style={{ fontSize:22 }}>📜</span>
+                  <div style={{ flex:1 }}>
+                    <p style={{ color: alreadyCollected ? '#7a4060' : '#f9a825', fontSize:12, fontWeight:700, margin:0 }}>
+                      {lang === 'en' ? 'Lv.100 Bonus — 1 Ancient Parchment/day' : 'Bonus Niv.100 — 1 Parchemin des Anciens/jour'}
+                    </p>
+                    {alreadyCollected && <p style={{ color:'#7a4060', fontSize:10, margin:'2px 0 0' }}>{lang === 'en' ? 'Already collected today' : 'Déjà collecté aujourd\'hui'}</p>}
+                  </div>
+                  <button
+                    disabled={alreadyCollected}
+                    onClick={() => {
+                      const ok = collectParcheminsLv100();
+                      if (ok) setNotification(lang === 'en' ? '+1 Ancient Parchment!' : '+1 Parchemin des Anciens !');
+                    }}
+                    style={{ padding:'6px 14px', borderRadius:10, fontSize:11, fontWeight:700, cursor: alreadyCollected ? 'default' : 'pointer', border:'none', background: alreadyCollected ? 'rgba(196,48,112,0.1)' : 'linear-gradient(135deg,#c43070,#f9a825)', color: alreadyCollected ? '#7a4060' : '#fff' }}
+                  >
+                    {alreadyCollected ? (lang === 'en' ? 'Collected' : 'Collecté') : (lang === 'en' ? 'Collect' : 'Collecter')}
+                  </button>
+                </div>
+              );
+            })()}
+
             <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'10px 0 8px', letterSpacing:'0.05em' }}>
               {lang === 'en' ? 'CUISINE RECIPES' : 'RECETTES DE CUISINE'}
             </p>

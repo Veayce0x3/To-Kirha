@@ -7,6 +7,7 @@ import KirhaGameAbi   from '../contracts/abis/KirhaGame.json';
 import KirhaCityAbi   from '../contracts/abis/KirhaCity.json';
 import KirhaMarketAbi from '../contracts/abis/KirhaMarket.json';
 import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
+import { useGameStore } from '../store/gameStore';
 
 // ── Whitelist admin ────────────────────────────────────────
 const ADMIN_WALLETS = [
@@ -86,6 +87,11 @@ export function AdminPage() {
   const [retirerOpStatus, setRetirerOpStatus] = useState<Record<string, 'idle'|'pending'|'ok'|'err'>>({});
 
   const isAdmin = !!address && ADMIN_WALLETS.includes(address.toLowerCase());
+
+  // ── Paramètres jeu (store local) ───────────────────────
+  const parcheminPrice    = useGameStore(s => s.parcheminPrice ?? 10);
+  const setParcheminPrice = useGameStore(s => s.setParcheminPrice);
+  const [parcheminInput, setParcheminInput] = useState<string>('');
 
   // ── Tester le token ────────────────────────────────────
   async function testerToken() {
@@ -445,6 +451,50 @@ export function AdminPage() {
       )}
 
       {error && <p style={{ color:'#ff6b9d', fontSize:12, marginBottom:16 }}>❌ {error}</p>}
+
+      {/* Paramètres Jeu */}
+      <div style={{ marginBottom:20, background:'rgba(249,168,37,0.06)', border:'1px solid rgba(249,168,37,0.25)', borderRadius:12, padding:'14px 16px' }}>
+        <h2 style={{ color:'#f9a825', fontSize:13, fontWeight:800, margin:'0 0 12px', letterSpacing:'0.05em' }}>⚙️ PARAMÈTRES JEU</h2>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+
+          {/* Prix Parchemin des Anciens */}
+          <div>
+            <p style={{ color:'#f9a825', fontSize:10, fontWeight:700, margin:'0 0 4px' }}>
+              📜 PRIX PARCHEMIN DES ANCIENS (HDV Boutique PNJ) — Actuel : <strong>{parcheminPrice} $KIRHA</strong>
+            </p>
+            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+              <input
+                type="number" min="1" max="9999"
+                placeholder={`Nouveau prix (actuel: ${parcheminPrice})`}
+                value={parcheminInput}
+                onChange={e => setParcheminInput(e.target.value)}
+                style={{ flex:1, padding:'5px 8px', borderRadius:6, border:'1px solid rgba(249,168,37,0.3)', background:'rgba(0,0,0,0.4)', color:'#e0c8d8', fontSize:11, fontFamily:'monospace', minWidth:0 }}
+              />
+              <button
+                disabled={!parcheminInput || parseInt(parcheminInput) < 1}
+                onClick={() => {
+                  const val = parseInt(parcheminInput);
+                  if (val >= 1) { setParcheminPrice(val); setParcheminInput(''); }
+                }}
+                style={{ padding:'5px 12px', borderRadius:6, fontSize:10, fontWeight:700, cursor:'pointer', border:'none', background:'rgba(249,168,37,0.3)', color:'#f9a825', flexShrink:0 }}
+              >
+                Appliquer
+              </button>
+              {[5, 10, 20, 50].map(v => (
+                <button key={v} onClick={() => { setParcheminPrice(v); setParcheminInput(''); }}
+                  style={{ padding:'4px 8px', borderRadius:6, fontSize:10, fontWeight:700, cursor:'pointer', border:'1px solid rgba(249,168,37,0.25)', background: parcheminPrice === v ? 'rgba(249,168,37,0.3)' : 'transparent', color:'#f9a825', flexShrink:0 }}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+            <p style={{ color:'#7a6020', fontSize:9, margin:'4px 0 0' }}>
+              Ce prix est stocké localement (localStorage). Sur testnet il est identique pour tous les testeurs sur leur appareil.
+            </p>
+          </div>
+
+        </div>
+      </div>
 
       {/* Stats globales */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:10, marginBottom:20 }}>
