@@ -17,11 +17,11 @@ const PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? 'YOUR_PROJEC
 const connectors = connectorsForWallets(
   [
     {
-      // WalletConnect en premier : meilleure compatibilité mobile (gère le retour depuis MetaMask sur Android)
+      // MetaMask en premier : utilise metamask://wc deep links natifs → signing Android fonctionne
       groupName: 'Recommandé',
       wallets: [
-        walletConnectWallet,
         metaMaskWallet,
+        coinbaseWallet,
         trustWallet,
         rainbowWallet,
         okxWallet,
@@ -29,9 +29,9 @@ const connectors = connectorsForWallets(
       ],
     },
     {
-      groupName: 'Desktop',
+      groupName: 'Autre',
       wallets: [
-        coinbaseWallet,
+        walletConnectWallet,
         braveWallet,
       ],
     },
