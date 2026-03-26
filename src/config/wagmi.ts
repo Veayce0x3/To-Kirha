@@ -9,7 +9,7 @@ import {
   okxWallet,
   bybitWallet,
 } from '@rainbow-me/rainbowkit/wallets';
-import { createConfig, createStorage, http } from 'wagmi';
+import { createConfig, http } from 'wagmi';
 import { baseSepolia } from 'viem/chains';
 
 const PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? 'YOUR_PROJECT_ID';
@@ -50,6 +50,4 @@ export const wagmiConfig = createConfig({
   chains:    [baseSepolia],
   transports: { [baseSepolia.id]: http() },
   ssr:        false,
-  // Persiste la session WalletConnect dans localStorage → survit aux rechargements de page sur mobile
-  storage:    createStorage({ storage: window.localStorage }),
 });
