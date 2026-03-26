@@ -300,9 +300,14 @@ export function useMarket() {
     if (!cityIdBn) return;
     setStatus('listing');
     setError(null);
+    const durationSecs = getSecondsUntilMidnightParis();
+    // Sauvegarder l'expiry AVANT d'ouvrir MetaMask
+    // → si l'onglet est tué sur Android au retour de MetaMask, l'expiry est déjà en localStorage
+    const expiresAt = Math.floor(Date.now() / 1000) + durationSecs;
+    if (villeId) localStorage.setItem(`kirha_relayer_expires_${villeId}`, String(expiresAt));
     try {
-      await ensureChain();
-      const durationSecs = getSecondsUntilMidnightParis();
+      // Pas de ensureChain() ici : envoyer 2 requêtes WalletConnect séquentielles sur mobile
+      // (chain switch + tx) casse le flux — wagmi gère le chainId directement
       const hash = await writeContractAsync({
         address:  KIRHA_GAME_ADDRESS,
         abi:      KirhaGameAbi,
@@ -310,26 +315,24 @@ export function useMarket() {
         args:     [cityIdBn, BigInt(durationSecs)],
         chainId:  baseSepolia.id,
       });
-      // Sauvegarder l'expiry immédiatement — avant waitForReceipt
-      // Sur Android, la tab peut être rechargée au retour de MetaMask
-      const expiresAt = Math.floor(Date.now() / 1000) + durationSecs;
-      if (villeId) localStorage.setItem(`kirha_relayer_expires_${villeId}`, String(expiresAt));
       setStatus('success');
       setTimeout(() => setStatus('idle'), 3000);
       // Attendre la confirmation en arrière-plan (non-bloquant)
-      // Le refetchInterval de 5s sur isRelayerActive s'en charge côté UI
       if (publicClient) {
         publicClient.waitForTransactionReceipt({ hash }).then(() => {
           refetchRelayer();
-        }).catch(() => { /* ignoré — l'expiry localStorage est déjà défini */ });
+        }).catch(() => {});
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erreur';
-      // Sur mobile, si le user revient sur la page et le relayer est déjà actif, ignorer l'erreur
+      const isRejected = msg.includes('rejected') || msg.includes('denied') || msg.includes('cancel');
+      // Supprimer l'expiry optimiste seulement si rejet explicite (pas un crash/timeout)
+      if (isRejected && villeId) localStorage.removeItem(`kirha_relayer_expires_${villeId}`);
+      // Si le relayer est déjà actif (retour mobile après rechargement), ignorer l'erreur
       if ((relayerActive as boolean)) {
         setStatus('idle');
       } else {
-        setError(msg.includes('rejected') || msg.includes('denied') ? 'Transaction annulée.' : msg.slice(0, 80));
+        setError(isRejected ? 'Transaction annulée.' : msg.slice(0, 80));
         setStatus('error');
       }
     }
@@ -383,5 +386,6 @@ export function useMarket() {
     annulerListing,
     activerRelayer,
     refetchListings,
+    refetchRelayer,
   };
 }

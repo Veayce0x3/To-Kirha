@@ -231,6 +231,7 @@ function TabOnchain() {
   const {
     listings, myListings, status, error, isRelayerActive,
     activerRelayer, acheter, batchMettrEnVente, annulerListing,
+    refetchRelayer, refetchListings,
   } = useMarket();
   const { sauvegarder, status: saveStatus, pendingCount } = useSave();
 
@@ -303,6 +304,34 @@ function TabOnchain() {
   const busy = status === 'listing' || status === 'buying' || status === 'cancelling';
   const relayerActivating = status === 'listing' && !isRelayerActive;
 
+  // Quand l'utilisateur revient de MetaMask → refetch immédiat du statut relayer
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refetchRelayer();
+        refetchListings();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [refetchRelayer, refetchListings]);
+
+  // Sur mobile : ouvre MetaMask automatiquement 700ms après le début de l'activation
+  // (laisser le temps à WalletConnect d'envoyer la requête au relais avant de switcher d'app)
+  useEffect(() => {
+    if (!relayerActivating) return;
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+    if (!isMobile) return;
+    const t = setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = 'metamask://';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }, 700);
+    return () => clearTimeout(t);
+  }, [relayerActivating]);
+
   const priceNum = parseFloat(sellPrice || '0');
   const qtyNum   = parseInt(sellQty || '0');
   const totalNet  = priceNum * qtyNum * (1 - taxRate);
@@ -351,11 +380,14 @@ function TabOnchain() {
               onClick={activerRelayer}
               disabled={relayerActivating}
             >
-              {relayerActivating ? '⏳…' : 'Activer'}
+              {relayerActivating ? '⏳ En attente…' : 'Activer'}
             </button>
             {relayerActivating && (
-              <a href="metamask://" style={{ display:'block', marginTop:6, color:'#f9a825', fontSize:11, fontWeight:700, textDecoration:'none' }}>
-                📱 Ouvre MetaMask pour approuver →
+              <a
+                href="metamask://"
+                style={{ display:'block', marginTop:8, padding:'6px 10px', background:'#f9a825', color:'#1e0a16', fontSize:11, fontWeight:800, textDecoration:'none', borderRadius:8, textAlign:'center' }}
+              >
+                📱 Ouvrir MetaMask →
               </a>
             )}
           </div>
