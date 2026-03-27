@@ -934,10 +934,11 @@ export function CraftPage() {
                           const have = inventaire[ing.resourceId as ResourceId] ?? 0;
                           const ok   = have >= ing.quantite;
                           return (
-                            <div key={ing.resourceId} style={{ display:'flex', alignItems:'center', gap:3, background: ok ? 'rgba(106,191,68,0.08)' : 'rgba(196,48,112,0.06)', border:`1px solid ${ok ? 'rgba(106,191,68,0.3)' : 'rgba(212,100,138,0.2)'}`, borderRadius:8, padding:'3px 7px' }}>
-                              <span style={{ fontSize:12 }}>{emojiByResourceId(ing.resourceId)}</span>
-                              <span style={{ color: ok ? '#2a7a10' : '#c43070', fontSize:10, fontWeight:700 }}>×{ing.quantite}</span>
-                              <span style={{ color:'#9a6080', fontSize:9 }}>({Math.floor(have)}/{ing.quantite})</span>
+                            <div key={ing.resourceId} style={{ display:'flex', flexDirection:'column', alignItems:'center', background: ok ? 'rgba(106,191,68,0.08)' : 'rgba(196,48,112,0.06)', border:`1px solid ${ok ? 'rgba(106,191,68,0.3)' : 'rgba(212,100,138,0.2)'}`, borderRadius:10, padding:'5px 8px', minWidth:50, textAlign:'center' }}>
+                              <span style={{ fontSize:16 }}>{emojiByResourceId(ing.resourceId)}</span>
+                              <span style={{ color:'#5a3050', fontSize:8, fontWeight:600, lineHeight:1.2, marginTop:1, maxWidth:60, wordBreak:'break-word' }}>{getNomRessource(ing.resourceId, lang)}</span>
+                              <span style={{ color: ok ? '#2a7a10' : '#c43070', fontSize:9, fontWeight:700 }}>×{ing.quantite}</span>
+                              <span style={{ color:'#9a6080', fontSize:8 }}>({Math.floor(have)})</span>
                             </div>
                           );
                         })}
@@ -1236,10 +1237,11 @@ function RecetteCard({ recette, inventaire, lang, onCraft, btnLabel }: {
               const have = inventaire[ing.resourceId] ?? 0;
               const ok   = have >= ing.quantite;
               return (
-                <div key={ing.resourceId} style={{ display:'flex', alignItems:'center', gap:3, background: ok ? 'rgba(106,191,68,0.08)' : 'rgba(196,48,112,0.06)', border: `1px solid ${ok ? 'rgba(106,191,68,0.3)' : 'rgba(212,100,138,0.2)'}`, borderRadius:8, padding:'3px 7px' }}>
-                  <span style={{ fontSize:12 }}>{emojiByResourceId(ing.resourceId)}</span>
-                  <span style={{ color: ok ? '#2a7a10' : '#c43070', fontSize:10, fontWeight:700 }}>×{ing.quantite}</span>
-                  <span style={{ color:'#9a6080', fontSize:9 }}>({Math.floor(have)}/{ing.quantite})</span>
+                <div key={ing.resourceId} style={{ display:'flex', flexDirection:'column', alignItems:'center', background: ok ? 'rgba(106,191,68,0.08)' : 'rgba(196,48,112,0.06)', border: `1px solid ${ok ? 'rgba(106,191,68,0.3)' : 'rgba(212,100,138,0.2)'}`, borderRadius:10, padding:'5px 8px', minWidth:50, textAlign:'center' }}>
+                  <span style={{ fontSize:16 }}>{emojiByResourceId(ing.resourceId)}</span>
+                  <span style={{ color:'#5a3050', fontSize:8, fontWeight:600, lineHeight:1.2, marginTop:1, maxWidth:60, wordBreak:'break-word' }}>{getNomRessource(ing.resourceId, lang)}</span>
+                  <span style={{ color: ok ? '#2a7a10' : '#c43070', fontSize:9, fontWeight:700 }}>×{ing.quantite}</span>
+                  <span style={{ color:'#9a6080', fontSize:8 }}>({Math.floor(have)})</span>
                 </div>
               );
             })}

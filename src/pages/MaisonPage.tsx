@@ -12,7 +12,7 @@ import { MEUBLES, calculerBonusMeubles, getMetierBonusMeuble } from '../data/meu
 import { VETEMENTS, RARETE_COULEUR, calculerBonus } from '../data/vetements';
 import { getSaisonActuelle } from '../data/saisons';
 
-type Tab = 'ressources' | 'metiers' | 'personnage' | 'equipement';
+type Tab = 'ressources' | 'personnage' | 'equipement';
 type SortMode = 'quantite' | 'categorie';
 
 const METIER_CONFIG: Record<MetierId, { icon: string; color: string }> = {
@@ -28,7 +28,7 @@ const COUT_RESET_COMPETENCES = 100;
 export function MaisonPage() {
   const navigate    = useNavigate();
   const { address } = useAccount();
-  const [tab, setTab]   = useState<Tab>('ressources');
+  const [tab, setTab]   = useState<Tab | null>(null);
   const [sort, setSort] = useState<SortMode>('quantite');
   const { t, lang } = useT();
 
@@ -84,35 +84,57 @@ export function MaisonPage() {
     <div style={s.page}>
       {/* Header */}
       <div style={s.header}>
-        <button style={s.backBtn} onClick={() => navigate('/home')}>{t('maison.back_home')}</button>
+        <button style={s.backBtn} onClick={() => tab ? setTab(null) : navigate('/home')}>
+          {tab ? '← Retour' : t('maison.back_home')}
+        </button>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
-          <span style={s.headerTitle}>{t('maison.title')}</span>
+          <span style={s.headerTitle}>
+            {tab === 'ressources' ? (lang === 'en' ? '📦 Inventory' : '📦 Inventaire')
+             : tab === 'personnage' ? (lang === 'en' ? '👤 Character' : '👤 Personnage')
+             : tab === 'equipement' ? (lang === 'en' ? '🎒 Equipment' : '🎒 Équipement')
+             : t('maison.title')}
+          </span>
           <span style={{ color:'#7a4060', fontSize:'10px', fontFamily:'monospace' }}>{short}</span>
         </div>
         <div style={{ width: 48 }} />
       </div>
 
-      {/* Tabs — grille 2×2 inspirée du sélecteur de métier */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, padding:'10px 12px 4px', flexShrink:0 }}>
-        {([
-          { id:'ressources',  icon:'📦', label: t('maison.tab_res'),    badge: totalItems > 0 ? `${totalItems}` : '—',       color:'#29b6f6' },
-          { id:'metiers',     icon:'⚒️',  label: t('maison.tab_metiers'), badge: `${Math.max(...(Object.values(metiers) as {niveau:number}[]).map(m => m.niveau))} max`, color:'#f9a825' },
-          { id:'personnage',  icon:'👤', label: t('maison.tab_perso'),  badge: `Lv ${personageNiveau}`,                      color:'#c43070' },
-          { id:'equipement',  icon:'🎒', label: lang === 'en' ? 'Equipment' : 'Équipement', badge: `${Object.values(equipement).filter(Boolean).length}/5`, color:'#ab47bc' },
-        ] as { id: Tab; icon: string; label: string; badge: string; color: string }[]).map(({ id, icon, label, badge, color }) => {
-          const active = tab === id;
-          return (
-            <button key={id} onClick={() => setTab(id)} style={{ background: active ? `linear-gradient(135deg,${color}18,${color}0a)` : '#fff', border: active ? `2px solid ${color}` : '1.5px solid rgba(212,100,138,0.15)', borderRadius:14, padding:'10px 8px', cursor:'pointer', textAlign:'left', boxShadow: active ? `0 2px 12px ${color}22` : 'none', transition:'all 0.15s' }}>
-              <span style={{ fontSize:22, display:'block', marginBottom:4 }}>{icon}</span>
-              <span style={{ color: active ? color : '#1e0a16', fontSize:11, fontWeight:800, display:'block', lineHeight:1.2, marginBottom:3 }}>{label}</span>
-              <span style={{ background: active ? `${color}20` : 'rgba(212,100,138,0.08)', color: active ? color : '#9a6080', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:8 }}>{badge}</span>
+      {/* Sélecteur de section — plein écran si aucun onglet sélectionné */}
+      {!tab && (
+        <div style={{ flex:1, overflowY:'auto', padding:'16px', display:'flex', flexDirection:'column', gap:12 }}>
+          {([
+            { id:'ressources' as Tab, icon:'📦', color:'#29b6f6',
+              label: lang === 'en' ? 'Inventory' : 'Inventaire',
+              desc:  lang === 'en' ? `${totalItems} items collected` : `${totalItems} items collectés`,
+              badge: totalItems > 0 ? String(totalItems) : '—' },
+            { id:'personnage' as Tab, icon:'👤', color:'#c43070',
+              label: lang === 'en' ? 'Character' : 'Personnage',
+              desc:  lang === 'en' ? `Level ${personageNiveau} · Skills · Bonuses` : `Niveau ${personageNiveau} · Compétences · Bonus`,
+              badge: `Lv ${personageNiveau}` },
+            { id:'equipement' as Tab, icon:'🎒', color:'#ab47bc',
+              label: lang === 'en' ? 'Equipment' : 'Équipement',
+              desc:  lang === 'en' ? 'Furniture & Wearables' : 'Meubles & Vêtements',
+              badge: `${Object.values(equipement).filter(Boolean).length}/5` },
+          ]).map(({ id, icon, color, label, desc, badge }) => (
+            <button key={id} onClick={() => setTab(id)} style={{ background:'#fff', border:`2px solid ${color}33`, borderRadius:18, padding:'18px 20px', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:16, boxShadow:`0 2px 16px ${color}12`, transition:'all 0.15s' }}>
+              <div style={{ width:56, height:56, borderRadius:16, background:`linear-gradient(135deg,${color}22,${color}0a)`, border:`1.5px solid ${color}44`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <span style={{ fontSize:28 }}>{icon}</span>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+                  <span style={{ color:'#1e0a16', fontSize:15, fontWeight:800 }}>{label}</span>
+                  <span style={{ background:`${color}18`, color, fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:10 }}>{badge}</span>
+                </div>
+                <span style={{ color:'#7a4060', fontSize:11, lineHeight:1.4 }}>{desc}</span>
+              </div>
+              <span style={{ color:`${color}88`, fontSize:20 }}>›</span>
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Contenu */}
-      <div style={s.content}>
+      {/* Contenu de la section sélectionnée */}
+      {tab && <div style={s.content}>
 
         {/* ── Ressources ── */}
         {tab === 'ressources' && (
@@ -157,50 +179,6 @@ export function MaisonPage() {
           </>
         )}
 
-        {/* ── Métiers ── */}
-        {tab === 'metiers' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-            {(Object.keys(METIER_CONFIG) as MetierId[]).map(id => {
-              const p   = metiers[id];
-              const cfg = METIER_CONFIG[id];
-              const pct = Math.min(100, (p.xp / xpRequis(p.niveau)) * 100);
-              const compPoints = competences[id] ?? 0;
-              return (
-                <div key={id} style={{ ...s.metierCard, borderColor: `${cfg.color}44` }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'10px' }}>
-                    {metierIconPath(id)
-                      ? <img src={metierIconPath(id)!} alt="" style={{ width:40, height:40, objectFit:'contain', filter:`drop-shadow(0 0 6px ${cfg.color}88)`, flexShrink:0 }} />
-                      : <span style={{ fontSize:'28px', filter:`drop-shadow(0 0 5px ${cfg.color}66)` }}>{cfg.icon}</span>
-                    }
-                    <div style={{ flex:1 }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                        <span style={{ color:'#1e0a16', fontSize:'14px', fontWeight:800 }}>{METIERS[id].nom}</span>
-                        <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-                          {compPoints > 0 && (
-                            <span style={{ background:`${cfg.color}22`, color:cfg.color, fontSize:'9px', fontWeight:700, padding:'1px 5px', borderRadius:6 }}>
-                              +{compPoints * 5}% rendement
-                            </span>
-                          )}
-                          <span style={{ ...s.levelBadge, borderColor: cfg.color, color: cfg.color }}>{t('maison.level')} {p.niveau}</span>
-                        </div>
-                      </div>
-                      <span style={{ color:'#7a4060', fontSize:'10px' }}>{p.xp_total} {t('maison.xp_total')}</span>
-                    </div>
-                  </div>
-                  <div style={{ height:6, background:'rgba(212,100,138,0.08)', borderRadius:3, overflow:'hidden' }}>
-                    <div style={{ height:'100%', width:`${pct}%`, background: cfg.color, borderRadius:3, transition:'width 0.4s' }} />
-                  </div>
-                  <div style={{ display:'flex', justifyContent:'space-between', marginTop:5 }}>
-                    <span style={{ color:'#7a4060', fontSize:'9px' }}>{p.xp} / {xpRequis(p.niveau)} XP</span>
-                    <span style={{ color:'#7a4060', fontSize:'9px' }}>{Math.round(pct)}%</span>
-                  </div>
-                </div>
-              );
-            })}
-
-
-          </div>
-        )}
 
         {/* ── Personnage ── */}
         {tab === 'personnage' && (
@@ -298,7 +276,7 @@ export function MaisonPage() {
               )}
             </div>
 
-            {/* ── Stats rendement ── */}
+            {/* ── Bonus récolte ── */}
             {(() => {
               const METIER_IDS_LIST = ['bucheron', 'paysan', 'pecheur', 'mineur', 'alchimiste'] as const;
               const bonusVet    = calculerBonus(equipement);
@@ -310,9 +288,14 @@ export function MaisonPage() {
               const buffQtyTotal = validBuffs.reduce((s, b) => s + b.bonusPercent, 0);
               return (
                 <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                  <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'6px 0 4px', letterSpacing:'0.05em' }}>
-                    {lang === 'en' ? '📊 HARVEST YIELD' : '📊 RENDEMENT RÉCOLTE'}
-                  </p>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', margin:'6px 0 2px' }}>
+                    <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:0, letterSpacing:'0.05em' }}>
+                      {lang === 'en' ? '📊 HARVEST BONUSES' : '📊 BONUS QUANTITÉ RÉCOLTÉE'}
+                    </p>
+                    <span style={{ color:'#b08090', fontSize:9, fontStyle:'italic' }}>
+                      {lang === 'en' ? 'applied on top of base qty' : 'ajoutés à la qté de base'}
+                    </span>
+                  </div>
                   <div style={{ background:'#fff', border:'1px solid rgba(212,100,138,0.13)', borderRadius:14, overflow:'hidden' }}>
                     {METIER_IDS_LIST.map((mid, idx) => {
                       const cfg        = METIER_CONFIG[mid];
@@ -323,16 +306,31 @@ export function MaisonPage() {
                       const meubleQtyS = saison.id === mid ? bonusMeuble.qty_saison : 0;
                       const vetQty     = bonusVet.qty_recolte ?? 0;
                       const total      = compBonus + prestigeB + meubleB + meubleQtyS + saisonB + buffQtyTotal + vetQty;
+                      const sources = [
+                        compBonus > 0 && `compét. +${compBonus}%`,
+                        prestigeB > 0 && `prestige +${prestigeB}%`,
+                        meubleB   > 0 && `meuble +${meubleB}%`,
+                        saisonB   > 0 && `saison +${saisonB}%`,
+                        buffQtyTotal > 0 && `buff +${buffQtyTotal}%`,
+                        vetQty    > 0 && `vêtement +${vetQty}%`,
+                      ].filter(Boolean).join(' · ');
                       return (
-                        <div key={mid} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', borderBottom: idx < 4 ? '1px solid rgba(212,100,138,0.07)' : 'none' }}>
-                          <span style={{ fontSize:16 }}>{cfg.icon}</span>
-                          <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700, flex:1 }}>{METIERS[mid].nom}</span>
-                          <span style={{ color: total > 0 ? cfg.color : '#9a6080', fontSize:14, fontWeight:900 }}>+{total}%</span>
+                        <div key={mid} style={{ padding:'9px 14px', borderBottom: idx < 4 ? '1px solid rgba(212,100,138,0.07)' : 'none' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                            <span style={{ fontSize:16 }}>{cfg.icon}</span>
+                            <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700, flex:1 }}>{METIERS[mid].nom}</span>
+                            <span style={{ color: total > 0 ? cfg.color : '#bba0b0', fontSize:14, fontWeight:900 }}>
+                              {total > 0 ? `+${total}%` : '—'}
+                            </span>
+                          </div>
+                          {sources && (
+                            <p style={{ color:'#9a8090', fontSize:9, margin:'2px 0 0 26px', lineHeight:1.4 }}>{sources}</p>
+                          )}
                         </div>
                       );
                     })}
                   </div>
-                  <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'4px 0 4px', letterSpacing:'0.05em' }}>
+                  <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'4px 0 2px', letterSpacing:'0.05em' }}>
                     {lang === 'en' ? '🐾 FARM' : '🐾 FERME'}
                   </p>
                   <div style={{ background:'#fff', border:'1px solid rgba(41,182,246,0.2)', borderRadius:14, overflow:'hidden' }}>
@@ -342,7 +340,9 @@ export function MaisonPage() {
                     </div>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 14px' }}>
                       <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>🐔 {lang === 'en' ? 'Animal cooldown' : 'Cooldown animaux'}</span>
-                      <span style={{ color: bonusMeuble.cooldown_animaux_pct > 0 ? '#2a7a10' : '#9a6080', fontSize:13, fontWeight:900 }}>-{bonusMeuble.cooldown_animaux_pct}%</span>
+                      <span style={{ color: bonusMeuble.cooldown_animaux_pct > 0 ? '#2a7a10' : '#9a6080', fontSize:13, fontWeight:900 }}>
+                        {bonusMeuble.cooldown_animaux_pct > 0 ? `-${bonusMeuble.cooldown_animaux_pct}%` : '—'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -498,7 +498,7 @@ export function MaisonPage() {
           );
         })()}
 
-      </div>
+      </div>}
     </div>
   );
 }
