@@ -6,7 +6,7 @@ import { Equipement, TypeVetement } from '../data/vetements';
 import { ToolType } from '../data/outils';
 
 // ── Buffs actifs (potions alchimiste) ─────────────────────
-export type BuffType = 'xp_harvest' | 'qty_harvest';
+export type BuffType = 'qty_harvest';
 
 export interface ActiveBuff {
   type:         BuffType;

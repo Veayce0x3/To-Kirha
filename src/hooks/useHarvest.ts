@@ -131,16 +131,14 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     const now = Date.now();
     const validBuffs = activeBuffsRef.current.filter(b => b.expiresAt > now);
 
-    const compBonus   = (competencesRef.current[metierId] ?? 0) * 5; // +5% par point
-    const vipBonus    = isVipRef.current ? 0.25 : 0;                 // VIP +25% XP métier
-    const prestigeBonus = (prestigeRef.current[metierId] ?? 0) * 5;  // +5% qty/prestige
-    const buffQty     = validBuffs.filter(b => b.type === 'qty_harvest').reduce((s, b) => s + b.bonusPercent, 0);
-    const buffXp      = validBuffs.filter(b => b.type === 'xp_harvest').reduce((s, b) => s + b.bonusPercent, 0);
+    const compBonus     = (competencesRef.current[metierId] ?? 0) * 5; // +5% qty par point compétence
+    const vipBonus      = isVipRef.current ? 0.25 : 0;                 // VIP +25% XP métier (inchangé)
+    const prestigeBonus = (prestigeRef.current[metierId] ?? 0) * 5;    // +5% qty/prestige
+    const buffQty       = validBuffs.filter(b => b.type === 'qty_harvest').reduce((s, b) => s + b.bonusPercent, 0);
 
-    // Saison active
+    // Saison active — bonus quantité uniquement
     const saison = getSaisonActuelle();
     const saisonQtyBonus = saison.id === metierId ? saison.bonusQty : 0;
-    const saisonXpBonus  = saison.id === metierId ? saison.bonusXp  : 0;
 
     const ratio  = Math.round(
       quantiteRecolte(metierProgressRef.current.niveau)
@@ -153,10 +151,7 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     const xpFinal = Math.round(
       ressource.xp_recolte
       * (1 + bonusRef.current.xp_bonus / 100)
-      * (1 + compBonus / 100)
       * (1 + vipBonus)
-      * (1 + buffXp / 100)
-      * (1 + saisonXpBonus / 100)
     );
     // Collecter
     terminerRecolte(metierId, slotIndex, ratio);

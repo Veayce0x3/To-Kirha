@@ -1,7 +1,7 @@
 // ============================================================
 // Système de Saisons — To-Kirha
 // 5 saisons, rotation toutes les 14 jours depuis le 2026-01-01.
-// Chaque saison booste un métier : +30% XP, +20% Qty.
+// Chaque saison booste un métier : +20% Qty (pas de bonus XP).
 // ============================================================
 
 import { MetierId } from './metiers';
@@ -14,8 +14,7 @@ export interface Saison {
   nomEn:    string;
   emoji:    string;
   color:    string;
-  bonusXp:  number; // en %
-  bonusQty: number; // en %
+  bonusQty: number; // en % (quantité uniquement, pas de bonus XP)
   resourceIds: readonly number[];
 }
 
@@ -26,7 +25,6 @@ const SAISONS: Saison[] = [
     nomEn: 'Forest Season',
     emoji: '🌳',
     color: '#4caf50',
-    bonusXp: 30,
     bonusQty: 20,
     resourceIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
   },
@@ -36,7 +34,6 @@ const SAISONS: Saison[] = [
     nomEn: 'Harvest Season',
     emoji: '🌾',
     color: '#ff9800',
-    bonusXp: 30,
     bonusQty: 20,
     resourceIds: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
   },
@@ -46,7 +43,6 @@ const SAISONS: Saison[] = [
     nomEn: 'Water Season',
     emoji: '🐟',
     color: '#29b6f6',
-    bonusXp: 30,
     bonusQty: 20,
     resourceIds: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
   },
@@ -56,7 +52,6 @@ const SAISONS: Saison[] = [
     nomEn: 'Mining Season',
     emoji: '⛏️',
     color: '#9e9e9e',
-    bonusXp: 30,
     bonusQty: 20,
     resourceIds: [31, 32, 33, 34, 35, 36, 37, 38, 39, 40],
   },
@@ -66,7 +61,6 @@ const SAISONS: Saison[] = [
     nomEn: 'Herb Season',
     emoji: '🌺',
     color: '#ab47bc',
-    bonusXp: 30,
     bonusQty: 20,
     resourceIds: [41, 42, 43, 44, 45, 46, 47, 48, 49, 50],
   },

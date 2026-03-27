@@ -357,8 +357,8 @@ const RECETTES_ALCHIMISTE: RecetteInventaire[] = [
     resultatId: ResourceId.ELIXIR_RECOLTE,
     resultatQte: 1,
     xp: 70,
-    description: 'Élixir puissant combinant herbes et minerais.',
-    descriptionEn: 'Powerful elixir combining herbs and minerals.',
+    description: 'Élixir puissant : +50% quantité récoltée pendant 2h.',
+    descriptionEn: 'Powerful elixir: +50% harvest quantity for 2h.',
   },
 ];
 
@@ -647,8 +647,8 @@ export function CraftPage() {
       addBuff('qty_harvest', 25, 60 * 60 * 1000, resourceId); // +25% qty 1h
       notify(lang === 'en' ? '✨ +25% harvest qty for 1 hour!' : '✨ +25% quantité récolte pendant 1h !');
     } else if (resourceId === ResourceId.ELIXIR_RECOLTE) {
-      addBuff('xp_harvest', 50, 2 * 60 * 60 * 1000, resourceId); // +50% XP 2h
-      notify(lang === 'en' ? '✨ +50% harvest XP for 2 hours!' : '✨ +50% XP récolte pendant 2h !');
+      addBuff('qty_harvest', 50, 2 * 60 * 60 * 1000, resourceId); // +50% qty 2h
+      notify(lang === 'en' ? '✨ +50% harvest qty for 2 hours!' : '✨ +50% quantité récolte pendant 2h !');
     } else if (resourceId === ResourceId.ONGUENT_SAKURA) {
       setOnguentPopup(true); // outil déjà retiré, géré dans le popup
     }
@@ -961,8 +961,8 @@ export function CraftPage() {
                   const remaining = Math.ceil((b.expiresAt - Date.now()) / 60000);
                   return (
                     <div key={b.type} style={{ display:'flex', gap:6, alignItems:'center', fontSize:11, color:'#7030b0', fontWeight:600 }}>
-                      <span>{b.type === 'qty_harvest' ? '📦' : '⭐'}</span>
-                      <span>+{b.bonusPercent}% {b.type === 'qty_harvest' ? 'Quantité' : 'XP'} récolte</span>
+                      <span>📦</span>
+                      <span>+{b.bonusPercent}% Quantité récolte</span>
                       <span style={{ marginLeft:'auto', fontFamily:'monospace', fontSize:10 }}>{remaining}min</span>
                     </div>
                   );

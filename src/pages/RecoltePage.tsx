@@ -165,7 +165,7 @@ function SaisonBanner({ activeMetierId }: { activeMetierId?: MetierId }) {
         <span style={{ color: isActive ? saison.color : '#9a6080', fontSize:11, fontWeight:800 }}>{saison.nom}</span>
         {isActive && (
           <span style={{ display:'block', color: saison.color, fontSize:10, fontWeight:600 }}>
-            +{saison.bonusXp}% XP · +{saison.bonusQty}% Quantité
+            +{saison.bonusQty}% Quantité récoltée
           </span>
         )}
       </div>
@@ -186,8 +186,8 @@ function BuffBanner() {
         const remaining = Math.ceil((b.expiresAt - Date.now()) / 60000);
         return (
           <div key={b.type} style={{ display:'flex', gap:6, alignItems:'center', fontSize:11, color:'#7030b0', fontWeight:700 }}>
-            <span>{b.type === 'qty_harvest' ? '📦' : '⭐'}</span>
-            <span>+{b.bonusPercent}% {b.type === 'qty_harvest' ? 'Quantité' : 'XP'} récolte</span>
+            <span>📦</span>
+            <span>+{b.bonusPercent}% Quantité récolte</span>
             <span style={{ marginLeft:'auto', fontFamily:'monospace', fontSize:10 }}>{remaining}min</span>
           </div>
         );
