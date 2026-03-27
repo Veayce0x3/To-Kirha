@@ -179,25 +179,27 @@ export function calculerTaxeMarche(niveau: number, isVip: boolean): number {
 // Conditions de déverrouillage des slots
 // ============================================================
 
+// Seuils calculés à partir de la formule xpRequis(n) = round(100 × n^1.7)
+// ressources = cumul × 0.5,  kirha = cumul × 0.125  (cumul = Σ xpRequis(2..S))
 export const SLOT_UNLOCK_CONDITIONS: Record<number, { ressources: number; kirha: number }> = {
-  2:  { ressources: 5,    kirha: 2    },
-  3:  { ressources: 10,   kirha: 5    },
-  4:  { ressources: 15,   kirha: 8    },
-  5:  { ressources: 20,   kirha: 10   },
-  6:  { ressources: 40,   kirha: 20   },
-  7:  { ressources: 80,   kirha: 40   },
-  8:  { ressources: 150,  kirha: 75   },
-  9:  { ressources: 250,  kirha: 120  },
-  10: { ressources: 400,  kirha: 200  },
-  11: { ressources: 600,  kirha: 300  },
-  12: { ressources: 900,  kirha: 450  },
-  13: { ressources: 1200, kirha: 600  },
-  14: { ressources: 1600, kirha: 800  },
-  15: { ressources: 2000, kirha: 1000 },
-  16: { ressources: 2500, kirha: 1250 },
-  17: { ressources: 3000, kirha: 1500 },
-  18: { ressources: 3500, kirha: 1750 },
-  19: { ressources: 4000, kirha: 2000 },
+  2:  { ressources: 150,   kirha: 40    },
+  3:  { ressources: 500,   kirha: 125   },
+  4:  { ressources: 1000,  kirha: 250   },
+  5:  { ressources: 1800,  kirha: 450   },
+  6:  { ressources: 2800,  kirha: 700   },
+  7:  { ressources: 4200,  kirha: 1050  },
+  8:  { ressources: 6000,  kirha: 1500  },
+  9:  { ressources: 8000,  kirha: 2000  },
+  10: { ressources: 10500, kirha: 2600  },
+  11: { ressources: 13500, kirha: 3400  },
+  12: { ressources: 17000, kirha: 4250  },
+  13: { ressources: 21000, kirha: 5250  },
+  14: { ressources: 25500, kirha: 6400  },
+  15: { ressources: 30500, kirha: 7600  },
+  16: { ressources: 36000, kirha: 9000  },
+  17: { ressources: 42000, kirha: 10500 },
+  18: { ressources: 49000, kirha: 12250 },
+  19: { ressources: 56500, kirha: 14100 },
 };
 
 // ============================================================
