@@ -411,7 +411,7 @@ export const useGameStore = create<GameState>()(
         set((state) => {
           const today = getParisDate();
           const usedToday = state.templeResetDate === today ? state.templeResetUsed : 0;
-          if (usedToday >= 2) return state;
+          if (usedToday >= 1) return state;
           const newRerolls = [...(state.templeSlotRerolls ?? [0, 0, 0])];
           newRerolls[questIndex] = (newRerolls[questIndex] ?? 0) + 1;
           return {

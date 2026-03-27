@@ -12,7 +12,7 @@ import { MEUBLES, calculerBonusMeubles, getMetierBonusMeuble } from '../data/meu
 import { VETEMENTS, RARETE_COULEUR, calculerBonus } from '../data/vetements';
 import { getSaisonActuelle } from '../data/saisons';
 
-type Tab = 'ressources' | 'metiers' | 'personnage' | 'equipement' | 'stats';
+type Tab = 'ressources' | 'metiers' | 'personnage' | 'equipement';
 type SortMode = 'quantite' | 'categorie';
 
 const METIER_CONFIG: Record<MetierId, { icon: string; color: string }> = {
@@ -94,7 +94,7 @@ export function MaisonPage() {
 
       {/* Tabs */}
       <div style={s.tabs}>
-        {([['ressources', `${t('maison.tab_res')}${totalItems > 0 ? ` (${totalItems})` : ''}`], ['metiers', t('maison.tab_metiers')], ['personnage', t('maison.tab_perso')], ['equipement', lang === 'en' ? '🎒 Equip.' : '🎒 Équip.'], ['stats', '📊 Stats']] as [Tab, string][]).map(([tabId, label]) => (
+        {([['ressources', `${t('maison.tab_res')}${totalItems > 0 ? ` (${totalItems})` : ''}`], ['metiers', t('maison.tab_metiers')], ['personnage', t('maison.tab_perso')], ['equipement', lang === 'en' ? '🎒 Équip.' : '🎒 Équip.']] as [Tab, string][]).map(([tabId, label]) => (
           <button key={tabId} style={{ ...s.tab, ...(tab === tabId ? s.tabActive : {}) }} onClick={() => setTab(tabId as Tab)}>
             {label}
           </button>
@@ -287,6 +287,57 @@ export function MaisonPage() {
                 </button>
               )}
             </div>
+
+            {/* ── Stats rendement ── */}
+            {(() => {
+              const METIER_IDS_LIST = ['bucheron', 'paysan', 'pecheur', 'mineur', 'alchimiste'] as const;
+              const bonusVet    = calculerBonus(equipement);
+              const bonusMeuble = calculerBonusMeubles(meubles_poses);
+              const saison      = getSaisonActuelle();
+              const isVip       = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
+              const now         = Date.now();
+              const validBuffs  = activeBuffs.filter(b => b.expiresAt > now);
+              const buffQtyTotal = validBuffs.reduce((s, b) => s + b.bonusPercent, 0);
+              return (
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'6px 0 4px', letterSpacing:'0.05em' }}>
+                    {lang === 'en' ? '📊 HARVEST YIELD' : '📊 RENDEMENT RÉCOLTE'}
+                  </p>
+                  <div style={{ background:'#fff', border:'1px solid rgba(212,100,138,0.13)', borderRadius:14, overflow:'hidden' }}>
+                    {METIER_IDS_LIST.map((mid, idx) => {
+                      const cfg        = METIER_CONFIG[mid];
+                      const compBonus  = (competences[mid] ?? 0) * 5;
+                      const prestigeB  = (prestige[mid] ?? 0) * 5;
+                      const meubleB    = getMetierBonusMeuble(mid, bonusMeuble);
+                      const saisonB    = saison.id === mid ? saison.bonusQty + (isVip ? 10 : 0) : 0;
+                      const meubleQtyS = saison.id === mid ? bonusMeuble.qty_saison : 0;
+                      const vetQty     = bonusVet.qty_recolte ?? 0;
+                      const total      = compBonus + prestigeB + meubleB + meubleQtyS + saisonB + buffQtyTotal + vetQty;
+                      return (
+                        <div key={mid} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', borderBottom: idx < 4 ? '1px solid rgba(212,100,138,0.07)' : 'none' }}>
+                          <span style={{ fontSize:16 }}>{cfg.icon}</span>
+                          <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700, flex:1 }}>{METIERS[mid].nom}</span>
+                          <span style={{ color: total > 0 ? cfg.color : '#9a6080', fontSize:14, fontWeight:900 }}>+{total}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'4px 0 4px', letterSpacing:'0.05em' }}>
+                    {lang === 'en' ? '🐾 FARM' : '🐾 FERME'}
+                  </p>
+                  <div style={{ background:'#fff', border:'1px solid rgba(41,182,246,0.2)', borderRadius:14, overflow:'hidden' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 14px', borderBottom:'1px solid rgba(41,182,246,0.08)' }}>
+                      <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>💧 {lang === 'en' ? 'Water/day' : 'Eau/jour'}</span>
+                      <span style={{ color:'#29b6f6', fontSize:13, fontWeight:900 }}>{1 + bonusMeuble.eau_par_jour}/j</span>
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 14px' }}>
+                      <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>🐔 {lang === 'en' ? 'Animal cooldown' : 'Cooldown animaux'}</span>
+                      <span style={{ color: bonusMeuble.cooldown_animaux_pct > 0 ? '#2a7a10' : '#9a6080', fontSize:13, fontWeight:900 }}>-{bonusMeuble.cooldown_animaux_pct}%</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -437,85 +488,6 @@ export function MaisonPage() {
           );
         })()}
 
-        {/* ── Stats ── */}
-        {tab === 'stats' && (() => {
-          const METIER_IDS_LIST = ['bucheron', 'paysan', 'pecheur', 'mineur', 'alchimiste'] as const;
-          const bonusVet    = calculerBonus(equipement);
-          const bonusMeuble = calculerBonusMeubles(meubles_poses);
-          const saison      = getSaisonActuelle();
-          const isVip       = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
-          const now         = Date.now();
-          const validBuffs  = activeBuffs.filter(b => b.expiresAt > now);
-          const buffQtyTotal = validBuffs.reduce((s, b) => s + b.bonusPercent, 0);
-          return (
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {/* Rendement par métier */}
-              <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'0 0 4px', letterSpacing:'0.05em' }}>
-                {lang === 'en' ? 'HARVEST YIELD' : 'RENDEMENT RÉCOLTE'}
-              </p>
-              <div style={{ background:'#fff', border:'1px solid rgba(212,100,138,0.13)', borderRadius:14, overflow:'hidden' }}>
-                {METIER_IDS_LIST.map((mid, idx) => {
-                  const cfg        = METIER_CONFIG[mid];
-                  const compBonus  = (competences[mid] ?? 0) * 5;
-                  const prestigeB  = (prestige[mid] ?? 0) * 5;
-                  const meubleB    = getMetierBonusMeuble(mid, bonusMeuble);
-                  const saisonB    = saison.id === mid ? saison.bonusQty + (isVip ? 10 : 0) : 0;
-                  const meubleQtyS = saison.id === mid ? bonusMeuble.qty_saison : 0;
-                  const vetQty     = bonusVet.qty_recolte ?? 0;
-                  const total      = compBonus + prestigeB + meubleB + meubleQtyS + saisonB + buffQtyTotal + vetQty;
-                  return (
-                    <div key={mid} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderBottom: idx < 4 ? '1px solid rgba(212,100,138,0.07)' : 'none' }}>
-                      <span style={{ fontSize:18 }}>{cfg.icon}</span>
-                      <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700, flex:1 }}>{METIERS[mid].nom}</span>
-                      <span style={{ color: total > 0 ? cfg.color : '#9a6080', fontSize:15, fontWeight:900 }}>
-                        +{total}%
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Ferme */}
-              <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'4px 0 4px', letterSpacing:'0.05em' }}>
-                {lang === 'en' ? 'FARM' : 'FERME'}
-              </p>
-              <div style={{ background:'#fff', border:'1px solid rgba(41,182,246,0.2)', borderRadius:14, overflow:'hidden' }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid rgba(41,182,246,0.08)' }}>
-                  <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>💧 {lang === 'en' ? 'Water/day' : 'Eau/jour'}</span>
-                  <span style={{ color:'#29b6f6', fontSize:14, fontWeight:900 }}>{1 + bonusMeuble.eau_par_jour}/j</span>
-                </div>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px' }}>
-                  <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>🐔 {lang === 'en' ? 'Animal cooldown' : 'Cooldown animaux'}</span>
-                  <span style={{ color: bonusMeuble.cooldown_animaux_pct > 0 ? '#2a7a10' : '#9a6080', fontSize:14, fontWeight:900 }}>-{bonusMeuble.cooldown_animaux_pct}%</span>
-                </div>
-              </div>
-
-              {/* Équipement & buffs (seulement si bonus actifs) */}
-              {(bonusVet.vitesse_recolte > 0 || bonusVet.xp_bonus > 0 || bonusVet.qty_recolte > 0 || bonusVet.slots_bonus > 0 || validBuffs.length > 0) && (
-                <>
-                  <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'4px 0 4px', letterSpacing:'0.05em' }}>
-                    {lang === 'en' ? 'EQUIPMENT & BUFFS' : 'ÉQUIPEMENT & BUFFS'}
-                  </p>
-                  <div style={{ background:'#fff', border:'1px solid rgba(196,48,112,0.13)', borderRadius:14, padding:'10px 14px', display:'flex', flexDirection:'column', gap:6 }}>
-                    {bonusVet.vitesse_recolte > 0 && <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#7a4060', fontSize:11 }}>⏱️ {lang === 'en' ? 'Harvest speed' : 'Vitesse récolte'}</span><span style={{ color:'#2a7a10', fontSize:12, fontWeight:800 }}>-{bonusVet.vitesse_recolte}%</span></div>}
-                    {bonusVet.xp_bonus > 0       && <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#7a4060', fontSize:11 }}>✨ XP</span><span style={{ color:'#c43070', fontSize:12, fontWeight:800 }}>+{bonusVet.xp_bonus}%</span></div>}
-                    {bonusVet.qty_recolte > 0    && <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#7a4060', fontSize:11 }}>📦 {lang === 'en' ? 'Harvest qty' : 'Qté récolte'}</span><span style={{ color:'#2a7a10', fontSize:12, fontWeight:800 }}>+{bonusVet.qty_recolte}%</span></div>}
-                    {bonusVet.slots_bonus > 0    && <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#7a4060', fontSize:11 }}>🎒 Slots</span><span style={{ color:'#9a5a10', fontSize:12, fontWeight:800 }}>+{bonusVet.slots_bonus}</span></div>}
-                    {validBuffs.map(b => {
-                      const remaining = Math.ceil((b.expiresAt - now) / 60000);
-                      return (
-                        <div key={b.type} style={{ display:'flex', justifyContent:'space-between' }}>
-                          <span style={{ color:'#7030b0', fontSize:11 }}>🧪 {lang === 'en' ? 'Potion' : 'Potion'}</span>
-                          <span style={{ color:'#7030b0', fontSize:12, fontWeight:800 }}>+{b.bonusPercent}% <span style={{ fontSize:9, fontWeight:400 }}>({remaining}min)</span></span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        })()}
       </div>
     </div>
   );

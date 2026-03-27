@@ -180,7 +180,7 @@ export function TemplePage() {
   });
 
   const completedIndices: number[] = (templeCompletedDate === today) ? (templeCompleted ?? []) : [];
-  const resetsLeft = 2 - (templeResetDate === today ? templeResetUsed : 0);
+  const resetsLeft = 1 - (templeResetDate === today ? templeResetUsed : 0);
 
   function completer(questIndex: number) {
     const quest = todayQuests[questIndex];
@@ -329,14 +329,6 @@ export function TemplePage() {
           })}
         </div>
 
-        {/* Info */}
-        <div style={{ marginTop:16, padding:'10px 12px', background:'rgba(196,48,112,0.04)', border:'1px solid rgba(196,48,112,0.1)', borderRadius:12 }}>
-          <p style={{ color:'#9a6080', fontSize:10, margin:0, lineHeight:1.6 }}>
-            {lang === 'en'
-              ? 'Quests reset daily at midnight (Paris). Pool of 50 quests (10 per profession), randomly selected. Difficulty ★ to ★★★★★. Harder quests = more $KIRHA. Unlock more quests by leveling your Character.'
-              : 'Quêtes renouvelées chaque nuit à minuit (Paris). Pool de 50 quêtes (10 par métier), rotation aléatoire quotidienne. Difficulté ★ à ★★★★★. Plus c\'est dur, plus tu gagnes de $KIRHA. Débloque plus de quêtes en montant ton Personnage.'}
-          </p>
-        </div>
       </div>
     </div>
   );
