@@ -3,7 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { METIERS, Ressource, MetierId } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { calculerBonus } from '../data/vetements';
-import { FREE_RESOURCE_IDS, METIER_TOOL_TYPE } from '../data/outils';
+import { FREE_RESOURCE_IDS, METIER_TOOL_TYPE, getResourceIndex } from '../data/outils';
 
 export interface SlotAvecTimer {
   index:              number;
@@ -46,6 +46,7 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
 
   const toolType = METIER_TOOL_TYPE[metierId];
   const outil = outils[toolType];
+  // Outil disponible : existe et non cassé (durabilite > 0 ; outil disparaît à 0 via store)
   const outilDisponible = !!outil && outil.durabilite > 0;
 
   const bonus = calculerBonus(equipement);
@@ -57,12 +58,14 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
   const metierProgressRef      = useRef(metier_progress);
   const competencesRef         = useRef(competences);
   const outilDisponibleRef     = useRef(outilDisponible);
+  const outilRef               = useRef(outil);
   const isVipRef               = useRef(isVip);
   slotsRef.current             = slots_store;
   bonusRef.current             = bonus;
   metierProgressRef.current    = metier_progress;
   competencesRef.current       = competences;
   outilDisponibleRef.current   = outilDisponible;
+  outilRef.current             = outil;
   isVipRef.current             = isVip;
 
   const [, setTick] = useState(0);
@@ -100,7 +103,10 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     const ressource = metier.ressources.find(r => r.id === resourceId);
     if (!ressource || ressource.niveau_requis > metierProgressRef.current.niveau) return;
     // Vérification outil : requis pour toute ressource non-libre
-    if (!FREE_RESOURCE_IDS.includes(resourceId) && !outilDisponibleRef.current) return;
+    if (!FREE_RESOURCE_IDS.includes(resourceId)) {
+      const o = outilRef.current;
+      if (!o || o.durabilite <= 0 || o.niveau < getResourceIndex(resourceId)) return;
+    }
     demarrerRecolte(metierId, slotIndex, resourceId, ressource.temps_recolte_secondes * 1000);
   }, [metier.ressources, metierId, demarrerRecolte]);
 
@@ -133,9 +139,16 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     demarrerRecolte(metierId, slotIndex, rid, ressource.temps_recolte_secondes * 1000);
   }, [metier.ressources, metierId, toolType, terminerRecolte, ajouterXp, ajouterPending, demarrerRecolte, decrementOutilDurabilite]);
 
-  // outilManquant : vrai si le metier a des ressources non-libres disponibles mais pas d'outil
+  // outilManquant : vrai si des ressources non-libres sont disponibles mais outil manque, cassé, ou niveau insuffisant
   const hasNonFreeResources = metier.ressources.some(r => !FREE_RESOURCE_IDS.includes(r.id) && r.niveau_requis <= metier_progress.niveau);
-  const outilManquant = hasNonFreeResources && !outilDisponible;
+  const maxResourceIndexAvailable = hasNonFreeResources
+    ? metier.ressources
+        .filter(r => !FREE_RESOURCE_IDS.includes(r.id) && r.niveau_requis <= metier_progress.niveau)
+        .reduce((max, r) => Math.max(max, getResourceIndex(r.id)), 0)
+    : 0;
+  const outilManquant = hasNonFreeResources && (
+    !outilDisponible || (outil !== undefined && outil.niveau < maxResourceIndexAvailable)
+  );
 
   return {
     slots,

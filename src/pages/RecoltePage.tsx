@@ -7,7 +7,7 @@ import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
 import { emojiByResourceId, getNomRessource, metierIconPath, uiAssetPath } from '../utils/resourceUtils';
 import { ResourceIcon } from '../components/ResourceIcon';
-import { METIER_TOOL_TYPE, OUTIL_TIERS } from '../data/outils';
+import { METIER_TOOL_TYPE, OUTIL_INFO, DURABILITE_MAX, getUpgradeRecipe, getOutilXp, FREE_RESOURCE_IDS, getResourceIndex } from '../data/outils';
 
 // ── Configs par métier ──────────────────────────────────────
 
@@ -33,12 +33,14 @@ function ResourcePickerPopup({
   metierId,
   ressources,
   niveau,
+  outilNiveau,
   onPick,
   onClose,
 }: {
   metierId: MetierId;
   ressources: Ressource[];
   niveau: number;
+  outilNiveau: number; // 0 = pas d'outil; sinon niveau 2-10
   onPick: (id: ResourceId) => void;
   onClose: () => void;
 }) {
@@ -52,7 +54,9 @@ function ResourcePickerPopup({
         </div>
         <div style={ps.sheetList}>
           {ressources.map(res => {
-            const locked = res.niveau_requis > niveau;
+            const levelLocked = res.niveau_requis > niveau;
+            const toolLocked  = !FREE_RESOURCE_IDS.includes(res.id) && outilNiveau < getResourceIndex(res.id);
+            const locked = levelLocked || toolLocked;
             return (
               <button
                 key={res.id}
@@ -66,16 +70,18 @@ function ResourcePickerPopup({
                 disabled={locked}
               >
                 <span style={{ width: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {locked ? '🔒' : <ResourceIcon id={res.id} type="inventory" size={30} />}
+                  {locked ? (toolLocked ? '⛏️' : '🔒') : <ResourceIcon id={res.id} type="inventory" size={30} />}
                 </span>
                 <div style={{ flex: 1, textAlign: 'left' }}>
                   <span style={{ color: locked ? '#7a4060' : '#1e0a16', fontSize: '13px', fontWeight: 600 }}>
                     {getNomRessource(res.id, lang)}
                   </span>
                   <span style={{ color: '#7a4060', fontSize: '10px', display: 'block' }}>
-                    {locked
+                    {levelLocked
                       ? `${t('recolte.level_req')} ${res.niveau_requis} ${t('recolte.required')}`
-                      : `${t('recolte.level')} ${res.niveau_requis}`}
+                      : toolLocked
+                        ? `Outil Niv.${getResourceIndex(res.id)} requis`
+                        : `${t('recolte.level')} ${res.niveau_requis}`}
                   </span>
                 </div>
               </button>
@@ -254,14 +260,32 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
   const { t, lang } = useT();
 
   const { slots, niveau, xp, planterRessource, collecterEtRelancer, lastHarvested, outilManquant } = useHarvest(metierId);
-  const debloquerSlot   = useGameStore(s => s.debloquerSlot);
-  const inventaire      = useGameStore(s => s.inventaire);
-  const soldeKirha      = useGameStore(s => s.soldeKirha);
-  const outils          = useGameStore(s => s.outils);
+  const debloquerSlot    = useGameStore(s => s.debloquerSlot);
+  const inventaire       = useGameStore(s => s.inventaire);
+  const soldeKirha       = useGameStore(s => s.soldeKirha);
+  const outils           = useGameStore(s => s.outils);
+  const retirerRessource = useGameStore(s => s.retirerRessource);
+  const setOutil         = useGameStore(s => s.setOutil);
+  const ajouterXpCraft   = useGameStore(s => s.ajouterXpCraft);
 
-  const toolType    = METIER_TOOL_TYPE[metierId];
-  const outil       = outils[toolType];
-  const outilTierInfo = outil ? OUTIL_TIERS[toolType]?.find(t => t.tierId === outil.tierId) : undefined;
+  const toolType   = METIER_TOOL_TYPE[metierId];
+  const outil      = outils[toolType];
+  const outilInfo  = OUTIL_INFO[toolType];
+  const curNiveau  = outil ? outil.niveau : 0;
+  const nextNiveau = curNiveau < 10 ? Math.max(2, curNiveau + 1) : null;
+
+  // Craft outil inline (depuis la page Récolte)
+  const [showCraftPopup, setShowCraftPopup] = useState(false);
+  const craftRecipe = nextNiveau ? getUpgradeRecipe(toolType, nextNiveau) : null;
+  const canCraftOutil = craftRecipe ? craftRecipe.every(ing => (inventaire[ing.resourceId as ResourceId] ?? 0) >= ing.quantite) : false;
+
+  function craftOutilInline() {
+    if (!craftRecipe || !canCraftOutil || !nextNiveau) return;
+    for (const ing of craftRecipe) retirerRessource(ing.resourceId as ResourceId, ing.quantite);
+    setOutil(toolType, nextNiveau, DURABILITE_MAX);
+    ajouterXpCraft('artisan', getOutilXp(nextNiveau));
+    setShowCraftPopup(false);
+  }
 
   const totalInventaire = Object.values(inventaire).reduce((a, b) => a + Math.floor(b ?? 0), 0);
   const pct             = Math.min(100, (xp / xpRequis(niveau)) * 100);
@@ -438,10 +462,55 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
           metierId={metierId}
           ressources={metier.ressources}
           niveau={niveau}
+          outilNiveau={outil ? outil.niveau : 0}
           onPick={id => setResourceInHand(id)}
           onClose={() => setShowPicker(false)}
         />
       )}
+
+      {/* Popup craft outil inline */}
+      {showCraftPopup && nextNiveau && craftRecipe && (
+        <div style={up.overlay} onClick={() => setShowCraftPopup(false)}>
+          <div style={up.modal} onClick={e => e.stopPropagation()}>
+            <div style={up.header}>
+              <span style={up.title}>{outilInfo.emoji} {outilInfo.nom} Niv.{nextNiveau}</span>
+              <button style={up.closeBtn} onClick={() => setShowCraftPopup(false)}>✕</button>
+            </div>
+            <div style={{ padding:'14px 20px' }}>
+              <p style={{ color:'#7a4060', fontSize:11, margin:'0 0 10px' }}>
+                {lang === 'en'
+                  ? `Forge to harvest resources up to index ${nextNiveau} in this profession. ${DURABILITE_MAX} charges.`
+                  : `Permet de récolter jusqu'à l'indice ${nextNiveau} de ce métier. ${DURABILITE_MAX} charges.`
+                }
+              </p>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:14 }}>
+                {craftRecipe.map(ing => {
+                  const have = inventaire[ing.resourceId as ResourceId] ?? 0;
+                  const ok   = have >= ing.quantite;
+                  return (
+                    <div key={ing.resourceId} style={{ display:'flex', alignItems:'center', gap:4, background: ok ? 'rgba(106,191,68,0.08)' : 'rgba(196,48,112,0.06)', border:`1px solid ${ok ? 'rgba(106,191,68,0.3)' : 'rgba(212,100,138,0.2)'}`, borderRadius:10, padding:'5px 10px' }}>
+                      <span style={{ fontSize:14 }}>{emojiByResourceId(ing.resourceId)}</span>
+                      <span style={{ color: ok ? '#2a7a10' : '#c43070', fontSize:11, fontWeight:700 }}>×{ing.quantite}</span>
+                      <span style={{ color:'#9a6080', fontSize:10 }}>({Math.floor(have)})</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div style={up.footer}>
+              <button style={up.cancelBtn} onClick={() => setShowCraftPopup(false)}>{t('recolte.cancel')}</button>
+              <button
+                style={{ ...up.unlockBtn, opacity: canCraftOutil ? 1 : 0.45, cursor: canCraftOutil ? 'pointer' : 'not-allowed' }}
+                disabled={!canCraftOutil}
+                onClick={craftOutilInline}
+              >
+                🔨 Forger Niv.{nextNiveau}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {unlockSlot !== null && (
         <UnlockPopup
           slotIndex={unlockSlot}
@@ -476,17 +545,28 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
             </span>
           </div>
           {/* Statut outil */}
-          {outilTierInfo && outil ? (
+          {outil ? (
             <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:2 }}>
-              <span style={{ fontSize:'10px' }}>{outilTierInfo.emoji}</span>
-              <span style={{ color: outil.durabilite <= 3 ? '#e53935' : outil.durabilite <= 8 ? '#f9a825' : '#6abf44', fontSize:'8px', fontWeight:700 }}>
-                {outilTierInfo.nom} — {outil.durabilite}/{outilTierInfo.durabiliteMax}
+              <span style={{ fontSize:'10px' }}>{outilInfo.emoji}</span>
+              <span style={{ color: outil.durabilite <= 6 ? '#e53935' : outil.durabilite <= 15 ? '#f9a825' : '#6abf44', fontSize:'8px', fontWeight:700 }}>
+                {outilInfo.nom} Niv.{outil.niveau} — {outil.durabilite}/{DURABILITE_MAX}
               </span>
+              {outilManquant && nextNiveau && (
+                <button
+                  style={{ padding:'2px 8px', background:'#f9a825', border:'none', borderRadius:6, color:'#fff', fontSize:'8px', fontWeight:800, cursor:'pointer' }}
+                  onClick={() => setShowCraftPopup(true)}
+                >
+                  ⬆ Niv.{nextNiveau}
+                </button>
+              )}
             </div>
           ) : outilManquant ? (
-            <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:2 }}>
-              <span style={{ color:'#e53935', fontSize:'8px', fontWeight:700 }}>⚠️ Outil requis (Craft/Artisan)</span>
-            </div>
+            <button
+              style={{ marginTop:2, padding:'3px 10px', background:'#e53935', border:'none', borderRadius:8, color:'#fff', fontSize:'9px', fontWeight:800, cursor:'pointer' }}
+              onClick={() => setShowCraftPopup(true)}
+            >
+              🔨 Forger l'outil
+            </button>
           ) : null}
         </div>
         <div style={{ width: 80 }} />

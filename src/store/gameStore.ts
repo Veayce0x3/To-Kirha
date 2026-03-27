@@ -62,7 +62,8 @@ export interface GameState {
   animauxDerniereRecolte:    Record<string, number[]>;  // animalId → [timestamp ms par slot]
 
   // Outils (craftés par Artisan, ne sont pas dans l'inventaire)
-  outils: Partial<Record<ToolType, { tierId: number; durabilite: number }>>;
+  // niveau = 2-10 : détermine l'indice max de ressource récoltable
+  outils: Partial<Record<ToolType, { niveau: number; durabilite: number }>>;
 
   // Métiers de craft (Artisan + Alchimiste craft)
   craftMetiers: Record<'artisan' | 'alchimisteCraft', { niveau: number; xp: number; xpTotal: number }>;
@@ -81,7 +82,7 @@ export interface GameState {
   reinitialiserCompetences: () => void;
   setPuitsDerniereRecolte:  (timestamp: number) => void;
   setAnimauxDerniereRecolte:(animalId: string, slotIndex: number, timestamp: number) => void;
-  setOutil:                 (type: ToolType, tierId: number, durabiliteMax: number) => void;
+  setOutil:                 (type: ToolType, niveau: number, durabiliteMax: number) => void;
   decrementOutilDurabilite: (type: ToolType) => void;
   ajouterXpCraft:           (metier: 'artisan' | 'alchimisteCraft', xp: number) => void;
   demarrerRecolte:          (metier: MetierId, slotIndex: number, resourceId: ResourceId, dureeMs: number) => void;
@@ -527,16 +528,23 @@ export const useGameStore = create<GameState>()(
           };
         }),
 
-      setOutil: (type, tierId, durabiliteMax) =>
+      setOutil: (type, niveau, durabiliteMax) =>
         set((state) => ({
-          outils: { ...state.outils, [type]: { tierId, durabilite: durabiliteMax } },
+          outils: { ...state.outils, [type]: { niveau, durabilite: durabiliteMax } },
         })),
 
       decrementOutilDurabilite: (type) =>
         set((state) => {
           const outil = state.outils[type];
           if (!outil || outil.durabilite <= 0) return state;
-          return { outils: { ...state.outils, [type]: { ...outil, durabilite: Math.max(0, outil.durabilite - 1) } } };
+          const newDurabilite = outil.durabilite - 1;
+          if (newDurabilite <= 0) {
+            // Outil cassé → disparaît
+            const newOutils = { ...state.outils };
+            delete newOutils[type];
+            return { outils: newOutils };
+          }
+          return { outils: { ...state.outils, [type]: { ...outil, durabilite: newDurabilite } } };
         }),
 
       ajouterXpCraft: (metier, xp) =>
@@ -604,6 +612,7 @@ export const useGameStore = create<GameState>()(
         // v13 : ajout templeSlotRerolls (reroll quêtes), dates temple Paris
         // v14 : Mouton/Cochon ferme, chaîne cuisine, parcheminsLv100LastDate
         // v15 : parcheminPrice configurable admin (défaut 10)
+        // v16 : outils tierId→niveau (2-10), durabiliteMax 60, outil disparaît à 0
         const oldRecolte = (state.animauxDerniereRecolte ?? {}) as Record<string, unknown>;
         const migratedRecolte: Record<string, number[]> = {};
         for (const [k, v] of Object.entries(oldRecolte)) {
@@ -627,7 +636,20 @@ export const useGameStore = create<GameState>()(
           competences:         (state as Partial<GameState>).competences           ?? {},
           puitsDerniereRecolte:   (state as Partial<GameState>).puitsDerniereRecolte   ?? 0,
           animauxDerniereRecolte: migratedRecolte,
-          outils:              (state as Partial<GameState>).outils               ?? {},
+          outils:              (() => {
+            // Migration v15→v16 : tierId → niveau (2-10)
+            const rawOutils = (state as Partial<GameState>).outils ?? {};
+            const migrated: Partial<Record<ToolType, { niveau: number; durabilite: number }>> = {};
+            for (const [type, o] of Object.entries(rawOutils)) {
+              if (!o) continue;
+              const legacy = o as { tierId?: number; niveau?: number; durabilite: number };
+              const niveau = legacy.niveau ?? (legacy.tierId === 3 ? 7 : legacy.tierId === 2 ? 5 : 2);
+              if (legacy.durabilite > 0) {
+                migrated[type as ToolType] = { niveau: Math.min(10, Math.max(2, niveau)), durabilite: legacy.durabilite };
+              }
+            }
+            return migrated;
+          })(),
           craftMetiers:        (state as Partial<GameState>).craftMetiers ?? {
             artisan:         { niveau: 1, xp: 0, xpTotal: 0 },
             alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
@@ -636,7 +658,7 @@ export const useGameStore = create<GameState>()(
           parcheminPrice: (state as Partial<GameState>).parcheminPrice ?? 10,
         };
       },
-      version: 15,
+      version: 16,
     }
   )
 );
