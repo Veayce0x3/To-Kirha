@@ -92,13 +92,23 @@ export function MaisonPage() {
         <div style={{ width: 48 }} />
       </div>
 
-      {/* Tabs */}
-      <div style={s.tabs}>
-        {([['ressources', `${t('maison.tab_res')}${totalItems > 0 ? ` (${totalItems})` : ''}`], ['metiers', t('maison.tab_metiers')], ['personnage', t('maison.tab_perso')], ['equipement', lang === 'en' ? '🎒 Équip.' : '🎒 Équip.']] as [Tab, string][]).map(([tabId, label]) => (
-          <button key={tabId} style={{ ...s.tab, ...(tab === tabId ? s.tabActive : {}) }} onClick={() => setTab(tabId as Tab)}>
-            {label}
-          </button>
-        ))}
+      {/* Tabs — grille 2×2 inspirée du sélecteur de métier */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, padding:'10px 12px 4px', flexShrink:0 }}>
+        {([
+          { id:'ressources',  icon:'📦', label: t('maison.tab_res'),    badge: totalItems > 0 ? `${totalItems}` : '—',       color:'#29b6f6' },
+          { id:'metiers',     icon:'⚒️',  label: t('maison.tab_metiers'), badge: `${Math.max(...(Object.values(metiers) as {niveau:number}[]).map(m => m.niveau))} max`, color:'#f9a825' },
+          { id:'personnage',  icon:'👤', label: t('maison.tab_perso'),  badge: `Lv ${personageNiveau}`,                      color:'#c43070' },
+          { id:'equipement',  icon:'🎒', label: lang === 'en' ? 'Equipment' : 'Équipement', badge: `${Object.values(equipement).filter(Boolean).length}/5`, color:'#ab47bc' },
+        ] as { id: Tab; icon: string; label: string; badge: string; color: string }[]).map(({ id, icon, label, badge, color }) => {
+          const active = tab === id;
+          return (
+            <button key={id} onClick={() => setTab(id)} style={{ background: active ? `linear-gradient(135deg,${color}18,${color}0a)` : '#fff', border: active ? `2px solid ${color}` : '1.5px solid rgba(212,100,138,0.15)', borderRadius:14, padding:'10px 8px', cursor:'pointer', textAlign:'left', boxShadow: active ? `0 2px 12px ${color}22` : 'none', transition:'all 0.15s' }}>
+              <span style={{ fontSize:22, display:'block', marginBottom:4 }}>{icon}</span>
+              <span style={{ color: active ? color : '#1e0a16', fontSize:11, fontWeight:800, display:'block', lineHeight:1.2, marginBottom:3 }}>{label}</span>
+              <span style={{ background: active ? `${color}20` : 'rgba(212,100,138,0.08)', color: active ? color : '#9a6080', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:8 }}>{badge}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Contenu */}

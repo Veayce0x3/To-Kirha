@@ -15,6 +15,9 @@ import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
 
 // ── Historique des ventes ────────────────────────────────────
 
+const HISTORY_CACHE_KEY = 'kirha_history_cache';
+const HISTORY_CACHE_TTL = 7 * 24 * 3600 * 1000; // 7 jours
+
 interface SaleRecord {
   listingId: bigint;
   sellerCityId: bigint;
@@ -28,7 +31,21 @@ interface SaleRecord {
 }
 
 function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
-  const [history, setHistory] = useState<SaleRecord[]>([]);
+  const [history, setHistory] = useState<SaleRecord[]>(() => {
+    try {
+      const raw = localStorage.getItem(HISTORY_CACHE_KEY);
+      if (!raw) return [];
+      const { ts, data } = JSON.parse(raw) as { ts: number; data: SaleRecord[] };
+      if (Date.now() - ts > HISTORY_CACHE_TTL) return [];
+      // Reconvertir les bigint sérialisés en string → BigInt
+      return data.map(r => ({
+        ...r,
+        listingId: BigInt(r.listingId as unknown as string),
+        sellerCityId: BigInt(r.sellerCityId as unknown as string),
+        buyerCityId: BigInt(r.buyerCityId as unknown as string),
+      }));
+    } catch { return []; }
+  });
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'all'|'mine'>('all');
   const { lang } = useT();
@@ -119,6 +136,16 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
       });
 
       setHistory(records);
+      // Sauvegarder dans le cache localStorage (BigInt sérialisé en string)
+      try {
+        const serializable = records.map(r => ({
+          ...r,
+          listingId:    r.listingId.toString(),
+          sellerCityId: r.sellerCityId.toString(),
+          buyerCityId:  r.buyerCityId.toString(),
+        }));
+        localStorage.setItem(HISTORY_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: serializable }));
+      } catch {}
     } catch (e) {
       console.error('History fetch error:', e);
       setHistory([]);
@@ -277,12 +304,16 @@ function TabOnchain() {
 
   type CartItem = { resourceId: number; quantity: number; pricePerUnit: number };
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [sellCategorie, setSellCategorie] = useState<string>('tout');
 
   // Seules les ressources on-chain (ID 1-50) peuvent être vendues sur le HDV
-  const inventaireItems = (Object.entries(inventaire) as [string, number][])
+  const inventaireItemsAll = (Object.entries(inventaire) as [string, number][])
     .filter(([, qty]) => Math.floor(qty) >= 1)
     .filter(([id]) => !UNSELLABLE_ON_HDV(Number(id)))
     .map(([id, qty]) => ({ id: Number(id) as ResourceId, qty: Math.floor(qty) }));
+  const inventaireItems = sellCategorie === 'tout'
+    ? inventaireItemsAll
+    : inventaireItemsAll.filter(item => getCategorieRid(item.id) === sellCategorie);
 
   const selectedItem = inventaireItems.find(i => i.id === parseInt(sellResourceId));
   const maxQty = selectedItem?.qty ?? 0;
@@ -329,7 +360,21 @@ function TabOnchain() {
     return Math.min(...rl.map(l => l.pricePerUnit));
   })();
 
-  const buyResourceIds = [...new Set(listings.map(l => l.resourceId))].sort((a, b) => a - b);
+  const [buyCategorie, setBuyCategorie] = useState<string>('tout');
+
+  function getCategorieRid(rid: number): string {
+    if (rid >= 1  && rid <= 10) return 'bucheron';
+    if (rid >= 11 && rid <= 20) return 'paysan';
+    if (rid >= 21 && rid <= 30) return 'pecheur';
+    if (rid >= 31 && rid <= 40) return 'mineur';
+    if (rid >= 41 && rid <= 50) return 'alchimiste';
+    return 'autre';
+  }
+
+  const allBuyResourceIds = [...new Set(listings.map(l => l.resourceId))].sort((a, b) => a - b);
+  const buyResourceIds = buyCategorie === 'tout'
+    ? allBuyResourceIds
+    : allBuyResourceIds.filter(rid => getCategorieRid(rid) === buyCategorie);
 
   const listingsSorted = [...listings]
     .filter(l => buyResourceId !== '' && l.resourceId === parseInt(buyResourceId))
@@ -507,6 +552,25 @@ function TabOnchain() {
         {/* ── Acheter ── */}
         {tab === 'acheter' && (
           <>
+            {/* Filtre catégorie */}
+            <div style={{ display:'flex', gap:5, overflowX:'auto', scrollbarWidth:'none', marginBottom:12, paddingBottom:2 }}>
+              {[
+                { id:'tout',       label: lang === 'en' ? 'All' : 'Tout' },
+                { id:'bucheron',   label:'🪓 ' + (lang === 'en' ? 'Woodcut.' : 'Bûcheron') },
+                { id:'paysan',     label:'🌾 ' + (lang === 'en' ? 'Farmer' : 'Paysan') },
+                { id:'pecheur',    label:'🎣 ' + (lang === 'en' ? 'Fisher' : 'Pêcheur') },
+                { id:'mineur',     label:'⛏️ ' + (lang === 'en' ? 'Miner' : 'Mineur') },
+                { id:'alchimiste', label:'🌿 ' + (lang === 'en' ? 'Alchim.' : 'Alchim.') },
+              ].map(cat => (
+                <button key={cat.id}
+                  onClick={() => { setBuyCategorie(cat.id); setBuyResourceId(''); setBuyQty({}); }}
+                  style={{ padding:'5px 10px', background: buyCategorie === cat.id ? '#c43070' : 'rgba(196,48,112,0.07)', border: buyCategorie === cat.id ? 'none' : '1px solid rgba(196,48,112,0.18)', borderRadius:20, color: buyCategorie === cat.id ? '#fff' : '#7a4060', fontSize:10, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
             {listings.length === 0 ? (
               <div style={s.empty}>
                 <span style={{ fontSize:40 }}>🏪</span>
@@ -657,6 +721,17 @@ function TabOnchain() {
             <div style={{ background:'#fff', border:'1px solid rgba(212,100,138,0.15)', borderRadius:14, padding:14 }}>
               <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 12px' }}>Ajouter au panier de vente</p>
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                {/* Filtre par catégorie */}
+                <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
+                  {(['tout','bucheron','paysan','pecheur','mineur','alchimiste'] as const).map(cat => {
+                    const label: Record<string, string> = { tout:'Tout', bucheron:'🪓', paysan:'🌾', pecheur:'🎣', mineur:'⛏️', alchimiste:'🌿' };
+                    return (
+                      <button key={cat} onClick={() => setSellCategorie(cat)} style={{ padding:'4px 10px', borderRadius:20, fontSize:10, fontWeight:700, cursor:'pointer', border: sellCategorie===cat ? '1.5px solid #c43070' : '1px solid rgba(212,100,138,0.2)', background: sellCategorie===cat ? 'rgba(196,48,112,0.12)' : 'rgba(212,100,138,0.04)', color: sellCategorie===cat ? '#c43070' : '#7a4060' }}>
+                        {label[cat]}
+                      </button>
+                    );
+                  })}
+                </div>
                 <div>
                   <label style={s.label}>Ressource</label>
                   {inventaireItems.filter(item => !cart.some(c => c.resourceId === item.id)).length === 0 ? (
@@ -832,98 +907,11 @@ function TabOnchain() {
   );
 }
 
-// ── Onglet Artefacts ────────────────────────────────────────
-
-const ARTEFACT_INFO: Record<number, { nom: string; nomEn: string; emoji: string; description: string; type: 'meuble' | 'vetement' }> = {
-  200: { nom: 'Trône Impérial du Samouraï', nomEn: "Samurai's Imperial Throne", emoji: '🏯', description: '+5% qty tous métiers', type: 'meuble' },
-  201: { nom: 'Fontaine Sacrée',            nomEn: 'Sacred Fountain',            emoji: '⛲', description: '+2 Eau/jour',           type: 'meuble' },
-  202: { nom: 'Sanctuaire des Récoltes',    nomEn: 'Harvest Sanctuary',          emoji: '🌸', description: '+8% qty saison active', type: 'meuble' },
-  203: { nom: 'Kimono du Grand Maître',     nomEn: "Grand Master's Kimono",      emoji: '👘', description: '+5% qty tous métiers',  type: 'vetement' },
-  204: { nom: 'Masque du Forgeron',         nomEn: "Blacksmith's Mask",          emoji: '🎭', description: '-10% temps de récolte', type: 'vetement' },
-};
-
-function TabArtefacts() {
-  const { lang } = useT();
-  const artefacts     = useGameStore(s => s.artefacts);
-  const meubles_poses = useGameStore(s => s.meubles_poses);
-  const now = Math.floor(Date.now() / 1000);
-
-  const ownedIds = Object.keys(artefacts).map(Number);
-
-  if (ownedIds.length === 0) {
-    return (
-      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, gap:12 }}>
-        <span style={{ fontSize:48 }}>🏆</span>
-        <p style={{ color:'#7a4060', fontSize:13, fontWeight:600, textAlign:'center', lineHeight:1.5 }}>
-          {lang === 'en' ? 'No artefacts yet.\nParticipate in auctions to win exclusive items!' : 'Aucun artefact pour l\'instant.\nParticipez aux enchères pour gagner des objets exclusifs !'}
-        </p>
-        <div style={{ padding:'12px 16px', background:'rgba(212,170,50,0.08)', border:'1px solid rgba(212,170,50,0.3)', borderRadius:12, maxWidth:300 }}>
-          <p style={{ color:'#b07010', fontSize:11, fontWeight:700, margin:'0 0 4px', textAlign:'center' }}>
-            🔒 {lang === 'en' ? '90-day lock after acquisition' : 'Verrouillé 90 jours après acquisition'}
-          </p>
-          <p style={{ color:'#9a6080', fontSize:10, margin:0, textAlign:'center', lineHeight:1.4 }}>
-            {lang === 'en' ? 'Blind auction in $KIRHA — top bidders win the lots' : 'Enchère secrète en $KIRHA — les meilleures offres remportent les lots'}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ flex:1, overflowY:'auto', padding:'12px 16px', paddingBottom:20, display:'flex', flexDirection:'column', gap:12 }}>
-      <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'0 0 4px', letterSpacing:'0.05em' }}>
-        {lang === 'en' ? `MY ARTEFACTS (${ownedIds.length})` : `MES ARTEFACTS (${ownedIds.length})`}
-      </p>
-      {ownedIds.map(id => {
-        const data = artefacts[id];
-        const info = ARTEFACT_INFO[id];
-        if (!info || !data) return null;
-        const echangeableLe = data.acquis_le + 90 * 24 * 3600;
-        const tradeable     = now >= echangeableLe;
-        const daysLeft      = tradeable ? 0 : Math.ceil((echangeableLe - now) / 86400);
-        const isPlaced      = meubles_poses.includes(id);
-        return (
-          <div key={id} style={{ background:'linear-gradient(135deg,#fff9e6,#fff)', border:`1.5px solid ${tradeable ? 'rgba(106,191,68,0.4)' : 'rgba(212,170,50,0.4)'}`, borderRadius:14, padding:14 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
-              <span style={{ fontSize:32 }}>{info.emoji}</span>
-              <div style={{ flex:1 }}>
-                <span style={{ color:'#1e0a16', fontSize:13, fontWeight:800, display:'block' }}>{lang === 'en' ? info.nomEn : info.nom}</span>
-                <div style={{ display:'flex', gap:6, marginTop:3 }}>
-                  <span style={{ background:'rgba(212,170,50,0.15)', color:'#b07010', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:6 }}>🏆 Artefact</span>
-                  <span style={{ background: info.type === 'meuble' ? 'rgba(106,191,68,0.1)' : 'rgba(196,48,112,0.1)', color: info.type === 'meuble' ? '#2a7a10' : '#c43070', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:6 }}>
-                    {info.type === 'meuble' ? (lang === 'en' ? '🏠 Furniture' : '🏠 Meuble') : (lang === 'en' ? '👕 Wearable' : '👕 Vêtement')}
-                  </span>
-                  {isPlaced && <span style={{ background:'rgba(106,191,68,0.15)', color:'#2a7a10', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:6 }}>✅ {lang === 'en' ? 'Placed' : 'Posé'}</span>}
-                </div>
-              </div>
-            </div>
-            <p style={{ color:'#4a8f2a', fontSize:11, fontWeight:700, margin:'0 0 8px' }}>{info.description}</p>
-            {tradeable ? (
-              <div style={{ padding:'8px', background:'rgba(106,191,68,0.08)', border:'1px solid rgba(106,191,68,0.25)', borderRadius:10, textAlign:'center' }}>
-                <p style={{ color:'#2a7a10', fontSize:11, fontWeight:700, margin:0 }}>
-                  ✅ {lang === 'en' ? 'Tradeable — P2P sales coming soon' : 'Échangeable — Ventes P2P bientôt disponibles'}
-                </p>
-              </div>
-            ) : (
-              <div style={{ padding:'8px', background:'rgba(212,170,50,0.08)', border:'1px solid rgba(212,170,50,0.25)', borderRadius:10, textAlign:'center' }}>
-                <p style={{ color:'#b07010', fontSize:11, fontWeight:700, margin:0 }}>
-                  🔒 {lang === 'en' ? `Tradeable in ${daysLeft} day${daysLeft > 1 ? 's' : ''}` : `Échangeable dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`}
-                </p>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ── Page principale ─────────────────────────────────────────
 
 export function HdvPage() {
-  const navigate  = useNavigate();
-  const { t, lang } = useT();
-  const [hdvTab, setHdvTab] = useState<'ressources' | 'artefacts'>('ressources');
+  const navigate = useNavigate();
+  const { t } = useT();
 
   return (
     <div style={s.page}>
@@ -932,17 +920,8 @@ export function HdvPage() {
         <span style={s.headerTitle}>{t('hdv.title')}</span>
         <div style={{ width:60 }} />
       </div>
-      <div style={{ display:'flex', borderBottom:'1px solid rgba(212,100,138,0.15)', flexShrink:0 }}>
-        <button style={{ flex:1, padding:'9px 4px', color: hdvTab === 'ressources' ? '#c43070' : '#7a4060', fontSize:'12px', fontWeight:600, background:'none', border:'none', cursor:'pointer', borderBottom: hdvTab === 'ressources' ? '2px solid #c43070' : '2px solid transparent' }} onClick={() => setHdvTab('ressources')}>
-          📦 {lang === 'en' ? 'Resources' : 'Ressources'}
-        </button>
-        <button style={{ flex:1, padding:'9px 4px', color: hdvTab === 'artefacts' ? '#b07010' : '#7a4060', fontSize:'12px', fontWeight:600, background:'none', border:'none', cursor:'pointer', borderBottom: hdvTab === 'artefacts' ? '2px solid #b07010' : '2px solid transparent' }} onClick={() => setHdvTab('artefacts')}>
-          🏆 Artefacts
-        </button>
-      </div>
       <div style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column' }}>
-        {hdvTab === 'ressources' && <TabOnchain />}
-        {hdvTab === 'artefacts'  && <TabArtefacts />}
+        <TabOnchain />
       </div>
     </div>
   );

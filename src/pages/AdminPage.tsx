@@ -28,6 +28,7 @@ interface PlayerData {
   xpTotal:   number[];
   isBanned:  boolean;
   pepites:   number;
+  vipExpiry: number; // timestamp Unix (0 = pas VIP)
 }
 
 const ALL_RESOURCE_IDS = Array.from({ length: 62 }, (_, i) => BigInt(i + 1));
@@ -166,24 +167,25 @@ export function AdminPage() {
       for (let cityId = 1; cityId <= n; cityId++) {
         const cid = BigInt(cityId);
         try {
-          const [wallet, pseudo, resourcesRaw, metiersRaw, kirhaWei, isBanned, pepitesBn] = await Promise.all([
+          const [wallet, pseudo, resourcesRaw, metiersRaw, cityStatus, isBanned] = await Promise.all([
             publicClient.readContract({ address: KIRHA_CITY_ADDRESS, abi: KirhaCityAbi, functionName: 'ownerOf', args: [cid] }),
             publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPseudo', args: [cid] }),
             publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityResources', args: [cid, ALL_RESOURCE_IDS] }),
             publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityMetiers', args: [cid] }),
-            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityKirha', args: [cid] }),
+            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityStatus', args: [cid] }),
             publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'bannedCities', args: [cid] }),
-            publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPepites', args: [cid] }),
           ]);
           const resources = [0, ...(resourcesRaw as bigint[]).map(r => Number(r) / 1e4)];
           const metiersArr = metiersRaw as { level: number; xp: number; xpTotal: number }[];
+          const [kirhaWei, pepitesBn, , vipExpBn] = cityStatus as [bigint, bigint, boolean, bigint];
           list.push({
             cityId, pseudo: pseudo as string, wallet: wallet as string,
-            kirhaWei: kirhaWei as bigint, resources,
+            kirhaWei, resources,
             levels: metiersArr.map(m => Number(m.level)),
             xp: metiersArr.map(m => Number(m.xp)),
             xpTotal: metiersArr.map(m => Number(m.xpTotal)),
-            isBanned: isBanned as boolean, pepites: Number(pepitesBn as bigint),
+            isBanned: isBanned as boolean, pepites: Number(pepitesBn),
+            vipExpiry: Number(vipExpBn),
           });
         } catch { /* ville supprimée */ }
       }
@@ -210,24 +212,25 @@ export function AdminPage() {
     if (!publicClient) return;
     try {
       const cid = BigInt(cityId);
-      const [wallet, pseudo, resourcesRaw, metiersRaw, kirhaWei, isBanned, pepitesBn] = await Promise.all([
+      const [wallet, pseudo, resourcesRaw, metiersRaw, cityStatus, isBanned] = await Promise.all([
         publicClient.readContract({ address: KIRHA_CITY_ADDRESS, abi: KirhaCityAbi, functionName: 'ownerOf', args: [cid] }),
         publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPseudo', args: [cid] }),
         publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityResources', args: [cid, ALL_RESOURCE_IDS] }),
         publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityMetiers', args: [cid] }),
-        publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityKirha', args: [cid] }),
+        publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'getCityStatus', args: [cid] }),
         publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'bannedCities', args: [cid] }),
-        publicClient.readContract({ address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi, functionName: 'cityPepites', args: [cid] }),
       ]);
       const resources = [0, ...(resourcesRaw as bigint[]).map(r => Number(r) / 1e4)];
       const metiersArr = metiersRaw as { level: number; xp: number; xpTotal: number }[];
+      const [kirhaWei, pepitesBn, , vipExpBn] = cityStatus as [bigint, bigint, boolean, bigint];
       const updated: PlayerData = {
         cityId, pseudo: pseudo as string, wallet: wallet as string,
-        kirhaWei: kirhaWei as bigint, resources,
+        kirhaWei, resources,
         levels: metiersArr.map(m => Number(m.level)),
         xp: metiersArr.map(m => Number(m.xp)),
         xpTotal: metiersArr.map(m => Number(m.xpTotal)),
-        isBanned: isBanned as boolean, pepites: Number(pepitesBn as bigint),
+        isBanned: isBanned as boolean, pepites: Number(pepitesBn),
+        vipExpiry: Number(vipExpBn),
       };
       setPlayers(prev => prev.map(p => p.cityId === cityId ? updated : p));
       setSnapshots(prev => ({ ...prev, [cityId]: updated }));
@@ -572,6 +575,7 @@ export function AdminPage() {
                     <div style={{ flex:1 }}>
                       <span style={{ color:'#e0c8d8', fontWeight:700 }}>{p.pseudo || '?'}</span>
                       {p.isBanned && <span style={{ marginLeft:6, background:'#c43070', color:'#fff', fontSize:8, padding:'1px 4px', borderRadius:4 }}>BANNI</span>}
+                      {p.vipExpiry > Math.floor(Date.now()/1000) && <span style={{ marginLeft:4, background:'rgba(249,168,37,0.2)', color:'#f9a825', fontSize:8, padding:'1px 4px', borderRadius:4 }}>⭐ VIP</span>}
                       <span style={{ color:'#7a4060', fontSize:9, display:'block' }}>{p.wallet.slice(0, 8)}…{p.wallet.slice(-4)}</span>
                     </div>
                     <div style={{ textAlign:'right', marginRight:6 }}>
@@ -592,6 +596,16 @@ export function AdminPage() {
                             {name} <strong style={{ color:'#ff6b9d' }}>Nv.{p.levels[i] ?? 1}</strong>
                           </span>
                         ))}
+                      </div>
+
+                      {/* VIP */}
+                      <div style={{ display:'flex', gap:6, alignItems:'center', padding:'5px 8px', background: p.vipExpiry > Math.floor(Date.now()/1000) ? 'rgba(249,168,37,0.08)' : 'rgba(255,255,255,0.02)', border: `1px solid ${p.vipExpiry > Math.floor(Date.now()/1000) ? 'rgba(249,168,37,0.3)' : 'rgba(255,255,255,0.06)'}`, borderRadius:8 }}>
+                        <span style={{ fontSize:12 }}>⭐</span>
+                        <span style={{ fontSize:10, color: p.vipExpiry > Math.floor(Date.now()/1000) ? '#f9a825' : '#7a4060' }}>
+                          {p.vipExpiry > Math.floor(Date.now()/1000)
+                            ? `VIP actif — expire ${new Date(p.vipExpiry * 1000).toLocaleDateString('fr-FR')}`
+                            : 'Pas de VIP'}
+                        </span>
                       </div>
 
                       {/* Ressources */}

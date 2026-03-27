@@ -161,7 +161,7 @@ export function HomePage() {
             </span>
           </div>
           <button style={s.settingsBtn} onClick={() => setShowSettings(true)}>
-            <img src={uiAssetPath('ui/parametre.png')} alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+            <img src={uiAssetPath('ui/parametre.png')} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
           </button>
         </div>
       </div>
@@ -221,7 +221,7 @@ const s: Record<string, React.CSSProperties> = {
   logoIcon: { fontSize:'22px' },
   logoTitle: { color:'#1e0a16', fontSize:'18px', fontWeight:900, letterSpacing:'1px' },
   addressPill: { color:'#7a4060', fontSize:'11px', fontFamily:'monospace', background:'rgba(212,100,138,0.07)', padding:'3px 8px', borderRadius:8, border:'1px solid rgba(212,100,138,0.13)' },
-  settingsBtn: { color:'#7a4060', fontSize:'15px', border:'1px solid rgba(212,100,138,0.18)', borderRadius:'8px', padding:'3px 7px', background:'rgba(212,100,138,0.06)', cursor:'pointer' },
+  settingsBtn: { color:'#7a4060', fontSize:'15px', border:'1px solid rgba(212,100,138,0.18)', borderRadius:'8px', padding:'10px 12px', background:'rgba(212,100,138,0.06)', cursor:'pointer' },
   soldesRow: {
     display:'flex', alignItems:'center', justifyContent:'center',
     gap:0, padding:'10px 16px 0',

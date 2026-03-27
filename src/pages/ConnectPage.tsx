@@ -40,6 +40,15 @@ export function ConnectPage() {
   const setPseudo     = useGameStore(s => s.setPseudo);
   const setVilleId    = useGameStore(s => s.setVilleId);
   const resetGameData = useGameStore(s => s.resetGameData);
+  const storedVilleId = useGameStore(s => s.villeId);
+  const storedPseudo  = useGameStore(s => s.pseudo);
+
+  // Auto-connect : si le store local a déjà un villeId valide + wallet connecté → navigation immédiate
+  useEffect(() => {
+    if (isConnected && storedVilleId && storedVilleId !== '0' && storedPseudo) {
+      navigate('/home', { replace: true });
+    }
+  }, []);
 
   // 'login' = joueur existant, 'register' = nouveau joueur
   const [loginMode, setLoginMode]     = useState<'login' | 'register' | null>(null);
@@ -65,8 +74,6 @@ export function ConnectPage() {
     if (pseudo && pseudo.length > 0) {
       // Joueur déjà enregistré → lire cityId puis entrer dans le jeu
       (async () => {
-        // Petit délai pour laisser le RPC propager l'état
-        await new Promise(r => setTimeout(r, 1500));
         const cityId = await publicClient?.readContract({
           address:      KIRHA_GAME_ADDRESS,
           abi:          KirhaGameAbi,

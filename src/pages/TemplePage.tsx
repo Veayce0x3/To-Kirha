@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { ResourceId } from '../data/resources';
+import { MetierId } from '../data/metiers';
 import { useT } from '../utils/i18n';
 import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
 
@@ -134,6 +135,21 @@ function formatCountdown(secs: number): string {
 const DIFF_STARS = ['','★','★★','★★★','★★★★','★★★★★'];
 const DIFF_COLOR = ['','#6abf44','#f9a825','#f97316','#c43070','#8a25d4'];
 
+// Retourne le métier d'une ressource (IDs 1–50)
+function metierForRid(rid: number): MetierId {
+  if (rid <= 10) return 'bucheron';
+  if (rid <= 20) return 'paysan';
+  if (rid <= 30) return 'pecheur';
+  if (rid <= 40) return 'mineur';
+  return 'alchimiste';
+}
+
+// Retourne le niveau métier requis pour récolter une ressource
+function niveauRequisForRid(rid: number): number {
+  const pos = (rid - 1) % 10; // position dans le métier (0 = premier)
+  return pos === 0 ? 1 : pos * 10;
+}
+
 // ── Composant principal ───────────────────────────────────────
 
 export function TemplePage() {
@@ -141,6 +157,7 @@ export function TemplePage() {
   const { t, lang }            = useT();
   const inventaire             = useGameStore(s => s.inventaire);
   const personageNiveau        = useGameStore(s => s.personageNiveau);
+  const metiers                = useGameStore(s => s.metiers);
   const ajouterKirha           = useGameStore(s => s.ajouterKirha);
   const retirerRessource       = useGameStore(s => s.retirerRessource);
   const templeCompleted        = useGameStore(s => s.templeCompleted);
@@ -167,15 +184,24 @@ export function TemplePage() {
     return () => clearInterval(id);
   }, [templeCompletedDate, resetTempleQuetes]);
 
-  // Construire les quêtes du jour — seeded + rerolls par slot
+  // Construire les quêtes du jour — filtrées par niveau, seeded + rerolls par slot
   const questCount = questCountForLevel(personageNiveau);
-  const shuffled   = seededShuffle(QUEST_POOL, hashSeed(today));
-  const POOL       = QUEST_POOL.length; // 50
 
-  const todayQuests: Quest[] = Array.from({ length: questCount }, (_, i) => {
+  // Filtrer les quêtes accessibles selon les niveaux métier du joueur
+  const accessiblePool = QUEST_POOL.filter(q =>
+    q.rids.every(rid => (metiers[metierForRid(rid)]?.niveau ?? 1) >= niveauRequisForRid(rid))
+  );
+  // Garantir au moins 1 quête accessible (fallback : les 5 quêtes de base, une par métier)
+  const effectivePool  = accessiblePool.length > 0 ? accessiblePool : QUEST_POOL.filter(q => q.rids.every(rid => niveauRequisForRid(rid) === 1));
+  const actualCount    = Math.min(questCount, effectivePool.length);
+
+  const shuffled   = seededShuffle(effectivePool, hashSeed(today));
+  const POOL       = effectivePool.length;
+
+  const todayQuests: Quest[] = Array.from({ length: actualCount }, (_, i) => {
     const rerolls = templeSlotRerolls?.[i] ?? 0;
-    // offset: pour r rerolls sur slot i, utilise l'indice (questCount*rerolls + i) dans le tableau shufflé
-    const idx = (questCount * rerolls + i) % POOL;
+    // offset: pour r rerolls sur slot i, utilise l'indice (actualCount*rerolls + i) dans le tableau shufflé
+    const idx = (actualCount * rerolls + i) % POOL;
     return shuffled[idx];
   });
 
