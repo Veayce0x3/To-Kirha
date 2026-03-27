@@ -832,11 +832,98 @@ function TabOnchain() {
   );
 }
 
+// ── Onglet Artefacts ────────────────────────────────────────
+
+const ARTEFACT_INFO: Record<number, { nom: string; nomEn: string; emoji: string; description: string; type: 'meuble' | 'vetement' }> = {
+  200: { nom: 'Trône Impérial du Samouraï', nomEn: "Samurai's Imperial Throne", emoji: '🏯', description: '+5% qty tous métiers', type: 'meuble' },
+  201: { nom: 'Fontaine Sacrée',            nomEn: 'Sacred Fountain',            emoji: '⛲', description: '+2 Eau/jour',           type: 'meuble' },
+  202: { nom: 'Sanctuaire des Récoltes',    nomEn: 'Harvest Sanctuary',          emoji: '🌸', description: '+8% qty saison active', type: 'meuble' },
+  203: { nom: 'Kimono du Grand Maître',     nomEn: "Grand Master's Kimono",      emoji: '👘', description: '+5% qty tous métiers',  type: 'vetement' },
+  204: { nom: 'Masque du Forgeron',         nomEn: "Blacksmith's Mask",          emoji: '🎭', description: '-10% temps de récolte', type: 'vetement' },
+};
+
+function TabArtefacts() {
+  const { lang } = useT();
+  const artefacts     = useGameStore(s => s.artefacts);
+  const meubles_poses = useGameStore(s => s.meubles_poses);
+  const now = Math.floor(Date.now() / 1000);
+
+  const ownedIds = Object.keys(artefacts).map(Number);
+
+  if (ownedIds.length === 0) {
+    return (
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, gap:12 }}>
+        <span style={{ fontSize:48 }}>🏆</span>
+        <p style={{ color:'#7a4060', fontSize:13, fontWeight:600, textAlign:'center', lineHeight:1.5 }}>
+          {lang === 'en' ? 'No artefacts yet.\nParticipate in auctions to win exclusive items!' : 'Aucun artefact pour l\'instant.\nParticipez aux enchères pour gagner des objets exclusifs !'}
+        </p>
+        <div style={{ padding:'12px 16px', background:'rgba(212,170,50,0.08)', border:'1px solid rgba(212,170,50,0.3)', borderRadius:12, maxWidth:300 }}>
+          <p style={{ color:'#b07010', fontSize:11, fontWeight:700, margin:'0 0 4px', textAlign:'center' }}>
+            🔒 {lang === 'en' ? '90-day lock after acquisition' : 'Verrouillé 90 jours après acquisition'}
+          </p>
+          <p style={{ color:'#9a6080', fontSize:10, margin:0, textAlign:'center', lineHeight:1.4 }}>
+            {lang === 'en' ? 'Blind auction in $KIRHA — top bidders win the lots' : 'Enchère secrète en $KIRHA — les meilleures offres remportent les lots'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ flex:1, overflowY:'auto', padding:'12px 16px', paddingBottom:20, display:'flex', flexDirection:'column', gap:12 }}>
+      <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'0 0 4px', letterSpacing:'0.05em' }}>
+        {lang === 'en' ? `MY ARTEFACTS (${ownedIds.length})` : `MES ARTEFACTS (${ownedIds.length})`}
+      </p>
+      {ownedIds.map(id => {
+        const data = artefacts[id];
+        const info = ARTEFACT_INFO[id];
+        if (!info || !data) return null;
+        const echangeableLe = data.acquis_le + 90 * 24 * 3600;
+        const tradeable     = now >= echangeableLe;
+        const daysLeft      = tradeable ? 0 : Math.ceil((echangeableLe - now) / 86400);
+        const isPlaced      = meubles_poses.includes(id);
+        return (
+          <div key={id} style={{ background:'linear-gradient(135deg,#fff9e6,#fff)', border:`1.5px solid ${tradeable ? 'rgba(106,191,68,0.4)' : 'rgba(212,170,50,0.4)'}`, borderRadius:14, padding:14 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
+              <span style={{ fontSize:32 }}>{info.emoji}</span>
+              <div style={{ flex:1 }}>
+                <span style={{ color:'#1e0a16', fontSize:13, fontWeight:800, display:'block' }}>{lang === 'en' ? info.nomEn : info.nom}</span>
+                <div style={{ display:'flex', gap:6, marginTop:3 }}>
+                  <span style={{ background:'rgba(212,170,50,0.15)', color:'#b07010', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:6 }}>🏆 Artefact</span>
+                  <span style={{ background: info.type === 'meuble' ? 'rgba(106,191,68,0.1)' : 'rgba(196,48,112,0.1)', color: info.type === 'meuble' ? '#2a7a10' : '#c43070', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:6 }}>
+                    {info.type === 'meuble' ? (lang === 'en' ? '🏠 Furniture' : '🏠 Meuble') : (lang === 'en' ? '👕 Wearable' : '👕 Vêtement')}
+                  </span>
+                  {isPlaced && <span style={{ background:'rgba(106,191,68,0.15)', color:'#2a7a10', fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:6 }}>✅ {lang === 'en' ? 'Placed' : 'Posé'}</span>}
+                </div>
+              </div>
+            </div>
+            <p style={{ color:'#4a8f2a', fontSize:11, fontWeight:700, margin:'0 0 8px' }}>{info.description}</p>
+            {tradeable ? (
+              <div style={{ padding:'8px', background:'rgba(106,191,68,0.08)', border:'1px solid rgba(106,191,68,0.25)', borderRadius:10, textAlign:'center' }}>
+                <p style={{ color:'#2a7a10', fontSize:11, fontWeight:700, margin:0 }}>
+                  ✅ {lang === 'en' ? 'Tradeable — P2P sales coming soon' : 'Échangeable — Ventes P2P bientôt disponibles'}
+                </p>
+              </div>
+            ) : (
+              <div style={{ padding:'8px', background:'rgba(212,170,50,0.08)', border:'1px solid rgba(212,170,50,0.25)', borderRadius:10, textAlign:'center' }}>
+                <p style={{ color:'#b07010', fontSize:11, fontWeight:700, margin:0 }}>
+                  🔒 {lang === 'en' ? `Tradeable in ${daysLeft} day${daysLeft > 1 ? 's' : ''}` : `Échangeable dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`}
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Page principale ─────────────────────────────────────────
 
 export function HdvPage() {
   const navigate  = useNavigate();
-  const { t }     = useT();
+  const { t, lang } = useT();
+  const [hdvTab, setHdvTab] = useState<'ressources' | 'artefacts'>('ressources');
 
   return (
     <div style={s.page}>
@@ -845,8 +932,17 @@ export function HdvPage() {
         <span style={s.headerTitle}>{t('hdv.title')}</span>
         <div style={{ width:60 }} />
       </div>
-      <div style={{ flex:1, overflowY:'auto' }}>
-        <TabOnchain />
+      <div style={{ display:'flex', borderBottom:'1px solid rgba(212,100,138,0.15)', flexShrink:0 }}>
+        <button style={{ flex:1, padding:'9px 4px', color: hdvTab === 'ressources' ? '#c43070' : '#7a4060', fontSize:'12px', fontWeight:600, background:'none', border:'none', cursor:'pointer', borderBottom: hdvTab === 'ressources' ? '2px solid #c43070' : '2px solid transparent' }} onClick={() => setHdvTab('ressources')}>
+          📦 {lang === 'en' ? 'Resources' : 'Ressources'}
+        </button>
+        <button style={{ flex:1, padding:'9px 4px', color: hdvTab === 'artefacts' ? '#b07010' : '#7a4060', fontSize:'12px', fontWeight:600, background:'none', border:'none', cursor:'pointer', borderBottom: hdvTab === 'artefacts' ? '2px solid #b07010' : '2px solid transparent' }} onClick={() => setHdvTab('artefacts')}>
+          🏆 Artefacts
+        </button>
+      </div>
+      <div style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column' }}>
+        {hdvTab === 'ressources' && <TabOnchain />}
+        {hdvTab === 'artefacts'  && <TabArtefacts />}
       </div>
     </div>
   );

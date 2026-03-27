@@ -92,6 +92,14 @@ const RESOURCE_NAMES: Record<number, { fr: string; en: string }> = {
   // Forgeron outputs
   77: { fr: 'Enclume Portable',       en: 'Portable Anvil'         },
   78: { fr: 'Parchemin de Forge',     en: 'Forge Scroll'           },
+  // Meubles craftables
+  80: { fr: 'Table du Bûcheron',    en: "Lumberjack's Table"   },
+  81: { fr: 'Meule du Paysan',      en: "Farmer's Millstone"   },
+  82: { fr: 'Vivier du Pêcheur',    en: "Fisher's Pond"        },
+  83: { fr: 'Enclume du Mineur',    en: "Miner's Anvil"        },
+  84: { fr: 'Alambic Alchimiste',   en: "Alchemist's Alembic"  },
+  85: { fr: 'Bassin à Koï',         en: 'Koi Basin'            },
+  86: { fr: 'Abreuvoir Sakura',     en: 'Sakura Trough'        },
   // Tisserand vêtements
   125: { fr: 'Kimono Bambou',         en: 'Bamboo Kimono'          },
   126: { fr: 'Haori Sakura',          en: 'Sakura Haori'           },

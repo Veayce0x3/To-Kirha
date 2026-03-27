@@ -6,7 +6,7 @@
 
 export type TypeVetement = 'haut' | 'bas' | 'chaussures' | 'chapeau' | 'accessoire';
 export type Rarete       = 'commun' | 'rare' | 'epique' | 'legendaire';
-export type TypeBonus    = 'vitesse_recolte' | 'xp_bonus' | 'chance_rare' | 'slots_bonus';
+export type TypeBonus    = 'vitesse_recolte' | 'xp_bonus' | 'chance_rare' | 'slots_bonus' | 'qty_recolte';
 
 export interface Bonus {
   type:   TypeBonus;
@@ -72,6 +72,10 @@ export const VETEMENTS: Vetement[] = [
   { id: 127, nom: 'Hakama Lin',     type: 'bas',        rarete: 'rare',   bonus: { type: 'vitesse_recolte', valeur:  8 }, prix_kirha: 0, image: img('bas',        'hakama_lin.png') },
   { id: 128, nom: 'Kasa Tissé',     type: 'chapeau',    rarete: 'rare',   bonus: { type: 'xp_bonus',        valeur: 12 }, prix_kirha: 0, image: img('chapeau',    'kasa_tisse.png') },
   { id: 129, nom: 'Obi Forgé',      type: 'accessoire', rarete: 'epique', bonus: { type: 'slots_bonus',      valeur:  2 }, prix_kirha: 0, image: img('accessoire', 'obi_forge.png') },
+
+  // ── Artefacts vêtements (203-204) — enchères, offert par le jeu ──
+  { id: 203, nom: 'Kimono du Grand Maître', type: 'haut',    rarete: 'legendaire', bonus: { type: 'qty_recolte', valeur: 5 }, prix_kirha: 0, image: img('haut',    'kimono_grand_maitre.png') },
+  { id: 204, nom: 'Masque du Forgeron',    type: 'chapeau', rarete: 'legendaire', bonus: { type: 'vitesse_recolte', valeur: 10 }, prix_kirha: 0, image: img('chapeau', 'masque_forgeron.png') },
 ];
 
 // ── Helpers ────────────────────────────────────────────────
@@ -89,10 +93,11 @@ export interface BonusTotal {
   xp_bonus:        number; // % d'XP en plus
   chance_rare:     number; // % de chance de ressource rare
   slots_bonus:     number; // slots supplémentaires
+  qty_recolte:     number; // % bonus quantité tous métiers (vêtements artefacts)
 }
 
 export function calculerBonus(equipement: Equipement): BonusTotal {
-  const totaux: BonusTotal = { vitesse_recolte: 0, xp_bonus: 0, chance_rare: 0, slots_bonus: 0 };
+  const totaux: BonusTotal = { vitesse_recolte: 0, xp_bonus: 0, chance_rare: 0, slots_bonus: 0, qty_recolte: 0 };
   const ids = [equipement.haut, equipement.bas, equipement.chaussures, equipement.chapeau, equipement.accessoire];
   for (const id of ids) {
     if (id == null) continue;

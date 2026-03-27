@@ -90,6 +90,11 @@ export interface GameState {
   // Prestige par métier de récolte (reset niveau → 1, +5% qty permanent par prestige)
   prestige: Partial<Record<MetierId, number>>;
 
+  // Meubles posés (inventaire → placement, un seul de chaque)
+  meubles_poses: number[];
+  // Artefacts possédés (meubles + vêtements d'enchère)
+  artefacts: Record<number, { acquis_le: number }>;
+
   setAddress:               (address: string | null) => void;
   ajouterXp:                (metier: MetierId, xp: number) => void;
   ajouterXpPersonage:       (xp: number) => void;
@@ -140,6 +145,10 @@ export interface GameState {
   repairerOutil:            (type: ToolType, charges: number) => void;
   // Prestige (récolte)
   prestigerMetier:          (metierId: MetierId) => void;
+  // Meubles / Artefacts
+  poserMeuble:   (id: number) => void;
+  retirerMeuble: (id: number) => void;
+  addArtefact:   (id: number) => void;
 }
 
 // ============================================================
@@ -262,6 +271,8 @@ export const useGameStore = create<GameState>()(
       parcheminPrice: 10,
       activeBuffs: [],
       prestige: {},
+      meubles_poses: [],
+      artefacts: {},
 
       setAddress: (address) => set({ address }),
 
@@ -487,6 +498,8 @@ export const useGameStore = create<GameState>()(
           parcheminsLv100LastDate: '',
           activeBuffs: [],
           prestige: {},
+          meubles_poses: [],
+          artefacts: {},
           // Conserver
           address:  state.address,
           villeId:  state.villeId,
@@ -639,6 +652,36 @@ export const useGameStore = create<GameState>()(
           };
         }),
 
+      poserMeuble: (id) =>
+        set((state) => {
+          if (state.meubles_poses.includes(id)) return state;
+          if (id >= 80 && id <= 86) {
+            const qty = (state.inventaire[id as ResourceId] ?? 0);
+            if (qty < 1) return state;
+            const inventaire = { ...state.inventaire, [id]: Math.round((qty - 1) * 1e10) / 1e10 };
+            return { meubles_poses: [...state.meubles_poses, id], inventaire };
+          }
+          if (!state.artefacts[id]) return state;
+          return { meubles_poses: [...state.meubles_poses, id] };
+        }),
+
+      retirerMeuble: (id) =>
+        set((state) => {
+          if (!state.meubles_poses.includes(id)) return state;
+          if (id >= 80 && id <= 86) {
+            const qty = state.inventaire[id as ResourceId] ?? 0;
+            const inventaire = { ...state.inventaire, [id]: Math.round((qty + 1) * 1e10) / 1e10 };
+            return { meubles_poses: state.meubles_poses.filter(m => m !== id), inventaire };
+          }
+          return { meubles_poses: state.meubles_poses.filter(m => m !== id) };
+        }),
+
+      addArtefact: (id) =>
+        set((state) => {
+          if (state.artefacts[id]) return state;
+          return { artefacts: { ...state.artefacts, [id]: { acquis_le: Math.floor(Date.now() / 1000) } } };
+        }),
+
       debloquerSlot: (metier, slotIndex) =>
         set((state) => {
           const cond = SLOT_UNLOCK_CONDITIONS[slotIndex];
@@ -724,11 +767,13 @@ export const useGameStore = create<GameState>()(
           })(),
           parcheminsLv100LastDate: (state as Partial<GameState>).parcheminsLv100LastDate ?? '',
           parcheminPrice: (state as Partial<GameState>).parcheminPrice ?? 10,
-          activeBuffs: (state as Partial<GameState>).activeBuffs ?? [],
-          prestige:    (state as Partial<GameState>).prestige    ?? {},
+          activeBuffs:   (state as Partial<GameState>).activeBuffs   ?? [],
+          prestige:      (state as Partial<GameState>).prestige      ?? {},
+          meubles_poses: (state as Partial<GameState>).meubles_poses ?? [],
+          artefacts:     (state as Partial<GameState>).artefacts     ?? {},
         };
       },
-      version: 17,
+      version: 18,
     }
   )
 );

@@ -304,6 +304,98 @@ const RECETTES_ARTISAN: Recette[] = [
 ];
 
 // ============================================================
+// Recettes Meubles Plaçables (craft via Artisan → bonus quand posés)
+// ============================================================
+
+const RECETTES_MEUBLES: RecetteInventaire[] = [
+  {
+    kind: 'inventaire', id: 'table_bucheron', emoji: '🪵',
+    nom: 'Table du Bûcheron', nomEn: "Lumberjack's Table",
+    ingredients: [
+      { resourceId: ResourceId.FRENE,  quantite: 80 },
+      { resourceId: ResourceId.CHENE,  quantite: 60 },
+      { resourceId: ResourceId.PIERRE, quantite: 40 },
+      { resourceId: ResourceId.FER,    quantite: 20 },
+    ],
+    resultatId: ResourceId.MEUBLE_TABLE_BUCHERON, resultatQte: 1, xp: 0,
+    description: '+3% quantité Bûcheron une fois posée.',
+    descriptionEn: '+3% Lumberjack quantity when placed.',
+  },
+  {
+    kind: 'inventaire', id: 'meule_paysan', emoji: '🌾',
+    nom: 'Meule du Paysan', nomEn: "Farmer's Millstone",
+    ingredients: [
+      { resourceId: ResourceId.BLE,    quantite: 100 },
+      { resourceId: ResourceId.SEIGLE, quantite: 60  },
+      { resourceId: ResourceId.PIERRE, quantite: 50  },
+    ],
+    resultatId: ResourceId.MEUBLE_MEULE_PAYSAN, resultatQte: 1, xp: 0,
+    description: '+3% quantité Paysan une fois posée.',
+    descriptionEn: '+3% Farmer quantity when placed.',
+  },
+  {
+    kind: 'inventaire', id: 'vivier_pecheur', emoji: '🐟',
+    nom: 'Vivier du Pêcheur', nomEn: "Fisher's Pond",
+    ingredients: [
+      { resourceId: ResourceId.BAMBOU,          quantite: 80 },
+      { resourceId: ResourceId.PIERRE,          quantite: 60 },
+      { resourceId: ResourceId.CARPE_JAPONAISE, quantite: 30 },
+    ],
+    resultatId: ResourceId.MEUBLE_VIVIER_PECHEUR, resultatQte: 1, xp: 0,
+    description: '+3% quantité Pêcheur une fois posée.',
+    descriptionEn: '+3% Fisher quantity when placed.',
+  },
+  {
+    kind: 'inventaire', id: 'enclume_mineur', emoji: '⛏️',
+    nom: 'Enclume du Mineur', nomEn: "Miner's Anvil",
+    ingredients: [
+      { resourceId: ResourceId.FER,    quantite: 100 },
+      { resourceId: ResourceId.CUIVRE, quantite: 60  },
+      { resourceId: ResourceId.JADE,   quantite: 20  },
+    ],
+    resultatId: ResourceId.MEUBLE_ENCLUME_MINEUR, resultatQte: 1, xp: 0,
+    description: '+3% quantité Mineur une fois posée.',
+    descriptionEn: '+3% Miner quantity when placed.',
+  },
+  {
+    kind: 'inventaire', id: 'alambic_alchi', emoji: '🌺',
+    nom: 'Alambic Alchimiste', nomEn: "Alchemist's Alembic",
+    ingredients: [
+      { resourceId: ResourceId.CHRYSANTHEME, quantite: 80 },
+      { resourceId: ResourceId.WISTERIA,     quantite: 60 },
+      { resourceId: ResourceId.JADE,         quantite: 30 },
+    ],
+    resultatId: ResourceId.MEUBLE_ALAMBIC_ALCHI, resultatQte: 1, xp: 0,
+    description: '+3% quantité Alchimiste une fois posée.',
+    descriptionEn: '+3% Alchemist quantity when placed.',
+  },
+  {
+    kind: 'inventaire', id: 'bassin_koi', emoji: '🐠',
+    nom: 'Bassin à Koï', nomEn: 'Koi Basin',
+    ingredients: [
+      { resourceId: ResourceId.JADE,          quantite: 40 },
+      { resourceId: ResourceId.CERISIER_DORE, quantite: 30 },
+      { resourceId: ResourceId.DIAMANT,       quantite: 10 },
+    ],
+    resultatId: ResourceId.MEUBLE_BASSIN_KOI, resultatQte: 1, xp: 0,
+    description: '+1 Eau par jour (Puits) une fois posée.',
+    descriptionEn: '+1 Water per day (Well) when placed.',
+  },
+  {
+    kind: 'inventaire', id: 'abreuvoir_sakura', emoji: '🍶',
+    nom: 'Abreuvoir Sakura', nomEn: 'Sakura Trough',
+    ingredients: [
+      { resourceId: ResourceId.FER,    quantite: 60 },
+      { resourceId: ResourceId.SEIGLE, quantite: 40 },
+      { resourceId: ResourceId.LAIT,   quantite: 20 },
+    ],
+    resultatId: ResourceId.MEUBLE_ABREUVOIR, resultatQte: 1, xp: 0,
+    description: '-10% temps recharge animaux une fois posée.',
+    descriptionEn: '-10% animal cooldown when placed.',
+  },
+];
+
+// ============================================================
 // Recettes Alchimiste craft
 // ============================================================
 
@@ -875,6 +967,22 @@ export function CraftPage() {
             </p>
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               {RECETTES_ARTISAN.map(r => (
+                <RecetteCard
+                  key={r.id}
+                  recette={r}
+                  inventaire={inventaire}
+                  lang={lang}
+                  onCraft={() => craftArtisan(r)}
+                  btnLabel={lang === 'en' ? '🔨 Craft' : '🔨 Fabriquer'}
+                />
+              ))}
+            </div>
+
+            <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'14px 0 4px', letterSpacing:'0.05em' }}>
+              {lang === 'en' ? 'PLACEABLE FURNITURE (bonus when placed)' : 'MEUBLES PLAÇABLES (bonus quand posés)'}
+            </p>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {RECETTES_MEUBLES.map(r => (
                 <RecetteCard
                   key={r.id}
                   recette={r}

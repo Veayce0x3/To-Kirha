@@ -110,6 +110,15 @@ export enum ResourceId {
   ENCLUME_PORTABLE = 77,
   PARCHEMIN_FORGE = 78,
 
+  // --- Meubles craftables (posables dans la ferme/ville) ---
+  MEUBLE_TABLE_BUCHERON = 80,
+  MEUBLE_MEULE_PAYSAN   = 81,
+  MEUBLE_VIVIER_PECHEUR = 82,
+  MEUBLE_ENCLUME_MINEUR = 83,
+  MEUBLE_ALAMBIC_ALCHI  = 84,
+  MEUBLE_BASSIN_KOI     = 85,
+  MEUBLE_ABREUVOIR      = 86,
+
   // --- Tisserand vêtements (IDs 125-129, utilisés aussi dans vetements.ts) ---
   KIMONO_BAMBOU = 125,
   HAORI_SAKURA = 126,
@@ -130,6 +139,7 @@ export const ARTISAN_IDS       = [63, 64] as const;
 export const ALCHIMISTE_CRAFT_IDS = [65, 66, 67] as const;
 export const TISSERAND_MATIERES_IDS = [74, 75, 76] as const;
 export const FORGERON_OUTPUT_IDS    = [77, 78] as const;
+export const MEUBLES_CRAFTABLES_IDS = [80, 81, 82, 83, 84, 85, 86] as const;
 export const TISSERAND_EQUIP_IDS    = [125, 126, 127, 128, 129] as const;
 
 /** IDs on-chain uniquement (1-50) */

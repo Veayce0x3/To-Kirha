@@ -8,8 +8,11 @@ import { useT } from '../utils/i18n';
 import { getNomRessource, metierIconPath } from '../utils/resourceUtils';
 import { ResourceIcon } from '../components/ResourceIcon';
 import { getResourceById } from '../data/metiers';
+import { MEUBLES, calculerBonusMeubles, getMetierBonusMeuble } from '../data/meubles';
+import { calculerBonus } from '../data/vetements';
+import { getSaisonActuelle } from '../data/saisons';
 
-type Tab = 'ressources' | 'metiers' | 'personnage';
+type Tab = 'ressources' | 'metiers' | 'personnage' | 'meubles' | 'efficacite';
 type SortMode = 'quantite' | 'categorie';
 
 const METIER_CONFIG: Record<MetierId, { icon: string; color: string }> = {
@@ -40,6 +43,14 @@ export function MaisonPage() {
   const allouerCompetence  = useGameStore(s => s.allouerCompetence);
   const retirerCompetence  = useGameStore(s => s.retirerCompetence);
   const reinitialiserCompetences = useGameStore(s => s.reinitialiserCompetences);
+  const meubles_poses  = useGameStore(s => s.meubles_poses);
+  const artefacts      = useGameStore(s => s.artefacts);
+  const equipement     = useGameStore(s => s.equipement);
+  const activeBuffs    = useGameStore(s => s.activeBuffs);
+  const prestige       = useGameStore(s => s.prestige);
+  const vipExpiry      = useGameStore(s => s.vipExpiry);
+  const poserMeuble    = useGameStore(s => s.poserMeuble);
+  const retirerMeuble  = useGameStore(s => s.retirerMeuble);
 
   const short = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '';
 
@@ -83,7 +94,7 @@ export function MaisonPage() {
 
       {/* Tabs */}
       <div style={s.tabs}>
-        {([['ressources', `${t('maison.tab_res')}${totalItems > 0 ? ` (${totalItems})` : ''}`], ['metiers', t('maison.tab_metiers')], ['personnage', t('maison.tab_perso')]] as [Tab, string][]).map(([tabId, label]) => (
+        {([['ressources', `${t('maison.tab_res')}${totalItems > 0 ? ` (${totalItems})` : ''}`], ['metiers', t('maison.tab_metiers')], ['personnage', t('maison.tab_perso')], ['meubles', lang === 'en' ? '🏠 Furn.' : '🏠 Meubles'], ['efficacite', lang === 'en' ? '📊 Stats' : '📊 Stats']] as [Tab, string][]).map(([tabId, label]) => (
           <button key={tabId} style={{ ...s.tab, ...(tab === tabId ? s.tabActive : {}) }} onClick={() => setTab(tabId as Tab)}>
             {label}
           </button>
@@ -278,6 +289,178 @@ export function MaisonPage() {
             </div>
           </div>
         )}
+
+        {/* ── Meubles ── */}
+        {tab === 'meubles' && (
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'0 0 6px', letterSpacing:'0.05em' }}>
+              {lang === 'en' ? 'CRAFTABLE FURNITURE (one of each max)' : 'MEUBLES CRAFTABLES (un seul de chaque)'}
+            </p>
+            {MEUBLES.filter(m => !m.isArtefact).map(m => {
+              const inInventory = Math.floor((inventaire[m.id as ResourceId] ?? 0));
+              const isPlaced    = meubles_poses.includes(m.id);
+              const bonusLabel  = m.bonus.type === 'eau_par_jour'
+                ? `+${m.bonus.valeur} Eau/jour`
+                : m.bonus.type === 'cooldown_animaux_pct'
+                ? `-${m.bonus.valeur}% cooldown animaux`
+                : `+${m.bonus.valeur}% quantité`;
+              return (
+                <div key={m.id} style={{ background:'#fff', border:`1.5px solid ${isPlaced ? 'rgba(106,191,68,0.4)' : 'rgba(212,100,138,0.13)'}`, borderRadius:14, padding:12 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
+                    <span style={{ fontSize:28 }}>{m.emoji}</span>
+                    <div style={{ flex:1 }}>
+                      <span style={{ color:'#1e0a16', fontSize:13, fontWeight:800, display:'block' }}>{lang === 'en' ? m.nomEn : m.nom}</span>
+                      <span style={{ color:'#4a8f2a', fontSize:10, fontWeight:700 }}>{bonusLabel}</span>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
+                      {isPlaced && <span style={{ background:'rgba(106,191,68,0.15)', color:'#2a7a10', fontSize:9, fontWeight:700, padding:'2px 7px', borderRadius:8 }}>✅ {lang === 'en' ? 'Placed' : 'Posé'}</span>}
+                      <span style={{ color:'#7a4060', fontSize:10 }}>×{inInventory} {lang === 'en' ? 'in bag' : 'en sac'}</span>
+                    </div>
+                  </div>
+                  <p style={{ color:'#9a6080', fontSize:10, margin:'0 0 8px' }}>{m.description}</p>
+                  {isPlaced ? (
+                    <button style={{ width:'100%', padding:'8px', background:'rgba(196,48,112,0.08)', border:'1px solid rgba(196,48,112,0.2)', borderRadius:10, color:'#c43070', fontSize:11, fontWeight:700, cursor:'pointer' }} onClick={() => retirerMeuble(m.id)}>
+                      🔄 {lang === 'en' ? 'Remove (returns to bag)' : 'Retirer (retourne en sac)'}
+                    </button>
+                  ) : (
+                    <button style={{ width:'100%', padding:'8px', background: inInventory >= 1 ? 'linear-gradient(135deg,#6abf44,#3a7a10)' : 'rgba(106,191,68,0.06)', border: inInventory >= 1 ? 'none' : '1px solid rgba(106,191,68,0.2)', borderRadius:10, color: inInventory >= 1 ? '#fff' : '#9a6080', fontSize:11, fontWeight:700, cursor: inInventory >= 1 ? 'pointer' : 'default', opacity: inInventory >= 1 ? 1 : 0.5 }} disabled={inInventory < 1} onClick={() => poserMeuble(m.id)}>
+                      {inInventory >= 1 ? `🏠 ${lang === 'en' ? 'Place' : 'Poser'}` : lang === 'en' ? 'Not in inventory' : 'Pas en inventaire'}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Artefacts meubles */}
+            {MEUBLES.filter(m => m.isArtefact && artefacts[m.id]).length > 0 && (
+              <>
+                <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'8px 0 6px', letterSpacing:'0.05em' }}>
+                  {lang === 'en' ? 'ARTEFACT FURNITURE' : 'MEUBLES ARTEFACTS'}
+                </p>
+                {MEUBLES.filter(m => m.isArtefact && artefacts[m.id]).map(m => {
+                  const isPlaced = meubles_poses.includes(m.id);
+                  const acquis   = artefacts[m.id];
+                  const echangeableLe = acquis ? acquis.acquis_le + 90 * 24 * 3600 : 0;
+                  const nowSec = Math.floor(Date.now() / 1000);
+                  return (
+                    <div key={m.id} style={{ background:'linear-gradient(135deg,#fff9e6,#fff)', border:`1.5px solid ${isPlaced ? 'rgba(106,191,68,0.4)' : 'rgba(212,170,50,0.4)'}`, borderRadius:14, padding:12 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
+                        <span style={{ fontSize:28 }}>{m.emoji}</span>
+                        <div style={{ flex:1 }}>
+                          <span style={{ color:'#1e0a16', fontSize:13, fontWeight:800, display:'block' }}>{lang === 'en' ? m.nomEn : m.nom}</span>
+                          <span style={{ color:'#b07010', fontSize:9, fontWeight:700 }}>🏆 Artefact · max {m.maxSupply}</span>
+                        </div>
+                        {isPlaced && <span style={{ background:'rgba(106,191,68,0.15)', color:'#2a7a10', fontSize:9, fontWeight:700, padding:'2px 7px', borderRadius:8 }}>✅ {lang === 'en' ? 'Placed' : 'Posé'}</span>}
+                      </div>
+                      <p style={{ color:'#9a6080', fontSize:10, margin:'0 0 4px' }}>{m.description}</p>
+                      <p style={{ color: nowSec >= echangeableLe ? '#2a7a10' : '#9a6080', fontSize:9, margin:'0 0 8px', fontStyle:'italic' }}>
+                        {nowSec >= echangeableLe
+                          ? (lang === 'en' ? '✅ Tradeable on HDV' : '✅ Échangeable sur le HDV')
+                          : (lang === 'en' ? `🔒 Tradeable in ${Math.ceil((echangeableLe - nowSec) / 86400)}d` : `🔒 Échangeable dans ${Math.ceil((echangeableLe - nowSec) / 86400)}j`)}
+                      </p>
+                      {isPlaced
+                        ? <button style={{ width:'100%', padding:'8px', background:'rgba(196,48,112,0.08)', border:'1px solid rgba(196,48,112,0.2)', borderRadius:10, color:'#c43070', fontSize:11, fontWeight:700, cursor:'pointer' }} onClick={() => retirerMeuble(m.id)}>🔄 {lang === 'en' ? 'Remove' : 'Retirer'}</button>
+                        : <button style={{ width:'100%', padding:'8px', background:'linear-gradient(135deg,#f9a825,#b07010)', border:'none', borderRadius:10, color:'#fff', fontSize:11, fontWeight:700, cursor:'pointer' }} onClick={() => poserMeuble(m.id)}>🏠 {lang === 'en' ? 'Place' : 'Poser'}</button>
+                      }
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── Efficacité ── */}
+        {tab === 'efficacite' && (() => {
+          const METIER_IDS_LIST = ['bucheron', 'paysan', 'pecheur', 'mineur', 'alchimiste'] as const;
+          const bonusVet    = calculerBonus(equipement);
+          const bonusMeuble = calculerBonusMeubles(meubles_poses);
+          const saison      = getSaisonActuelle();
+          const isVip       = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
+          const now         = Date.now();
+          const validBuffs  = activeBuffs.filter(b => b.expiresAt > now);
+          const buffQtyTotal = validBuffs.reduce((s, b) => s + b.bonusPercent, 0);
+          return (
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'0 0 2px', letterSpacing:'0.05em' }}>
+                {lang === 'en' ? 'HARVEST YIELD BY PROFESSION' : 'RENDEMENT PAR MÉTIER'}
+              </p>
+              {METIER_IDS_LIST.map(mid => {
+                const cfg        = METIER_CONFIG[mid];
+                const compBonus  = (competences[mid] ?? 0) * 5;
+                const prestigeB  = (prestige[mid] ?? 0) * 5;
+                const meubleB    = getMetierBonusMeuble(mid, bonusMeuble);
+                const saisonB    = saison.id === mid ? saison.bonusQty + (isVip ? 10 : 0) : 0;
+                const meubleQtyS = saison.id === mid ? bonusMeuble.qty_saison : 0;
+                const vetQty     = bonusVet.qty_recolte ?? 0;
+                const total      = compBonus + prestigeB + meubleB + meubleQtyS + saisonB + buffQtyTotal + vetQty;
+                return (
+                  <div key={mid} style={{ background:'#fff', border:`1.5px solid ${cfg.color}33`, borderRadius:12, padding:12 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                      <span style={{ fontSize:20 }}>{cfg.icon}</span>
+                      <span style={{ color:'#1e0a16', fontSize:13, fontWeight:800, flex:1 }}>{METIERS[mid].nom}</span>
+                      <span style={{ color: total > 0 ? '#2a7a10' : '#9a6080', fontSize:14, fontWeight:900 }}>+{total}%</span>
+                    </div>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:'4px 10px' }}>
+                      {compBonus > 0    && <span style={{ color:'#5a9a30', fontSize:9, fontWeight:600 }}>⚡ Compétences +{compBonus}%</span>}
+                      {prestigeB > 0    && <span style={{ color:'#9a5a10', fontSize:9, fontWeight:600 }}>🌟 Prestige +{prestigeB}%</span>}
+                      {meubleB > 0      && <span style={{ color:'#4a7a20', fontSize:9, fontWeight:600 }}>🏠 Meubles +{meubleB}%</span>}
+                      {meubleQtyS > 0   && <span style={{ color:'#4a7a20', fontSize:9, fontWeight:600 }}>🌸 Artefact saison +{meubleQtyS}%</span>}
+                      {saisonB > 0      && <span style={{ color:'#ff9800', fontSize:9, fontWeight:600 }}>{saison.emoji} Saison +{saisonB}%{isVip ? ' (VIP)' : ''}</span>}
+                      {buffQtyTotal > 0 && <span style={{ color:'#7030b0', fontSize:9, fontWeight:600 }}>🧪 Potion +{buffQtyTotal}%</span>}
+                      {vetQty > 0       && <span style={{ color:'#c43070', fontSize:9, fontWeight:600 }}>👘 Vêtement +{vetQty}%</span>}
+                      {total === 0      && <span style={{ color:'#9a6080', fontSize:9 }}>{lang === 'en' ? 'No active bonus' : 'Aucun bonus actif'}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+
+              <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'6px 0 2px', letterSpacing:'0.05em' }}>
+                {lang === 'en' ? 'FARM BONUSES' : 'BONUS FERME'}
+              </p>
+              <div style={{ background:'#fff', border:'1.5px solid rgba(41,182,246,0.25)', borderRadius:12, padding:12, display:'flex', flexDirection:'column', gap:6 }}>
+                <div style={{ display:'flex', justifyContent:'space-between' }}>
+                  <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>💧 {lang === 'en' ? 'Water/day (Well)' : 'Eau/jour (Puits)'}</span>
+                  <span style={{ color:'#29b6f6', fontSize:12, fontWeight:800 }}>1 + {bonusMeuble.eau_par_jour} = {1 + bonusMeuble.eau_par_jour}/j</span>
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between' }}>
+                  <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>🐔 {lang === 'en' ? 'Animal cooldown' : 'Recharge animaux'}</span>
+                  <span style={{ color: bonusMeuble.cooldown_animaux_pct > 0 ? '#2a7a10' : '#9a6080', fontSize:12, fontWeight:800 }}>-{bonusMeuble.cooldown_animaux_pct}%</span>
+                </div>
+              </div>
+
+              <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'6px 0 2px', letterSpacing:'0.05em' }}>
+                {lang === 'en' ? 'EQUIPPED BONUSES' : 'BONUS ÉQUIPEMENT'}
+              </p>
+              <div style={{ background:'#fff', border:'1.5px solid rgba(196,48,112,0.15)', borderRadius:12, padding:12, display:'flex', flexDirection:'column', gap:5 }}>
+                {bonusVet.vitesse_recolte > 0 && <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#1e0a16', fontSize:11 }}>⏱️ {lang === 'en' ? 'Speed' : 'Vitesse récolte'}</span><span style={{ color:'#2a7a10', fontSize:11, fontWeight:700 }}>-{bonusVet.vitesse_recolte}%</span></div>}
+                {bonusVet.xp_bonus > 0       && <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#1e0a16', fontSize:11 }}>✨ XP Bonus</span><span style={{ color:'#c43070', fontSize:11, fontWeight:700 }}>+{bonusVet.xp_bonus}%</span></div>}
+                {bonusVet.qty_recolte > 0    && <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#1e0a16', fontSize:11 }}>📦 {lang === 'en' ? 'Harvest Qty' : 'Qté récolte'}</span><span style={{ color:'#2a7a10', fontSize:11, fontWeight:700 }}>+{bonusVet.qty_recolte}%</span></div>}
+                {bonusVet.slots_bonus > 0    && <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#1e0a16', fontSize:11 }}>🎒 Slots</span><span style={{ color:'#9a5a10', fontSize:11, fontWeight:700 }}>+{bonusVet.slots_bonus}</span></div>}
+                {bonusVet.vitesse_recolte === 0 && bonusVet.xp_bonus === 0 && bonusVet.qty_recolte === 0 && bonusVet.slots_bonus === 0 && (
+                  <span style={{ color:'#9a6080', fontSize:10 }}>{lang === 'en' ? 'No equipment' : 'Aucun équipement'}</span>
+                )}
+              </div>
+
+              {validBuffs.length > 0 && (
+                <>
+                  <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'6px 0 2px', letterSpacing:'0.05em' }}>BUFFS ACTIFS</p>
+                  <div style={{ background:'#fff', border:'1.5px solid rgba(171,71,188,0.25)', borderRadius:12, padding:12, display:'flex', flexDirection:'column', gap:5 }}>
+                    {validBuffs.map(b => {
+                      const remaining = Math.ceil((b.expiresAt - now) / 60000);
+                      return (
+                        <div key={b.type} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <span style={{ color:'#7030b0', fontSize:11 }}>🧪 +{b.bonusPercent}% {lang === 'en' ? 'harvest qty' : 'qté récolte'}</span>
+                          <span style={{ color:'#7030b0', fontSize:10, fontFamily:'monospace' }}>{remaining}min</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { ResourceId } from '../data/resources';
 import { calculerBonus } from '../data/vetements';
 import { FREE_RESOURCE_IDS, METIER_TOOL_TYPE, getResourceIndex } from '../data/outils';
 import { getSaisonActuelle } from '../data/saisons';
+import { calculerBonusMeubles, getMetierBonusMeuble } from '../data/meubles';
 
 export interface SlotAvecTimer {
   index:              number;
@@ -46,6 +47,7 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
   const activeBuffs             = useGameStore(s => s.activeBuffs);
   const prestige                = useGameStore(s => s.prestige);
+  const meubles_poses           = useGameStore(s => s.meubles_poses);
   const clearExpiredBuffs       = useGameStore(s => s.clearExpiredBuffs);
 
   const toolType = METIER_TOOL_TYPE[metierId];
@@ -75,6 +77,8 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
   isVipRef.current             = isVip;
   activeBuffsRef.current       = activeBuffs;
   prestigeRef.current          = prestige;
+  const meublesBonusRef = useRef(calculerBonusMeubles(meubles_poses));
+  meublesBonusRef.current = calculerBonusMeubles(meubles_poses);
 
   const [, setTick] = useState(0);
   const [lastHarvested, setLastHarvested] = useState<{ qty: number; resourceId: ResourceId } | null>(null);
@@ -142,12 +146,22 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
       ? saison.bonusQty + (isVipRef.current ? 10 : 0)
       : 0;
 
+    // Meubles posés
+    const meubleBonus    = getMetierBonusMeuble(metierId, meublesBonusRef.current);
+    const meubleQtySaison = saison.id === metierId ? meublesBonusRef.current.qty_saison : 0;
+    const meubleQtyAll   = meubleBonus + meubleQtySaison;
+
+    // Vêtements artefacts (qty_recolte)
+    const vetQtyBonus = bonusRef.current.qty_recolte ?? 0;
+
     const ratio  = Math.round(
       quantiteRecolte(metierProgressRef.current.niveau)
       * (1 + compBonus / 100)
       * (1 + prestigeBonus / 100)
       * (1 + buffQty / 100)
       * (1 + saisonQtyBonus / 100)
+      * (1 + meubleQtyAll / 100)
+      * (1 + vetQtyBonus / 100)
       * 1e10
     ) / 1e10;
     const xpFinal = Math.round(
