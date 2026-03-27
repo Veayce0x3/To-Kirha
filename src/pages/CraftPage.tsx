@@ -566,14 +566,11 @@ export function CraftPage() {
   const personageXp             = useGameStore(s => s.personageXp);
   const personageXpTotal        = useGameStore(s => s.personageXpTotal);
   const parcheminsLv100LastDate = useGameStore(s => s.parcheminsLv100LastDate);
-  const craftMetiersRaw         = useGameStore(s => s.craftMetiers);
-  const craftMetiers            = craftMetiersRaw ?? { artisan: { niveau: 1, xp: 0, xpTotal: 0 }, alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 }, tisserand: { niveau: 1, xp: 0, xpTotal: 0 }, forgeron: { niveau: 1, xp: 0, xpTotal: 0 } };
   const outils                  = useGameStore(s => s.outils) ?? {};
   const activeBuffs             = useGameStore(s => s.activeBuffs) ?? [];
   const retirerRessource        = useGameStore(s => s.retirerRessource);
   const ajouterRessource        = useGameStore(s => s.ajouterRessource);
   const ajouterXpPersonage      = useGameStore(s => s.ajouterXpPersonage);
-  const ajouterXpCraft          = useGameStore(s => s.ajouterXpCraft);
   const setOutil                = useGameStore(s => s.setOutil);
   const collectParcheminsLv100  = useGameStore(s => s.collectParcheminsLv100);
   const addBuff                 = useGameStore(s => s.addBuff);
@@ -598,8 +595,7 @@ export function CraftPage() {
     if (!canCraftRecette(recette)) return;
     for (const ing of recette.ingredients) retirerRessource(ing.resourceId, ing.quantite);
     ajouterRessource(recette.resultatId, recette.resultatQte);
-    ajouterXpCraft('artisan', recette.xp);
-    notify(`✅ ${lang === 'en' ? recette.nomEn : recette.nom} — +${recette.xp} XP Artisan`);
+    notify(`✅ ${lang === 'en' ? recette.nomEn : recette.nom}`);
   }
 
   function craftOutilNiveau(toolType: ToolType, niveau: number) {
@@ -607,36 +603,30 @@ export function CraftPage() {
     const canCraft = recipe.every(ing => (inventaire[ing.resourceId as ResourceId] ?? 0) >= ing.quantite);
     if (!canCraft) return;
     for (const ing of recipe) retirerRessource(ing.resourceId as ResourceId, ing.quantite);
-    const xp = getOutilXp(niveau);
     setOutil(toolType, niveau, DURABILITE_MAX);
-    ajouterXpCraft('artisan', xp);
     const info = OUTIL_INFO[toolType];
-    notify(`✅ ${info.emoji} ${info.nom} Niv.${niveau} — ${DURABILITE_MAX} charges · +${xp} XP Artisan`);
+    notify(`✅ ${info.emoji} ${info.nom} Niv.${niveau} — ${DURABILITE_MAX} charges`);
   }
 
   function craftAlchimiste(recette: RecetteInventaire) {
     if (!canCraftRecette(recette)) return;
     for (const ing of recette.ingredients) retirerRessource(ing.resourceId, ing.quantite);
     ajouterRessource(recette.resultatId, recette.resultatQte);
-    ajouterXpCraft('alchimisteCraft', recette.xp);
-    notify(`✅ ${lang === 'en' ? recette.nomEn : recette.nom} — +${recette.xp} XP Alchimiste`);
+    notify(`✅ ${lang === 'en' ? recette.nomEn : recette.nom}`);
   }
 
   function craftTisserand(recette: RecetteInventaire) {
     if (!canCraftRecette(recette)) return;
-    if (recette.niveauRequis && craftMetiers.tisserand.niveau < recette.niveauRequis) return;
     for (const ing of recette.ingredients) retirerRessource(ing.resourceId, ing.quantite);
     ajouterRessource(recette.resultatId, recette.resultatQte);
-    ajouterXpCraft('tisserand', recette.xp);
-    notify(`✅ ${lang === 'en' ? recette.nomEn : recette.nom} — +${recette.xp} XP Tisserand`);
+    notify(`✅ ${lang === 'en' ? recette.nomEn : recette.nom}`);
   }
 
   function craftForgeron(recette: RecetteInventaire) {
     if (!canCraftRecette(recette)) return;
     for (const ing of recette.ingredients) retirerRessource(ing.resourceId, ing.quantite);
     ajouterRessource(recette.resultatId, recette.resultatQte);
-    ajouterXpCraft('forgeron', recette.xp);
-    notify(`✅ ${lang === 'en' ? recette.nomEn : recette.nom} — +${recette.xp} XP Forgeron`);
+    notify(`✅ ${lang === 'en' ? recette.nomEn : recette.nom}`);
   }
 
   function utiliserPotion(resourceId: ResourceId) {
@@ -667,26 +657,6 @@ export function CraftPage() {
 
   const xpReqPersonage = personageNiveau >= 100 ? xpRequisPersonage(99) : xpRequisPersonage(personageNiveau);
   const pctPersonage = personageNiveau >= 100 ? 100 : Math.min(100, (personageXp / xpReqPersonage) * 100);
-
-  const artisanNiveau    = craftMetiers.artisan.niveau;
-  const artisanXp        = craftMetiers.artisan.xp;
-  const artisanXpReq     = xpRequis(artisanNiveau);
-  const pctArtisan       = artisanNiveau >= 100 ? 100 : Math.min(100, (artisanXp / artisanXpReq) * 100);
-
-  const alchNiveau       = craftMetiers.alchimisteCraft.niveau;
-  const alchXp           = craftMetiers.alchimisteCraft.xp;
-  const alchXpReq        = xpRequis(alchNiveau);
-  const pctAlch          = alchNiveau >= 100 ? 100 : Math.min(100, (alchXp / alchXpReq) * 100);
-
-  const tissNiveau       = craftMetiers.tisserand?.niveau ?? 1;
-  const tissXp           = craftMetiers.tisserand?.xp ?? 0;
-  const tissXpReq        = xpRequis(tissNiveau);
-  const pctTiss          = tissNiveau >= 100 ? 100 : Math.min(100, (tissXp / tissXpReq) * 100);
-
-  const forgNiveau       = craftMetiers.forgeron?.niveau ?? 1;
-  const forgXp           = craftMetiers.forgeron?.xp ?? 0;
-  const forgXpReq        = xpRequis(forgNiveau);
-  const pctForg          = forgNiveau >= 100 ? 100 : Math.min(100, (forgXp / forgXpReq) * 100);
 
   const viewTitle =
     view === 'cuisine'    ? '🍳 Cuisine' :
@@ -723,12 +693,6 @@ export function CraftPage() {
               <div style={{ ...s.categoryGlow, background:'radial-gradient(ellipse at top left,rgba(196,48,112,0.12),transparent 70%)' }} />
               <span style={{ fontSize:36 }}>🍳</span>
               <span style={{ color:'#c43070', fontSize:15, fontWeight:800, marginTop:6 }}>Cuisine</span>
-              <div style={{ display:'flex', gap:6, alignItems:'center', marginTop:2 }}>
-                <span style={{ color:'#7a4060', fontSize:10, fontWeight:700 }}>Personnage Niv. {personageNiveau}</span>
-              </div>
-              <div style={{ width:'80%', height:3, background:'rgba(196,48,112,0.1)', borderRadius:2, marginTop:4, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:`${pctPersonage}%`, background:'linear-gradient(90deg,#c43070,#8a25d4)', borderRadius:2 }} />
-              </div>
               <span style={{ color:'#c43070', fontSize:11, marginTop:6, fontWeight:700 }}>{RECETTES_CUISINE.length} recettes →</span>
             </button>
 
@@ -737,12 +701,6 @@ export function CraftPage() {
               <div style={{ ...s.categoryGlow, background:'radial-gradient(ellipse at top left,rgba(100,140,60,0.1),transparent 70%)' }} />
               <span style={{ fontSize:36 }}>🔨</span>
               <span style={{ color:'#4a7a20', fontSize:15, fontWeight:800, marginTop:6 }}>Artisan</span>
-              <div style={{ display:'flex', gap:6, alignItems:'center', marginTop:2 }}>
-                <span style={{ color:'#5a7030', fontSize:10, fontWeight:700 }}>Artisan Niv. {artisanNiveau}</span>
-              </div>
-              <div style={{ width:'80%', height:3, background:'rgba(100,140,60,0.1)', borderRadius:2, marginTop:4, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:`${pctArtisan}%`, background:'linear-gradient(90deg,#6abf44,#3a7a10)', borderRadius:2 }} />
-              </div>
               <span style={{ color:'#4a7a20', fontSize:11, marginTop:6, fontWeight:700 }}>{RECETTES_ARTISAN.length} recettes →</span>
             </button>
 
@@ -751,12 +709,6 @@ export function CraftPage() {
               <div style={{ ...s.categoryGlow, background:'radial-gradient(ellipse at top left,rgba(130,60,180,0.1),transparent 70%)' }} />
               <span style={{ fontSize:36 }}>⚗️</span>
               <span style={{ color:'#7030b0', fontSize:15, fontWeight:800, marginTop:6 }}>Alchimiste</span>
-              <div style={{ display:'flex', gap:6, alignItems:'center', marginTop:2 }}>
-                <span style={{ color:'#7030b0', fontSize:10, fontWeight:700 }}>Alchimiste Niv. {alchNiveau}</span>
-              </div>
-              <div style={{ width:'80%', height:3, background:'rgba(130,60,180,0.1)', borderRadius:2, marginTop:4, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:`${pctAlch}%`, background:'linear-gradient(90deg,#ab47bc,#7030b0)', borderRadius:2 }} />
-              </div>
               <span style={{ color:'#7030b0', fontSize:11, marginTop:6, fontWeight:700 }}>{RECETTES_ALCHIMISTE.length} recettes →</span>
             </button>
 
@@ -765,12 +717,6 @@ export function CraftPage() {
               <div style={{ ...s.categoryGlow, background:'radial-gradient(ellipse at top left,rgba(29,140,200,0.1),transparent 70%)' }} />
               <span style={{ fontSize:36 }}>🧵</span>
               <span style={{ color:'#1a7ab0', fontSize:15, fontWeight:800, marginTop:6 }}>Tisserand</span>
-              <div style={{ display:'flex', gap:6, alignItems:'center', marginTop:2 }}>
-                <span style={{ color:'#1a7ab0', fontSize:10, fontWeight:700 }}>Tisserand Niv. {tissNiveau}</span>
-              </div>
-              <div style={{ width:'80%', height:3, background:'rgba(29,140,200,0.1)', borderRadius:2, marginTop:4, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:`${pctTiss}%`, background:'linear-gradient(90deg,#29b6f6,#1a7ab0)', borderRadius:2 }} />
-              </div>
               <span style={{ color:'#1a7ab0', fontSize:11, marginTop:6, fontWeight:700 }}>{RECETTES_TISSERAND.length} recettes →</span>
             </button>
 
@@ -779,12 +725,6 @@ export function CraftPage() {
               <div style={{ ...s.categoryGlow, background:'radial-gradient(ellipse at top left,rgba(180,100,30,0.1),transparent 70%)' }} />
               <span style={{ fontSize:36 }}>⚒️</span>
               <span style={{ color:'#9a5a10', fontSize:15, fontWeight:800, marginTop:6 }}>Forgeron</span>
-              <div style={{ display:'flex', gap:6, alignItems:'center', marginTop:2 }}>
-                <span style={{ color:'#9a5a10', fontSize:10, fontWeight:700 }}>Forgeron Niv. {forgNiveau}</span>
-              </div>
-              <div style={{ width:'80%', height:3, background:'rgba(180,100,30,0.1)', borderRadius:2, marginTop:4, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:`${pctForg}%`, background:'linear-gradient(90deg,#ff9800,#9a5a10)', borderRadius:2 }} />
-              </div>
               <span style={{ color:'#9a5a10', fontSize:11, marginTop:6, fontWeight:700 }}>{RECETTES_FORGERON.length} recettes →</span>
             </button>
           </>
@@ -795,6 +735,7 @@ export function CraftPage() {
           <>
             {/* Barre XP personnage */}
             <XpBar label={`👤 Personnage — Niv. ${personageNiveau}`} xp={personageXp} xpReq={xpReqPersonage} xpTotal={personageXpTotal} pct={pctPersonage} color="#c43070" />
+
 
             {/* Bonus Lv100 : 1 Parchemin des Anciens par jour */}
             {personageNiveau >= 100 && (() => {
@@ -853,7 +794,6 @@ export function CraftPage() {
         {/* ── Vue Artisan ── */}
         {view === 'artisan' && (
           <>
-            <XpBar label={`🔨 Artisan — Niv. ${artisanNiveau}`} xp={artisanXp} xpReq={artisanXpReq} xpTotal={craftMetiers.artisan.xpTotal} pct={pctArtisan} color="#6abf44" />
 
             {/* Outils — une carte par outil, montre uniquement le prochain niveau à forger */}
             <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'10px 0 4px', letterSpacing:'0.05em' }}>
@@ -951,7 +891,6 @@ export function CraftPage() {
         {/* ── Vue Alchimiste ── */}
         {view === 'alchimiste' && (
           <>
-            <XpBar label={`⚗️ Alchimiste — Niv. ${alchNiveau}`} xp={alchXp} xpReq={alchXpReq} xpTotal={craftMetiers.alchimisteCraft.xpTotal} pct={pctAlch} color="#ab47bc" />
 
             {/* Buffs actifs */}
             {activeBuffs.filter(b => b.expiresAt > Date.now()).length > 0 && (
@@ -1011,30 +950,20 @@ export function CraftPage() {
         {/* ── Vue Tisserand ── */}
         {view === 'tisserand' && (
           <>
-            <XpBar label={`🧵 Tisserand — Niv. ${tissNiveau}`} xp={tissXp} xpReq={tissXpReq} xpTotal={craftMetiers.tisserand?.xpTotal ?? 0} pct={pctTiss} color="#29b6f6" />
             <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'10px 0 8px', letterSpacing:'0.05em' }}>
               {lang === 'en' ? 'WEAVING RECIPES' : 'RECETTES DE TISSAGE'}
             </p>
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              {RECETTES_TISSERAND.map(r => {
-                const locked = !!(r.niveauRequis && tissNiveau < r.niveauRequis);
-                return (
-                  <div key={r.id} style={{ opacity: locked ? 0.5 : 1, position:'relative' }}>
-                    {locked && (
-                      <div style={{ position:'absolute', top:8, right:10, background:'rgba(100,60,30,0.85)', borderRadius:8, padding:'2px 8px', fontSize:10, fontWeight:800, color:'#29b6f6', zIndex:1 }}>
-                        🔒 Tisserand Niv. {r.niveauRequis}
-                      </div>
-                    )}
-                    <RecetteCard
-                      recette={r}
-                      inventaire={inventaire}
-                      lang={lang}
-                      onCraft={() => craftTisserand(r)}
-                      btnLabel={locked ? '🔒 Verrouillé' : (lang === 'en' ? '🧵 Weave' : '🧵 Tisser')}
-                    />
-                  </div>
-                );
-              })}
+              {RECETTES_TISSERAND.map(r => (
+                <RecetteCard
+                  key={r.id}
+                  recette={r}
+                  inventaire={inventaire}
+                  lang={lang}
+                  onCraft={() => craftTisserand(r)}
+                  btnLabel={lang === 'en' ? '🧵 Weave' : '🧵 Tisser'}
+                />
+              ))}
             </div>
           </>
         )}
@@ -1042,7 +971,6 @@ export function CraftPage() {
         {/* ── Vue Forgeron ── */}
         {view === 'forgeron' && (
           <>
-            <XpBar label={`⚒️ Forgeron — Niv. ${forgNiveau}`} xp={forgXp} xpReq={forgXpReq} xpTotal={craftMetiers.forgeron?.xpTotal ?? 0} pct={pctForg} color="#ff9800" />
             <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'10px 0 8px', letterSpacing:'0.05em' }}>
               {lang === 'en' ? 'BLACKSMITHING RECIPES' : 'RECETTES DE FORGE'}
             </p>

@@ -31,7 +31,6 @@ export function MaisonPage() {
 
   const inventaire         = useGameStore(s => s.inventaire);
   const metiers            = useGameStore(s => s.metiers);
-  const craftMetiers       = useGameStore(s => s.craftMetiers);
   const personageNiveau    = useGameStore(s => s.personageNiveau);
   const personageXp        = useGameStore(s => s.personageXp);
   const personageXpTotal   = useGameStore(s => s.personageXpTotal);
@@ -179,44 +178,6 @@ export function MaisonPage() {
             })}
 
 
-            {/* ── Craft ── */}
-            <div style={{ marginTop:14, paddingTop:12, borderTop:'1px solid rgba(212,100,138,0.1)' }}>
-              <p style={{ color:'#7a4060', fontSize:'11px', fontWeight:700, marginBottom:8, letterSpacing:'0.06em', margin:'0 0 8px' }}>
-                {lang === 'en' ? 'CRAFT PROFESSIONS' : 'MÉTIERS DE CRAFT'}
-              </p>
-              <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-                {([
-                  { id: 'artisan' as const,         nom: 'Artisan',           icon: '🔨', color: '#8d6e63' },
-                  { id: 'alchimisteCraft' as const,  nom: lang === 'en' ? 'Alchemist (Craft)' : 'Alchimiste (Craft)', icon: '🧪', color: '#ab47bc' },
-                  { id: 'tisserand' as const,       nom: 'Tisserand',         icon: '🧵', color: '#29b6f6' },
-                  { id: 'forgeron' as const,        nom: 'Forgeron',          icon: '⚒️', color: '#ff9800' },
-                ]).map(({ id, nom, icon, color }) => {
-                  const p = craftMetiers[id] ?? { niveau: 1, xp: 0, xpTotal: 0 };
-                  const pct = Math.min(100, (p.xp / xpRequis(p.niveau)) * 100);
-                  return (
-                    <div key={id} style={{ ...s.metierCard, borderColor: `${color}44` }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'10px' }}>
-                        <span style={{ fontSize:'28px', filter:`drop-shadow(0 0 5px ${color}66)` }}>{icon}</span>
-                        <div style={{ flex:1 }}>
-                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                            <span style={{ color:'#1e0a16', fontSize:'14px', fontWeight:800 }}>{nom}</span>
-                            <span style={{ ...s.levelBadge, borderColor: color, color: color }}>{t('maison.level')} {p.niveau}</span>
-                          </div>
-                          <span style={{ color:'#7a4060', fontSize:'10px' }}>{p.xpTotal} {t('maison.xp_total')}</span>
-                        </div>
-                      </div>
-                      <div style={{ height:6, background:'rgba(212,100,138,0.08)', borderRadius:3, overflow:'hidden' }}>
-                        <div style={{ height:'100%', width:`${pct}%`, background: color, borderRadius:3, transition:'width 0.4s' }} />
-                      </div>
-                      <div style={{ display:'flex', justifyContent:'space-between', marginTop:5 }}>
-                        <span style={{ color:'#7a4060', fontSize:'9px' }}>{p.xp} / {xpRequis(p.niveau)} XP</span>
-                        <span style={{ color:'#7a4060', fontSize:'9px' }}>{Math.round(pct)}%</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         )}
 
