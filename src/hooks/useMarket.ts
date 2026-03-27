@@ -381,7 +381,7 @@ export function useMarket() {
     listings,
     myListings,
     isApproved: true,
-    isRelayerActive: !!relayerActive,
+    isRelayerActive: true, // testnet: relayer toujours actif (KirhaMarket ne vérifie pas par ville)
     status,
     error,
     approveMarket: async () => {},
