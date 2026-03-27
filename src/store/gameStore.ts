@@ -179,27 +179,37 @@ export function calculerTaxeMarche(niveau: number, isVip: boolean): number {
 // Conditions de déverrouillage des slots
 // ============================================================
 
-// Seuils calculés à partir de la formule xpRequis(n) = round(100 × n^1.7)
-// ressources = cumul × 0.5,  kirha = cumul × 0.125  (cumul = Σ xpRequis(2..S))
-export const SLOT_UNLOCK_CONDITIONS: Record<number, { ressources: number; kirha: number }> = {
-  2:  { ressources: 150,   kirha: 40    },
-  3:  { ressources: 500,   kirha: 125   },
-  4:  { ressources: 1000,  kirha: 250   },
-  5:  { ressources: 1800,  kirha: 450   },
-  6:  { ressources: 2800,  kirha: 700   },
-  7:  { ressources: 4200,  kirha: 1050  },
-  8:  { ressources: 6000,  kirha: 1500  },
-  9:  { ressources: 8000,  kirha: 2000  },
-  10: { ressources: 10500, kirha: 2600  },
-  11: { ressources: 13500, kirha: 3400  },
-  12: { ressources: 17000, kirha: 4250  },
-  13: { ressources: 21000, kirha: 5250  },
-  14: { ressources: 25500, kirha: 6400  },
-  15: { ressources: 30500, kirha: 7600  },
-  16: { ressources: 36000, kirha: 9000  },
-  17: { ressources: 42000, kirha: 10500 },
-  18: { ressources: 49000, kirha: 12250 },
-  19: { ressources: 56500, kirha: 14100 },
+// Conditions thématiques : KIRHA + ressources spécifiques à dépenser
+// KIRHA aligné sur Σ xpRequis(n)=100×n^1.7, ressources choisies par progression métier
+export interface SlotUnlockCondition {
+  kirha:  number;
+  items:  { id: number; qty: number }[];
+}
+
+export const SLOT_UNLOCK_CONDITIONS: Record<number, SlotUnlockCondition> = {
+  // — Tier 1 (lv 1–9) —
+  2:  { kirha: 20,    items: [{id:1,  qty:10}, {id:11, qty:10}] },
+  3:  { kirha: 60,    items: [{id:1,  qty:15}, {id:11, qty:10}, {id:51, qty:3}] },
+  4:  { kirha: 120,   items: [{id:2,  qty:5},  {id:21, qty:5},  {id:41, qty:5}] },
+  5:  { kirha: 250,   items: [{id:2,  qty:8},  {id:12, qty:5},  {id:32, qty:5}, {id:51, qty:5}] },
+  // — Tier 2 (lv 10–29) —
+  6:  { kirha: 450,   items: [{id:3,  qty:5},  {id:13, qty:5},  {id:23, qty:5},  {id:42, qty:5}] },
+  7:  { kirha: 700,   items: [{id:3,  qty:8},  {id:14, qty:5},  {id:24, qty:5},  {id:32, qty:8},  {id:51, qty:8}] },
+  8:  { kirha: 1050,  items: [{id:4,  qty:5},  {id:15, qty:5},  {id:33, qty:5},  {id:43, qty:5},  {id:53, qty:5}] },
+  9:  { kirha: 1500,  items: [{id:4,  qty:8},  {id:16, qty:5},  {id:34, qty:5},  {id:44, qty:5},  {id:54, qty:5}] },
+  // — Tier 3 (lv 30–49) —
+  10: { kirha: 2000,  items: [{id:5,  qty:5},  {id:25, qty:5},  {id:34, qty:8},  {id:45, qty:5},  {id:51, qty:10}] },
+  11: { kirha: 2600,  items: [{id:5,  qty:8},  {id:16, qty:8},  {id:25, qty:8},  {id:35, qty:3},  {id:55, qty:5}] },
+  12: { kirha: 3400,  items: [{id:6,  qty:5},  {id:17, qty:5},  {id:26, qty:5},  {id:35, qty:5},  {id:54, qty:8}] },
+  13: { kirha: 4250,  items: [{id:6,  qty:8},  {id:19, qty:5},  {id:26, qty:8},  {id:36, qty:3},  {id:56, qty:3}] },
+  // — Tier 4 (lv 50–69) —
+  14: { kirha: 5250,  items: [{id:7,  qty:5},  {id:18, qty:8},  {id:27, qty:5},  {id:36, qty:5},  {id:46, qty:5}] },
+  15: { kirha: 6400,  items: [{id:7,  qty:8},  {id:19, qty:8},  {id:27, qty:8},  {id:37, qty:3},  {id:57, qty:3}] },
+  16: { kirha: 7600,  items: [{id:8,  qty:5},  {id:20, qty:3},  {id:28, qty:5},  {id:37, qty:5},  {id:47, qty:5}] },
+  // — Tier 5 (lv 70–90+) —
+  17: { kirha: 9000,  items: [{id:8,  qty:8},  {id:29, qty:3},  {id:38, qty:3},  {id:48, qty:5},  {id:57, qty:5}] },
+  18: { kirha: 10500, items: [{id:9,  qty:5},  {id:29, qty:5},  {id:39, qty:3},  {id:49, qty:3},  {id:56, qty:5}] },
+  19: { kirha: 12250, items: [{id:9,  qty:8},  {id:30, qty:3},  {id:40, qty:2},  {id:50, qty:3},  {id:57, qty:8}] },
 };
 
 // ============================================================
@@ -688,23 +698,19 @@ export const useGameStore = create<GameState>()(
         set((state) => {
           const cond = SLOT_UNLOCK_CONDITIONS[slotIndex];
           if (!cond) return state;
-          const totalInv = Object.values(state.inventaire).reduce((a, b) => a + Math.floor(b ?? 0), 0);
-          if (totalInv < cond.ressources || state.soldeKirha < cond.kirha) return state;
-          // Déduire les coûts
-          const newSolde = state.soldeKirha - cond.kirha;
-          // Retirer les ressources proportionnellement (simplification : retirer des premières)
+          if (state.soldeKirha < cond.kirha) return state;
+          // Vérifier toutes les ressources requises
+          for (const { id, qty } of cond.items) {
+            if (Math.floor(state.inventaire[id as ResourceId] ?? 0) < qty) return state;
+          }
+          // Déduire les ressources spécifiques
           const inventaire = { ...state.inventaire };
-          let resRestantes = cond.ressources;
-          for (const [rid, qty] of Object.entries(inventaire)) {
-            if (resRestantes <= 0) break;
-            const q = Math.floor(qty ?? 0);
-            const retire = Math.min(q, resRestantes);
-            inventaire[Number(rid) as ResourceId] = (qty ?? 0) - retire;
-            resRestantes -= retire;
+          for (const { id, qty } of cond.items) {
+            inventaire[id as ResourceId] = (inventaire[id as ResourceId] ?? 0) - qty;
           }
           const metierSlots = [...state.slots[metier]];
           metierSlots[slotIndex] = { ...metierSlots[slotIndex], debloque: true };
-          return { slots: { ...state.slots, [metier]: metierSlots }, soldeKirha: newSolde, inventaire };
+          return { slots: { ...state.slots, [metier]: metierSlots }, soldeKirha: state.soldeKirha - cond.kirha, inventaire };
         }),
     }),
     {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGameStore, xpRequis, SLOT_UNLOCK_CONDITIONS } from '../store/gameStore';
+import { useGameStore, xpRequis, SLOT_UNLOCK_CONDITIONS, SlotUnlockCondition } from '../store/gameStore';
 import { useHarvest, formatTimer, SlotAvecTimer } from '../hooks/useHarvest';
 import { METIERS, MetierId, Ressource } from '../data/metiers';
 import { ResourceId } from '../data/resources';
@@ -98,21 +98,24 @@ function ResourcePickerPopup({
 
 function UnlockPopup({
   slotIndex,
-  totalInventaire,
+  inventaire,
   soldeKirha,
   onUnlock,
   onClose,
 }: {
   slotIndex: number;
-  totalInventaire: number;
+  inventaire: Partial<Record<ResourceId, number>>;
   soldeKirha: number;
   onUnlock: () => void;
   onClose: () => void;
 }) {
-  const { t } = useT();
-  const cond  = SLOT_UNLOCK_CONDITIONS[slotIndex];
+  const { t, lang } = useT();
+  const cond: SlotUnlockCondition | undefined = SLOT_UNLOCK_CONDITIONS[slotIndex];
   if (!cond) return null;
-  const canUnlock = totalInventaire >= cond.ressources && soldeKirha >= cond.kirha;
+
+  const kirhaOk    = soldeKirha >= cond.kirha;
+  const itemsOk    = cond.items.every(({ id, qty }) => Math.floor(inventaire[id as ResourceId] ?? 0) >= qty);
+  const canUnlock  = kirhaOk && itemsOk;
 
   return (
     <div style={up.overlay} onClick={onClose}>
@@ -122,20 +125,28 @@ function UnlockPopup({
           <button style={up.closeBtn} onClick={onClose}>✕</button>
         </div>
         <div style={up.body}>
-          <div style={{ ...up.condRow, color: totalInventaire >= cond.ressources ? '#6abf44' : '#c43070' }}>
-            <span>📦</span>
-            <span style={{ fontSize: '13px', flex: 1 }}>
-              {cond.ressources} ressources — {t('recolte.you_have')} : {totalInventaire}
-            </span>
-            <span>{totalInventaire >= cond.ressources ? '✓' : '✗'}</span>
-          </div>
-          <div style={{ ...up.condRow, color: soldeKirha >= cond.kirha ? '#6abf44' : '#c43070' }}>
+          {/* KIRHA */}
+          <div style={{ ...up.condRow, color: kirhaOk ? '#6abf44' : '#c43070' }}>
             <img src={uiAssetPath('ui/token.png')} alt="" style={{ width:16, height:16, objectFit:'contain' }} />
-            <span style={{ fontSize: '13px', flex: 1 }}>
+            <span style={{ fontSize:'13px', flex:1 }}>
               {cond.kirha} $KIRHA — {t('recolte.you_have')} : {soldeKirha.toFixed(2)}
             </span>
-            <span>{soldeKirha >= cond.kirha ? '✓' : '✗'}</span>
+            <span>{kirhaOk ? '✓' : '✗'}</span>
           </div>
+          {/* Ressources spécifiques */}
+          {cond.items.map(({ id, qty }) => {
+            const have = Math.floor(inventaire[id as ResourceId] ?? 0);
+            const ok   = have >= qty;
+            return (
+              <div key={id} style={{ ...up.condRow, color: ok ? '#6abf44' : '#c43070' }}>
+                <span style={{ fontSize:16 }}>{emojiByResourceId(id)}</span>
+                <span style={{ fontSize:'13px', flex:1 }}>
+                  {getNomRessource(id, lang)} ×{qty} — {t('recolte.you_have')} : {have}
+                </span>
+                <span>{ok ? '✓' : '✗'}</span>
+              </div>
+            );
+          })}
         </div>
         <div style={up.footer}>
           <button style={up.cancelBtn} onClick={onClose}>{t('recolte.cancel')}</button>
@@ -431,8 +442,12 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
               {t('recolte.unlock_btn')}
             </span>
             {SLOT_UNLOCK_CONDITIONS[slot.index] && (
-              <span style={{ color: '#7a4060', fontSize: '8px', textAlign: 'center', marginTop: 2, lineHeight: 1.3, display:'flex', alignItems:'center', justifyContent:'center', gap:2 }}>
-                📦{SLOT_UNLOCK_CONDITIONS[slot.index].ressources} · <img src={uiAssetPath('ui/token.png')} alt="" style={{ width:9, height:9, objectFit:'contain', display:'inline-block' }} />{SLOT_UNLOCK_CONDITIONS[slot.index].kirha}
+              <span style={{ color: '#7a4060', fontSize: '8px', textAlign: 'center', marginTop: 2, lineHeight: 1.3, display:'flex', alignItems:'center', justifyContent:'center', gap:2, flexWrap:'wrap' }}>
+                {SLOT_UNLOCK_CONDITIONS[slot.index].items.slice(0, 2).map(({ id }) => (
+                  <span key={id}>{emojiByResourceId(id)}</span>
+                ))}
+                {SLOT_UNLOCK_CONDITIONS[slot.index].items.length > 2 && <span>…</span>}
+                · <img src={uiAssetPath('ui/token.png')} alt="" style={{ width:9, height:9, objectFit:'contain', display:'inline-block' }} />{SLOT_UNLOCK_CONDITIONS[slot.index].kirha}
               </span>
             )}
           </>
@@ -567,7 +582,7 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
       {unlockSlot !== null && (
         <UnlockPopup
           slotIndex={unlockSlot}
-          totalInventaire={totalInventaire}
+          inventaire={inventaire}
           soldeKirha={soldeKirha}
           onUnlock={() => debloquerSlot(metierId, unlockSlot)}
           onClose={() => setUnlockSlot(null)}
