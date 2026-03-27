@@ -4,6 +4,7 @@ import { METIERS, Ressource, MetierId } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { calculerBonus } from '../data/vetements';
 import { FREE_RESOURCE_IDS, METIER_TOOL_TYPE, getResourceIndex } from '../data/outils';
+import { getSaisonActuelle } from '../data/saisons';
 
 export interface SlotAvecTimer {
   index:              number;
@@ -43,6 +44,9 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
   const decrementOutilDurabilite = useGameStore(s => s.decrementOutilDurabilite);
   const vipExpiry               = useGameStore(s => s.vipExpiry);
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
+  const activeBuffs             = useGameStore(s => s.activeBuffs);
+  const prestige                = useGameStore(s => s.prestige);
+  const clearExpiredBuffs       = useGameStore(s => s.clearExpiredBuffs);
 
   const toolType = METIER_TOOL_TYPE[metierId];
   const outil = outils[toolType];
@@ -60,6 +64,8 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
   const outilDisponibleRef     = useRef(outilDisponible);
   const outilRef               = useRef(outil);
   const isVipRef               = useRef(isVip);
+  const activeBuffsRef         = useRef(activeBuffs);
+  const prestigeRef            = useRef(prestige);
   slotsRef.current             = slots_store;
   bonusRef.current             = bonus;
   metierProgressRef.current    = metier_progress;
@@ -67,6 +73,8 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
   outilDisponibleRef.current   = outilDisponible;
   outilRef.current             = outil;
   isVipRef.current             = isVip;
+  activeBuffsRef.current       = activeBuffs;
+  prestigeRef.current          = prestige;
 
   const [, setTick] = useState(0);
   const [lastHarvested, setLastHarvested] = useState<{ qty: number; resourceId: ResourceId } | null>(null);
@@ -117,10 +125,39 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     const rid      = slot.resource_id;
     const ressource = metier.ressources.find(r => r.id === rid);
     if (!ressource) return;
+
+    // Nettoyer les buffs expirés
+    clearExpiredBuffs();
+    const now = Date.now();
+    const validBuffs = activeBuffsRef.current.filter(b => b.expiresAt > now);
+
     const compBonus   = (competencesRef.current[metierId] ?? 0) * 5; // +5% par point
     const vipBonus    = isVipRef.current ? 0.25 : 0;                 // VIP +25% XP métier
-    const ratio       = Math.round(quantiteRecolte(metierProgressRef.current.niveau) * (1 + compBonus / 100) * 1e10) / 1e10;
-    const xpFinal     = Math.round(ressource.xp_recolte * (1 + bonusRef.current.xp_bonus / 100) * (1 + compBonus / 100) * (1 + vipBonus));
+    const prestigeBonus = (prestigeRef.current[metierId] ?? 0) * 5;  // +5% qty/prestige
+    const buffQty     = validBuffs.filter(b => b.type === 'qty_harvest').reduce((s, b) => s + b.bonusPercent, 0);
+    const buffXp      = validBuffs.filter(b => b.type === 'xp_harvest').reduce((s, b) => s + b.bonusPercent, 0);
+
+    // Saison active
+    const saison = getSaisonActuelle();
+    const saisonQtyBonus = saison.id === metierId ? saison.bonusQty : 0;
+    const saisonXpBonus  = saison.id === metierId ? saison.bonusXp  : 0;
+
+    const ratio  = Math.round(
+      quantiteRecolte(metierProgressRef.current.niveau)
+      * (1 + compBonus / 100)
+      * (1 + prestigeBonus / 100)
+      * (1 + buffQty / 100)
+      * (1 + saisonQtyBonus / 100)
+      * 1e10
+    ) / 1e10;
+    const xpFinal = Math.round(
+      ressource.xp_recolte
+      * (1 + bonusRef.current.xp_bonus / 100)
+      * (1 + compBonus / 100)
+      * (1 + vipBonus)
+      * (1 + buffXp / 100)
+      * (1 + saisonXpBonus / 100)
+    );
     // Collecter
     terminerRecolte(metierId, slotIndex, ratio);
     ajouterXp(metierId, xpFinal);
@@ -137,7 +174,7 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     }
     // Relancer avec la même ressource (seulement si outil encore disponible après décrémentation)
     demarrerRecolte(metierId, slotIndex, rid, ressource.temps_recolte_secondes * 1000);
-  }, [metier.ressources, metierId, toolType, terminerRecolte, ajouterXp, ajouterPending, demarrerRecolte, decrementOutilDurabilite]);
+  }, [metier.ressources, metierId, toolType, terminerRecolte, ajouterXp, ajouterPending, demarrerRecolte, decrementOutilDurabilite, clearExpiredBuffs]);
 
   // outilManquant : vrai si des ressources non-libres sont disponibles mais outil manque, cassé, ou niveau insuffisant
   const hasNonFreeResources = metier.ressources.some(r => !FREE_RESOURCE_IDS.includes(r.id) && r.niveau_requis <= metier_progress.niveau);

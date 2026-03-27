@@ -5,6 +5,16 @@ import { ResourceId } from '../data/resources';
 import { Equipement, TypeVetement } from '../data/vetements';
 import { ToolType } from '../data/outils';
 
+// ── Buffs actifs (potions alchimiste) ─────────────────────
+export type BuffType = 'xp_harvest' | 'qty_harvest';
+
+export interface ActiveBuff {
+  type:         BuffType;
+  bonusPercent: number;   // ex: 25 = +25%
+  expiresAt:    number;   // timestamp ms
+  sourceId:     ResourceId; // ID de la potion utilisée
+}
+
 // ============================================================
 // Types
 // ============================================================
@@ -65,14 +75,20 @@ export interface GameState {
   // niveau = 2-10 : détermine l'indice max de ressource récoltable
   outils: Partial<Record<ToolType, { niveau: number; durabilite: number }>>;
 
-  // Métiers de craft (Artisan + Alchimiste craft)
-  craftMetiers: Record<'artisan' | 'alchimisteCraft', { niveau: number; xp: number; xpTotal: number }>;
+  // Métiers de craft (Artisan + Alchimiste craft + Tisserand + Forgeron)
+  craftMetiers: Record<'artisan' | 'alchimisteCraft' | 'tisserand' | 'forgeron', { niveau: number; xp: number; xpTotal: number }>;
 
   // Bonus Lv100 : 1 Parchemin des Anciens offert par jour
   parcheminsLv100LastDate: string;
 
   // Prix du Parchemin des Anciens en $KIRHA (ajustable par admin)
   parcheminPrice: number;
+
+  // Buffs actifs (potions alchimiste)
+  activeBuffs: ActiveBuff[];
+
+  // Prestige par métier de récolte (reset niveau → 1, +5% qty permanent par prestige)
+  prestige: Partial<Record<MetierId, number>>;
 
   setAddress:               (address: string | null) => void;
   ajouterXp:                (metier: MetierId, xp: number) => void;
@@ -84,7 +100,7 @@ export interface GameState {
   setAnimauxDerniereRecolte:(animalId: string, slotIndex: number, timestamp: number) => void;
   setOutil:                 (type: ToolType, niveau: number, durabiliteMax: number) => void;
   decrementOutilDurabilite: (type: ToolType) => void;
-  ajouterXpCraft:           (metier: 'artisan' | 'alchimisteCraft', xp: number) => void;
+  ajouterXpCraft:           (metier: 'artisan' | 'alchimisteCraft' | 'tisserand' | 'forgeron', xp: number) => void;
   demarrerRecolte:          (metier: MetierId, slotIndex: number, resourceId: ResourceId, dureeMs: number) => void;
   terminerRecolte:          (metier: MetierId, slotIndex: number, quantite: number) => void;
   ajouterPendingMint:       (resourceId: ResourceId, quantite: number) => void;
@@ -117,6 +133,13 @@ export interface GameState {
   addInventaireFromChain:   (resourceId: ResourceId, qty: number) => void;
   resetGameData:            () => void;
   forceChainSync:           (kirha: number, pepites: number, vipExpiry: number, metiers: { metierId: MetierId; niveau: number; xp: number; xpTotal: number }[], inventaire: Partial<Record<ResourceId, number>>) => void;
+  // Buffs actifs
+  addBuff:                  (type: BuffType, bonusPercent: number, durationMs: number, sourceId: ResourceId) => void;
+  clearExpiredBuffs:        () => void;
+  // Réparation d'outil (Enclume Portable)
+  repairerOutil:            (type: ToolType, charges: number) => void;
+  // Prestige (récolte)
+  prestigerMetier:          (metierId: MetierId) => void;
 }
 
 // ============================================================
@@ -232,9 +255,13 @@ export const useGameStore = create<GameState>()(
       craftMetiers: {
         artisan:         { niveau: 1, xp: 0, xpTotal: 0 },
         alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
+        tisserand:       { niveau: 1, xp: 0, xpTotal: 0 },
+        forgeron:        { niveau: 1, xp: 0, xpTotal: 0 },
       },
       parcheminsLv100LastDate: '',
       parcheminPrice: 10,
+      activeBuffs: [],
+      prestige: {},
 
       setAddress: (address) => set({ address }),
 
@@ -454,8 +481,12 @@ export const useGameStore = create<GameState>()(
           craftMetiers: {
             artisan:         { niveau: 1, xp: 0, xpTotal: 0 },
             alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
+            tisserand:       { niveau: 1, xp: 0, xpTotal: 0 },
+            forgeron:        { niveau: 1, xp: 0, xpTotal: 0 },
           },
           parcheminsLv100LastDate: '',
+          activeBuffs: [],
+          prestige: {},
           // Conserver
           address:  state.address,
           villeId:  state.villeId,
@@ -576,6 +607,38 @@ export const useGameStore = create<GameState>()(
           return { slots: { ...state.slots, [metier]: metierSlots } };
         }),
 
+      addBuff: (type, bonusPercent, durationMs, sourceId) =>
+        set((state) => {
+          const expiresAt = Date.now() + durationMs;
+          // Remplace un buff du même type s'il existe déjà (durée maximale)
+          const filtered = state.activeBuffs.filter(b => b.type !== type);
+          return { activeBuffs: [...filtered, { type, bonusPercent, expiresAt, sourceId }] };
+        }),
+
+      clearExpiredBuffs: () =>
+        set((state) => ({
+          activeBuffs: state.activeBuffs.filter(b => b.expiresAt > Date.now()),
+        })),
+
+      repairerOutil: (type, charges) =>
+        set((state) => {
+          const outil = state.outils[type];
+          if (!outil) return state;
+          const DURABILITE_MAX = 60;
+          return { outils: { ...state.outils, [type]: { ...outil, durabilite: Math.min(DURABILITE_MAX, outil.durabilite + charges) } } };
+        }),
+
+      prestigerMetier: (metierId) =>
+        set((state) => {
+          const metier = state.metiers[metierId];
+          if (metier.niveau < 100) return state;
+          const newPrestige = (state.prestige[metierId] ?? 0) + 1;
+          return {
+            prestige: { ...state.prestige, [metierId]: newPrestige },
+            metiers: { ...state.metiers, [metierId]: { ...metier, niveau: 1, xp: 0 } },
+          };
+        }),
+
       debloquerSlot: (metier, slotIndex) =>
         set((state) => {
           const cond = SLOT_UNLOCK_CONDITIONS[slotIndex];
@@ -650,15 +713,22 @@ export const useGameStore = create<GameState>()(
             }
             return migrated;
           })(),
-          craftMetiers:        (state as Partial<GameState>).craftMetiers ?? {
-            artisan:         { niveau: 1, xp: 0, xpTotal: 0 },
-            alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 },
-          },
+          craftMetiers: (() => {
+            const existing = (state as Partial<GameState>).craftMetiers ?? {};
+            return {
+              artisan:         (existing as Record<string, unknown>).artisan         ?? { niveau: 1, xp: 0, xpTotal: 0 },
+              alchimisteCraft: (existing as Record<string, unknown>).alchimisteCraft ?? { niveau: 1, xp: 0, xpTotal: 0 },
+              tisserand:       (existing as Record<string, unknown>).tisserand       ?? { niveau: 1, xp: 0, xpTotal: 0 },
+              forgeron:        (existing as Record<string, unknown>).forgeron        ?? { niveau: 1, xp: 0, xpTotal: 0 },
+            };
+          })(),
           parcheminsLv100LastDate: (state as Partial<GameState>).parcheminsLv100LastDate ?? '',
           parcheminPrice: (state as Partial<GameState>).parcheminPrice ?? 10,
+          activeBuffs: (state as Partial<GameState>).activeBuffs ?? [],
+          prestige:    (state as Partial<GameState>).prestige    ?? {},
         };
       },
-      version: 16,
+      version: 17,
     }
   )
 );

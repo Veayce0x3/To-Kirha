@@ -87,6 +87,11 @@ export function getUpgradeRecipe(toolType: ToolType, niveau: number): UpgradeIng
     if (ownId !== null) ingredients.push({ resourceId: ownId, quantite: qty });
   }
 
+  // Parchemin de Forge (ID 78) requis pour les niveaux 8-10
+  if (niveau >= 8) {
+    ingredients.push({ resourceId: 78, quantite: niveau - 7 }); // Niv 8→1, 9→2, 10→3
+  }
+
   return ingredients;
 }
 

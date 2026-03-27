@@ -100,6 +100,22 @@ export enum ResourceId {
   RIZ_VIOLET_ROYAL = 71,
   BENTO_IMPERIAL = 72,
   FESTIN_LEGENDAIRE = 73,
+
+  // --- Tisserand matières premières (outputs inventaire) ---
+  TISSU_BAMBOU = 74,
+  SOIE_SAKURA = 75,
+  LIN_ALCHIMISTE = 76,
+
+  // --- Forgeron outputs (inventaire) ---
+  ENCLUME_PORTABLE = 77,
+  PARCHEMIN_FORGE = 78,
+
+  // --- Tisserand vêtements (IDs 125-129, utilisés aussi dans vetements.ts) ---
+  KIMONO_BAMBOU = 125,
+  HAORI_SAKURA = 126,
+  HAKAMA_LIN = 127,
+  KASA_TISSE = 128,
+  OBI_FORGE = 129,
 }
 
 /** Toutes les ressources par métier pour itération */
@@ -112,6 +128,9 @@ export const FERME_IDS         = [51, 52, 53, 54, 55, 56, 57] as const;
 export const CUISINE_IDS       = [58, 59, 60, 61, 62, 68, 69, 70, 71, 72, 73] as const;
 export const ARTISAN_IDS       = [63, 64] as const;
 export const ALCHIMISTE_CRAFT_IDS = [65, 66, 67] as const;
+export const TISSERAND_MATIERES_IDS = [74, 75, 76] as const;
+export const FORGERON_OUTPUT_IDS    = [77, 78] as const;
+export const TISSERAND_EQUIP_IDS    = [125, 126, 127, 128, 129] as const;
 
 /** IDs on-chain uniquement (1-50) */
 export const ALL_RESOURCE_IDS = [

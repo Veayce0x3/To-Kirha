@@ -188,8 +188,10 @@ export function MaisonPage() {
                 {([
                   { id: 'artisan' as const,         nom: 'Artisan',           icon: '🔨', color: '#8d6e63' },
                   { id: 'alchimisteCraft' as const,  nom: lang === 'en' ? 'Alchemist (Craft)' : 'Alchimiste (Craft)', icon: '🧪', color: '#ab47bc' },
+                  { id: 'tisserand' as const,       nom: 'Tisserand',         icon: '🧵', color: '#29b6f6' },
+                  { id: 'forgeron' as const,        nom: 'Forgeron',          icon: '⚒️', color: '#ff9800' },
                 ]).map(({ id, nom, icon, color }) => {
-                  const p = craftMetiers[id];
+                  const p = craftMetiers[id] ?? { niveau: 1, xp: 0, xpTotal: 0 };
                   const pct = Math.min(100, (p.xp / xpRequis(p.niveau)) * 100);
                   return (
                     <div key={id} style={{ ...s.metierCard, borderColor: `${color}44` }}>

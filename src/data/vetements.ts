@@ -65,6 +65,13 @@ export const VETEMENTS: Vetement[] = [
   { id: 122, nom: 'Lanterne Sakura',        type: 'accessoire', rarete: 'rare',      bonus: { type: 'chance_rare',   valeur: 8 }, prix_kirha:  220,  image: img('accessoire', 'lanterne_sakura.png') },
   { id: 123, nom: 'Talisman Doré',          type: 'accessoire', rarete: 'epique',    bonus: { type: 'slots_bonus',   valeur: 2 }, prix_kirha:  900,  image: img('accessoire', 'talisman_dore.png') },
   { id: 124, nom: 'Orbe Légendaire',        type: 'accessoire', rarete: 'legendaire',bonus: { type: 'slots_bonus',   valeur: 3 }, prix_kirha: 4000,  image: img('accessoire', 'orbe_legendaire.png') },
+
+  // ── Tisserand (125–129) — craftés, prix_kirha = 0 ─────────
+  { id: 125, nom: 'Kimono Bambou',  type: 'haut',       rarete: 'rare',   bonus: { type: 'xp_bonus',        valeur: 10 }, prix_kirha: 0, image: img('haut',       'kimono_bambou.png') },
+  { id: 126, nom: 'Haori Sakura',   type: 'haut',       rarete: 'epique', bonus: { type: 'vitesse_recolte', valeur: 15 }, prix_kirha: 0, image: img('haut',       'haori_sakura.png') },
+  { id: 127, nom: 'Hakama Lin',     type: 'bas',        rarete: 'rare',   bonus: { type: 'vitesse_recolte', valeur:  8 }, prix_kirha: 0, image: img('bas',        'hakama_lin.png') },
+  { id: 128, nom: 'Kasa Tissé',     type: 'chapeau',    rarete: 'rare',   bonus: { type: 'xp_bonus',        valeur: 12 }, prix_kirha: 0, image: img('chapeau',    'kasa_tisse.png') },
+  { id: 129, nom: 'Obi Forgé',      type: 'accessoire', rarete: 'epique', bonus: { type: 'slots_bonus',      valeur:  2 }, prix_kirha: 0, image: img('accessoire', 'obi_forge.png') },
 ];
 
 // ── Helpers ────────────────────────────────────────────────

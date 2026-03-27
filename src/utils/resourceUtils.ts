@@ -85,6 +85,19 @@ const RESOURCE_NAMES: Record<number, { fr: string; en: string }> = {
   71: { fr: 'Riz Violet Royal',       en: 'Royal Purple Rice'      },
   72: { fr: 'Bento Impérial',         en: 'Imperial Bento'         },
   73: { fr: 'Festin Légendaire',      en: 'Legendary Feast'        },
+  // Tisserand matières premières
+  74: { fr: 'Tissu Bambou',           en: 'Bamboo Cloth'           },
+  75: { fr: 'Soie Sakura',            en: 'Sakura Silk'            },
+  76: { fr: 'Lin Alchimiste',         en: 'Alchemist Linen'        },
+  // Forgeron outputs
+  77: { fr: 'Enclume Portable',       en: 'Portable Anvil'         },
+  78: { fr: 'Parchemin de Forge',     en: 'Forge Scroll'           },
+  // Tisserand vêtements
+  125: { fr: 'Kimono Bambou',         en: 'Bamboo Kimono'          },
+  126: { fr: 'Haori Sakura',          en: 'Sakura Haori'           },
+  127: { fr: 'Hakama Lin',            en: 'Linen Hakama'           },
+  128: { fr: 'Kasa Tissé',            en: 'Woven Kasa'             },
+  129: { fr: 'Obi Forgé',             en: 'Forged Obi'             },
 };
 
 export function getNomRessource(id: number, lang: 'fr' | 'en' = 'fr'): string {
@@ -114,6 +127,12 @@ const RESOURCE_EMOJI: Record<number, string> = {
   65: '🧪', 66: '💆', 67: '⚗️',
   // Cuisine haut niveau — chaîne
   68: '🍚', 69: '🍲', 70: '🥘', 71: '🍱', 72: '🎎', 73: '👑',
+  // Tisserand matières
+  74: '🧵', 75: '🪡', 76: '🌿',
+  // Forgeron
+  77: '⚒️', 78: '📜',
+  // Tisserand vêtements
+  125: '👘', 126: '🥋', 127: '👖', 128: '🎩', 129: '🎀',
 };
 
 export function emojiByResourceId(id: ResourceId | number): string {

@@ -8,6 +8,7 @@ import { useT } from '../utils/i18n';
 import { emojiByResourceId, getNomRessource, metierIconPath, uiAssetPath } from '../utils/resourceUtils';
 import { ResourceIcon } from '../components/ResourceIcon';
 import { METIER_TOOL_TYPE, OUTIL_INFO, DURABILITE_MAX, getUpgradeRecipe, getOutilXp, FREE_RESOURCE_IDS, getResourceIndex } from '../data/outils';
+import { getSaisonActuelle, joursRestantsSaison } from '../data/saisons';
 
 // ── Configs par métier ──────────────────────────────────────
 
@@ -151,6 +152,50 @@ function UnlockPopup({
   );
 }
 
+// ── Bannière de saison ──────────────────────────────────────
+
+function SaisonBanner({ activeMetierId }: { activeMetierId?: MetierId }) {
+  const saison = getSaisonActuelle();
+  const jours  = joursRestantsSaison();
+  const isActive = !activeMetierId || saison.id === activeMetierId;
+  return (
+    <div style={{ margin:'0 0 8px', padding:'8px 12px', background: isActive ? `${saison.color}18` : 'rgba(212,100,138,0.04)', border:`1px solid ${isActive ? saison.color + '44' : 'rgba(212,100,138,0.1)'}`, borderRadius:10, display:'flex', alignItems:'center', gap:8 }}>
+      <span style={{ fontSize:18 }}>{saison.emoji}</span>
+      <div style={{ flex:1 }}>
+        <span style={{ color: isActive ? saison.color : '#9a6080', fontSize:11, fontWeight:800 }}>{saison.nom}</span>
+        {isActive && (
+          <span style={{ display:'block', color: saison.color, fontSize:10, fontWeight:600 }}>
+            +{saison.bonusXp}% XP · +{saison.bonusQty}% Quantité
+          </span>
+        )}
+      </div>
+      <span style={{ color:'#9a6080', fontSize:9, fontWeight:600 }}>{jours}j restants</span>
+    </div>
+  );
+}
+
+// ── Bannière des buffs actifs ────────────────────────────────
+
+function BuffBanner() {
+  const activeBuffs = useGameStore(s => s.activeBuffs) ?? [];
+  const valid = activeBuffs.filter(b => b.expiresAt > Date.now());
+  if (valid.length === 0) return null;
+  return (
+    <div style={{ margin:'0 0 8px', padding:'8px 12px', background:'rgba(171,71,188,0.08)', border:'1px solid rgba(171,71,188,0.3)', borderRadius:10 }}>
+      {valid.map(b => {
+        const remaining = Math.ceil((b.expiresAt - Date.now()) / 60000);
+        return (
+          <div key={b.type} style={{ display:'flex', gap:6, alignItems:'center', fontSize:11, color:'#7030b0', fontWeight:700 }}>
+            <span>{b.type === 'qty_harvest' ? '📦' : '⭐'}</span>
+            <span>+{b.bonusPercent}% {b.type === 'qty_harvest' ? 'Quantité' : 'XP'} récolte</span>
+            <span style={{ marginLeft:'auto', fontFamily:'monospace', fontSize:10 }}>{remaining}min</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Sélecteur de métier ─────────────────────────────────────
 
 function MetierSelector({ onSelect }: { onSelect: (id: MetierId) => void }) {
@@ -175,6 +220,8 @@ function MetierSelector({ onSelect }: { onSelect: (id: MetierId) => void }) {
         <span style={s.headerTitle}>{t('recolte.title')}</span>
         <div style={{ width: 80 }} />
       </div>
+
+      <SaisonBanner />
 
       <div style={s.metierList}>
         {(Object.keys(METIER_CONFIG) as MetierId[]).map(id => {
@@ -267,6 +314,9 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
   const retirerRessource = useGameStore(s => s.retirerRessource);
   const setOutil         = useGameStore(s => s.setOutil);
   const ajouterXpCraft   = useGameStore(s => s.ajouterXpCraft);
+  const prestige         = useGameStore(s => s.prestige);
+  const prestigerMetier  = useGameStore(s => s.prestigerMetier);
+  const prestigeniveau   = prestige[metierId] ?? 0;
 
   const toolType   = METIER_TOOL_TYPE[metierId];
   const outil      = outils[toolType];
@@ -578,6 +628,33 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
       )}
 
       <div style={{ padding: '10px 14px', paddingBottom: 90 }}>
+
+        {/* Saison active pour ce métier */}
+        <SaisonBanner activeMetierId={metierId} />
+
+        {/* Buffs actifs */}
+        <BuffBanner />
+
+        {/* Prestige — disponible au niveau 100 */}
+        {niveau >= 100 && (
+          <div style={{ margin:'0 0 8px', padding:'10px 14px', background:'rgba(212,170,50,0.08)', border:'1px solid rgba(212,170,50,0.35)', borderRadius:10, display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{ fontSize:20 }}>⭐</span>
+            <div style={{ flex:1 }}>
+              <span style={{ color:'#b07010', fontSize:12, fontWeight:800 }}>
+                Prestige {prestigeniveau > 0 ? `×${prestigeniveau}` : ''} disponible !
+              </span>
+              <span style={{ display:'block', color:'#b07010', fontSize:10 }}>
+                Remet le métier à Niv.1 · +{(prestigeniveau + 1) * 5}% quantité permanente
+              </span>
+            </div>
+            <button
+              style={{ padding:'7px 14px', background:'linear-gradient(135deg,#f9a825,#b07010)', border:'none', borderRadius:10, color:'#fff', fontSize:11, fontWeight:800, cursor:'pointer' }}
+              onClick={() => prestigerMetier(metierId)}
+            >
+              Prestige !
+            </button>
+          </div>
+        )}
 
         {/* Barre ressource en main / bouton Choisir */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: 12, alignItems: 'center' }}>

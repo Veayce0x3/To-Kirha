@@ -4,7 +4,7 @@ import { useGameStore, xpRequis, xpRequisPersonage } from '../store/gameStore';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
 import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
-import { ToolType, OUTIL_INFO, getUpgradeRecipe, DURABILITE_MAX, getOutilXp } from '../data/outils';
+import { ToolType, OUTIL_INFO, getUpgradeRecipe, DURABILITE_MAX, getOutilXp, METIER_TOOL_TYPE } from '../data/outils';
 
 // ============================================================
 // Types de recettes
@@ -363,16 +363,203 @@ const RECETTES_ALCHIMISTE: RecetteInventaire[] = [
 ];
 
 // ============================================================
+// Recettes Tisserand
+// ============================================================
+
+const RECETTES_TISSERAND: RecetteInventaire[] = [
+  {
+    kind: 'inventaire',
+    id: 'tissu_bambou',
+    emoji: '🧵',
+    nom: 'Tissu Bambou',
+    nomEn: 'Bamboo Cloth',
+    ingredients: [
+      { resourceId: ResourceId.BAMBOU,   quantite: 6 },
+      { resourceId: ResourceId.PIERRE,   quantite: 2 },
+    ],
+    resultatId: ResourceId.TISSU_BAMBOU,
+    resultatQte: 1,
+    xp: 30,
+    description: 'Tissu léger tressé de fibres de bambou et de pierre polie.',
+    descriptionEn: 'Light cloth woven from bamboo fibers and polished stone.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'soie_sakura',
+    emoji: '🪡',
+    nom: 'Soie Sakura',
+    nomEn: 'Sakura Silk',
+    ingredients: [
+      { resourceId: ResourceId.SAKURA,   quantite: 4 },
+      { resourceId: ResourceId.GINSENG,  quantite: 2 },
+    ],
+    resultatId: ResourceId.SOIE_SAKURA,
+    resultatQte: 1,
+    xp: 60,
+    description: 'Soie délicate extraite des pétales de sakura et du ginseng.',
+    descriptionEn: 'Delicate silk extracted from sakura petals and ginseng.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'lin_alchimiste',
+    emoji: '🌿',
+    nom: 'Lin Alchimiste',
+    nomEn: 'Alchemist Linen',
+    ingredients: [
+      { resourceId: ResourceId.LAVANDE,  quantite: 4 },
+      { resourceId: ResourceId.ORTIE,    quantite: 3 },
+      { resourceId: ResourceId.FER,      quantite: 1 },
+    ],
+    resultatId: ResourceId.LIN_ALCHIMISTE,
+    resultatQte: 1,
+    xp: 50,
+    description: 'Lin imprégné d\'essences alchimiques résistant aux éléments.',
+    descriptionEn: 'Linen impregnated with alchemical essences, resistant to elements.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'kimono_bambou',
+    emoji: '👘',
+    nom: 'Kimono Bambou',
+    nomEn: 'Bamboo Kimono',
+    niveauRequis: 5,
+    ingredients: [
+      { resourceId: ResourceId.TISSU_BAMBOU,  quantite: 3 },
+      { resourceId: ResourceId.CHARBON,       quantite: 2 },
+    ],
+    resultatId: ResourceId.KIMONO_BAMBOU,
+    resultatQte: 1,
+    xp: 120,
+    description: 'Kimono traditionnel en tissu de bambou. Bonus : +10% XP récolte.',
+    descriptionEn: 'Traditional bamboo cloth kimono. Bonus: +10% harvest XP.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'haori_sakura',
+    emoji: '🥋',
+    nom: 'Haori Sakura',
+    nomEn: 'Sakura Haori',
+    niveauRequis: 15,
+    ingredients: [
+      { resourceId: ResourceId.SOIE_SAKURA,   quantite: 3 },
+      { resourceId: ResourceId.JADE,          quantite: 1 },
+    ],
+    resultatId: ResourceId.HAORI_SAKURA,
+    resultatQte: 1,
+    xp: 200,
+    description: 'Veste courte en soie sakura et jade. Bonus : -15% temps de récolte.',
+    descriptionEn: 'Short jacket in sakura silk and jade. Bonus: -15% harvest time.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'hakama_lin',
+    emoji: '👖',
+    nom: 'Hakama Lin',
+    nomEn: 'Linen Hakama',
+    niveauRequis: 10,
+    ingredients: [
+      { resourceId: ResourceId.LIN_ALCHIMISTE, quantite: 3 },
+      { resourceId: ResourceId.CUIVRE,         quantite: 2 },
+    ],
+    resultatId: ResourceId.HAKAMA_LIN,
+    resultatQte: 1,
+    xp: 150,
+    description: 'Pantalon large en lin alchimiste. Bonus : -8% temps de récolte.',
+    descriptionEn: 'Wide linen alchemist pants. Bonus: -8% harvest time.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'kasa_tisse',
+    emoji: '🎩',
+    nom: 'Kasa Tissé',
+    nomEn: 'Woven Kasa',
+    niveauRequis: 20,
+    ingredients: [
+      { resourceId: ResourceId.TISSU_BAMBOU,  quantite: 2 },
+      { resourceId: ResourceId.SOIE_SAKURA,   quantite: 1 },
+      { resourceId: ResourceId.TOPAZE,        quantite: 1 },
+    ],
+    resultatId: ResourceId.KASA_TISSE,
+    resultatQte: 1,
+    xp: 180,
+    description: 'Chapeau tissé en bambou et soie. Bonus : +12% XP récolte.',
+    descriptionEn: 'Hat woven in bamboo and silk. Bonus: +12% harvest XP.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'obi_forge',
+    emoji: '🎀',
+    nom: 'Obi Forgé',
+    nomEn: 'Forged Obi',
+    niveauRequis: 30,
+    ingredients: [
+      { resourceId: ResourceId.SOIE_SAKURA,    quantite: 2 },
+      { resourceId: ResourceId.LIN_ALCHIMISTE, quantite: 2 },
+      { resourceId: ResourceId.DIAMANT,        quantite: 1 },
+    ],
+    resultatId: ResourceId.OBI_FORGE,
+    resultatQte: 1,
+    xp: 350,
+    description: 'Ceinture de luxe forgée à la soie et au lin. Bonus : +2 slots.',
+    descriptionEn: 'Luxury belt forged with silk and linen. Bonus: +2 slots.',
+  },
+];
+
+// ============================================================
+// Recettes Forgeron
+// ============================================================
+
+const RECETTES_FORGERON: RecetteInventaire[] = [
+  {
+    kind: 'inventaire',
+    id: 'enclume_portable',
+    emoji: '⚒️',
+    nom: 'Enclume Portable',
+    nomEn: 'Portable Anvil',
+    ingredients: [
+      { resourceId: ResourceId.FER,     quantite: 5 },
+      { resourceId: ResourceId.JADE,    quantite: 2 },
+      { resourceId: ResourceId.PIERRE,  quantite: 4 },
+    ],
+    resultatId: ResourceId.ENCLUME_PORTABLE,
+    resultatQte: 1,
+    xp: 80,
+    description: 'Répare un outil de votre choix (+30 charges) en le "Utilisant".',
+    descriptionEn: 'Repairs a tool of your choice (+30 charges) by "Using" it.',
+  },
+  {
+    kind: 'inventaire',
+    id: 'parchemin_forge',
+    emoji: '📜',
+    nom: 'Parchemin de Forge',
+    nomEn: 'Forge Scroll',
+    ingredients: [
+      { resourceId: ResourceId.SAKURA,          quantite: 2 },
+      { resourceId: ResourceId.CRISTAL_KOI,     quantite: 1 },
+      { resourceId: ResourceId.HERBE_KOI,       quantite: 2 },
+      { resourceId: ResourceId.FLEUR_LOTUS_SAKURA, quantite: 1 },
+    ],
+    resultatId: ResourceId.PARCHEMIN_FORGE,
+    resultatQte: 1,
+    xp: 150,
+    description: 'Requis pour forger les outils Niv. 8-10 (1-2-3 parchemins).',
+    descriptionEn: 'Required to forge tools Lv. 8-10 (1-2-3 scrolls).',
+  },
+];
+
+// ============================================================
 // Composant principal
 // ============================================================
 
-type View = 'categories' | 'cuisine' | 'artisan' | 'alchimiste';
+type View = 'categories' | 'cuisine' | 'artisan' | 'alchimiste' | 'tisserand' | 'forgeron';
 
 export function CraftPage() {
   const navigate    = useNavigate();
   const { t, lang } = useT();
   const [view, setView] = useState<View>('categories');
   const [notification, setNotification] = useState<string | null>(null);
+  const [onguentPopup, setOnguentPopup] = useState(false);
+  const [enclumePopup, setEnclumePopup] = useState(false);
 
   const inventaire              = useGameStore(s => s.inventaire);
   const personageNiveau         = useGameStore(s => s.personageNiveau);
@@ -380,14 +567,17 @@ export function CraftPage() {
   const personageXpTotal        = useGameStore(s => s.personageXpTotal);
   const parcheminsLv100LastDate = useGameStore(s => s.parcheminsLv100LastDate);
   const craftMetiersRaw         = useGameStore(s => s.craftMetiers);
-  const craftMetiers            = craftMetiersRaw ?? { artisan: { niveau: 1, xp: 0, xpTotal: 0 }, alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 } };
+  const craftMetiers            = craftMetiersRaw ?? { artisan: { niveau: 1, xp: 0, xpTotal: 0 }, alchimisteCraft: { niveau: 1, xp: 0, xpTotal: 0 }, tisserand: { niveau: 1, xp: 0, xpTotal: 0 }, forgeron: { niveau: 1, xp: 0, xpTotal: 0 } };
   const outils                  = useGameStore(s => s.outils) ?? {};
+  const activeBuffs             = useGameStore(s => s.activeBuffs) ?? [];
   const retirerRessource        = useGameStore(s => s.retirerRessource);
   const ajouterRessource        = useGameStore(s => s.ajouterRessource);
   const ajouterXpPersonage      = useGameStore(s => s.ajouterXpPersonage);
   const ajouterXpCraft          = useGameStore(s => s.ajouterXpCraft);
   const setOutil                = useGameStore(s => s.setOutil);
   const collectParcheminsLv100  = useGameStore(s => s.collectParcheminsLv100);
+  const addBuff                 = useGameStore(s => s.addBuff);
+  const repairerOutil           = useGameStore(s => s.repairerOutil);
 
   const TOOL_ORDER: ToolType[] = ['hache', 'faucille', 'canne', 'pioche', 'mortier'];
 
@@ -432,6 +622,44 @@ export function CraftPage() {
     notify(`✅ ${lang === 'en' ? recette.nomEn : recette.nom} — +${recette.xp} XP Alchimiste`);
   }
 
+  function craftTisserand(recette: RecetteInventaire) {
+    if (!canCraftRecette(recette)) return;
+    if (recette.niveauRequis && craftMetiers.tisserand.niveau < recette.niveauRequis) return;
+    for (const ing of recette.ingredients) retirerRessource(ing.resourceId, ing.quantite);
+    ajouterRessource(recette.resultatId, recette.resultatQte);
+    ajouterXpCraft('tisserand', recette.xp);
+    notify(`✅ ${lang === 'en' ? recette.nomEn : recette.nom} — +${recette.xp} XP Tisserand`);
+  }
+
+  function craftForgeron(recette: RecetteInventaire) {
+    if (!canCraftRecette(recette)) return;
+    for (const ing of recette.ingredients) retirerRessource(ing.resourceId, ing.quantite);
+    ajouterRessource(recette.resultatId, recette.resultatQte);
+    ajouterXpCraft('forgeron', recette.xp);
+    notify(`✅ ${lang === 'en' ? recette.nomEn : recette.nom} — +${recette.xp} XP Forgeron`);
+  }
+
+  function utiliserPotion(resourceId: ResourceId) {
+    const qty = inventaire[resourceId] ?? 0;
+    if (qty < 1) return;
+    retirerRessource(resourceId, 1);
+    if (resourceId === ResourceId.POTION_VITALITE) {
+      addBuff('qty_harvest', 25, 60 * 60 * 1000, resourceId); // +25% qty 1h
+      notify(lang === 'en' ? '✨ +25% harvest qty for 1 hour!' : '✨ +25% quantité récolte pendant 1h !');
+    } else if (resourceId === ResourceId.ELIXIR_RECOLTE) {
+      addBuff('xp_harvest', 50, 2 * 60 * 60 * 1000, resourceId); // +50% XP 2h
+      notify(lang === 'en' ? '✨ +50% harvest XP for 2 hours!' : '✨ +50% XP récolte pendant 2h !');
+    } else if (resourceId === ResourceId.ONGUENT_SAKURA) {
+      setOnguentPopup(true); // outil déjà retiré, géré dans le popup
+    }
+  }
+
+  function utiliserEnclume(toolType: ToolType) {
+    repairerOutil(toolType, 30);
+    setEnclumePopup(false);
+    notify(lang === 'en' ? `⚒️ Tool repaired +30 charges!` : `⚒️ Outil réparé +30 charges !`);
+  }
+
   function notify(msg: string) {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3000);
@@ -450,10 +678,22 @@ export function CraftPage() {
   const alchXpReq        = xpRequis(alchNiveau);
   const pctAlch          = alchNiveau >= 100 ? 100 : Math.min(100, (alchXp / alchXpReq) * 100);
 
+  const tissNiveau       = craftMetiers.tisserand?.niveau ?? 1;
+  const tissXp           = craftMetiers.tisserand?.xp ?? 0;
+  const tissXpReq        = xpRequis(tissNiveau);
+  const pctTiss          = tissNiveau >= 100 ? 100 : Math.min(100, (tissXp / tissXpReq) * 100);
+
+  const forgNiveau       = craftMetiers.forgeron?.niveau ?? 1;
+  const forgXp           = craftMetiers.forgeron?.xp ?? 0;
+  const forgXpReq        = xpRequis(forgNiveau);
+  const pctForg          = forgNiveau >= 100 ? 100 : Math.min(100, (forgXp / forgXpReq) * 100);
+
   const viewTitle =
     view === 'cuisine'    ? '🍳 Cuisine' :
     view === 'artisan'    ? '🔨 Artisan' :
     view === 'alchimiste' ? '⚗️ Alchimiste' :
+    view === 'tisserand'  ? '🧵 Tisserand' :
+    view === 'forgeron'   ? '⚒️ Forgeron' :
     t('craft.title');
 
   return (
@@ -518,6 +758,34 @@ export function CraftPage() {
                 <div style={{ height:'100%', width:`${pctAlch}%`, background:'linear-gradient(90deg,#ab47bc,#7030b0)', borderRadius:2 }} />
               </div>
               <span style={{ color:'#7030b0', fontSize:11, marginTop:6, fontWeight:700 }}>{RECETTES_ALCHIMISTE.length} recettes →</span>
+            </button>
+
+            {/* Tisserand */}
+            <button style={{ ...s.categoryCard, borderColor:'rgba(29,140,200,0.2)' }} onClick={() => setView('tisserand')}>
+              <div style={{ ...s.categoryGlow, background:'radial-gradient(ellipse at top left,rgba(29,140,200,0.1),transparent 70%)' }} />
+              <span style={{ fontSize:36 }}>🧵</span>
+              <span style={{ color:'#1a7ab0', fontSize:15, fontWeight:800, marginTop:6 }}>Tisserand</span>
+              <div style={{ display:'flex', gap:6, alignItems:'center', marginTop:2 }}>
+                <span style={{ color:'#1a7ab0', fontSize:10, fontWeight:700 }}>Tisserand Niv. {tissNiveau}</span>
+              </div>
+              <div style={{ width:'80%', height:3, background:'rgba(29,140,200,0.1)', borderRadius:2, marginTop:4, overflow:'hidden' }}>
+                <div style={{ height:'100%', width:`${pctTiss}%`, background:'linear-gradient(90deg,#29b6f6,#1a7ab0)', borderRadius:2 }} />
+              </div>
+              <span style={{ color:'#1a7ab0', fontSize:11, marginTop:6, fontWeight:700 }}>{RECETTES_TISSERAND.length} recettes →</span>
+            </button>
+
+            {/* Forgeron */}
+            <button style={{ ...s.categoryCard, borderColor:'rgba(180,100,30,0.2)' }} onClick={() => setView('forgeron')}>
+              <div style={{ ...s.categoryGlow, background:'radial-gradient(ellipse at top left,rgba(180,100,30,0.1),transparent 70%)' }} />
+              <span style={{ fontSize:36 }}>⚒️</span>
+              <span style={{ color:'#9a5a10', fontSize:15, fontWeight:800, marginTop:6 }}>Forgeron</span>
+              <div style={{ display:'flex', gap:6, alignItems:'center', marginTop:2 }}>
+                <span style={{ color:'#9a5a10', fontSize:10, fontWeight:700 }}>Forgeron Niv. {forgNiveau}</span>
+              </div>
+              <div style={{ width:'80%', height:3, background:'rgba(180,100,30,0.1)', borderRadius:2, marginTop:4, overflow:'hidden' }}>
+                <div style={{ height:'100%', width:`${pctForg}%`, background:'linear-gradient(90deg,#ff9800,#9a5a10)', borderRadius:2 }} />
+              </div>
+              <span style={{ color:'#9a5a10', fontSize:11, marginTop:6, fontWeight:700 }}>{RECETTES_FORGERON.length} recettes →</span>
             </button>
           </>
         )}
@@ -684,23 +952,195 @@ export function CraftPage() {
         {view === 'alchimiste' && (
           <>
             <XpBar label={`⚗️ Alchimiste — Niv. ${alchNiveau}`} xp={alchXp} xpReq={alchXpReq} xpTotal={craftMetiers.alchimisteCraft.xpTotal} pct={pctAlch} color="#ab47bc" />
+
+            {/* Buffs actifs */}
+            {activeBuffs.filter(b => b.expiresAt > Date.now()).length > 0 && (
+              <div style={{ margin:'8px 0', padding:'8px 12px', background:'rgba(171,71,188,0.08)', border:'1px solid rgba(171,71,188,0.3)', borderRadius:10 }}>
+                <p style={{ color:'#7030b0', fontSize:10, fontWeight:800, margin:'0 0 4px' }}>BUFFS ACTIFS</p>
+                {activeBuffs.filter(b => b.expiresAt > Date.now()).map(b => {
+                  const remaining = Math.ceil((b.expiresAt - Date.now()) / 60000);
+                  return (
+                    <div key={b.type} style={{ display:'flex', gap:6, alignItems:'center', fontSize:11, color:'#7030b0', fontWeight:600 }}>
+                      <span>{b.type === 'qty_harvest' ? '📦' : '⭐'}</span>
+                      <span>+{b.bonusPercent}% {b.type === 'qty_harvest' ? 'Quantité' : 'XP'} récolte</span>
+                      <span style={{ marginLeft:'auto', fontFamily:'monospace', fontSize:10 }}>{remaining}min</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'10px 0 8px', letterSpacing:'0.05em' }}>
               {lang === 'en' ? 'POTIONS & ELIXIRS' : 'POTIONS & ÉLIXIRS'}
             </p>
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              {RECETTES_ALCHIMISTE.map(r => (
-                <RecetteCard
-                  key={r.id}
-                  recette={r}
-                  inventaire={inventaire}
-                  lang={lang}
-                  onCraft={() => craftAlchimiste(r)}
-                  btnLabel={lang === 'en' ? '⚗️ Brew' : '⚗️ Préparer'}
-                />
-              ))}
+              {RECETTES_ALCHIMISTE.map(r => {
+                const stockPotion = Math.floor(inventaire[r.resultatId] ?? 0);
+                const canUse = stockPotion >= 1;
+                const isOnguent = r.resultatId === ResourceId.ONGUENT_SAKURA;
+                return (
+                  <div key={r.id}>
+                    <RecetteCard
+                      recette={r}
+                      inventaire={inventaire}
+                      lang={lang}
+                      onCraft={() => craftAlchimiste(r)}
+                      btnLabel={lang === 'en' ? '⚗️ Brew' : '⚗️ Préparer'}
+                    />
+                    {/* Bouton Utiliser */}
+                    <button
+                      style={{ marginTop:4, width:'100%', padding:'7px', background: canUse ? 'linear-gradient(135deg,#ab47bc,#7030b0)' : 'rgba(171,71,188,0.06)', border: canUse ? 'none' : '1px solid rgba(171,71,188,0.2)', borderRadius:8, color: canUse ? '#fff' : '#9a6080', fontSize:11, fontWeight:700, cursor: canUse ? 'pointer' : 'default', opacity: canUse ? 1 : 0.5 }}
+                      disabled={!canUse}
+                      onClick={() => {
+                        if (!canUse) return;
+                        if (isOnguent) { setOnguentPopup(true); }
+                        else utiliserPotion(r.resultatId);
+                      }}
+                    >
+                      {canUse
+                        ? `✨ ${lang === 'en' ? 'Use' : 'Utiliser'} (×${stockPotion})`
+                        : lang === 'en' ? 'None in inventory' : 'Aucune en inventaire'}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
+
+        {/* ── Vue Tisserand ── */}
+        {view === 'tisserand' && (
+          <>
+            <XpBar label={`🧵 Tisserand — Niv. ${tissNiveau}`} xp={tissXp} xpReq={tissXpReq} xpTotal={craftMetiers.tisserand?.xpTotal ?? 0} pct={pctTiss} color="#29b6f6" />
+            <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'10px 0 8px', letterSpacing:'0.05em' }}>
+              {lang === 'en' ? 'WEAVING RECIPES' : 'RECETTES DE TISSAGE'}
+            </p>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {RECETTES_TISSERAND.map(r => {
+                const locked = !!(r.niveauRequis && tissNiveau < r.niveauRequis);
+                return (
+                  <div key={r.id} style={{ opacity: locked ? 0.5 : 1, position:'relative' }}>
+                    {locked && (
+                      <div style={{ position:'absolute', top:8, right:10, background:'rgba(100,60,30,0.85)', borderRadius:8, padding:'2px 8px', fontSize:10, fontWeight:800, color:'#29b6f6', zIndex:1 }}>
+                        🔒 Tisserand Niv. {r.niveauRequis}
+                      </div>
+                    )}
+                    <RecetteCard
+                      recette={r}
+                      inventaire={inventaire}
+                      lang={lang}
+                      onCraft={() => craftTisserand(r)}
+                      btnLabel={locked ? '🔒 Verrouillé' : (lang === 'en' ? '🧵 Weave' : '🧵 Tisser')}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ── Vue Forgeron ── */}
+        {view === 'forgeron' && (
+          <>
+            <XpBar label={`⚒️ Forgeron — Niv. ${forgNiveau}`} xp={forgXp} xpReq={forgXpReq} xpTotal={craftMetiers.forgeron?.xpTotal ?? 0} pct={pctForg} color="#ff9800" />
+            <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'10px 0 8px', letterSpacing:'0.05em' }}>
+              {lang === 'en' ? 'BLACKSMITHING RECIPES' : 'RECETTES DE FORGE'}
+            </p>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {RECETTES_FORGERON.map(r => {
+                const stockItem = Math.floor(inventaire[r.resultatId] ?? 0);
+                const isEnclume = r.resultatId === ResourceId.ENCLUME_PORTABLE;
+                const canUse = stockItem >= 1;
+                return (
+                  <div key={r.id}>
+                    <RecetteCard
+                      recette={r}
+                      inventaire={inventaire}
+                      lang={lang}
+                      onCraft={() => craftForgeron(r)}
+                      btnLabel={lang === 'en' ? '⚒️ Smith' : '⚒️ Forger'}
+                    />
+                    {isEnclume && (
+                      <button
+                        style={{ marginTop:4, width:'100%', padding:'7px', background: canUse ? 'linear-gradient(135deg,#ff9800,#9a5a10)' : 'rgba(255,152,0,0.06)', border: canUse ? 'none' : '1px solid rgba(255,152,0,0.2)', borderRadius:8, color: canUse ? '#fff' : '#9a6080', fontSize:11, fontWeight:700, cursor: canUse ? 'pointer' : 'default', opacity: canUse ? 1 : 0.5 }}
+                        disabled={!canUse}
+                        onClick={() => { if (canUse) setEnclumePopup(true); }}
+                      >
+                        {canUse
+                          ? `⚒️ ${lang === 'en' ? 'Repair a tool' : 'Réparer un outil'} (×${stockItem})`
+                          : lang === 'en' ? 'None in inventory' : 'Aucune en inventaire'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ── Popup Onguent (sélection outil à réparer manuellement) ── */}
+        {onguentPopup && (
+          <ToolPickerPopup
+            outils={outils}
+            title={lang === 'en' ? 'Onguent Sakura — Repair tool' : 'Onguent Sakura — Réparer un outil'}
+            subtitle={lang === 'en' ? 'Choose the tool to restore +30 charges' : 'Choisissez l\'outil à restaurer +30 charges'}
+            onPick={(type) => { repairerOutil(type, 30); setOnguentPopup(false); notify(lang === 'en' ? `💆 ${OUTIL_INFO[type].nom} repaired +30 charges!` : `💆 ${OUTIL_INFO[type].nom} réparé +30 charges !`); }}
+            onClose={() => { ajouterRessource(ResourceId.ONGUENT_SAKURA, 1); setOnguentPopup(false); }}
+          />
+        )}
+
+        {/* ── Popup Enclume (sélection outil à réparer) ── */}
+        {enclumePopup && (
+          <ToolPickerPopup
+            outils={outils}
+            title={lang === 'en' ? 'Portable Anvil — Repair tool' : 'Enclume Portable — Réparer un outil'}
+            subtitle={lang === 'en' ? 'Choose the tool to restore +30 charges' : 'Choisissez l\'outil à restaurer +30 charges'}
+            onPick={(type) => { retirerRessource(ResourceId.ENCLUME_PORTABLE, 1); utiliserEnclume(type); }}
+            onClose={() => setEnclumePopup(false)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Popup sélection outil ───────────────────────────────────
+
+function ToolPickerPopup({ outils, title, subtitle, onPick, onClose }: {
+  outils: Partial<Record<ToolType, { niveau: number; durabilite: number }>>;
+  title: string;
+  subtitle: string;
+  onPick: (type: ToolType) => void;
+  onClose: () => void;
+}) {
+  const toolTypes = Object.values(METIER_TOOL_TYPE) as ToolType[];
+  const unique = [...new Set(toolTypes)];
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
+      <div style={{ background:'#fdf0f5', borderRadius:'16px 16px 0 0', padding:'16px', width:'100%', maxWidth:480, paddingBottom:32 }} onClick={e => e.stopPropagation()}>
+        <p style={{ color:'#1e0a16', fontSize:14, fontWeight:800, margin:'0 0 4px' }}>{title}</p>
+        <p style={{ color:'#7a4060', fontSize:11, margin:'0 0 12px' }}>{subtitle}</p>
+        {unique.map(type => {
+          const info = OUTIL_INFO[type];
+          const outil = outils[type];
+          const hasTool = !!outil && outil.durabilite > 0;
+          return (
+            <button
+              key={type}
+              style={{ width:'100%', padding:'10px 14px', background: hasTool ? '#fff' : 'rgba(212,100,138,0.04)', border:`1px solid ${hasTool ? 'rgba(106,191,68,0.3)' : 'rgba(212,100,138,0.12)'}`, borderRadius:10, marginBottom:6, display:'flex', alignItems:'center', gap:10, cursor: hasTool ? 'pointer' : 'default', opacity: hasTool ? 1 : 0.4 }}
+              disabled={!hasTool}
+              onClick={() => { if (hasTool) onPick(type); }}
+            >
+              <span style={{ fontSize:22 }}>{info.emoji}</span>
+              <div style={{ flex:1, textAlign:'left' }}>
+                <span style={{ color:'#1e0a16', fontSize:13, fontWeight:700 }}>{info.nom}</span>
+                {outil && <span style={{ display:'block', color:'#7a4060', fontSize:10 }}>Niv.{outil.niveau} — {outil.durabilite}/{DURABILITE_MAX} charges</span>}
+                {!outil && <span style={{ display:'block', color:'#c43070', fontSize:10 }}>Non forgé</span>}
+              </div>
+            </button>
+          );
+        })}
+        <button style={{ width:'100%', padding:'9px', background:'none', border:'1px solid rgba(212,100,138,0.2)', borderRadius:10, color:'#7a4060', fontSize:12, fontWeight:600, cursor:'pointer', marginTop:4 }} onClick={onClose}>Annuler</button>
       </div>
     </div>
   );
