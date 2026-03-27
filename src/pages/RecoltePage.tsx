@@ -155,9 +155,12 @@ function UnlockPopup({
 // ── Bannière de saison ──────────────────────────────────────
 
 function SaisonBanner({ activeMetierId }: { activeMetierId?: MetierId }) {
-  const saison = getSaisonActuelle();
-  const jours  = joursRestantsSaison();
+  const saison   = getSaisonActuelle();
+  const jours    = joursRestantsSaison();
+  const vipExpiry = useGameStore(s => s.vipExpiry);
+  const isVip    = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
   const isActive = !activeMetierId || saison.id === activeMetierId;
+  const bonusTotal = saison.bonusQty + (isVip ? 10 : 0);
   return (
     <div style={{ margin:'0 0 8px', padding:'8px 12px', background: isActive ? `${saison.color}18` : 'rgba(212,100,138,0.04)', border:`1px solid ${isActive ? saison.color + '44' : 'rgba(212,100,138,0.1)'}`, borderRadius:10, display:'flex', alignItems:'center', gap:8 }}>
       <span style={{ fontSize:18 }}>{saison.emoji}</span>
@@ -165,7 +168,7 @@ function SaisonBanner({ activeMetierId }: { activeMetierId?: MetierId }) {
         <span style={{ color: isActive ? saison.color : '#9a6080', fontSize:11, fontWeight:800 }}>{saison.nom}</span>
         {isActive && (
           <span style={{ display:'block', color: saison.color, fontSize:10, fontWeight:600 }}>
-            +{saison.bonusQty}% Quantité récoltée
+            +{bonusTotal}% Quantité récoltée{isVip ? ' (VIP +10%)' : ''}
           </span>
         )}
       </div>

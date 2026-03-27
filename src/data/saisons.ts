@@ -67,7 +67,7 @@ const SAISONS: Saison[] = [
 ];
 
 const REFERENCE_DATE = new Date('2026-01-01T00:00:00Z').getTime();
-const SAISON_DURATION_DAYS = 14;
+const SAISON_DURATION_DAYS = 7;
 const SAISON_DURATION_MS = SAISON_DURATION_DAYS * 24 * 60 * 60 * 1000;
 
 export function getSaisonActuelle(): Saison {

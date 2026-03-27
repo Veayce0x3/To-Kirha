@@ -136,9 +136,11 @@ export function useHarvest(metierId: MetierId): UseHarvestReturn {
     const prestigeBonus = (prestigeRef.current[metierId] ?? 0) * 5;    // +5% qty/prestige
     const buffQty       = validBuffs.filter(b => b.type === 'qty_harvest').reduce((s, b) => s + b.bonusPercent, 0);
 
-    // Saison active — bonus quantité uniquement
+    // Saison active — bonus quantité uniquement (VIP +10% supplémentaire)
     const saison = getSaisonActuelle();
-    const saisonQtyBonus = saison.id === metierId ? saison.bonusQty : 0;
+    const saisonQtyBonus = saison.id === metierId
+      ? saison.bonusQty + (isVipRef.current ? 10 : 0)
+      : 0;
 
     const ratio  = Math.round(
       quantiteRecolte(metierProgressRef.current.niveau)
