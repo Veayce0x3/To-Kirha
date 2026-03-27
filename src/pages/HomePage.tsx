@@ -36,7 +36,7 @@ export function HomePage() {
   const [showRelayer, setShowRelayer] = useState(false);
   const [relayerSigning, setRelayerSigning] = useState(false);
   const [relayerError, setRelayerError] = useState<string | null>(null);
-  const { t } = useT();
+  const { t, lang } = useT();
 
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -97,6 +97,7 @@ export function HomePage() {
     { route: '/craft',   icon: '⚗️', imgSrc: 'ui/pages/craft.png',       label: t('home.card_craft'),    desc: t('home.card_craft_desc'),   color: '#8d6e63', locked: false },
     { route: '/temple',  icon: '⛩️', imgSrc: 'ui/pages/temple.png',      label: t('home.card_temple'),   desc: t('home.card_temple_desc'),  color: '#c4306e', locked: false },
     { route: '/ferme',   icon: '🌾', imgSrc: 'ui/pages/ferme.png',       label: t('home.card_ferme'),    desc: t('home.card_ferme_desc'),   color: '#a0522d', locked: false },
+    { route: '/enchere', icon: '🏆', imgSrc: '',                          label: lang === 'en' ? 'Auctions' : 'Enchères', desc: '', color: '#8a25d4', locked: false },
   ];
 
   return (

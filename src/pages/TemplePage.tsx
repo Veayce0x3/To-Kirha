@@ -1,34 +1,115 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGameStore, xpRequis } from '../store/gameStore';
+import { useGameStore } from '../store/gameStore';
 import { ResourceId } from '../data/resources';
 import { useT } from '../utils/i18n';
-import { emojiByResourceId } from '../utils/resourceUtils';
+import { emojiByResourceId, getNomRessource } from '../utils/resourceUtils';
 
-// ── Toutes les quêtes possibles ────────────────────────────
-const ALL_QUESTS = [
-  { rid: 1  as ResourceId, qty: 5, reward: 0.5,  label: '5 Frêne' },
-  { rid: 11 as ResourceId, qty: 5, reward: 0.5,  label: '5 Blé' },
-  { rid: 21 as ResourceId, qty: 5, reward: 0.5,  label: '5 Carpes' },
-  { rid: 31 as ResourceId, qty: 5, reward: 0.5,  label: '5 Pierre' },
-  { rid: 41 as ResourceId, qty: 5, reward: 0.5,  label: '5 Pissenlit' },
-  { rid: 2  as ResourceId, qty: 3, reward: 0.8,  label: '3 Séquoia' },
-  { rid: 12 as ResourceId, qty: 3, reward: 0.8,  label: '3 Orge' },
-  { rid: 22 as ResourceId, qty: 3, reward: 0.8,  label: '3 Saumon' },
-  { rid: 32 as ResourceId, qty: 3, reward: 1.0,  label: '3 Charbon' },
-  { rid: 3  as ResourceId, qty: 2, reward: 1.2,  label: '2 Chêne' },
+// ── Pool de 50 quêtes (10 par métier) ────────────────────────
+
+interface Quest {
+  rids:   number[];
+  qtys:   number[];
+  reward: number;
+  diff:   1 | 2 | 3 | 4 | 5;
+}
+
+const QUEST_POOL: Quest[] = [
+  // Bûcheron (IDs 1–9)
+  { rids:[1],    qtys:[5],   reward:0.5, diff:1 },
+  { rids:[2],    qtys:[4],   reward:0.8, diff:1 },
+  { rids:[3],    qtys:[3],   reward:1.0, diff:2 },
+  { rids:[1,2],  qtys:[3,2], reward:1.2, diff:2 },
+  { rids:[4],    qtys:[3],   reward:1.5, diff:2 },
+  { rids:[3,5],  qtys:[2,2], reward:1.8, diff:3 },
+  { rids:[6],    qtys:[2],   reward:2.2, diff:3 },
+  { rids:[5,6],  qtys:[2,1], reward:2.5, diff:4 },
+  { rids:[7,8],  qtys:[1,1], reward:3.0, diff:4 },
+  { rids:[9],    qtys:[1],   reward:5.0, diff:5 },
+  // Paysan (IDs 11–19)
+  { rids:[11],   qtys:[5],   reward:0.5, diff:1 },
+  { rids:[12],   qtys:[4],   reward:0.8, diff:1 },
+  { rids:[13],   qtys:[3],   reward:1.0, diff:2 },
+  { rids:[11,12],qtys:[3,2], reward:1.2, diff:2 },
+  { rids:[14],   qtys:[3],   reward:1.5, diff:2 },
+  { rids:[13,15],qtys:[2,2], reward:1.8, diff:3 },
+  { rids:[16],   qtys:[2],   reward:2.2, diff:3 },
+  { rids:[15,16],qtys:[2,1], reward:2.5, diff:4 },
+  { rids:[17,18],qtys:[1,1], reward:3.0, diff:4 },
+  { rids:[19],   qtys:[1],   reward:5.0, diff:5 },
+  // Pêcheur (IDs 21–29)
+  { rids:[21],   qtys:[5],   reward:0.5, diff:1 },
+  { rids:[22],   qtys:[4],   reward:0.8, diff:1 },
+  { rids:[23],   qtys:[3],   reward:1.0, diff:2 },
+  { rids:[21,22],qtys:[3,2], reward:1.2, diff:2 },
+  { rids:[24],   qtys:[3],   reward:1.5, diff:2 },
+  { rids:[23,25],qtys:[2,2], reward:1.8, diff:3 },
+  { rids:[26],   qtys:[2],   reward:2.2, diff:3 },
+  { rids:[25,26],qtys:[2,1], reward:2.5, diff:4 },
+  { rids:[27,28],qtys:[1,1], reward:3.0, diff:4 },
+  { rids:[29],   qtys:[1],   reward:5.0, diff:5 },
+  // Mineur (IDs 31–39)
+  { rids:[31],   qtys:[5],   reward:0.5, diff:1 },
+  { rids:[32],   qtys:[4],   reward:0.8, diff:1 },
+  { rids:[33],   qtys:[3],   reward:1.0, diff:2 },
+  { rids:[31,32],qtys:[3,2], reward:1.2, diff:2 },
+  { rids:[34],   qtys:[3],   reward:1.5, diff:2 },
+  { rids:[33,35],qtys:[2,2], reward:1.8, diff:3 },
+  { rids:[36],   qtys:[2],   reward:2.2, diff:3 },
+  { rids:[35,36],qtys:[2,1], reward:2.5, diff:4 },
+  { rids:[37,38],qtys:[1,1], reward:3.0, diff:4 },
+  { rids:[39],   qtys:[1],   reward:5.0, diff:5 },
+  // Alchimiste (IDs 41–49)
+  { rids:[41],   qtys:[5],   reward:0.5, diff:1 },
+  { rids:[42],   qtys:[4],   reward:0.8, diff:1 },
+  { rids:[43],   qtys:[3],   reward:1.0, diff:2 },
+  { rids:[41,42],qtys:[3,2], reward:1.2, diff:2 },
+  { rids:[44],   qtys:[3],   reward:1.5, diff:2 },
+  { rids:[43,45],qtys:[2,2], reward:1.8, diff:3 },
+  { rids:[46],   qtys:[2],   reward:2.2, diff:3 },
+  { rids:[45,46],qtys:[2,1], reward:2.5, diff:4 },
+  { rids:[47,48],qtys:[1,1], reward:3.0, diff:4 },
+  { rids:[49],   qtys:[1],   reward:5.0, diff:5 },
 ];
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function hashSeed(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const a = [...arr];
+  let s = seed >>> 0;
+  const rand = () => {
+    s = (Math.imul(1664525, s) + 1013904223) >>> 0;
+    return s / 0x100000000;
+  };
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function questCountForLevel(niveau: number): number {
+  if (niveau >= 60) return 10;
+  if (niveau >= 55) return 8;
+  if (niveau >= 45) return 7;
+  if (niveau >= 35) return 6;
+  if (niveau >= 25) return 5;
+  if (niveau >= 15) return 4;
+  if (niveau >= 10) return 3;
+  if (niveau >= 5)  return 2;
+  return 1;
+}
 
 function getParisDate(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
-}
-
-function getDayOfYearParis(): number {
-  const paris = getParisDate();
-  const [y, m, d] = paris.split('-').map(Number);
-  const start = new Date(y, 0, 0);
-  const current = new Date(y, m - 1, d);
-  return Math.round((current.getTime() - start.getTime()) / 86_400_000);
 }
 
 function getSecondsUntilMidnightParis(): number {
@@ -39,8 +120,8 @@ function getSecondsUntilMidnightParis(): number {
   const parts = fmt.formatToParts(new Date());
   const h = parseInt(parts.find(p => p.type === 'hour')!.value);
   const m = parseInt(parts.find(p => p.type === 'minute')!.value);
-  const s = parseInt(parts.find(p => p.type === 'second')!.value);
-  return 86400 - (h * 3600 + m * 60 + s);
+  const sc = parseInt(parts.find(p => p.type === 'second')!.value);
+  return 86400 - (h * 3600 + m * 60 + sc);
 }
 
 function formatCountdown(secs: number): string {
@@ -50,70 +131,72 @@ function formatCountdown(secs: number): string {
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
+const DIFF_STARS = ['','★','★★','★★★','★★★★','★★★★★'];
+const DIFF_COLOR = ['','#6abf44','#f9a825','#f97316','#c43070','#8a25d4'];
+
+// ── Composant principal ───────────────────────────────────────
+
 export function TemplePage() {
-  const navigate    = useNavigate();
-  const { t }       = useT();
-  const inventaire  = useGameStore(s => s.inventaire);
-  const ajouterKirha          = useGameStore(s => s.ajouterKirha);
-  const retirerRessource      = useGameStore(s => s.retirerRessource);
-  const templeCompleted       = useGameStore(s => s.templeCompleted);
-  const templeCompletedDate   = useGameStore(s => s.templeCompletedDate);
-  const templeResetUsed       = useGameStore(s => s.templeResetUsed);
-  const templeResetDate       = useGameStore(s => s.templeResetDate);
-  const templeSlotRerolls     = useGameStore(s => s.templeSlotRerolls);
-  const completerQueteTemple  = useGameStore(s => s.completerQueteTemple);
-  const resetTempleQuetes     = useGameStore(s => s.resetTempleQuetes);
+  const navigate               = useNavigate();
+  const { t, lang }            = useT();
+  const inventaire             = useGameStore(s => s.inventaire);
+  const personageNiveau        = useGameStore(s => s.personageNiveau);
+  const ajouterKirha           = useGameStore(s => s.ajouterKirha);
+  const retirerRessource       = useGameStore(s => s.retirerRessource);
+  const templeCompleted        = useGameStore(s => s.templeCompleted);
+  const templeCompletedDate    = useGameStore(s => s.templeCompletedDate);
+  const templeResetUsed        = useGameStore(s => s.templeResetUsed);
+  const templeResetDate        = useGameStore(s => s.templeResetDate);
+  const templeSlotRerolls      = useGameStore(s => s.templeSlotRerolls);
+  const completerQueteTemple   = useGameStore(s => s.completerQueteTemple);
+  const resetTempleQuetes      = useGameStore(s => s.resetTempleQuetes);
   const resetQueteTempleManuel = useGameStore(s => s.resetQueteTempleManuel);
 
   const [countdown, setCountdown] = useState(getSecondsUntilMidnightParis());
-
   const today = getParisDate();
 
-  // Auto-reset à minuit Paris : si la date stockée ≠ aujourd'hui, réinitialiser
   useEffect(() => {
-    if (templeCompletedDate && templeCompletedDate !== today) {
-      resetTempleQuetes();
-    }
+    if (templeCompletedDate && templeCompletedDate !== today) resetTempleQuetes();
   }, [today, templeCompletedDate, resetTempleQuetes]);
 
   useEffect(() => {
     const id = setInterval(() => {
       setCountdown(getSecondsUntilMidnightParis());
-      // Vérifier le changement de jour à chaque tick
-      const newToday = getParisDate();
-      if (templeCompletedDate && templeCompletedDate !== newToday) {
-        resetTempleQuetes();
-      }
+      if (templeCompletedDate && templeCompletedDate !== getParisDate()) resetTempleQuetes();
     }, 1000);
     return () => clearInterval(id);
   }, [templeCompletedDate, resetTempleQuetes]);
 
-  // Quêtes du jour basées sur le jour de l'année Paris (rotation automatique + rerolls)
-  const questDay = getDayOfYearParis();
-  const todayIndices = [0, 1, 2].map(i => {
-    const base = (questDay + i) % ALL_QUESTS.length;
-    const rerolls = templeSlotRerolls?.[i] ?? 0;
-    return (base + rerolls) % ALL_QUESTS.length;
-  });
-  const todayQuests = todayIndices.map(i => ALL_QUESTS[i]);
+  // Construire les quêtes du jour — seeded + rerolls par slot
+  const questCount = questCountForLevel(personageNiveau);
+  const shuffled   = seededShuffle(QUEST_POOL, hashSeed(today));
+  const POOL       = QUEST_POOL.length; // 50
 
-  // Quêtes complétées : seulement si la date correspond à aujourd'hui
+  const todayQuests: Quest[] = Array.from({ length: questCount }, (_, i) => {
+    const rerolls = templeSlotRerolls?.[i] ?? 0;
+    // offset: pour r rerolls sur slot i, utilise l'indice (questCount*rerolls + i) dans le tableau shufflé
+    const idx = (questCount * rerolls + i) % POOL;
+    return shuffled[idx];
+  });
+
   const completedIndices: number[] = (templeCompletedDate === today) ? (templeCompleted ?? []) : [];
-  // Resets disponibles aujourd'hui
   const resetsLeft = 2 - (templeResetDate === today ? templeResetUsed : 0);
 
   function completer(questIndex: number) {
     const quest = todayQuests[questIndex];
-    const stock = Math.floor(inventaire[quest.rid] ?? 0);
-    if (stock < quest.qty) return;
-    retirerRessource(quest.rid, quest.qty);
+    if (!quest) return;
+    for (let j = 0; j < quest.rids.length; j++) {
+      if (Math.floor(inventaire[quest.rids[j] as ResourceId] ?? 0) < quest.qtys[j]) return;
+    }
+    for (let j = 0; j < quest.rids.length; j++) {
+      retirerRessource(quest.rids[j] as ResourceId, quest.qtys[j]);
+    }
     ajouterKirha(quest.reward);
     completerQueteTemple(questIndex);
   }
 
   return (
     <div style={s.page}>
-      {/* Header */}
       <div style={s.header}>
         <button style={s.backBtn} onClick={() => navigate('/home')}>{t('nav.back_home')}</button>
         <span style={s.headerTitle}>{t('temple.title')}</span>
@@ -128,78 +211,116 @@ export function TemplePage() {
           <div style={{ flex:1 }}>
             <p style={{ color:'#1e0a16', fontSize:'14px', fontWeight:800, margin:0 }}>{t('temple.subtitle')}</p>
             <p style={{ color:'#7a4060', fontSize:'11px', margin:'4px 0 0' }}>
-              Prochain reset (minuit 🇫🇷) : <strong style={{ fontFamily:'monospace', color:'#c4306e' }}>{formatCountdown(countdown)}</strong>
+              {lang === 'en' ? 'Reset (midnight 🇫🇷): ' : 'Reset (minuit 🇫🇷) : '}
+              <strong style={{ fontFamily:'monospace', color:'#c4306e' }}>{formatCountdown(countdown)}</strong>
             </p>
           </div>
         </div>
 
-        {/* Resets disponibles */}
-        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background: resetsLeft > 0 ? 'rgba(249,168,37,0.08)' : 'rgba(212,100,138,0.04)', border:`1px solid ${resetsLeft > 0 ? 'rgba(249,168,37,0.3)' : 'rgba(212,100,138,0.12)'}`, borderRadius:12, marginBottom:12 }}>
-          <span style={{ fontSize:20 }}>🔄</span>
-          <div style={{ flex:1 }}>
-            <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700, display:'block' }}>
-              Resets journaliers
-            </span>
-            <span style={{ color:'#7a4060', fontSize:10 }}>
-              {resetsLeft > 0
-                ? `${resetsLeft} reset${resetsLeft > 1 ? 's' : ''} disponible${resetsLeft > 1 ? 's' : ''} aujourd'hui`
-                : 'Resets épuisés pour aujourd\'hui'}
+        {/* Niveau Perso + quêtes actives */}
+        <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+          <div style={{ flex:1, padding:'8px 10px', background:'rgba(196,48,112,0.07)', border:'1px solid rgba(196,48,112,0.18)', borderRadius:12, textAlign:'center' }}>
+            <span style={{ color:'#c43070', fontSize:18, fontWeight:900, display:'block' }}>{questCount}</span>
+            <span style={{ color:'#7a4060', fontSize:9, fontWeight:700 }}>
+              {lang === 'en' ? 'QUESTS/DAY' : 'QUÊTES/JOUR'}
             </span>
           </div>
-          <span style={{ background: resetsLeft > 0 ? 'rgba(249,168,37,0.2)' : 'rgba(212,100,138,0.1)', color: resetsLeft > 0 ? '#b07010' : '#9a6080', fontSize:13, fontWeight:900, padding:'4px 10px', borderRadius:20 }}>
-            {resetsLeft}/2
-          </span>
+          <div style={{ flex:2, padding:'8px 12px', background:'rgba(249,168,37,0.06)', border:'1px solid rgba(249,168,37,0.22)', borderRadius:12 }}>
+            <span style={{ color:'#1e0a16', fontSize:11, fontWeight:700, display:'block' }}>
+              {lang === 'en' ? `Lv. ${personageNiveau} Character` : `Personnage Lv. ${personageNiveau}`}
+            </span>
+            <span style={{ color:'#7a4060', fontSize:10 }}>
+              {personageNiveau < 60
+                ? (lang === 'en' ? `Up to 10 quests at Lv.60` : `Jusqu'à 10 quêtes au Lv.60`)
+                : (lang === 'en' ? '🎉 Max quests!' : '🎉 Maximum débloqué !')}
+            </span>
+          </div>
+          <div style={{ flex:1, padding:'8px 10px', background: resetsLeft > 0 ? 'rgba(249,168,37,0.08)' : 'rgba(212,100,138,0.04)', border:`1px solid ${resetsLeft > 0 ? 'rgba(249,168,37,0.28)' : 'rgba(212,100,138,0.12)'}`, borderRadius:12, textAlign:'center' }}>
+            <span style={{ color: resetsLeft > 0 ? '#b07010' : '#9a6080', fontSize:18, fontWeight:900, display:'block' }}>{resetsLeft}</span>
+            <span style={{ color:'#7a4060', fontSize:9, fontWeight:700 }}>REROLLS</span>
+          </div>
         </div>
 
         {/* Quêtes */}
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {todayQuests.map((quest, i) => {
+            if (!quest) return null;
             const isCompleted = completedIndices.includes(i);
-            const stock = Math.floor(inventaire[quest.rid] ?? 0);
-            const canComplete = !isCompleted && stock >= quest.qty;
-            const insufficient = !isCompleted && stock < quest.qty;
+            const canComplete = !isCompleted && quest.rids.every((rid, j) =>
+              Math.floor(inventaire[rid as ResourceId] ?? 0) >= quest.qtys[j]
+            );
 
             return (
               <div key={i} style={{
                 ...s.questCard,
-                borderColor: isCompleted ? 'rgba(106,191,68,0.4)' : 'rgba(196,48,112,0.2)',
-                background:  isCompleted ? 'rgba(106,191,68,0.06)' : '#ffffff',
+                borderColor: isCompleted ? 'rgba(106,191,68,0.4)' : 'rgba(196,48,112,0.18)',
+                background:  isCompleted ? 'rgba(106,191,68,0.05)' : '#ffffff',
               }}>
-                <div style={s.questIcon}>
-                  <span style={{ fontSize:'28px' }}>{emojiByResourceId(quest.rid)}</span>
+                {/* Badge difficulté */}
+                <span style={{ position:'absolute', top:8, right:10, color: DIFF_COLOR[quest.diff], fontSize:10, fontWeight:700 }}>
+                  {DIFF_STARS[quest.diff]}
+                </span>
+
+                {/* Icône(s) */}
+                <div style={s.questIconWrap}>
+                  {quest.rids.length === 1
+                    ? <span style={{ fontSize:28 }}>{emojiByResourceId(quest.rids[0])}</span>
+                    : (
+                      <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                        {quest.rids.map(rid => (
+                          <span key={rid} style={{ fontSize:18 }}>{emojiByResourceId(rid)}</span>
+                        ))}
+                      </div>
+                    )
+                  }
                 </div>
-                <div style={{ flex:1 }}>
-                  <span style={{ color:'#1e0a16', fontSize:'14px', fontWeight:800 }}>{quest.label}</span>
-                  <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:2 }}>
-                    <span style={{ color:'#f9a825', fontSize:'12px', fontWeight:700 }}>+{quest.reward} $KIRHA</span>
-                    <span style={{ color:'#9a6080', fontSize:'10px' }}>· Stock: {stock}</span>
-                  </div>
+
+                {/* Détails */}
+                <div style={{ flex:1, minWidth:0 }}>
+                  {quest.rids.map((rid, j) => {
+                    const stock = Math.floor(inventaire[rid as ResourceId] ?? 0);
+                    const needed = quest.qtys[j];
+                    const ok = stock >= needed;
+                    return (
+                      <div key={rid} style={{ display:'flex', alignItems:'center', gap:5 }}>
+                        <span style={{ color:'#1e0a16', fontSize:12, fontWeight:700 }}>
+                          ×{needed} {getNomRessource(rid, lang)}
+                        </span>
+                        <span style={{ color: ok ? '#5a9a30' : '#c43070', fontSize:10 }}>({stock})</span>
+                      </div>
+                    );
+                  })}
+                  <span style={{ color:'#f9a825', fontSize:12, fontWeight:700, marginTop:3, display:'block' }}>
+                    +{quest.reward} $KIRHA
+                  </span>
                 </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:4, alignItems:'flex-end' }}>
+
+                {/* Boutons */}
+                <div style={{ display:'flex', flexDirection:'column', gap:4, alignItems:'flex-end', flexShrink:0 }}>
                   {isCompleted ? (
-                    <span style={{ color:'#6abf44', fontSize:'11px', fontWeight:800 }}>{t('temple.completed')}</span>
+                    <span style={{ color:'#6abf44', fontSize:11, fontWeight:800 }}>{t('temple.completed')}</span>
                   ) : (
                     <button
-                      style={{
-                        ...s.offrirBtn,
-                        opacity:    canComplete ? 1 : 0.45,
-                        cursor:     canComplete ? 'pointer' : 'not-allowed',
-                        background: canComplete ? 'linear-gradient(135deg,#c4306e,#8a25d4)' : 'rgba(212,100,138,0.1)',
-                        color:      canComplete ? '#fff' : '#7a4060',
-                        border:     canComplete ? 'none' : '1px solid rgba(212,100,138,0.2)',
-                      }}
                       disabled={!canComplete}
                       onClick={() => completer(i)}
+                      style={{
+                        ...s.offrirBtn,
+                        background: canComplete ? 'linear-gradient(135deg,#c4306e,#8a25d4)' : 'rgba(212,100,138,0.08)',
+                        color:      canComplete ? '#fff' : '#9a6080',
+                        border:     canComplete ? 'none' : '1px solid rgba(212,100,138,0.18)',
+                        opacity:    canComplete ? 1 : 0.55,
+                        cursor:     canComplete ? 'pointer' : 'not-allowed',
+                      }}
                     >
-                      {insufficient ? t('temple.insufficient') : t('temple.quest_label')}
+                      {canComplete ? t('temple.quest_label') : t('temple.insufficient')}
                     </button>
                   )}
                   {!isCompleted && resetsLeft > 0 && (
                     <button
-                      style={{ padding:'4px 8px', background:'rgba(249,168,37,0.12)', border:'1px solid rgba(249,168,37,0.35)', borderRadius:8, color:'#b07010', fontSize:9, fontWeight:700, cursor:'pointer' }}
+                      style={{ padding:'3px 8px', background:'rgba(249,168,37,0.1)', border:'1px solid rgba(249,168,37,0.32)', borderRadius:8, color:'#b07010', fontSize:9, fontWeight:700, cursor:'pointer' }}
                       onClick={() => resetQueteTempleManuel(i)}
                     >
-                      🔄 Changer
+                      🔄 {lang === 'en' ? 'Reroll' : 'Changer'}
                     </button>
                   )}
                 </div>
@@ -209,9 +330,11 @@ export function TemplePage() {
         </div>
 
         {/* Info */}
-        <div style={{ marginTop:16, padding:'12px 14px', background:'rgba(196,48,112,0.04)', border:'1px solid rgba(196,48,112,0.12)', borderRadius:12 }}>
-          <p style={{ color:'#9a6080', fontSize:'11px', margin:0, lineHeight:1.6 }}>
-            Les offrandes sont renouvelées chaque jour à minuit (heure française). Complétez les 3 quêtes quotidiennes pour gagner des $KIRHA. Le bouton "Changer" permet de remplacer une quête par une autre.
+        <div style={{ marginTop:16, padding:'10px 12px', background:'rgba(196,48,112,0.04)', border:'1px solid rgba(196,48,112,0.1)', borderRadius:12 }}>
+          <p style={{ color:'#9a6080', fontSize:10, margin:0, lineHeight:1.6 }}>
+            {lang === 'en'
+              ? 'Quests reset daily at midnight (Paris). Pool of 50 quests (10 per profession), randomly selected. Difficulty ★ to ★★★★★. Harder quests = more $KIRHA. Unlock more quests by leveling your Character.'
+              : 'Quêtes renouvelées chaque nuit à minuit (Paris). Pool de 50 quêtes (10 par métier), rotation aléatoire quotidienne. Difficulté ★ à ★★★★★. Plus c\'est dur, plus tu gagnes de $KIRHA. Débloque plus de quêtes en montant ton Personnage.'}
           </p>
         </div>
       </div>
@@ -226,21 +349,21 @@ const s: Record<string, React.CSSProperties> = {
   headerTitle: { color:'#1e0a16', fontSize:'16px', fontWeight:800 },
   introCard: {
     display:'flex', alignItems:'center', gap:14,
-    background:'#ffffff', border:'1px solid rgba(196,48,112,0.2)',
+    background:'#ffffff', border:'1px solid rgba(196,48,112,0.18)',
     borderRadius:16, padding:'14px 16px', marginBottom:14,
   },
   questCard: {
+    position:'relative' as const,
     display:'flex', alignItems:'center', gap:12,
-    border:'1px solid', borderRadius:14, padding:'12px 14px',
-    transition:'border-color 0.2s, background 0.2s',
+    border:'1px solid', borderRadius:14, padding:'12px 14px 12px 12px',
   },
-  questIcon: {
-    width:52, height:52, borderRadius:12,
-    background:'rgba(212,100,138,0.07)', border:'1px solid rgba(212,100,138,0.15)',
-    display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
+  questIconWrap: {
+    width:44, height:44, borderRadius:10, flexShrink:0,
+    background:'rgba(212,100,138,0.06)', border:'1px solid rgba(212,100,138,0.13)',
+    display:'flex', alignItems:'center', justifyContent:'center',
   },
   offrirBtn: {
-    padding:'7px 12px', borderRadius:10, fontSize:'11px', fontWeight:800,
+    padding:'6px 10px', borderRadius:10, fontSize:11, fontWeight:800,
     whiteSpace:'nowrap' as const,
   },
 };
