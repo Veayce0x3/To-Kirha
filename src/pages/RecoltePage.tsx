@@ -98,19 +98,21 @@ function ResourcePickerPopup({
 
 function UnlockPopup({
   slotIndex,
+  metierId,
   inventaire,
   soldeKirha,
   onUnlock,
   onClose,
 }: {
   slotIndex: number;
+  metierId: MetierId;
   inventaire: Partial<Record<ResourceId, number>>;
   soldeKirha: number;
   onUnlock: () => void;
   onClose: () => void;
 }) {
   const { t, lang } = useT();
-  const cond: SlotUnlockCondition | undefined = SLOT_UNLOCK_CONDITIONS[slotIndex];
+  const cond: SlotUnlockCondition | undefined = SLOT_UNLOCK_CONDITIONS[metierId]?.[slotIndex];
   if (!cond) return null;
 
   const kirhaOk    = soldeKirha >= cond.kirha;
@@ -441,13 +443,13 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
             <span style={{ color: cfg.color, fontSize: '9px', fontWeight: 700, textAlign: 'center', lineHeight: 1.3 }}>
               {t('recolte.unlock_btn')}
             </span>
-            {SLOT_UNLOCK_CONDITIONS[slot.index] && (
+            {SLOT_UNLOCK_CONDITIONS[metierId]?.[slot.index] && (
               <span style={{ color: '#7a4060', fontSize: '8px', textAlign: 'center', marginTop: 2, lineHeight: 1.3, display:'flex', alignItems:'center', justifyContent:'center', gap:2, flexWrap:'wrap' }}>
-                {SLOT_UNLOCK_CONDITIONS[slot.index].items.slice(0, 2).map(({ id }) => (
+                {SLOT_UNLOCK_CONDITIONS[metierId]![slot.index].items.slice(0, 2).map(({ id }) => (
                   <span key={id}>{emojiByResourceId(id)}</span>
                 ))}
-                {SLOT_UNLOCK_CONDITIONS[slot.index].items.length > 2 && <span>…</span>}
-                · <img src={uiAssetPath('ui/token.png')} alt="" style={{ width:9, height:9, objectFit:'contain', display:'inline-block' }} />{SLOT_UNLOCK_CONDITIONS[slot.index].kirha}
+                {SLOT_UNLOCK_CONDITIONS[metierId]![slot.index].items.length > 2 && <span>…</span>}
+                · <img src={uiAssetPath('ui/token.png')} alt="" style={{ width:9, height:9, objectFit:'contain', display:'inline-block' }} />{SLOT_UNLOCK_CONDITIONS[metierId]![slot.index].kirha}
               </span>
             )}
           </>
@@ -582,6 +584,7 @@ function ZoneMetier({ metierId, onBack }: { metierId: MetierId; onBack: () => vo
       {unlockSlot !== null && (
         <UnlockPopup
           slotIndex={unlockSlot}
+          metierId={metierId}
           inventaire={inventaire}
           soldeKirha={soldeKirha}
           onUnlock={() => debloquerSlot(metierId, unlockSlot)}

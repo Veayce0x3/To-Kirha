@@ -179,37 +179,49 @@ export function calculerTaxeMarche(niveau: number, isVip: boolean): number {
 // Conditions de déverrouillage des slots
 // ============================================================
 
-// Conditions thématiques : KIRHA + ressources spécifiques à dépenser
-// KIRHA aligné sur Σ xpRequis(n)=100×n^1.7, ressources choisies par progression métier
+// Conditions thématiques par métier : KIRHA + ressources propres au métier
+// Logique : slots pairs = ressource courante + eau, slots impairs = ressource courante + prochaine
+// Ferme (53-57) introduite progressivement à partir du slot 10
 export interface SlotUnlockCondition {
   kirha:  number;
   items:  { id: number; qty: number }[];
 }
 
-export const SLOT_UNLOCK_CONDITIONS: Record<number, SlotUnlockCondition> = {
-  // — Tier 1 (lv 1–9) —
-  2:  { kirha: 20,    items: [{id:1,  qty:10}, {id:11, qty:10}] },
-  3:  { kirha: 60,    items: [{id:1,  qty:15}, {id:11, qty:10}, {id:51, qty:3}] },
-  4:  { kirha: 120,   items: [{id:2,  qty:5},  {id:21, qty:5},  {id:41, qty:5}] },
-  5:  { kirha: 250,   items: [{id:2,  qty:8},  {id:12, qty:5},  {id:32, qty:5}, {id:51, qty:5}] },
-  // — Tier 2 (lv 10–29) —
-  6:  { kirha: 450,   items: [{id:3,  qty:5},  {id:13, qty:5},  {id:23, qty:5},  {id:42, qty:5}] },
-  7:  { kirha: 700,   items: [{id:3,  qty:8},  {id:14, qty:5},  {id:24, qty:5},  {id:32, qty:8},  {id:51, qty:8}] },
-  8:  { kirha: 1050,  items: [{id:4,  qty:5},  {id:15, qty:5},  {id:33, qty:5},  {id:43, qty:5},  {id:53, qty:5}] },
-  9:  { kirha: 1500,  items: [{id:4,  qty:8},  {id:16, qty:5},  {id:34, qty:5},  {id:44, qty:5},  {id:54, qty:5}] },
-  // — Tier 3 (lv 30–49) —
-  10: { kirha: 2000,  items: [{id:5,  qty:5},  {id:25, qty:5},  {id:34, qty:8},  {id:45, qty:5},  {id:51, qty:10}] },
-  11: { kirha: 2600,  items: [{id:5,  qty:8},  {id:16, qty:8},  {id:25, qty:8},  {id:35, qty:3},  {id:55, qty:5}] },
-  12: { kirha: 3400,  items: [{id:6,  qty:5},  {id:17, qty:5},  {id:26, qty:5},  {id:35, qty:5},  {id:54, qty:8}] },
-  13: { kirha: 4250,  items: [{id:6,  qty:8},  {id:19, qty:5},  {id:26, qty:8},  {id:36, qty:3},  {id:56, qty:3}] },
-  // — Tier 4 (lv 50–69) —
-  14: { kirha: 5250,  items: [{id:7,  qty:5},  {id:18, qty:8},  {id:27, qty:5},  {id:36, qty:5},  {id:46, qty:5}] },
-  15: { kirha: 6400,  items: [{id:7,  qty:8},  {id:19, qty:8},  {id:27, qty:8},  {id:37, qty:3},  {id:57, qty:3}] },
-  16: { kirha: 7600,  items: [{id:8,  qty:5},  {id:20, qty:3},  {id:28, qty:5},  {id:37, qty:5},  {id:47, qty:5}] },
-  // — Tier 5 (lv 70–90+) —
-  17: { kirha: 9000,  items: [{id:8,  qty:8},  {id:29, qty:3},  {id:38, qty:3},  {id:48, qty:5},  {id:57, qty:5}] },
-  18: { kirha: 10500, items: [{id:9,  qty:5},  {id:29, qty:5},  {id:39, qty:3},  {id:49, qty:3},  {id:56, qty:5}] },
-  19: { kirha: 12250, items: [{id:9,  qty:8},  {id:30, qty:3},  {id:40, qty:2},  {id:50, qty:3},  {id:57, qty:8}] },
+// Coûts KIRHA partagés (même progression pour tous les métiers)
+const K = [0,0, 20, 60, 120, 250, 450, 700, 1050, 1500, 2000, 2600, 3400, 4250, 5250, 6400, 7600, 9000, 10500, 12250] as const;
+
+// Génère les 18 conditions (slots 2–19) pour un métier donné
+// offset = premier ID de ressource du métier (1, 11, 21, 31, 41)
+function genSlotConditions(offset: number): Record<number, SlotUnlockCondition> {
+  const r = (tier: number) => offset + tier - 1; // ID de la ressource de niveau tier
+  return {
+    2:  { kirha: K[2],  items: [{id:r(1), qty:10}] },
+    3:  { kirha: K[3],  items: [{id:r(1), qty:15}, {id:r(2), qty:3}] },
+    4:  { kirha: K[4],  items: [{id:r(2), qty:8},  {id:51,   qty:3}] },
+    5:  { kirha: K[5],  items: [{id:r(2), qty:12}, {id:r(3), qty:3}] },
+    6:  { kirha: K[6],  items: [{id:r(3), qty:8},  {id:51,   qty:5}] },
+    7:  { kirha: K[7],  items: [{id:r(3), qty:12}, {id:r(4), qty:3}] },
+    8:  { kirha: K[8],  items: [{id:r(4), qty:8},  {id:51,   qty:8}] },
+    9:  { kirha: K[9],  items: [{id:r(4), qty:12}, {id:r(5), qty:3}] },
+    10: { kirha: K[10], items: [{id:r(5), qty:8},  {id:53,   qty:5}] },  // Œuf
+    11: { kirha: K[11], items: [{id:r(5), qty:12}, {id:r(6), qty:3}] },
+    12: { kirha: K[12], items: [{id:r(6), qty:8},  {id:54,   qty:5}] },  // Lait
+    13: { kirha: K[13], items: [{id:r(6), qty:12}, {id:r(7), qty:3}] },
+    14: { kirha: K[14], items: [{id:r(7), qty:8},  {id:55,   qty:3}] },  // Miel
+    15: { kirha: K[15], items: [{id:r(7), qty:12}, {id:r(8), qty:3}] },
+    16: { kirha: K[16], items: [{id:r(8), qty:8},  {id:56,   qty:3}] },  // Musc Sakura
+    17: { kirha: K[17], items: [{id:r(8), qty:12}, {id:r(9), qty:3}] },
+    18: { kirha: K[18], items: [{id:r(9), qty:8},  {id:57,   qty:3}] },  // Écaille de Koï
+    19: { kirha: K[19], items: [{id:r(9), qty:12}, {id:r(10), qty:3}, {id:57, qty:5}] },
+  };
+}
+
+export const SLOT_UNLOCK_CONDITIONS: Record<MetierId, Record<number, SlotUnlockCondition>> = {
+  bucheron:   genSlotConditions(1),
+  paysan:     genSlotConditions(11),
+  pecheur:    genSlotConditions(21),
+  mineur:     genSlotConditions(31),
+  alchimiste: genSlotConditions(41),
 };
 
 // ============================================================
@@ -696,7 +708,7 @@ export const useGameStore = create<GameState>()(
 
       debloquerSlot: (metier, slotIndex) =>
         set((state) => {
-          const cond = SLOT_UNLOCK_CONDITIONS[slotIndex];
+          const cond = SLOT_UNLOCK_CONDITIONS[metier]?.[slotIndex];
           if (!cond) return state;
           if (state.soldeKirha < cond.kirha) return state;
           // Vérifier toutes les ressources requises
