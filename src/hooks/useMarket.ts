@@ -42,7 +42,7 @@ export function useMarket() {
 
   const { writeContractAsync } = useWriteContract();
   const { switchChainAsync }   = useSwitchChain();
-  const { address } = useAccount();
+  const { address, connector } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const publicClient = usePublicClient();
 
@@ -351,14 +351,25 @@ export function useMarket() {
     const expiresAt = Math.floor(Date.now() / 1000) + durationSecs;
     if (villeId) localStorage.setItem(`kirha_relayer_expires_${villeId}`, String(expiresAt));
     try {
-      await ensureChain();
-      const txPromise = writeContractAsync({
-        address:  KIRHA_GAME_ADDRESS,
-        abi:      KirhaGameAbi,
-        functionName: 'authorizeRelayer',
-        args:     [cityIdBn, BigInt(durationSecs)],
-        chainId:  baseSepolia.id,
-      });
+      const isWalletConnect = connector?.id === 'walletConnect';
+      // WalletConnect mobile (MetaMask) supporte mal les requêtes séquentielles
+      // switchChain + writeContract. On évite chain switch explicite dans ce cas.
+      if (!isWalletConnect) await ensureChain();
+
+      const txPromise = isWalletConnect
+        ? writeContractAsync({
+            address:  KIRHA_GAME_ADDRESS,
+            abi:      KirhaGameAbi,
+            functionName: 'authorizeRelayer',
+            args:     [cityIdBn, BigInt(durationSecs)],
+          })
+        : writeContractAsync({
+            address:  KIRHA_GAME_ADDRESS,
+            abi:      KirhaGameAbi,
+            functionName: 'authorizeRelayer',
+            args:     [cityIdBn, BigInt(durationSecs)],
+            chainId:  baseSepolia.id,
+          });
       // Timeout 30s — si WalletConnect ne répond pas (session fantôme), on fail proprement
       const hash = await Promise.race([
         txPromise,
@@ -387,7 +398,7 @@ export function useMarket() {
         setStatus('error');
       }
     }
-  }, [cityIdBn, writeContractAsync, publicClient, villeId, relayerActive, refetchRelayer]);
+  }, [cityIdBn, writeContractAsync, publicClient, villeId, relayerActive, refetchRelayer, connector]);
 
   // ── Annuler un listing ─────────────────────────────────────
   const annulerListing = useCallback(async (listingId: bigint) => {
