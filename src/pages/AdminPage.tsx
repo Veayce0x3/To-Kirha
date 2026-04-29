@@ -31,7 +31,7 @@ interface PlayerData {
   vipExpiry: number; // timestamp Unix (0 = pas VIP)
 }
 
-const ALL_RESOURCE_IDS = Array.from({ length: 62 }, (_, i) => BigInt(i + 1));
+const ALL_RESOURCE_IDS = Array.from({ length: 50 }, (_, i) => BigInt(i + 1));
 const METIER_NAMES = ['Bûcheron', 'Paysan', 'Pêcheur', 'Mineur', 'Alchimiste'];
 const METIER_IDS: MetierId[] = ['bucheron', 'paysan', 'pecheur', 'mineur', 'alchimiste'];
 
@@ -52,7 +52,7 @@ export function AdminPage() {
   const [mainTab, setMainTab] = useState<MainTab>('dashboard');
 
   // ── Auth ────────────────────────────────────────────────
-  const [adminToken, setAdminToken] = useState(() => sessionStorage.getItem('kirha_admin_token') ?? '');
+  const [adminToken, setAdminToken] = useState('');
   const [tokenStatus, setTokenStatus] = useState<'unknown'|'ok'|'invalid'|'testing'>('unknown');
 
   // ── Data ────────────────────────────────────────────────
@@ -316,7 +316,7 @@ export function AdminPage() {
           body: JSON.stringify({ cityId: String(p.cityId), amount: String(snap.pepites) }),
         });
       }
-      for (let rid = 1; rid <= 62; rid++) {
+      for (let rid = 1; rid <= 50; rid++) {
         const qty = Math.floor(snap.resources[rid] ?? 0);
         if (qty >= 1) {
           await fetch(`${ADMIN_WORKER_URL}/admin/give-resource`, {
@@ -361,7 +361,7 @@ export function AdminPage() {
           body: JSON.stringify({ cityId: String(p.cityId), amount: String(newPepites) }),
         });
       }
-      for (let rid = 1; rid <= 62; rid++) {
+      for (let rid = 1; rid <= 50; rid++) {
         let qty = Math.floor(p.resources[rid] ?? 0);
         if (type === 'resource' && rid === resourceId) qty = Math.max(0, qty - amount);
         if (qty >= 1) {
@@ -402,11 +402,11 @@ export function AdminPage() {
   }
 
   // ── Stats globales ───────────────────────────────────────
-  const resourceTotals: number[] = Array(63).fill(0);
+  const resourceTotals: number[] = Array(51).fill(0);
   for (const p of players) {
-    for (let rid = 1; rid <= 62; rid++) resourceTotals[rid] += p.resources[rid] ?? 0;
+    for (let rid = 1; rid <= 50; rid++) resourceTotals[rid] += p.resources[rid] ?? 0;
   }
-  const topResources = Array.from({ length: 62 }, (_, i) => ({ id: i + 1, qty: resourceTotals[i + 1] }))
+  const topResources = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, qty: resourceTotals[i + 1] }))
     .filter(r => r.qty > 0).sort((a, b) => b.qty - a.qty).slice(0, 15);
 
   // ── Accès refusé ─────────────────────────────────────────
@@ -438,7 +438,7 @@ export function AdminPage() {
             type="password"
             placeholder="Token admin"
             value={adminToken}
-            onChange={e => { setAdminToken(e.target.value); sessionStorage.setItem('kirha_admin_token', e.target.value); setTokenStatus('unknown'); }}
+            onChange={e => { setAdminToken(e.target.value); setTokenStatus('unknown'); }}
             style={{ width:130, padding:'4px 8px', borderRadius:6, border:`1px solid ${tokenStatus==='ok'?'rgba(106,191,68,0.5)':tokenStatus==='invalid'?'rgba(255,100,100,0.5)':'rgba(196,48,112,0.3)'}`, background:'rgba(0,0,0,0.5)', color:'#e0c8d8', fontSize:11 }}
           />
           <button onClick={testerToken} disabled={!adminToken || tokenStatus === 'testing'}
@@ -687,7 +687,7 @@ export function AdminPage() {
                           <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
                             <span style={labelSm}>📦 Res.</span>
                             <select value={giveResId[p.cityId] ?? '1'} onChange={e => setGiveResId(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={{ ...inputSm, flex:'none', width:120, fontSize:9 }}>
-                              {Array.from({ length: 62 }, (_, i) => i + 1).map(id => <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')}</option>)}
+                              {Array.from({ length: 50 }, (_, i) => i + 1).map(id => <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')}</option>)}
                             </select>
                             <input type="number" min="1" placeholder="Qté" value={giveResAmt[p.cityId] ?? ''} onChange={e => setGiveResAmt(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={{ ...inputSm, width:55 }} />
                             <button style={giveSm} disabled={!giveResAmt[p.cityId]}
@@ -752,7 +752,7 @@ export function AdminPage() {
                           <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
                             <span style={{ ...labelSm, color:'#ff6400' }}>📦 Res.</span>
                             <select value={retirerResId[p.cityId] ?? '1'} onChange={e => setRetirerResId(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={{ ...inputSm, flex:'none', width:120, fontSize:9 }}>
-                              {Array.from({ length: 62 }, (_, i) => i + 1).map(id => <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')} (×{Math.floor(p.resources[id] ?? 0)})</option>)}
+                              {Array.from({ length: 50 }, (_, i) => i + 1).map(id => <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')} (×{Math.floor(p.resources[id] ?? 0)})</option>)}
                             </select>
                             <input type="number" min="1" placeholder="Qté" value={retirerResAmt[p.cityId] ?? ''} onChange={e => setRetirerResAmt(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={{ ...inputSm, width:55 }} />
                             <button style={maxSm} onClick={() => { const rid = parseInt(retirerResId[p.cityId] ?? '1'); setRetirerResAmt(prev => ({ ...prev, [p.cityId]: String(Math.floor(p.resources[rid] ?? 0)) })); }}>MAX</button>
@@ -816,13 +816,13 @@ export function AdminPage() {
                     {v} $K
                   </button>
                 ))}
-                <input type="number" min="1" placeholder="Autre…" value={parcheminInput}
+                <input type="number" min="1" max="10000" placeholder="Autre…" value={parcheminInput}
                   onChange={e => setParcheminInput(e.target.value)}
                   style={{ width:70, padding:'5px 8px', borderRadius:6, border:'1px solid rgba(249,168,37,0.25)', background:'rgba(0,0,0,0.4)', color:'#e0c8d8', fontSize:11 }} />
                 <button
-                  disabled={!parcheminInput || parseInt(parcheminInput) < 1 || configStatus === 'pending'}
+                  disabled={!parcheminInput || parseInt(parcheminInput) < 1 || parseInt(parcheminInput) > 10000 || configStatus === 'pending'}
                   style={{ padding:'6px 12px', borderRadius:8, fontSize:11, fontWeight:700, cursor:'pointer', border:'none', background:'rgba(249,168,37,0.25)', color:'#f9a825' }}
-                  onClick={() => { const v = parseInt(parcheminInput); if (v >= 1) { appliquerParcheminPrice(v); setParcheminInput(''); } }}>
+                  onClick={() => { const v = parseInt(parcheminInput); if (v >= 1 && v <= 10000) { appliquerParcheminPrice(v); setParcheminInput(''); } }}>
                   {configStatus === 'pending' ? '⏳' : configStatus === 'ok' ? '✅' : 'Appliquer'}
                 </button>
               </div>

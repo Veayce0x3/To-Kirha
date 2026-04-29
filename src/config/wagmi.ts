@@ -2,12 +2,7 @@ import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import {
   metaMaskWallet,
   walletConnectWallet,
-  coinbaseWallet,
-  rainbowWallet,
-  trustWallet,
-  braveWallet,
-  okxWallet,
-  bybitWallet,
+  coinbaseWallet
 } from '@rainbow-me/rainbowkit/wallets';
 import { createConfig, http } from 'wagmi';
 import { baseSepolia } from 'viem/chains';
@@ -22,11 +17,6 @@ const connectors = connectorsForWallets(
         walletConnectWallet,
         metaMaskWallet,
         coinbaseWallet,
-        trustWallet,
-        rainbowWallet,
-        braveWallet,
-        okxWallet,
-        bybitWallet,
       ],
     },
   ],

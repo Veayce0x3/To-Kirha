@@ -3,6 +3,8 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "./KirhaResources.sol";
 import "./KirhaToken.sol";
 import "./KirhaCity.sol";
@@ -20,6 +22,8 @@ import "./KirhaCity.sol";
  *   Réactiver ECDSA avant mainnet.
  */
 contract KirhaGame is Ownable, ReentrancyGuard {
+    using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     KirhaResources public immutable resources;
     KirhaToken     public immutable kirhaToken;
@@ -60,6 +64,9 @@ contract KirhaGame is Ownable, ReentrancyGuard {
     struct RelayerSession { address relayer; uint64 expiry; }
     mapping(uint256 => RelayerSession) public relayerSession;
     address public trustedRelayer;
+    bool public relayerGloballyEnabled = true;
+    uint64 public constant MAX_RELAYER_SESSION = 2 days;
+    mapping(uint256 => mapping(uint256 => bool)) public usedSaveNonces;
 
     // ── VIP ───────────────────────────────────────────────────
     mapping(uint256 => uint64)  public vipExpiry;
@@ -85,6 +92,8 @@ contract KirhaGame is Ownable, ReentrancyGuard {
     event ResourcesDeposited(address indexed player, uint256 indexed cityId);
     event CityBanned(uint256 indexed cityId, bool banned);
     event RelayerAuthorized(uint256 indexed cityId, address relayer, uint64 expiry);
+    event RelayerSessionRevoked(uint256 indexed cityId);
+    event RelayerGlobalStatus(bool enabled);
     event PepitesBought(uint256 indexed cityId, uint8 packType, uint256 pepites);
     event VipPurchased(uint256 indexed cityId, uint64 expiry, uint8 durationType);
     event CityDeleted(uint256 indexed cityId);
@@ -109,6 +118,7 @@ contract KirhaGame is Ownable, ReentrancyGuard {
     modifier onlyCityOwnerOrRelayer(uint256 cityId) {
         address owner = cityNft.ownerOf(cityId);
         if (msg.sender != owner) {
+            require(relayerGloballyEnabled, "KirhaGame: relayer disabled");
             RelayerSession memory s = relayerSession[cityId];
             require(s.relayer == msg.sender && uint64(block.timestamp) < s.expiry, "KirhaGame: not authorized");
         }
@@ -141,6 +151,11 @@ contract KirhaGame is Ownable, ReentrancyGuard {
 
     function setTrustedRelayer(address relayer) external onlyOwner {
         trustedRelayer = relayer;
+    }
+
+    function setRelayerGloballyEnabled(bool enabled) external onlyOwner {
+        relayerGloballyEnabled = enabled;
+        emit RelayerGlobalStatus(enabled);
     }
 
     function adminDeleteCity(uint256 cityId) external onlyOwner {
@@ -255,9 +270,16 @@ contract KirhaGame is Ownable, ReentrancyGuard {
 
     function authorizeRelayer(uint256 cityId, uint64 durationSeconds) external onlyCityOwner(cityId) {
         require(trustedRelayer != address(0), "KirhaGame: no trusted relayer set");
+        require(relayerGloballyEnabled, "KirhaGame: relayer disabled");
+        require(durationSeconds > 0 && durationSeconds <= MAX_RELAYER_SESSION, "KirhaGame: invalid session duration");
         uint64 expiry = uint64(block.timestamp) + durationSeconds;
         relayerSession[cityId] = RelayerSession({ relayer: trustedRelayer, expiry: expiry });
         emit RelayerAuthorized(cityId, trustedRelayer, expiry);
+    }
+
+    function revokeRelayerSession(uint256 cityId) external onlyCityOwner(cityId) {
+        delete relayerSession[cityId];
+        emit RelayerSessionRevoked(cityId);
     }
 
     function isRelayerActive(uint256 cityId) external view returns (bool) {
@@ -289,7 +311,7 @@ contract KirhaGame is Ownable, ReentrancyGuard {
      *
      * NOTE TESTNET : kirhaGained n'est pas validé on-chain.
      */
-    function batchSave(
+    function _applyBatchSave(
         uint256          cityId,
         uint256[] calldata resourceIds,
         uint256[] calldata resourceAmts,
@@ -298,7 +320,7 @@ contract KirhaGame is Ownable, ReentrancyGuard {
         uint32[]  calldata metierXps,
         uint32[]  calldata metierXpTotals,
         uint256            kirhaGained
-    ) external nonReentrant onlyCityOwnerOrRelayer(cityId) notBanned(cityId) {
+    ) internal {
         require(resourceIds.length == resourceAmts.length, "KirhaGame: resources length mismatch");
         require(
             metierIds.length == metierLevels.length &&
@@ -322,8 +344,61 @@ contract KirhaGame is Ownable, ReentrancyGuard {
         if (kirhaGained > 0) {
             cityKirha[cityId] += kirhaGained;
         }
+    }
 
+    function batchSave(
+        uint256          cityId,
+        uint256[] calldata resourceIds,
+        uint256[] calldata resourceAmts,
+        uint8[]   calldata metierIds,
+        uint32[]  calldata metierLevels,
+        uint32[]  calldata metierXps,
+        uint32[]  calldata metierXpTotals,
+        uint256            kirhaGained
+    ) external nonReentrant onlyCityOwner(cityId) notBanned(cityId) {
+        _applyBatchSave(cityId, resourceIds, resourceAmts, metierIds, metierLevels, metierXps, metierXpTotals, kirhaGained);
         emit DataSaved(msg.sender, cityId);
+    }
+
+    function batchSaveSigned(
+        uint256          cityId,
+        uint256[] calldata resourceIds,
+        uint256[] calldata resourceAmts,
+        uint8[]   calldata metierIds,
+        uint32[]  calldata metierLevels,
+        uint32[]  calldata metierXps,
+        uint32[]  calldata metierXpTotals,
+        uint256            kirhaGained,
+        uint64             deadline,
+        uint256            nonce,
+        bytes calldata     signature
+    ) external nonReentrant onlyCityOwnerOrRelayer(cityId) notBanned(cityId) {
+        require(uint64(block.timestamp) <= deadline, "KirhaGame: signature expired");
+        require(!usedSaveNonces[cityId][nonce], "KirhaGame: nonce already used");
+
+        address owner = cityNft.ownerOf(cityId);
+        bytes32 payloadHash = keccak256(
+            abi.encodePacked(
+                address(this),
+                block.chainid,
+                cityId,
+                keccak256(abi.encodePacked(resourceIds)),
+                keccak256(abi.encodePacked(resourceAmts)),
+                keccak256(abi.encodePacked(metierIds)),
+                keccak256(abi.encodePacked(metierLevels)),
+                keccak256(abi.encodePacked(metierXps)),
+                keccak256(abi.encodePacked(metierXpTotals)),
+                kirhaGained,
+                deadline,
+                nonce
+            )
+        );
+        address recovered = payloadHash.toEthSignedMessageHash().recover(signature);
+        require(recovered == owner, "KirhaGame: invalid signature");
+
+        usedSaveNonces[cityId][nonce] = true;
+        _applyBatchSave(cityId, resourceIds, resourceAmts, metierIds, metierLevels, metierXps, metierXpTotals, kirhaGained);
+        emit DataSaved(recovered, cityId);
     }
 
     // --------------------------------------------------------

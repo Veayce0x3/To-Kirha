@@ -224,8 +224,9 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
 
 // ── Onglet HDV on-chain ─────────────────────────────────────
 
-// IDs > 50 : ressources hors chaîne, non vendables sur l'HDV
-const UNSELLABLE_ON_HDV = (id: number) => id > 50;
+// HDV on-chain: seules les ressources 1..50 sont listables.
+const ONCHAIN_MARKET_MAX_ID = 50;
+const UNSELLABLE_ON_HDV = (id: number) => id > ONCHAIN_MARKET_MAX_ID;
 
 const RELAYER_URL = 'https://kirha-relayer.tokirha.workers.dev';
 
@@ -371,10 +372,17 @@ function TabOnchain() {
     return 'autre';
   }
 
-  const allBuyResourceIds = [...new Set(listings.map(l => l.resourceId))].sort((a, b) => a - b);
-  const buyResourceIds = buyCategorie === 'tout'
-    ? allBuyResourceIds
-    : allBuyResourceIds.filter(rid => getCategorieRid(rid) === buyCategorie);
+  // Toutes les ressources listables par catégorie (affichage complet même sans offres)
+  const ALL_CATEGORY_IDS: Record<string, number[]> = {
+    tout:       Array.from({length: 50}, (_, i) => i + 1),
+    bucheron:   [1,2,3,4,5,6,7,8,9,10],
+    paysan:     [11,12,13,14,15,16,17,18,19,20],
+    pecheur:    [21,22,23,24,25,26,27,28,29,30],
+    mineur:     [31,32,33,34,35,36,37,38,39,40],
+    alchimiste: [41,42,43,44,45,46,47,48,49,50],
+  };
+
+  const buyResourceIds = ALL_CATEGORY_IDS[buyCategorie] ?? ALL_CATEGORY_IDS['tout'];
 
   const listingsSorted = [...listings]
     .filter(l => buyResourceId !== '' && l.resourceId === parseInt(buyResourceId))
@@ -553,56 +561,66 @@ function TabOnchain() {
         {tab === 'acheter' && (
           <>
             {/* Filtre catégorie */}
-            <div style={{ display:'flex', gap:5, overflowX:'auto', scrollbarWidth:'none', marginBottom:12, paddingBottom:2 }}>
-              {[
-                { id:'tout',       label: lang === 'en' ? 'All' : 'Tout' },
-                { id:'bucheron',   label:'🪓 ' + (lang === 'en' ? 'Woodcut.' : 'Bûcheron') },
-                { id:'paysan',     label:'🌾 ' + (lang === 'en' ? 'Farmer' : 'Paysan') },
-                { id:'pecheur',    label:'🎣 ' + (lang === 'en' ? 'Fisher' : 'Pêcheur') },
-                { id:'mineur',     label:'⛏️ ' + (lang === 'en' ? 'Miner' : 'Mineur') },
-                { id:'alchimiste', label:'🌿 ' + (lang === 'en' ? 'Alchim.' : 'Alchim.') },
-              ].map(cat => (
-                <button key={cat.id}
-                  onClick={() => { setBuyCategorie(cat.id); setBuyResourceId(''); setBuyQty({}); }}
-                  style={{ padding:'5px 10px', background: buyCategorie === cat.id ? '#c43070' : 'rgba(196,48,112,0.07)', border: buyCategorie === cat.id ? 'none' : '1px solid rgba(196,48,112,0.18)', borderRadius:20, color: buyCategorie === cat.id ? '#fff' : '#7a4060', fontSize:10, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-
-            {listings.length === 0 ? (
-              <div style={s.empty}>
-                <span style={{ fontSize:40 }}>🏪</span>
-                <p style={{ color:'#7a4060', fontSize:13, marginTop:10 }}>Aucune offre sur le marché pour l'instant.</p>
-              </div>
-            ) : (
-              <>
-                {/* Grille ressources */}
-                <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'0 0 10px', letterSpacing:'0.06em' }}>🌸 RESSOURCES DISPONIBLES</p>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:16 }}>
-                  {buyResourceIds.map(rid => {
-                    const ridListings = listings.filter(l => l.resourceId === rid);
-                    const bestPrice = Math.min(...ridListings.map(l => l.pricePerUnit));
-                    const isSelected = buyResourceId === String(rid);
+            {(() => {
+              const CATS = [
+                { id:'tout',       icon:'🌸', label: lang === 'en' ? 'All' : 'Tout' },
+                { id:'bucheron',   icon:'🪓', label: lang === 'en' ? 'Logger' : 'Bûcheron' },
+                { id:'paysan',     icon:'🌾', label: lang === 'en' ? 'Farmer' : 'Paysan' },
+                { id:'pecheur',    icon:'🎣', label: lang === 'en' ? 'Fisher' : 'Pêcheur' },
+                { id:'mineur',     icon:'⛏️', label: lang === 'en' ? 'Miner' : 'Mineur' },
+                { id:'alchimiste', icon:'🌿', label: lang === 'en' ? 'Alchim.' : 'Alchim.' },
+              ];
+              return (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:5, marginBottom:14 }}>
+                  {CATS.map(cat => {
+                    const catIds = ALL_CATEGORY_IDS[cat.id] ?? [];
+                    const offresCount = catIds.filter(rid => listings.some(l => l.resourceId === rid)).length;
+                    const active = buyCategorie === cat.id;
                     return (
-                      <button
-                        key={rid}
-                        onClick={() => { setBuyResourceId(isSelected ? '' : String(rid)); setBuyQty({}); }}
-                        style={{ background: isSelected ? 'linear-gradient(135deg, rgba(196,48,112,0.1), rgba(138,37,212,0.07))' : '#fff', border: isSelected ? '2px solid #c43070' : '1px solid rgba(212,100,138,0.2)', borderRadius:14, padding:'10px', cursor:'pointer', textAlign:'left', boxShadow: isSelected ? '0 2px 12px rgba(196,48,112,0.12)' : 'none' }}
+                      <button key={cat.id}
+                        onClick={() => { setBuyCategorie(cat.id); setBuyResourceId(''); setBuyQty({}); }}
+                        style={{ padding:'6px 4px', background: active ? 'rgba(196,48,112,0.12)' : '#fff', border: active ? '1.5px solid #c43070' : '1px solid rgba(212,100,138,0.18)', borderRadius:10, color: active ? '#c43070' : '#7a4060', fontSize:9, fontWeight:700, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}
                       >
-                        <span style={{ fontSize:26, display:'block', marginBottom:4 }}>{emojiByResourceId(rid)}</span>
-                        <span style={{ color:'#1e0a16', fontSize:11, fontWeight:700, display:'block', marginBottom:4, lineHeight:1.2 }}>{getNomRessource(rid, lang)}</span>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                          <span style={{ background:'rgba(196,48,112,0.1)', color:'#c43070', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:8 }}>
-                            {ridListings.length} offre{ridListings.length > 1 ? 's' : ''}
+                        <span style={{ fontSize:16 }}>{cat.icon}</span>
+                        <span style={{ fontSize:8, lineHeight:1.2 }}>{cat.label}</span>
+                        {cat.id !== 'tout' && (
+                          <span style={{ background: offresCount > 0 ? (active ? 'rgba(196,48,112,0.2)' : 'rgba(106,191,68,0.15)') : 'rgba(212,100,138,0.07)', color: offresCount > 0 ? (active ? '#c43070' : '#2a7a10') : '#b08090', fontSize:8, fontWeight:800, padding:'1px 4px', borderRadius:6 }}>
+                            {offresCount}/{catIds.length}
                           </span>
-                          <span style={{ color:'#f9a825', fontSize:10, fontWeight:800 }}>{bestPrice.toFixed(4)} $K</span>
-                        </div>
+                        )}
                       </button>
                     );
                   })}
                 </div>
+              );
+            })()}
+
+            {/* Grille ressources — toutes, grises si aucune offre */}
+            <p style={{ color:'#9a6080', fontSize:10, fontWeight:700, margin:'0 0 10px', letterSpacing:'0.06em' }}>🌸 RESSOURCES</p>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:16 }}>
+              {buyResourceIds.map(rid => {
+                const ridListings = listings.filter(l => l.resourceId === rid);
+                const hasListings = ridListings.length > 0;
+                const bestPrice = hasListings ? Math.min(...ridListings.map(l => l.pricePerUnit)) : null;
+                const isSelected = buyResourceId === String(rid);
+                return (
+                  <button
+                    key={rid}
+                    onClick={() => { if (!hasListings) return; setBuyResourceId(isSelected ? '' : String(rid)); setBuyQty({}); }}
+                    style={{ background: isSelected ? 'linear-gradient(135deg, rgba(196,48,112,0.1), rgba(138,37,212,0.07))' : '#fff', border: isSelected ? '2px solid #c43070' : '1px solid rgba(212,100,138,0.15)', borderRadius:14, padding:'10px', cursor: hasListings ? 'pointer' : 'default', textAlign:'left', boxShadow: isSelected ? '0 2px 12px rgba(196,48,112,0.12)' : 'none', opacity: hasListings ? 1 : 0.4 }}
+                  >
+                    <span style={{ fontSize:26, display:'block', marginBottom:4 }}>{emojiByResourceId(rid)}</span>
+                    <span style={{ color:'#1e0a16', fontSize:11, fontWeight:700, display:'block', marginBottom:4, lineHeight:1.2 }}>{getNomRessource(rid, lang)}</span>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <span style={{ background: hasListings ? 'rgba(196,48,112,0.1)' : 'rgba(212,100,138,0.06)', color: hasListings ? '#c43070' : '#b08090', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:8 }}>
+                        {hasListings ? `${ridListings.length} offre${ridListings.length > 1 ? 's' : ''}` : '0 offre'}
+                      </span>
+                      {bestPrice !== null && <span style={{ color:'#f9a825', fontSize:10, fontWeight:800 }}>{bestPrice.toFixed(4)} $K</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
 
                 {/* Listings pour la ressource sélectionnée */}
                 {buyResourceId !== '' && (
@@ -686,8 +704,6 @@ function TabOnchain() {
                     </div>
                   </div>
                 )}
-              </>
-            )}
 
             {status === 'success' && <p style={{ color:'#6abf44', fontSize:12, fontWeight:700, textAlign:'center', marginTop:8 }}>✅ Achat confirmé !</p>}
             {error && <p style={{ color:'#c43070', fontSize:10, marginTop:4 }}>{error.slice(0,120)}</p>}
@@ -722,40 +738,62 @@ function TabOnchain() {
               <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 12px' }}>Ajouter au panier de vente</p>
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 {/* Filtre par catégorie */}
-                <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
-                  {(['tout','bucheron','paysan','pecheur','mineur','alchimiste'] as const).map(cat => {
-                    const label: Record<string, string> = { tout:'Tout', bucheron:'🪓', paysan:'🌾', pecheur:'🎣', mineur:'⛏️', alchimiste:'🌿' };
-                    return (
-                      <button key={cat} onClick={() => setSellCategorie(cat)} style={{ padding:'4px 10px', borderRadius:20, fontSize:10, fontWeight:700, cursor:'pointer', border: sellCategorie===cat ? '1.5px solid #c43070' : '1px solid rgba(212,100,138,0.2)', background: sellCategorie===cat ? 'rgba(196,48,112,0.12)' : 'rgba(212,100,138,0.04)', color: sellCategorie===cat ? '#c43070' : '#7a4060' }}>
-                        {label[cat]}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div>
-                  <label style={s.label}>Ressource</label>
-                  {inventaireItems.filter(item => !cart.some(c => c.resourceId === item.id)).length === 0 ? (
-                    <p style={{ color:'#9a6080', fontSize:12, margin:'4px 0' }}>Aucune ressource disponible en inventaire.</p>
-                  ) : (
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:6 }}>
-                      {inventaireItems.filter(item => !cart.some(c => c.resourceId === item.id)).map(item => {
-                        const isSelected = sellResourceId === String(item.id);
+                {(() => {
+                  const CATS = [
+                    { id:'tout',       icon:'🌸', label: lang === 'en' ? 'All' : 'Tout' },
+                    { id:'bucheron',   icon:'🪓', label: lang === 'en' ? 'Logger' : 'Bûcheron' },
+                    { id:'paysan',     icon:'🌾', label: lang === 'en' ? 'Farmer' : 'Paysan' },
+                    { id:'pecheur',    icon:'🎣', label: lang === 'en' ? 'Fisher' : 'Pêcheur' },
+                    { id:'mineur',     icon:'⛏️', label: lang === 'en' ? 'Miner' : 'Mineur' },
+                    { id:'alchimiste', icon:'🌿', label: lang === 'en' ? 'Alchim.' : 'Alchim.' },
+                  ];
+                  return (
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:5 }}>
+                      {CATS.map(cat => {
+                        const catIds = ALL_CATEGORY_IDS[cat.id] ?? [];
+                        const inInvCount = catIds.filter(rid => Math.floor(inventaire[rid as ResourceId] ?? 0) >= 1 && !UNSELLABLE_ON_HDV(rid)).length;
+                        const active = sellCategorie === cat.id;
                         return (
-                          <button
-                            key={item.id}
-                            onClick={() => setSellResourceId(isSelected ? '' : String(item.id))}
-                            style={{ background: isSelected ? 'linear-gradient(135deg, rgba(196,48,112,0.1), rgba(138,37,212,0.07))' : '#fff', border: isSelected ? '2px solid #c43070' : '1px solid rgba(212,100,138,0.2)', borderRadius:14, padding:'10px', cursor:'pointer', textAlign:'left', boxShadow: isSelected ? '0 2px 12px rgba(196,48,112,0.12)' : 'none' }}
-                          >
-                            <span style={{ fontSize:26, display:'block', marginBottom:4 }}>{emojiByResourceId(item.id)}</span>
-                            <span style={{ color:'#1e0a16', fontSize:11, fontWeight:700, display:'block', marginBottom:4, lineHeight:1.2 }}>{getNomRessource(item.id, lang)}</span>
-                            <span style={{ background:'rgba(196,48,112,0.1)', color:'#c43070', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:8 }}>
-                              ×{item.qty} dispo
-                            </span>
+                          <button key={cat.id} onClick={() => { setSellCategorie(cat.id); setSellResourceId(''); }} style={{ padding:'6px 4px', background: active ? 'rgba(196,48,112,0.12)' : '#fff', border: active ? '1.5px solid #c43070' : '1px solid rgba(212,100,138,0.18)', borderRadius:10, color: active ? '#c43070' : '#7a4060', fontSize:9, fontWeight:700, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
+                            <span style={{ fontSize:16 }}>{cat.icon}</span>
+                            <span style={{ fontSize:8, lineHeight:1.2 }}>{cat.label}</span>
+                            {cat.id !== 'tout' && (
+                              <span style={{ background: inInvCount > 0 ? (active ? 'rgba(196,48,112,0.2)' : 'rgba(106,191,68,0.15)') : 'rgba(212,100,138,0.07)', color: inInvCount > 0 ? (active ? '#c43070' : '#2a7a10') : '#b08090', fontSize:8, fontWeight:800, padding:'1px 4px', borderRadius:6 }}>
+                                {inInvCount}/{catIds.filter(id => !UNSELLABLE_ON_HDV(id)).length}
+                              </span>
+                            )}
                           </button>
                         );
                       })}
                     </div>
-                  )}
+                  );
+                })()}
+                <div>
+                  <label style={s.label}>Ressource</label>
+                  {/* Toutes les ressources de la catégorie — grises si absentes de l'inventaire */}
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:6 }}>
+                    {(ALL_CATEGORY_IDS[sellCategorie] ?? ALL_CATEGORY_IDS['tout'])
+                      .filter(id => !UNSELLABLE_ON_HDV(id) && !cart.some(c => c.resourceId === id))
+                      .map(id => {
+                        const rid = id as ResourceId;
+                        const qty = Math.floor(inventaire[rid] ?? 0);
+                        const hasStock = qty >= 1;
+                        const isSelected = sellResourceId === String(id);
+                        return (
+                          <button
+                            key={id}
+                            onClick={() => { if (!hasStock) return; setSellResourceId(isSelected ? '' : String(id)); }}
+                            style={{ background: isSelected ? 'linear-gradient(135deg, rgba(196,48,112,0.1), rgba(138,37,212,0.07))' : '#fff', border: isSelected ? '2px solid #c43070' : '1px solid rgba(212,100,138,0.15)', borderRadius:14, padding:'10px', cursor: hasStock ? 'pointer' : 'default', textAlign:'left', boxShadow: isSelected ? '0 2px 12px rgba(196,48,112,0.12)' : 'none', opacity: hasStock ? 1 : 0.38 }}
+                          >
+                            <span style={{ fontSize:26, display:'block', marginBottom:4 }}>{emojiByResourceId(id)}</span>
+                            <span style={{ color:'#1e0a16', fontSize:11, fontWeight:700, display:'block', marginBottom:4, lineHeight:1.2 }}>{getNomRessource(id, lang)}</span>
+                            <span style={{ background: hasStock ? 'rgba(196,48,112,0.1)' : 'rgba(212,100,138,0.05)', color: hasStock ? '#c43070' : '#b08090', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:8 }}>
+                              {hasStock ? `×${qty} dispo` : '0 en stock'}
+                            </span>
+                          </button>
+                        );
+                    })}
+                  </div>
                 </div>
 
                 {sellResourceId && (

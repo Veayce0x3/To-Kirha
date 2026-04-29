@@ -3,12 +3,15 @@ import { ethers } from 'ethers';
 // ── ABIs minimaux ───────────────────────────────────────────
 const KIRHA_GAME_ABI = [
   'function batchSave(uint256 cityId, uint256[] resourceIds, uint256[] resourceAmts, uint8[] metierIds, uint32[] metierLevels, uint32[] metierXps, uint32[] metierXpTotals, uint256 kirhaGained) external',
+  'function batchSaveSigned(uint256 cityId, uint256[] resourceIds, uint256[] resourceAmts, uint8[] metierIds, uint32[] metierLevels, uint32[] metierXps, uint32[] metierXpTotals, uint256 kirhaGained, uint64 deadline, uint256 nonce, bytes signature) external',
+  'function playerCityId(address player) external view returns (uint256)',
 ];
 
 const KIRHA_MARKET_ABI = [
   'function listResource(uint256 cityId, uint256 resourceId, uint256 quantity, uint256 pricePerUnit) external returns (uint256)',
   'function buyResource(uint256 listingId, uint256 buyerCityId, uint256 quantity) external',
   'function cancelListing(uint256 listingId) external',
+  'function getListing(uint256 listingId) external view returns (tuple(uint256 sellerCityId,uint256 resourceId,uint256 quantity,uint256 pricePerUnit,bool active))',
 ];
 
 const KIRHA_GAME_ADMIN_ABI = [
@@ -42,6 +45,10 @@ interface SavePayload {
   metierXps: number[];
   metierXpTotals: number[];
   kirhaGained: string;
+  wallet: string;
+  nonce: string;
+  deadline: string;
+  signature: string;
 }
 
 interface ListPayload {
@@ -49,16 +56,101 @@ interface ListPayload {
   resourceId: string;
   quantity: string;
   pricePerUnit: string;
+  wallet: string;
+  nonce: string;
+  deadline: string;
+  signature: string;
 }
 
 interface BuyPayload {
   listingId: string;
   buyerCityId: string;
   quantity: string;
+  wallet: string;
+  nonce: string;
+  deadline: string;
+  signature: string;
 }
 
 interface CancelPayload {
   listingId: string;
+  cityId: string;
+  wallet: string;
+  nonce: string;
+  deadline: string;
+  signature: string;
+}
+
+const PARCHEMIN_PRICE_MIN = 1;
+const PARCHEMIN_PRICE_MAX = 10_000;
+
+function parsePositiveInt(value: string | undefined): number | null {
+  if (!value) return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) return null;
+  return n;
+}
+
+function buildSignMessage(action: string, fields: Record<string, string>): string {
+  const sorted = Object.keys(fields).sort().map(k => `${k}:${fields[k]}`);
+  return ['To-Kirha Relayer', `action:${action}`, ...sorted].join('\n');
+}
+
+async function assertSignedRequest(
+  env: Env,
+  action: string,
+  wallet: string,
+  cityId: string,
+  nonce: string,
+  deadline: string,
+  signature: string,
+  extraFields: Record<string, string> = {},
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const now = Math.floor(Date.now() / 1000);
+  const deadlineInt = parsePositiveInt(deadline);
+  if (!deadlineInt || deadlineInt < now) {
+    return { ok: false, status: 401, error: 'Signature expirée.' };
+  }
+
+  if (!ethers.isAddress(wallet)) {
+    return { ok: false, status: 400, error: 'Wallet invalide.' };
+  }
+
+  if (!signature || !signature.startsWith('0x')) {
+    return { ok: false, status: 400, error: 'Signature manquante.' };
+  }
+
+  const nonceInt = parsePositiveInt(nonce);
+  if (!nonceInt) {
+    return { ok: false, status: 400, error: 'Nonce invalide.' };
+  }
+
+  const msg = buildSignMessage(action, {
+    wallet: wallet.toLowerCase(),
+    cityId,
+    nonce,
+    deadline,
+    ...extraFields,
+  });
+
+  let recovered: string;
+  try {
+    recovered = ethers.verifyMessage(msg, signature).toLowerCase();
+  } catch {
+    return { ok: false, status: 401, error: 'Signature invalide.' };
+  }
+
+  if (recovered !== wallet.toLowerCase()) {
+    return { ok: false, status: 401, error: 'Signer invalide.' };
+  }
+
+  const nonceKey = `nonce:${wallet.toLowerCase()}:${nonce}`;
+  const seen = await env.RATE_LIMITER.get(nonceKey);
+  if (seen) {
+    return { ok: false, status: 409, error: 'Nonce déjà utilisé.' };
+  }
+  await env.RATE_LIMITER.put(nonceKey, '1', { expirationTtl: 3600 });
+  return { ok: true };
 }
 
 function corsHeaders(origin: string, allowedOrigin: string) {
@@ -86,6 +178,8 @@ function cleanError(msg: string): string {
   if (msg.includes('Rate limit'))        return 'Trop de requêtes.';
   if (msg.includes('not enough stock'))  return 'Stock insuffisant.';
   if (msg.includes('not enough kirha'))  return 'Solde $KIRHA insuffisant.';
+  if (msg.includes('invalid signature')) return 'Signature invalide.';
+  if (msg.includes('signature expired')) return 'Signature expirée.';
   return msg.slice(0, 120);
 }
 
@@ -107,7 +201,10 @@ export default {
     // ════════════════════════════════════════════════════════
     if (request.method === 'GET' && pathname === '/config') {
       const priceStr = await env.RATE_LIMITER.get('game:parcheminPrice');
-      const parcheminPrice = priceStr ? parseInt(priceStr, 10) : 10;
+      const parsed = priceStr ? parseInt(priceStr, 10) : 10;
+      const parcheminPrice = Number.isFinite(parsed)
+        ? Math.min(PARCHEMIN_PRICE_MAX, Math.max(PARCHEMIN_PRICE_MIN, parsed))
+        : 10;
       return jsonResponse(cors, { parcheminPrice });
     }
 
@@ -133,8 +230,26 @@ export default {
     if (pathname === '/' || pathname === '/save') {
       const p = body as SavePayload;
 
-      if (!p.cityId || !p.metierIds || !p.metierLevels) {
+      if (!p.cityId || !p.metierIds || !p.metierLevels || !p.wallet || !p.signature || !p.nonce || !p.deadline) {
         return jsonResponse(cors, { error: 'Missing required fields' }, 400);
+      }
+
+      const signed = await assertSignedRequest(
+        env,
+        'save',
+        p.wallet,
+        p.cityId,
+        p.nonce,
+        p.deadline,
+        p.signature,
+        { kirhaGained: p.kirhaGained ?? '0' },
+      );
+      if (!signed.ok) return jsonResponse(cors, { error: signed.error }, signed.status);
+
+      const gameReader = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ABI, provider);
+      const ownerCityId = await gameReader.playerCityId(p.wallet);
+      if (ownerCityId.toString() !== p.cityId) {
+        return jsonResponse(cors, { error: 'CityId ne correspond pas au wallet.' }, 403);
       }
 
       // Rate limiting : max 20 saves/heure par cityId
@@ -149,7 +264,7 @@ export default {
 
       try {
         const contract = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ABI, wallet);
-        const tx = await contract.batchSave(
+        const tx = await contract.batchSaveSigned(
           BigInt(p.cityId),
           (p.resourceIds  ?? []).map(BigInt),
           (p.resourceAmts ?? []).map(BigInt),
@@ -158,6 +273,9 @@ export default {
           p.metierXps,
           p.metierXpTotals,
           BigInt(p.kirhaGained ?? '0'),
+          BigInt(p.deadline),
+          BigInt(p.nonce),
+          p.signature,
         );
         const receipt = await tx.wait();
         return jsonResponse(cors, { success: true, txHash: receipt.hash });
@@ -173,8 +291,26 @@ export default {
     if (pathname === '/market/list') {
       const p = body as ListPayload;
 
-      if (!p.cityId || !p.resourceId || !p.quantity || !p.pricePerUnit) {
+      if (!p.cityId || !p.resourceId || !p.quantity || !p.pricePerUnit || !p.wallet || !p.signature || !p.nonce || !p.deadline) {
         return jsonResponse(cors, { error: 'Missing required fields' }, 400);
+      }
+
+      const signed = await assertSignedRequest(
+        env,
+        'market_list',
+        p.wallet,
+        p.cityId,
+        p.nonce,
+        p.deadline,
+        p.signature,
+        { resourceId: p.resourceId, quantity: p.quantity, pricePerUnit: p.pricePerUnit },
+      );
+      if (!signed.ok) return jsonResponse(cors, { error: signed.error }, signed.status);
+
+      const gameReader = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ABI, provider);
+      const ownerCityId = await gameReader.playerCityId(p.wallet);
+      if (ownerCityId.toString() !== p.cityId) {
+        return jsonResponse(cors, { error: 'CityId ne correspond pas au wallet.' }, 403);
       }
 
       // Rate limiting : max 30 mises en vente/heure par cityId
@@ -220,8 +356,26 @@ export default {
     if (pathname === '/market/buy') {
       const p = body as BuyPayload;
 
-      if (!p.listingId || !p.buyerCityId || !p.quantity) {
+      if (!p.listingId || !p.buyerCityId || !p.quantity || !p.wallet || !p.signature || !p.nonce || !p.deadline) {
         return jsonResponse(cors, { error: 'Missing required fields' }, 400);
+      }
+
+      const signed = await assertSignedRequest(
+        env,
+        'market_buy',
+        p.wallet,
+        p.buyerCityId,
+        p.nonce,
+        p.deadline,
+        p.signature,
+        { listingId: p.listingId, quantity: p.quantity },
+      );
+      if (!signed.ok) return jsonResponse(cors, { error: signed.error }, signed.status);
+
+      const gameReader = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ABI, provider);
+      const ownerCityId = await gameReader.playerCityId(p.wallet);
+      if (ownerCityId.toString() !== p.buyerCityId) {
+        return jsonResponse(cors, { error: 'BuyerCityId ne correspond pas au wallet.' }, 403);
       }
 
       // Rate limiting : max 50 achats/heure par buyerCityId
@@ -255,9 +409,35 @@ export default {
     if (pathname === '/market/cancel') {
       const p = body as CancelPayload;
 
-      if (!p.listingId) {
-        return jsonResponse(cors, { error: 'Missing listingId' }, 400);
+      if (!p.listingId || !p.cityId || !p.wallet || !p.signature || !p.nonce || !p.deadline) {
+        return jsonResponse(cors, { error: 'Missing required fields' }, 400);
       }
+
+      const signed = await assertSignedRequest(
+        env,
+        'market_cancel',
+        p.wallet,
+        p.cityId,
+        p.nonce,
+        p.deadline,
+        p.signature,
+        { listingId: p.listingId },
+      );
+      if (!signed.ok) return jsonResponse(cors, { error: signed.error }, signed.status);
+
+      const gameReader = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ABI, provider);
+      const ownerCityId = await gameReader.playerCityId(p.wallet);
+      if (ownerCityId.toString() !== p.cityId) {
+        return jsonResponse(cors, { error: 'CityId ne correspond pas au wallet.' }, 403);
+      }
+
+      const hourBucket = Math.floor(Date.now() / 3_600_000);
+      const cancelRateKey = `cancel:${p.cityId}:${hourBucket}`;
+      const cancelCount = parseInt(await env.RATE_LIMITER.get(cancelRateKey) ?? '0', 10);
+      if (cancelCount >= 50) {
+        return jsonResponse(cors, { error: 'Rate limit exceeded (50/hour)' }, 429);
+      }
+      await env.RATE_LIMITER.put(cancelRateKey, String(cancelCount + 1), { expirationTtl: 3600 });
 
       try {
         const contract = new ethers.Contract(env.KIRHA_MARKET_ADDRESS, KIRHA_MARKET_ABI, wallet);
@@ -281,6 +461,13 @@ export default {
       }
 
       const action = pathname.replace('/admin/', '');
+      const hourBucket = Math.floor(Date.now() / 3_600_000);
+      const adminRateKey = `admin:${action}:${hourBucket}`;
+      const adminCount = parseInt(await env.RATE_LIMITER.get(adminRateKey) ?? '0', 10);
+      if (adminCount >= 200) {
+        return jsonResponse(cors, { error: 'Rate limit exceeded (200/hour)' }, 429);
+      }
+      await env.RATE_LIMITER.put(adminRateKey, String(adminCount + 1), { expirationTtl: 3600 });
 
       // Route de test simple (pas de tx on-chain)
       if (action === 'ping') {
@@ -293,7 +480,11 @@ export default {
       if (action === 'set-config') {
         const updates: Record<string, string> = {};
         if (p.parcheminPrice !== undefined) {
-          const price = Math.max(1, parseInt(p.parcheminPrice, 10) || 10);
+          const parsed = parseInt(p.parcheminPrice, 10);
+          if (!Number.isFinite(parsed)) {
+            return jsonResponse(cors, { error: 'Invalid parcheminPrice' }, 400);
+          }
+          const price = Math.min(PARCHEMIN_PRICE_MAX, Math.max(PARCHEMIN_PRICE_MIN, parsed));
           await env.RATE_LIMITER.put('game:parcheminPrice', String(price));
           updates.parcheminPrice = String(price);
         }

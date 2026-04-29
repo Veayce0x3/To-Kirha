@@ -8,7 +8,8 @@ import { ethers } from 'hardhat';
 const GAS_PRICE = 15_000_000_000n; // 15 gwei
 
 const KIRHA_TOKEN_ADDRESS     = '0x7DF9F321829c9096622D81E640968e601e43a025';
-const KIRHA_RESOURCES_ADDRESS = '0x581334a6725C5A6057cF63283655eb38AC1cA295';
+const KIRHA_CITY_ADDRESS      = '0x65545059D2E87cae0737237E43dfAf835bf08b83';
+const KIRHA_GAME_ADDRESS      = '0x898bf53dC0E8DcE3A9De5fD48F996328BF651C5f';
 const TREASURY_ADDRESS        = '0x5A9d55c76c38eDe9b8B34ED6e7F35578cE919b0C'; // deployer wallet = treasury
 
 async function main() {
@@ -24,8 +25,9 @@ async function main() {
   const KirhaMarket = await ethers.getContractFactory('KirhaMarket');
   const kirhaMarket = await KirhaMarket.deploy(
     deployer.address,
-    KIRHA_RESOURCES_ADDRESS,
     KIRHA_TOKEN_ADDRESS,
+    KIRHA_CITY_ADDRESS,
+    KIRHA_GAME_ADDRESS,
     TREASURY_ADDRESS,
     { nonce: nonce++, gasPrice: GAS_PRICE }
   );

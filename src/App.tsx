@@ -1,18 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAccount, usePublicClient } from 'wagmi';
 import { formatEther } from 'viem';
 import { ConnectPage }  from './pages/ConnectPage';
 import { HomePage }     from './pages/HomePage';
-import { RecoltePage }  from './pages/RecoltePage';
-import { HdvPage }      from './pages/HdvPage';
-import { BanquePage }   from './pages/BanquePage';
-import { MaisonPage }   from './pages/MaisonPage';
-import { CraftPage }    from './pages/CraftPage';
-import { FermePage }    from './pages/FermePage';
-import { AdminPage }    from './pages/AdminPage';
-import { TemplePage }   from './pages/TemplePage';
-import { EncherePage }  from './pages/EncherePage';
+const RecoltePage = lazy(() => import('./pages/RecoltePage').then(m => ({ default: m.RecoltePage })));
+const HdvPage = lazy(() => import('./pages/HdvPage').then(m => ({ default: m.HdvPage })));
+const BanquePage = lazy(() => import('./pages/BanquePage').then(m => ({ default: m.BanquePage })));
+const MaisonPage = lazy(() => import('./pages/MaisonPage').then(m => ({ default: m.MaisonPage })));
+const CraftPage = lazy(() => import('./pages/CraftPage').then(m => ({ default: m.CraftPage })));
+const FermePage = lazy(() => import('./pages/FermePage').then(m => ({ default: m.FermePage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const TemplePage = lazy(() => import('./pages/TemplePage').then(m => ({ default: m.TemplePage })));
+const EncherePage = lazy(() => import('./pages/EncherePage').then(m => ({ default: m.EncherePage })));
 import { BottomMenu }   from './components/BottomMenu';
 import { useGameStore } from './store/gameStore';
 import { MetierId } from './data/metiers';
@@ -195,6 +195,14 @@ function Guard({ children }: { children: React.ReactNode }) {
   return isConnected ? <>{children}</> : <Navigate to="/" replace />;
 }
 
+function RouteFallback() {
+  return (
+    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'#fdf0f5', color:'#7a4060', fontWeight:700, fontSize:13 }}>
+      Chargement...
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -204,20 +212,22 @@ export default function App() {
         <AutoSaveGuard />
         <VilleIdGuard />
         <div style={{ position:'relative', width:'100%', height:'100svh', overflow:'hidden' }}>
-          <Routes>
-            <Route path="/"       element={<ConnectPage />} />
-            <Route path="/home"   element={<Guard><HomePage /></Guard>} />
-            <Route path="/recolte" element={<Guard><RecoltePage /></Guard>} />
-            <Route path="/hdv"    element={<Guard><HdvPage /></Guard>} />
-            <Route path="/banque" element={<Guard><BanquePage /></Guard>} />
-            <Route path="/maison" element={<Guard><MaisonPage /></Guard>} />
-            <Route path="/craft"  element={<Guard><CraftPage /></Guard>} />
-            <Route path="/ferme"  element={<Guard><FermePage /></Guard>} />
-            <Route path="/kirha-gm-v4x9"  element={<Guard><AdminPage /></Guard>} />
-            <Route path="/temple"  element={<Guard><TemplePage /></Guard>} />
-            <Route path="/enchere" element={<Guard><EncherePage /></Guard>} />
-            <Route path="*"       element={<Navigate to="/home" replace />} />
-          </Routes>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/"       element={<ConnectPage />} />
+              <Route path="/home"   element={<Guard><HomePage /></Guard>} />
+              <Route path="/recolte" element={<Guard><RecoltePage /></Guard>} />
+              <Route path="/hdv"    element={<Guard><HdvPage /></Guard>} />
+              <Route path="/banque" element={<Guard><BanquePage /></Guard>} />
+              <Route path="/maison" element={<Guard><MaisonPage /></Guard>} />
+              <Route path="/craft"  element={<Guard><CraftPage /></Guard>} />
+              <Route path="/ferme"  element={<Guard><FermePage /></Guard>} />
+              <Route path="/kirha-gm-v4x9"  element={<Guard><AdminPage /></Guard>} />
+              <Route path="/temple"  element={<Guard><TemplePage /></Guard>} />
+              <Route path="/enchere" element={<Guard><EncherePage /></Guard>} />
+              <Route path="*"       element={<Navigate to="/home" replace />} />
+            </Routes>
+          </Suspense>
           <BottomMenu />
         </div>
       </HashRouter>

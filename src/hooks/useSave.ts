@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useWriteContract, usePublicClient, useReadContract, useSwitchChain } from 'wagmi';
+import { useWriteContract, usePublicClient, useReadContract, useSwitchChain, useAccount, useSignMessage } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
 import { parseEther } from 'viem';
 import { useGameStore } from '../store/gameStore';
@@ -32,6 +32,8 @@ export function useSave() {
 
   const { writeContractAsync } = useWriteContract();
   const { switchChainAsync }   = useSwitchChain();
+  const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const publicClient = usePublicClient();
 
   const villeIdBn = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
@@ -51,6 +53,29 @@ export function useSave() {
     .filter(p => p.quantite >= 1);
 
   const hasSomethingToSave = mintableItems.length > 0 || kirhaEarned > 0;
+
+  const signRelayerPayload = useCallback(async (
+    action: string,
+    cityId: string,
+    extraFields: Record<string, string>,
+  ) => {
+    if (!address) throw new Error('Wallet non connecté.');
+    const nonce = Date.now().toString();
+    const deadline = (Math.floor(Date.now() / 1000) + 300).toString();
+    const fields: Record<string, string> = {
+      wallet: address.toLowerCase(),
+      cityId,
+      nonce,
+      deadline,
+      ...extraFields,
+    };
+    const lines = Object.keys(fields)
+      .sort()
+      .map(k => `${k}:${fields[k]}`);
+    const message = ['To-Kirha Relayer', `action:${action}`, ...lines].join('\n');
+    const signature = await signMessageAsync({ message });
+    return { wallet: address, nonce, deadline, signature };
+  }, [address, signMessageAsync]);
 
   const sauvegarder = useCallback(async () => {
     if (!hasSomethingToSave || status === 'signing' || status === 'pending') return;
@@ -77,6 +102,9 @@ export function useSave() {
       setStatus('pending');
 
       if (relayerActive) {
+        const signed = await signRelayerPayload('save', villeId, {
+          kirhaGained: kirhaWei.toString(),
+        });
         // ── Voie relayer (gasless) ────────────────────────────
         const body = JSON.stringify({
           cityId:         villeId,
@@ -87,6 +115,7 @@ export function useSave() {
           metierXps:      metierXps.map(String),
           metierXpTotals: metierXpTotals.map(String),
           kirhaGained:    kirhaWei.toString(),
+          ...signed,
         });
 
         const res = await fetch(RELAYER_URL, {
@@ -135,6 +164,7 @@ export function useSave() {
   }, [
     hasSomethingToSave, mintableItems, metiers, villeId, kirhaEarned,
     status, relayerActive, writeContractAsync, publicClient,
+    signRelayerPayload,
     soustraireMintesPending, setSauvegarde, resetKirhaEarned,
   ]);
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useReadContract, useWriteContract, usePublicClient, useSwitchChain } from 'wagmi';
+import { useReadContract, useWriteContract, usePublicClient, useSwitchChain, useAccount, useSignMessage } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
 import { parseEther, formatEther } from 'viem';
 import { KIRHA_MARKET_ADDRESS, KIRHA_GAME_ADDRESS } from '../contracts/addresses';
@@ -42,6 +42,8 @@ export function useMarket() {
 
   const { writeContractAsync } = useWriteContract();
   const { switchChainAsync }   = useSwitchChain();
+  const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const publicClient = usePublicClient();
 
   // Switch vers Base Sepolia si le wallet est sur une autre chaîne
@@ -116,6 +118,27 @@ export function useMarket() {
     }));
   })();
 
+  const signRelayerPayload = useCallback(async (
+    action: string,
+    cityId: string,
+    extraFields: Record<string, string>,
+  ) => {
+    if (!address) throw new Error('Wallet non connecté.');
+    const nonce = Date.now().toString();
+    const deadline = (Math.floor(Date.now() / 1000) + 300).toString();
+    const fields: Record<string, string> = {
+      wallet: address.toLowerCase(),
+      cityId,
+      nonce,
+      deadline,
+      ...extraFields,
+    };
+    const lines = Object.keys(fields).sort().map(k => `${k}:${fields[k]}`);
+    const message = ['To-Kirha Relayer', `action:${action}`, ...lines].join('\n');
+    const signature = await signMessageAsync({ message });
+    return { wallet: address, nonce, deadline, signature };
+  }, [address, signMessageAsync]);
+
   // ── Helper : POST vers le relayer ──────────────────────────
   async function relayerPost(endpoint: string, body: unknown): Promise<void> {
     const res = await fetch(`${RELAYER_URL}${endpoint}`, {
@@ -140,11 +163,17 @@ export function useMarket() {
     setStatus('listing');
     try {
       if (relayerActive) {
+        const signed = await signRelayerPayload('market_list', villeId, {
+          resourceId: String(resourceId),
+          quantity: String(Math.floor(quantity)),
+          pricePerUnit: parseEther(pricePerUnit.toString()).toString(),
+        });
         await relayerPost('/market/list', {
           cityId:       villeId,
           resourceId:   String(resourceId),
           quantity:     String(Math.floor(quantity)),
           pricePerUnit: parseEther(pricePerUnit.toString()).toString(),
+          ...signed,
         });
       } else {
         await ensureChain();
@@ -179,11 +208,17 @@ export function useMarket() {
       if (relayerActive) {
         // Appels séquentiels (le relayer gère les nonces)
         for (const item of items) {
+          const signed = await signRelayerPayload('market_list', villeId, {
+            resourceId: String(item.resourceId),
+            quantity: String(Math.floor(item.quantity)),
+            pricePerUnit: parseEther(item.pricePerUnit.toString()).toString(),
+          });
           await relayerPost('/market/list', {
             cityId:       villeId,
             resourceId:   String(item.resourceId),
             quantity:     String(Math.floor(item.quantity)),
             pricePerUnit: parseEther(item.pricePerUnit.toString()).toString(),
+            ...signed,
           });
         }
       } else {
@@ -222,10 +257,15 @@ export function useMarket() {
     setStatus('buying');
     try {
       if (relayerActive) {
+        const signed = await signRelayerPayload('market_buy', villeId, {
+          listingId: listingId.toString(),
+          quantity: String(Math.floor(quantity)),
+        });
         await relayerPost('/market/buy', {
           listingId:   listingId.toString(),
           buyerCityId: villeId,
           quantity:    String(Math.floor(quantity)),
+          ...signed,
         });
       } else {
         await ensureChain();
@@ -260,10 +300,15 @@ export function useMarket() {
     try {
       if (relayerActive) {
         for (const item of items) {
+          const signed = await signRelayerPayload('market_buy', villeId, {
+            listingId: item.listingId.toString(),
+            quantity: String(Math.floor(item.quantity)),
+          });
           await relayerPost('/market/buy', {
             listingId:   item.listingId.toString(),
             buyerCityId: villeId,
             quantity:    String(Math.floor(item.quantity)),
+            ...signed,
           });
         }
       } else {
@@ -352,7 +397,10 @@ export function useMarket() {
     const listing = listings.find(l => l.listingId === listingId);
     try {
       if (relayerActive) {
-        await relayerPost('/market/cancel', { listingId: listingId.toString() });
+        const signed = await signRelayerPayload('market_cancel', villeId ?? '0', {
+          listingId: listingId.toString(),
+        });
+        await relayerPost('/market/cancel', { listingId: listingId.toString(), cityId: villeId, ...signed });
       } else {
         await ensureChain();
         const hash = await writeContractAsync({
@@ -373,7 +421,7 @@ export function useMarket() {
       setError(err instanceof Error ? err.message : 'Erreur');
       setStatus('error');
     }
-  }, [listings, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource]);
+  }, [listings, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource, signRelayerPayload, villeId]);
 
   const myListings = listings.filter(l => cityIdBn && l.sellerCityId === cityIdBn);
 
@@ -381,7 +429,7 @@ export function useMarket() {
     listings,
     myListings,
     isApproved: true,
-    isRelayerActive: true, // testnet: relayer toujours actif (KirhaMarket ne vérifie pas par ville)
+    isRelayerActive: !!relayerActive,
     status,
     error,
     approveMarket: async () => {},

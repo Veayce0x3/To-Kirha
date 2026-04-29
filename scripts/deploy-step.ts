@@ -19,6 +19,7 @@ const GAS_PRICE     = 3_000_000_000n; // 3 gwei
 interface State {
   kirhaToken?:     string;
   kirhaResources?: string;
+  kirhaCity?:      string;
   kirhaGame?:      string;
   minterSet?:      boolean;
 }
@@ -88,14 +89,30 @@ async function main(): Promise<void> {
   }
   console.log('[2/4] KirhaResources déjà déployé :', state.kirhaResources);
 
-  // ── Étape 3 : KirhaGame ────────────────────────────────────
+  // ── Étape 3 : KirhaCity ────────────────────────────────────
+  if (!state.kirhaCity) {
+    await waitCleanMempool(address);
+    const nonce = await ethers.provider.getTransactionCount(address, 'latest');
+    console.log(`[3/5] Deploying KirhaCity... (nonce ${nonce})`);
+    const Factory = await ethers.getContractFactory('KirhaCity');
+    const contract = await Factory.deploy(address, { nonce, gasPrice: GAS_PRICE });
+    console.log('  tx:', contract.deploymentTransaction()?.hash);
+    await contract.waitForDeployment();
+    state.kirhaCity = await contract.getAddress();
+    saveState(state);
+    console.log('  ✓ KirhaCity:', state.kirhaCity);
+    console.log('\nRelance "npm run deploy:step" pour continuer.');
+    return;
+  }
+  console.log('[3/5] KirhaCity déjà déployé :', state.kirhaCity);
+
+  // ── Étape 4 : KirhaGame ────────────────────────────────────
   if (!state.kirhaGame) {
     await waitCleanMempool(address);
     const nonce = await ethers.provider.getTransactionCount(address, 'latest');
-    const backendSigner = process.env.BACKEND_SIGNER ?? address;
-    console.log(`[3/4] Deploying KirhaGame... (nonce ${nonce})`);
+    console.log(`[4/5] Deploying KirhaGame... (nonce ${nonce})`);
     const Factory = await ethers.getContractFactory('KirhaGame');
-    const contract = await Factory.deploy(address, state.kirhaResources, backendSigner, { nonce, gasPrice: GAS_PRICE });
+    const contract = await Factory.deploy(address, state.kirhaResources, state.kirhaToken, state.kirhaCity, { nonce, gasPrice: GAS_PRICE });
     console.log('  tx:', contract.deploymentTransaction()?.hash);
     await contract.waitForDeployment();
     state.kirhaGame = await contract.getAddress();
@@ -104,13 +121,13 @@ async function main(): Promise<void> {
     console.log('\nRelance "npm run deploy:step" pour continuer.');
     return;
   }
-  console.log('[3/4] KirhaGame déjà déployé :', state.kirhaGame);
+  console.log('[4/5] KirhaGame déjà déployé :', state.kirhaGame);
 
-  // ── Étape 4 : setMinter ────────────────────────────────────
+  // ── Étape 5 : setMinter ────────────────────────────────────
   if (!state.minterSet) {
     await waitCleanMempool(address);
     const nonce = await ethers.provider.getTransactionCount(address, 'latest');
-    console.log(`[4/4] Setting minter... (nonce ${nonce})`);
+    console.log(`[5/5] Setting minter... (nonce ${nonce})`);
     const resources = await ethers.getContractAt('KirhaResources', state.kirhaResources!);
     const tx = await (resources as any).addMinter(state.kirhaGame, { nonce, gasPrice: GAS_PRICE });
     console.log('  tx:', tx.hash);
@@ -119,7 +136,7 @@ async function main(): Promise<void> {
     saveState(state);
     console.log('  ✓ KirhaGame ajouté comme minter');
   } else {
-    console.log('[4/4] Minter déjà configuré');
+    console.log('[5/5] Minter déjà configuré');
   }
 
   // ── Écriture addresses.ts ──────────────────────────────────
@@ -133,6 +150,7 @@ async function main(): Promise<void> {
 /** Base Sepolia (chainId 84532) */
 export const KIRHA_TOKEN_ADDRESS     = '${state.kirhaToken}' as \`0x\${string}\`;
 export const KIRHA_RESOURCES_ADDRESS = '${state.kirhaResources}' as \`0x\${string}\`;
+export const KIRHA_CITY_ADDRESS      = '${state.kirhaCity}' as \`0x\${string}\`;
 export const KIRHA_GAME_ADDRESS      = '${state.kirhaGame}' as \`0x\${string}\`;
 `;
   fs.writeFileSync(ADDRESSES_OUT, content);
@@ -140,6 +158,7 @@ export const KIRHA_GAME_ADDRESS      = '${state.kirhaGame}' as \`0x\${string}\`;
   console.log('\n=== Déploiement complet ===');
   console.log('KirhaToken    :', state.kirhaToken);
   console.log('KirhaResources:', state.kirhaResources);
+  console.log('KirhaCity     :', state.kirhaCity);
   console.log('KirhaGame     :', state.kirhaGame);
   console.log('\nAddresses écrites dans src/contracts/addresses.ts');
   console.log('\nTu peux supprimer deploy-state.json si tu veux repartir à zéro.');
