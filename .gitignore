@@ -28,7 +28,7 @@ typechain-types/
 .vscode/
 .idea/
 
-# Claude local settings (peut contenir des clés privées)
+# Agent local settings (peut contenir des clés privées)
 .claude/
 CLAUDE.md
 
