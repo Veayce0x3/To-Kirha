@@ -238,7 +238,8 @@ function TabOnchain() {
   const personageNiveau   = useGameStore(s => s.personageNiveau);
   const setParcheminPrice = useGameStore(s => s.setParcheminPrice);
 
-  const retirerKirha     = useGameStore(s => s.retirerKirha);
+  const kirhaEarned      = useGameStore(s => s.kirhaEarned);
+  const depenserKirhaOffchain = useGameStore(s => s.depenserKirhaOffchain);
   const ajouterRessource = useGameStore(s => s.ajouterRessource);
   const { lang } = useT();
 
@@ -522,27 +523,31 @@ function TabOnchain() {
                 <div style={{ flex:1 }}>
                   {(() => {
                     const total = boutiqueQty * FLEUR_PRICE;
-                    const canAfford = soldeKirha >= total;
+                    const canAfford = kirhaEarned >= total;
                     return (
                       <span style={{ fontSize:10, fontWeight:700, color: canAfford ? '#2a7a10' : '#c43070' }}>
-                        {canAfford ? '✓' : '✗'} Total : {total.toFixed(1)} $KIRHA
+                        {canAfford ? '✓' : '✗'} Total : {total.toFixed(1)} $KIRHA local
                       </span>
                     );
                   })()}
                 </div>
                 <button
-                  style={{ padding:'8px 16px', background: soldeKirha >= boutiqueQty * FLEUR_PRICE ? 'linear-gradient(135deg,#c43070,#8a25d4)' : 'rgba(212,100,138,0.08)', border: soldeKirha >= boutiqueQty * FLEUR_PRICE ? 'none' : '1px solid rgba(212,100,138,0.2)', borderRadius:10, color: soldeKirha >= boutiqueQty * FLEUR_PRICE ? '#fff' : '#9a6080', fontSize:11, fontWeight:700, cursor: soldeKirha >= boutiqueQty * FLEUR_PRICE ? 'pointer' : 'default' }}
-                  disabled={soldeKirha < boutiqueQty * FLEUR_PRICE}
+                  style={{ padding:'8px 16px', background: kirhaEarned >= boutiqueQty * FLEUR_PRICE ? 'linear-gradient(135deg,#c43070,#8a25d4)' : 'rgba(212,100,138,0.08)', border: kirhaEarned >= boutiqueQty * FLEUR_PRICE ? 'none' : '1px solid rgba(212,100,138,0.2)', borderRadius:10, color: kirhaEarned >= boutiqueQty * FLEUR_PRICE ? '#fff' : '#9a6080', fontSize:11, fontWeight:700, cursor: kirhaEarned >= boutiqueQty * FLEUR_PRICE ? 'pointer' : 'default' }}
+                  disabled={kirhaEarned < boutiqueQty * FLEUR_PRICE}
                   onClick={() => {
                     const total = boutiqueQty * FLEUR_PRICE;
-                    if (soldeKirha < total) return;
-                    retirerKirha(total);
+                    if (kirhaEarned < total) return;
+                    const ok = depenserKirhaOffchain(total);
+                    if (!ok) return;
                     ajouterRessource(ResourceId.PARCHEMIN_ANCIENS, boutiqueQty);
                   }}
                 >
                   🌸 Acheter
                 </button>
               </div>
+              <p style={{ color:'#9a6080', fontSize:10, margin:'8px 0 0' }}>
+                Solde dépensable ici: {kirhaEarned.toFixed(4)} $KIRHA local (non encore sauvegardé)
+              </p>
             </div>
 
             {/* Rappel inventaire actuel */}

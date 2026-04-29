@@ -119,6 +119,7 @@ export interface GameState {
   debloquerSlot:            (metier: MetierId, slotIndex: number) => void;
   setPseudo:                (pseudo: string) => void;
   retirerKirha:             (montant: number) => void;
+  depenserKirhaOffchain:    (montant: number) => boolean;
   ajouterKirha:             (montant: number) => void;
   resetKirhaEarned:         () => void;
   retirerRessource:         (resourceId: ResourceId, quantite: number) => void;
@@ -386,6 +387,22 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           soldeKirha: Math.max(0, Math.round((state.soldeKirha - montant) * 1e10) / 1e10),
         })),
+
+      depenserKirhaOffchain: (montant) => {
+        let spent = false;
+        set((state) => {
+          const amount = Math.max(0, Math.round(montant * 1e10) / 1e10);
+          // Protection anti-duplication: les dépenses off-chain ne peuvent consommer
+          // que les gains locaux non encore sauvegardés, jamais le solde on-chain.
+          if (amount <= 0 || state.kirhaEarned < amount) return state;
+          spent = true;
+          return {
+            kirhaEarned: Math.round((state.kirhaEarned - amount) * 1e10) / 1e10,
+            soldeKirha: Math.max(0, Math.round((state.soldeKirha - amount) * 1e10) / 1e10),
+          };
+        });
+        return spent;
+      },
 
       ajouterKirha: (montant) =>
         set((state) => ({
@@ -710,7 +727,7 @@ export const useGameStore = create<GameState>()(
         set((state) => {
           const cond = SLOT_UNLOCK_CONDITIONS[metier]?.[slotIndex];
           if (!cond) return state;
-          if (state.soldeKirha < cond.kirha) return state;
+          if (state.kirhaEarned < cond.kirha) return state;
           // Vérifier toutes les ressources requises
           for (const { id, qty } of cond.items) {
             if (Math.floor(state.inventaire[id as ResourceId] ?? 0) < qty) return state;
@@ -722,7 +739,12 @@ export const useGameStore = create<GameState>()(
           }
           const metierSlots = [...state.slots[metier]];
           metierSlots[slotIndex] = { ...metierSlots[slotIndex], debloque: true };
-          return { slots: { ...state.slots, [metier]: metierSlots }, soldeKirha: state.soldeKirha - cond.kirha, inventaire };
+          return {
+            slots: { ...state.slots, [metier]: metierSlots },
+            soldeKirha: Math.max(0, state.soldeKirha - cond.kirha),
+            kirhaEarned: Math.max(0, state.kirhaEarned - cond.kirha),
+            inventaire,
+          };
         }),
     }),
     {
