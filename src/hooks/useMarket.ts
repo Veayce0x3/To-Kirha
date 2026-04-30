@@ -362,6 +362,7 @@ export function useMarket() {
             abi:      KirhaGameAbi,
             functionName: 'authorizeRelayer',
             args:     [cityIdBn, BigInt(durationSecs)],
+            chainId:  baseSepolia.id,
           })
         : writeContractAsync({
             address:  KIRHA_GAME_ADDRESS,

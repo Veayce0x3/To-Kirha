@@ -229,6 +229,9 @@ const ONCHAIN_MARKET_MAX_ID = 50;
 const UNSELLABLE_ON_HDV = (id: number) => id > ONCHAIN_MARKET_MAX_ID;
 
 const RELAYER_URL = 'https://kirha-relayer.tokirha.workers.dev';
+const METAMASK_DAPP_LINK = typeof window !== 'undefined'
+  ? `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}${window.location.hash}`
+  : 'https://metamask.app.link';
 
 function TabOnchain() {
   const inventaire        = useGameStore(s => s.inventaire);
@@ -423,7 +426,7 @@ function TabOnchain() {
             </button>
             {relayerActivating && (
               <a
-                href="metamask://"
+                href={METAMASK_DAPP_LINK}
                 style={{ display:'block', marginTop:8, padding:'8px 12px', background:'#c43070', color:'#fff', fontSize:12, fontWeight:800, textDecoration:'none', borderRadius:8, textAlign:'center', letterSpacing:0.3 }}
               >
                 ✅ Ouvrir MetaMask
