@@ -226,6 +226,18 @@ contract KirhaGame is Ownable, ReentrancyGuard {
         cityMetierXpTotal[cityId][metierId] = xpTotal;
     }
 
+    /** @notice Écrit ou vide la progression opaque (slots, craft…) pour une ville — réservé owner. */
+    function adminSetPlayerProgress(uint256 cityId, bytes calldata data) external onlyOwner {
+        require(data.length <= 32000, "KirhaGame: progress too large");
+        playerProgress[cityId] = data;
+        emit PlayerProgressSaved(cityId);
+    }
+
+    /** @notice Fixe la date d’expiration VIP (unix). Mettre 0 pour retirer le VIP actif. */
+    function adminSetVipExpiry(uint256 cityId, uint64 expiryTimestamp) external onlyOwner {
+        vipExpiry[cityId] = expiryTimestamp;
+    }
+
     // --------------------------------------------------------
     // Enregistrement — crée la ville NFT
     // --------------------------------------------------------

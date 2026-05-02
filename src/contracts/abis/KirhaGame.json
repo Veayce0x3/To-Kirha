@@ -637,6 +637,42 @@
         "type": "uint256"
       },
       {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "adminSetPlayerProgress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "cityId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint64",
+        "name": "expiryTimestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "adminSetVipExpiry",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "cityId",
+        "type": "uint256"
+      },
+      {
         "internalType": "uint64",
         "name": "durationSeconds",
         "type": "uint64"

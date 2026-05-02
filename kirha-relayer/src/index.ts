@@ -24,6 +24,8 @@ const KIRHA_GAME_ADMIN_ABI = [
   'function adminSetMetierXp(uint256 cityId, uint8 metierId, uint32 level, uint32 xp, uint32 xpTotal) external',
   'function adminDeleteCity(uint256 cityId) external',
   'function setBan(uint256 cityId, bool banned) external',
+  'function adminSetPlayerProgress(uint256 cityId, bytes data) external',
+  'function adminSetVipExpiry(uint256 cityId, uint64 expiryTimestamp) external',
 ];
 
 interface Env {
@@ -583,6 +585,11 @@ export default {
           tx = await contract.adminDeleteCity(BigInt(p.cityId));
         } else if (action === 'set-ban') {
           tx = await contract.setBan(BigInt(p.cityId), p.banned === 'true');
+        } else if (action === 'set-player-progress') {
+          const hex = p.dataHex ?? '0x';
+          tx = await contract.adminSetPlayerProgress(BigInt(p.cityId), hex);
+        } else if (action === 'set-vip-expiry') {
+          tx = await contract.adminSetVipExpiry(BigInt(p.cityId), BigInt(p.expiry ?? '0'));
         } else {
           return jsonResponse(cors, { error: 'Unknown admin action' }, 404);
         }

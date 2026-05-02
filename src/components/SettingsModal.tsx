@@ -7,8 +7,7 @@ import { baseSepolia } from 'wagmi/chains';
 import { useT } from '../utils/i18n';
 import { KIRHA_CITY_ADDRESS } from '../contracts/addresses';
 import KirhaCityAbi from '../contracts/abis/KirhaCity.json';
-
-const ADMIN_WALLETS = ['0x5a9d55c76c38ede9b8b34ed6e7f35578ce919b0c'];
+import { isAdminWallet } from '../config/admin';
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -37,7 +36,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
 
-  const isAdmin     = !!address && ADMIN_WALLETS.includes(address.toLowerCase());
+  const isAdmin     = isAdminWallet(address);
   const shortWallet = address ? `${address.slice(0,6)}…${address.slice(-4)}` : '—';
 
   async function handleTransfer() {
