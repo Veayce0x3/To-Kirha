@@ -1,28 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAccount, usePublicClient, useWriteContract, useSwitchChain } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
+import { usePublicClient } from 'wagmi';
 import { useGameStore } from '../store/gameStore';
 import { SettingsModal } from '../components/SettingsModal';
 import { useT } from '../utils/i18n';
 import { uiAssetPath } from '../utils/resourceUtils';
 import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
-
-
-function getSecondsUntilMidnightParis(): number {
-  const fmt = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Paris',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-  });
-  const parts = fmt.formatToParts(new Date());
-  const h = parseInt(parts.find(p => p.type === 'hour')!.value);
-  const m = parseInt(parts.find(p => p.type === 'minute')!.value);
-  const s = parseInt(parts.find(p => p.type === 'second')!.value);
-  let secs = 86400 - (h * 3600 + m * 60 + s);
-  if (secs < 3600) secs += 86400; // au moins 1h de validité
-  return secs;
-}
+import { useMarket } from '../hooks/useMarket';
 
 export function HomePage() {
   const navigate   = useNavigate();
@@ -34,14 +19,10 @@ export function HomePage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showVipInfo, setShowVipInfo] = useState(false);
   const [showRelayer, setShowRelayer] = useState(false);
-  const [relayerSigning, setRelayerSigning] = useState(false);
-  const [relayerError, setRelayerError] = useState<string | null>(null);
   const { t, lang } = useT();
 
-  const { address } = useAccount();
   const publicClient = usePublicClient();
-  const { writeContractAsync } = useWriteContract();
-  const { switchChainAsync } = useSwitchChain();
+  const { activerRelayer, status: marketStatus, error: relayerHookError, relayerWcHint } = useMarket();
 
   // Vérifier si le relayer est actif — proposer l'activation si non
   useEffect(() => {
@@ -61,31 +42,12 @@ export function HomePage() {
   }, [villeId, publicClient]);
 
   async function handleActiverRelayer() {
-    if (!villeId || !address) return;
-    setRelayerSigning(true);
-    setRelayerError(null);
-    try {
-      try { await switchChainAsync({ chainId: baseSepolia.id }); } catch {}
-      const durationSecs = getSecondsUntilMidnightParis();
-      const hash = await writeContractAsync({
-        address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
-        functionName: 'authorizeRelayer',
-        args: [BigInt(villeId), BigInt(durationSecs)],
-        chainId: baseSepolia.id,
-      });
-      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
-      // Persiste le timestamp d'expiration (minuit Paris)
-      localStorage.setItem(`kirha_relayer_expires_${villeId}`, String(Math.floor(Date.now() / 1000) + durationSecs));
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (!msg.includes('User rejected') && !msg.includes('user rejected')) {
-        setRelayerError(msg.slice(0, 80));
-        setRelayerSigning(false);
-        return;
-      }
-    }
-    setShowRelayer(false);
+    if (!villeId) return;
+    const ok = await activerRelayer();
+    if (ok) setShowRelayer(false);
   }
+
+  const relayerSigning = marketStatus === 'listing';
 
   const isVip = vipExpiry > 0 && vipExpiry > Math.floor(Date.now() / 1000);
 
@@ -118,13 +80,18 @@ export function HomePage() {
                 ✅ Expire automatiquement à minuit (heure française)
               </p>
             </div>
-            {relayerError && <p style={{ color:'#c43070', fontSize:11, margin:0 }}>{relayerError}</p>}
+            {relayerHookError && <p style={{ color:'#c43070', fontSize:11, margin:0 }}>{relayerHookError}</p>}
+            {relayerWcHint && (
+              <p style={{ color:'#f9a825', fontSize:12, margin:0, textAlign:'center', lineHeight:1.45, fontWeight:600 }}>
+                {relayerWcHint}
+              </p>
+            )}
             <button
               onClick={handleActiverRelayer}
               disabled={relayerSigning}
               style={{ width:'100%', padding:'13px 0', background:'#c43070', color:'#fff', border:'none', borderRadius:12, fontSize:15, fontWeight:700, cursor:'pointer', opacity: relayerSigning ? 0.6 : 1 }}
             >
-              {relayerSigning ? '⏳ Signature…' : '⚡ Activer jusqu\'à minuit'}
+              {relayerSigning ? '⏳ Signature…' : relayerWcHint ? '⚡ Signer la transaction' : '⚡ Activer jusqu\'à minuit'}
             </button>
             <button onClick={() => setShowRelayer(false)} style={{ background:'none', border:'none', color:'#7a4060', fontSize:13, cursor:'pointer', textDecoration:'underline' }}>
               Passer (utiliser le wallet directement)
@@ -187,7 +154,7 @@ export function HomePage() {
       </div>
 
       {/* Cards */}
-      <div style={s.cardGrid}>
+      <div style={s.cardGrid} className="home-card-grid">
         {CARDS.map(card => (
           <button key={card.route} style={{ ...s.card, borderColor: `${card.color}33`, opacity: card.locked ? 0.55 : 1, cursor: card.locked ? 'default' : 'pointer' }} onClick={() => !card.locked && navigate(card.route)}>
             <div style={s.cardTop}>

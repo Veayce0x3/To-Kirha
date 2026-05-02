@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
+import { useBreakpoint } from './hooks/useBreakpoint';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAccount, usePublicClient } from 'wagmi';
 import { formatEther } from 'viem';
@@ -203,31 +204,43 @@ function RouteFallback() {
   );
 }
 
+/** Met à jour `html[data-viewport]` pour le CSS responsive (sidebar desktop, grilles). */
+function ViewportRootAttr() {
+  const { isDesktop } = useBreakpoint();
+  useEffect(() => {
+    document.documentElement.dataset.viewport = isDesktop ? 'desktop' : 'mobile';
+  }, [isDesktop]);
+  return null;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
       <HashRouter>
+        <ViewportRootAttr />
         <VersionGuard />
         <BeforeUnloadGuard />
         <AutoSaveGuard />
         <VilleIdGuard />
-        <div style={{ position:'relative', width:'100%', height:'100svh', overflow:'hidden' }}>
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
-              <Route path="/"       element={<ConnectPage />} />
-              <Route path="/home"   element={<Guard><HomePage /></Guard>} />
-              <Route path="/recolte" element={<Guard><RecoltePage /></Guard>} />
-              <Route path="/hdv"    element={<Guard><HdvPage /></Guard>} />
-              <Route path="/banque" element={<Guard><BanquePage /></Guard>} />
-              <Route path="/maison" element={<Guard><MaisonPage /></Guard>} />
-              <Route path="/craft"  element={<Guard><CraftPage /></Guard>} />
-              <Route path="/ferme"  element={<Guard><FermePage /></Guard>} />
-              <Route path="/kirha-gm-v4x9"  element={<Guard><AdminPage /></Guard>} />
-              <Route path="/temple"  element={<Guard><TemplePage /></Guard>} />
-              <Route path="/enchere" element={<Guard><EncherePage /></Guard>} />
-              <Route path="*"       element={<Navigate to="/home" replace />} />
-            </Routes>
-          </Suspense>
+        <div className="app-shell" style={{ position:'relative', width:'100%', height:'100svh', overflow:'hidden' }}>
+          <div className="app-main">
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/"       element={<ConnectPage />} />
+                <Route path="/home"   element={<Guard><HomePage /></Guard>} />
+                <Route path="/recolte" element={<Guard><RecoltePage /></Guard>} />
+                <Route path="/hdv"    element={<Guard><HdvPage /></Guard>} />
+                <Route path="/banque" element={<Guard><BanquePage /></Guard>} />
+                <Route path="/maison" element={<Guard><MaisonPage /></Guard>} />
+                <Route path="/craft"  element={<Guard><CraftPage /></Guard>} />
+                <Route path="/ferme"  element={<Guard><FermePage /></Guard>} />
+                <Route path="/kirha-gm-v4x9"  element={<Guard><AdminPage /></Guard>} />
+                <Route path="/temple"  element={<Guard><TemplePage /></Guard>} />
+                <Route path="/enchere" element={<Guard><EncherePage /></Guard>} />
+                <Route path="*"       element={<Navigate to="/home" replace />} />
+              </Routes>
+            </Suspense>
+          </div>
           <BottomMenu />
         </div>
       </HashRouter>

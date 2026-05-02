@@ -1,6 +1,13 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useReadContract, useWriteContract, usePublicClient, useSwitchChain, useAccount, useSignMessage } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
+
+const WC_RELAYER_SESSION_KEY = 'kirha_wc_relayer_step';
+
+function isMobileUa(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
 import { parseEther, formatEther } from 'viem';
 import { KIRHA_MARKET_ADDRESS, KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaMarketAbi from '../contracts/abis/KirhaMarket.json';
@@ -39,6 +46,7 @@ function getSecondsUntilMidnightParis(): number {
 export function useMarket() {
   const [status, setStatus] = useState<MarketStatus>('idle');
   const [error, setError]   = useState<string | null>(null);
+  const [relayerWcHint, setRelayerWcHint] = useState<string | null>(null);
 
   const { writeContractAsync } = useWriteContract();
   const { switchChainAsync }   = useSwitchChain();
@@ -341,65 +349,74 @@ export function useMarket() {
   }, [cityIdBn, villeId, relayerActive, writeContractAsync, refetchListings, publicClient, ajouterRessource, retirerKirha]);
 
   // ── Activer le relayer (jusqu'à minuit Paris) ─────────────────
-  const activerRelayer = useCallback(async () => {
-    if (!cityIdBn) return;
+  const activerRelayer = useCallback(async (): Promise<boolean> => {
+    if (!cityIdBn) return false;
     setStatus('listing');
     setError(null);
+    setRelayerWcHint(null);
     const durationSecs = getSecondsUntilMidnightParis();
-    // Sauvegarder l'expiry AVANT d'ouvrir MetaMask
-    // → si l'onglet est tué sur Android au retour de MetaMask, l'expiry est déjà en localStorage
     const expiresAt = Math.floor(Date.now() / 1000) + durationSecs;
     if (villeId) localStorage.setItem(`kirha_relayer_expires_${villeId}`, String(expiresAt));
+    const isWalletConnect = connector?.id === 'walletConnect';
+    const mobile = isMobileUa();
+
     try {
-      const isWalletConnect = connector?.id === 'walletConnect';
-      // WalletConnect mobile (MetaMask) supporte mal les requêtes séquentielles
-      // switchChain + writeContract. On évite chain switch explicite dans ce cas.
+      // WalletConnect + mobile : séparer changement de réseau et tx (sinon MetaMask ne montre pas la 2e demande)
+      if (isWalletConnect && mobile && sessionStorage.getItem(WC_RELAYER_SESSION_KEY) !== 'tx') {
+        try {
+          await switchChainAsync({ chainId: baseSepolia.id });
+          sessionStorage.setItem(WC_RELAYER_SESSION_KEY, 'tx');
+          setRelayerWcHint('Réseau validé. Touche encore « Activer » pour signer la transaction.');
+          setStatus('idle');
+          return false;
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : '';
+          const isRejected = msg.includes('rejected') || msg.includes('denied') || msg.includes('cancel');
+          if (isRejected && villeId) localStorage.removeItem(`kirha_relayer_expires_${villeId}`);
+          setError(isRejected ? 'Changement de réseau annulé.' : msg.slice(0, 80));
+          setStatus('error');
+          return false;
+        }
+      }
+
       if (!isWalletConnect) await ensureChain();
 
-      const txPromise = isWalletConnect
-        ? writeContractAsync({
-            address:  KIRHA_GAME_ADDRESS,
-            abi:      KirhaGameAbi,
-            functionName: 'authorizeRelayer',
-            args:     [cityIdBn, BigInt(durationSecs)],
-            chainId:  baseSepolia.id,
-          })
-        : writeContractAsync({
-            address:  KIRHA_GAME_ADDRESS,
-            abi:      KirhaGameAbi,
-            functionName: 'authorizeRelayer',
-            args:     [cityIdBn, BigInt(durationSecs)],
-            chainId:  baseSepolia.id,
-          });
-      // Timeout 30s — si WalletConnect ne répond pas (session fantôme), on fail proprement
+      const txPromise = writeContractAsync({
+        address:      KIRHA_GAME_ADDRESS,
+        abi:          KirhaGameAbi,
+        functionName: 'authorizeRelayer',
+        args:         [cityIdBn, BigInt(durationSecs)],
+        chainId:      baseSepolia.id,
+      });
       const hash = await Promise.race([
         txPromise,
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Délai dépassé (45s). Déconnecte/reconnecte ton wallet puis réessaie.')), 45_000)
         ),
       ]);
+      sessionStorage.removeItem(WC_RELAYER_SESSION_KEY);
+      setRelayerWcHint(null);
       setStatus('success');
       setTimeout(() => setStatus('idle'), 3000);
-      // Attendre la confirmation en arrière-plan (non-bloquant)
       if (publicClient) {
         publicClient.waitForTransactionReceipt({ hash }).then(() => {
           refetchRelayer();
         }).catch(() => {});
       }
+      return true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erreur';
       const isRejected = msg.includes('rejected') || msg.includes('denied') || msg.includes('cancel');
-      // Supprimer l'expiry optimiste seulement si rejet explicite (pas un crash/timeout)
       if (isRejected && villeId) localStorage.removeItem(`kirha_relayer_expires_${villeId}`);
-      // Si le relayer est déjà actif (retour mobile après rechargement), ignorer l'erreur
       if ((relayerActive as boolean)) {
         setStatus('idle');
-      } else {
-        setError(isRejected ? 'Transaction annulée.' : msg.slice(0, 80));
-        setStatus('error');
+        return true;
       }
+      setError(isRejected ? 'Transaction annulée.' : msg.slice(0, 80));
+      setStatus('error');
+      return false;
     }
-  }, [cityIdBn, writeContractAsync, publicClient, villeId, relayerActive, refetchRelayer, connector]);
+  }, [cityIdBn, writeContractAsync, publicClient, villeId, relayerActive, refetchRelayer, connector, switchChainAsync]);
 
   // ── Annuler un listing ─────────────────────────────────────
   const annulerListing = useCallback(async (listingId: bigint) => {
@@ -444,6 +461,7 @@ export function useMarket() {
     isRelayerActive: !!relayerActive,
     status,
     error,
+    relayerWcHint,
     approveMarket: async () => {},
     mettrEnVente,
     batchMettrEnVente,

@@ -264,6 +264,7 @@ function TabOnchain() {
     listings, myListings, status, error, isRelayerActive,
     activerRelayer, acheter, batchMettrEnVente, annulerListing,
     refetchRelayer, refetchListings,
+    relayerWcHint,
   } = useMarket();
   const { sauvegarder, status: saveStatus, pendingCount } = useSave();
 
@@ -415,14 +416,17 @@ function TabOnchain() {
           <div style={{ flex:1 }}>
             <p style={{ color:'#1e0a16', fontSize:12, fontWeight:700, margin:'0 0 2px' }}>Mode gasless désactivé</p>
             <p style={{ color:'#7a4060', fontSize:10, margin:0 }}>Autorise le relayer jusqu'à minuit (heure française) pour des transactions sans frais.</p>
+            {relayerWcHint && (
+              <p style={{ color:'#b8860b', fontSize:11, fontWeight:700, margin:'6px 0 0', lineHeight:1.4 }}>{relayerWcHint}</p>
+            )}
           </div>
           <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end' }}>
             <button
               style={{ padding:'7px 12px', background:'#f9a825', color:'#1e0a16', border:'none', borderRadius:10, fontSize:11, fontWeight:700, cursor: relayerActivating ? 'default' : 'pointer', opacity: relayerActivating ? 0.6 : 1 }}
-              onClick={activerRelayer}
+              onClick={() => { void activerRelayer(); }}
               disabled={relayerActivating}
             >
-              {relayerActivating ? '⏳ En attente…' : 'Activer'}
+              {relayerActivating ? '⏳ En attente…' : relayerWcHint ? 'Signer' : 'Activer'}
             </button>
             {relayerActivating && (
               <a

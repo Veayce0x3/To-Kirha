@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAccount, usePublicClient } from 'wagmi';
-import { formatEther, parseEther } from 'viem';
+import { useAccount, usePublicClient, useReadContract, useWriteContract, useSwitchChain } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
+import { formatEther, parseEther, getAddress } from 'viem';
 import { KIRHA_GAME_ADDRESS, KIRHA_CITY_ADDRESS, KIRHA_MARKET_ADDRESS, RELAYER_ADDRESS } from '../contracts/addresses';
 import KirhaGameAbi   from '../contracts/abis/KirhaGame.json';
 import KirhaCityAbi   from '../contracts/abis/KirhaCity.json';
@@ -43,12 +44,34 @@ function xpTotalPourNiveau(n: number): number {
 
 const ADMIN_WORKER_URL = 'https://kirha-relayer.tokirha.workers.dev';
 
+/** ABI minimal Ownable — absent du JSON généré */
+const OWNABLE_ABI = [
+  { type: 'function', name: 'owner', stateMutability: 'view', inputs: [], outputs: [{ type: 'address', name: '' }] },
+] as const;
+
 type MainTab = 'dashboard' | 'joueurs' | 'config' | 'devtools';
 
 export function AdminPage() {
   const navigate     = useNavigate();
   const { address }  = useAccount();
   const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
+  const { switchChainAsync } = useSwitchChain();
+
+  const { data: gameOwner } = useReadContract({
+    address:      KIRHA_GAME_ADDRESS,
+    abi:          OWNABLE_ABI,
+    functionName: 'owner',
+  });
+
+  const isContractOwner = !!(address && gameOwner
+    && getAddress(address) === getAddress(gameOwner as `0x${string}`));
+
+  async function ensureAdminChain() {
+    try {
+      await switchChainAsync({ chainId: baseSepolia.id });
+    } catch { /* déjà sur Base Sepolia */ }
+  }
   const [mainTab, setMainTab] = useState<MainTab>('dashboard');
 
   // ── Auth ────────────────────────────────────────────────
@@ -240,14 +263,17 @@ export function AdminPage() {
   }
 
   async function toggleBan(cityId: number, currentlyBanned: boolean) {
-    if (!adminToken) { setError('Token admin requis'); return; }
+    if (!isContractOwner) { setError('Wallet owner du contrat KirhaGame requis.'); return; }
     try {
-      const res = await fetch(`${ADMIN_WORKER_URL}/admin/set-ban`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-        body: JSON.stringify({ cityId: String(cityId), banned: String(!currentlyBanned) }),
+      await ensureAdminChain();
+      const hash = await writeContractAsync({
+        address:      KIRHA_GAME_ADDRESS,
+        abi:          KirhaGameAbi,
+        functionName: 'setBan',
+        args:         [BigInt(cityId), !currentlyBanned],
+        chainId:      baseSepolia.id,
       });
-      if (!res.ok) { const d = await res.json() as { error?: string }; throw new Error(d.error); }
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       setPlayers(prev => prev.map(p => p.cityId === cityId ? { ...p, isBanned: !currentlyBanned } : p));
     } catch (e) {
       setError(e instanceof Error ? e.message.slice(0, 80) : 'Erreur toggleBan');
@@ -255,14 +281,17 @@ export function AdminPage() {
   }
 
   async function deleteCity(cityId: number) {
-    if (!adminToken) { setError('Token admin requis'); return; }
+    if (!isContractOwner) { setError('Wallet owner du contrat requis.'); return; }
     try {
-      const res = await fetch(`${ADMIN_WORKER_URL}/admin/delete-city`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-        body: JSON.stringify({ cityId: String(cityId) }),
+      await ensureAdminChain();
+      const hash = await writeContractAsync({
+        address:      KIRHA_GAME_ADDRESS,
+        abi:          KirhaGameAbi,
+        functionName: 'adminDeleteCity',
+        args:         [BigInt(cityId)],
+        chainId:      baseSepolia.id,
       });
-      if (!res.ok) { const d = await res.json() as { error?: string }; throw new Error(d.error); }
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       setPlayers(prev => prev.filter(p => p.cityId !== cityId));
       setExpandedCity(null);
     } catch (e) {
@@ -270,19 +299,86 @@ export function AdminPage() {
     }
   }
 
-  async function adminWorkerCall(cityId: number, key: string, action: string, payload: Record<string, string>) {
-    if (!adminToken) { setError('Token admin requis'); return; }
+  async function adminOnChainAction(cityId: number, key: string, action: string, payload: Record<string, string>) {
+    if (!isContractOwner) {
+      setError('Connecte le wallet owner KirhaGame (deployer / Ownable).');
+      return;
+    }
     setGiveStatus(prev => ({ ...prev, [key]: 'pending' }));
+    setError(null);
     try {
-      const res = await fetch(`${ADMIN_WORKER_URL}/admin/${action}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-        body: JSON.stringify({ cityId: String(cityId), ...payload }),
-      });
-      const data = await res.json() as { error?: string };
-      if (!res.ok) throw new Error(data.error ?? 'Erreur');
+      await ensureAdminChain();
+      const cid = BigInt(cityId);
+      let hash: `0x${string}`;
+
+      switch (action) {
+        case 'give-kirha':
+          hash = await writeContractAsync({
+            address: KIRHA_GAME_ADDRESS,
+            abi:     KirhaGameAbi,
+            functionName: 'adminGiveKirha',
+            args:    [cid, BigInt(payload.amount)],
+            chainId: baseSepolia.id,
+          });
+          break;
+        case 'give-pepites':
+          hash = await writeContractAsync({
+            address: KIRHA_GAME_ADDRESS,
+            abi:     KirhaGameAbi,
+            functionName: 'adminGivePepites',
+            args:    [cid, BigInt(payload.amount)],
+            chainId: baseSepolia.id,
+          });
+          break;
+        case 'give-vip':
+          hash = await writeContractAsync({
+            address: KIRHA_GAME_ADDRESS,
+            abi:     KirhaGameAbi,
+            functionName: 'adminGiveVip',
+            args:    [cid, BigInt(payload.days)],
+            chainId: baseSepolia.id,
+          });
+          break;
+        case 'give-resource':
+          hash = await writeContractAsync({
+            address: KIRHA_GAME_ADDRESS,
+            abi:     KirhaGameAbi,
+            functionName: 'adminGiveResource',
+            args:    [cid, BigInt(payload.resourceId), BigInt(payload.amount)],
+            chainId: baseSepolia.id,
+          });
+          break;
+        case 'set-metier-xp':
+          hash = await writeContractAsync({
+            address: KIRHA_GAME_ADDRESS,
+            abi:     KirhaGameAbi,
+            functionName: 'adminSetMetierXp',
+            args: [
+              cid,
+              Number(payload.metierId),
+              Number(payload.level),
+              Number(payload.xp),
+              Number(payload.xpTotal),
+            ],
+            chainId: baseSepolia.id,
+          });
+          break;
+        case 'reset-city':
+          hash = await writeContractAsync({
+            address: KIRHA_GAME_ADDRESS,
+            abi:     KirhaGameAbi,
+            functionName: 'adminResetCity',
+            args:    [cid],
+            chainId: baseSepolia.id,
+          });
+          break;
+        default:
+          throw new Error(`Action inconnue: ${action}`);
+      }
+
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       setGiveStatus(prev => ({ ...prev, [key]: 'ok' }));
-      await new Promise(r => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, 600));
       await refreshPlayer(cityId);
       setTimeout(() => setGiveStatus(prev => ({ ...prev, [key]: 'idle' })), 2500);
     } catch (e) {
@@ -293,40 +389,58 @@ export function AdminPage() {
 
   async function retirerDons(p: PlayerData) {
     const snap = snapshots[p.cityId];
-    if (!snap || !adminToken) { setError('Snapshot introuvable ou token manquant'); return; }
+    if (!snap || !isContractOwner) {
+      setError(!isContractOwner ? 'Wallet owner requis.' : 'Snapshot introuvable');
+      return;
+    }
     setRetirerStatus(prev => ({ ...prev, [p.cityId]: 'pending' }));
+    setError(null);
     try {
-      const res1 = await fetch(`${ADMIN_WORKER_URL}/admin/reset-city`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-        body: JSON.stringify({ cityId: String(p.cityId) }),
+      await ensureAdminChain();
+      let hash = await writeContractAsync({
+        address: KIRHA_GAME_ADDRESS,
+        abi:     KirhaGameAbi,
+        functionName: 'adminResetCity',
+        args:    [BigInt(p.cityId)],
+        chainId: baseSepolia.id,
       });
-      if (!res1.ok) throw new Error('Reset échoué');
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+
       if (snap.kirhaWei > 0n) {
-        await fetch(`${ADMIN_WORKER_URL}/admin/give-kirha`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-          body: JSON.stringify({ cityId: String(p.cityId), amount: snap.kirhaWei.toString() }),
+        hash = await writeContractAsync({
+          address: KIRHA_GAME_ADDRESS,
+          abi:     KirhaGameAbi,
+          functionName: 'adminGiveKirha',
+          args:    [BigInt(p.cityId), snap.kirhaWei],
+          chainId: baseSepolia.id,
         });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
       if (snap.pepites > 0) {
-        await fetch(`${ADMIN_WORKER_URL}/admin/give-pepites`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-          body: JSON.stringify({ cityId: String(p.cityId), amount: String(snap.pepites) }),
+        hash = await writeContractAsync({
+          address: KIRHA_GAME_ADDRESS,
+          abi:     KirhaGameAbi,
+          functionName: 'adminGivePepites',
+          args:    [BigInt(p.cityId), BigInt(snap.pepites)],
+          chainId: baseSepolia.id,
         });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
       for (let rid = 1; rid <= 50; rid++) {
         const qty = Math.floor(snap.resources[rid] ?? 0);
         if (qty >= 1) {
-          await fetch(`${ADMIN_WORKER_URL}/admin/give-resource`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-            body: JSON.stringify({ cityId: String(p.cityId), resourceId: String(rid), amount: String(qty) }),
+          hash = await writeContractAsync({
+            address: KIRHA_GAME_ADDRESS,
+            abi:     KirhaGameAbi,
+            functionName: 'adminGiveResource',
+            args:    [BigInt(p.cityId), BigInt(rid), BigInt(qty)],
+            chainId: baseSepolia.id,
           });
+          if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
         }
       }
       setRetirerStatus(prev => ({ ...prev, [p.cityId]: 'ok' }));
+      await refreshPlayer(p.cityId);
       setTimeout(() => setRetirerStatus(prev => ({ ...prev, [p.cityId]: 'idle' })), 3000);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur retirer');
@@ -335,45 +449,59 @@ export function AdminPage() {
   }
 
   async function retirerMontant(p: PlayerData, key: string, type: 'kirha' | 'pepites' | 'resource', amount: number, resourceId?: number) {
-    if (!adminToken) { setError('Token admin requis'); return; }
+    if (!isContractOwner) { setError('Wallet owner requis.'); return; }
     setRetirerOpStatus(prev => ({ ...prev, [key]: 'pending' }));
+    setError(null);
     try {
-      const res1 = await fetch(`${ADMIN_WORKER_URL}/admin/reset-city`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-        body: JSON.stringify({ cityId: String(p.cityId) }),
+      await ensureAdminChain();
+      let hash = await writeContractAsync({
+        address: KIRHA_GAME_ADDRESS,
+        abi:     KirhaGameAbi,
+        functionName: 'adminResetCity',
+        args:    [BigInt(p.cityId)],
+        chainId: baseSepolia.id,
       });
-      if (!res1.ok) throw new Error('Reset échoué');
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+
       const kirha = parseFloat(formatEther(p.kirhaWei));
       const newKirha = type === 'kirha' ? Math.max(0, kirha - amount) : kirha;
       if (newKirha > 0) {
-        await fetch(`${ADMIN_WORKER_URL}/admin/give-kirha`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-          body: JSON.stringify({ cityId: String(p.cityId), amount: parseEther(newKirha.toFixed(6)).toString() }),
+        hash = await writeContractAsync({
+          address: KIRHA_GAME_ADDRESS,
+          abi:     KirhaGameAbi,
+          functionName: 'adminGiveKirha',
+          args:    [BigInt(p.cityId), parseEther(newKirha.toFixed(6))],
+          chainId: baseSepolia.id,
         });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
       const newPepites = type === 'pepites' ? Math.max(0, p.pepites - amount) : p.pepites;
       if (newPepites > 0) {
-        await fetch(`${ADMIN_WORKER_URL}/admin/give-pepites`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-          body: JSON.stringify({ cityId: String(p.cityId), amount: String(newPepites) }),
+        hash = await writeContractAsync({
+          address: KIRHA_GAME_ADDRESS,
+          abi:     KirhaGameAbi,
+          functionName: 'adminGivePepites',
+          args:    [BigInt(p.cityId), BigInt(newPepites)],
+          chainId: baseSepolia.id,
         });
+        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
       for (let rid = 1; rid <= 50; rid++) {
         let qty = Math.floor(p.resources[rid] ?? 0);
         if (type === 'resource' && rid === resourceId) qty = Math.max(0, qty - amount);
         if (qty >= 1) {
-          await fetch(`${ADMIN_WORKER_URL}/admin/give-resource`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-            body: JSON.stringify({ cityId: String(p.cityId), resourceId: String(rid), amount: String(qty) }),
+          hash = await writeContractAsync({
+            address: KIRHA_GAME_ADDRESS,
+            abi:     KirhaGameAbi,
+            functionName: 'adminGiveResource',
+            args:    [BigInt(p.cityId), BigInt(rid), BigInt(qty)],
+            chainId: baseSepolia.id,
           });
+          if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
         }
       }
       setRetirerOpStatus(prev => ({ ...prev, [key]: 'ok' }));
-      await new Promise(r => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, 600));
       await refreshPlayer(p.cityId);
       setTimeout(() => setRetirerOpStatus(prev => ({ ...prev, [key]: 'idle' })), 2500);
     } catch (e) {
@@ -432,11 +560,14 @@ export function AdminPage() {
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <button onClick={() => navigate('/home')} style={btnBack}>← Retour</button>
           <span style={{ color:'#ff6b9d', fontSize:15, fontWeight:900 }}>⚙️ Admin</span>
+          {isContractOwner
+            ? <span style={{ fontSize:9, fontWeight:700, color:'#6abf44', background:'rgba(106,191,68,0.12)', padding:'3px 8px', borderRadius:6 }}>⛓ Owner</span>
+            : <span style={{ fontSize:9, color:'#ff9a5c', maxWidth:120, lineHeight:1.2 }}>Connecte le wallet owner pour dons / ban / reset</span>}
         </div>
         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
           <input
             type="password"
-            placeholder="Token admin"
+            placeholder="Token (parchemin)"
             value={adminToken}
             onChange={e => { setAdminToken(e.target.value); setTokenStatus('unknown'); }}
             style={{ width:130, padding:'4px 8px', borderRadius:6, border:`1px solid ${tokenStatus==='ok'?'rgba(106,191,68,0.5)':tokenStatus==='invalid'?'rgba(255,100,100,0.5)':'rgba(196,48,112,0.3)'}`, background:'rgba(0,0,0,0.5)', color:'#e0c8d8', fontSize:11 }}
@@ -662,7 +793,7 @@ export function AdminPage() {
                             <span style={labelSm}>💠 KIRHA</span>
                             <input type="number" min="0" placeholder="Montant" value={giveKirha[p.cityId] ?? ''} onChange={e => setGiveKirha(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={inputSm} />
                             <button style={giveSm} disabled={!giveKirha[p.cityId]}
-                              onClick={() => { const w = parseEther((parseFloat(giveKirha[p.cityId] || '0')).toFixed(6)); adminWorkerCall(p.cityId, `kirha_${p.cityId}`, 'give-kirha', { amount: w.toString() }); }}>
+                              onClick={() => { const w = parseEther((parseFloat(giveKirha[p.cityId] || '0')).toFixed(6)); adminOnChainAction(p.cityId, `kirha_${p.cityId}`, 'give-kirha', { amount: w.toString() }); }}>
                               {giveStatus[`kirha_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`kirha_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
                             </button>
                           </div>
@@ -670,7 +801,7 @@ export function AdminPage() {
                             <span style={labelSm}>✨ Pépites</span>
                             <input type="number" min="0" placeholder="Quantité" value={givePepites[p.cityId] ?? ''} onChange={e => setGivePepites(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={inputSm} />
                             <button style={giveSm} disabled={!givePepites[p.cityId]}
-                              onClick={() => adminWorkerCall(p.cityId, `pep_${p.cityId}`, 'give-pepites', { amount: givePepites[p.cityId] || '0' })}>
+                              onClick={() => adminOnChainAction(p.cityId, `pep_${p.cityId}`, 'give-pepites', { amount: givePepites[p.cityId] || '0' })}>
                               {giveStatus[`pep_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`pep_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
                             </button>
                           </div>
@@ -680,7 +811,7 @@ export function AdminPage() {
                               <option value="7">7 jours</option><option value="30">30 jours</option><option value="90">90 jours</option>
                             </select>
                             <button style={giveSm}
-                              onClick={() => adminWorkerCall(p.cityId, `vip_${p.cityId}`, 'give-vip', { days: giveVipDays[p.cityId] ?? '7' })}>
+                              onClick={() => adminOnChainAction(p.cityId, `vip_${p.cityId}`, 'give-vip', { days: giveVipDays[p.cityId] ?? '7' })}>
                               {giveStatus[`vip_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`vip_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
                             </button>
                           </div>
@@ -691,7 +822,7 @@ export function AdminPage() {
                             </select>
                             <input type="number" min="1" placeholder="Qté" value={giveResAmt[p.cityId] ?? ''} onChange={e => setGiveResAmt(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={{ ...inputSm, width:55 }} />
                             <button style={giveSm} disabled={!giveResAmt[p.cityId]}
-                              onClick={() => adminWorkerCall(p.cityId, `res_${p.cityId}`, 'give-resource', { resourceId: giveResId[p.cityId] ?? '1', amount: giveResAmt[p.cityId] || '0' })}>
+                              onClick={() => adminOnChainAction(p.cityId, `res_${p.cityId}`, 'give-resource', { resourceId: giveResId[p.cityId] ?? '1', amount: giveResAmt[p.cityId] || '0' })}>
                               {giveStatus[`res_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`res_${p.cityId}`] === 'ok' ? '✅' : 'Donner'}
                             </button>
                           </div>
@@ -702,12 +833,12 @@ export function AdminPage() {
                             </select>
                             <input type="number" min="1" placeholder="XP" value={giveXpAmt[p.cityId] ?? ''} onChange={e => setGiveXpAmt(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={{ ...inputSm, width:70 }} />
                             <button style={giveSm} disabled={!giveXpAmt[p.cityId]}
-                              onClick={() => { const mid = parseInt(giveXpMetier[p.cityId] ?? '0'); const xpAdd = parseInt(giveXpAmt[p.cityId] || '0'); adminWorkerCall(p.cityId, `xp_${p.cityId}`, 'set-metier-xp', { metierId: String(mid), level: String(p.levels[mid] ?? 1), xp: String((p.xp[mid] ?? 0) + xpAdd), xpTotal: String((p.xpTotal[mid] ?? 0) + xpAdd) }); }}>
+                              onClick={() => { const mid = parseInt(giveXpMetier[p.cityId] ?? '0'); const xpAdd = parseInt(giveXpAmt[p.cityId] || '0'); adminOnChainAction(p.cityId, `xp_${p.cityId}`, 'set-metier-xp', { metierId: String(mid), level: String(p.levels[mid] ?? 1), xp: String((p.xp[mid] ?? 0) + xpAdd), xpTotal: String((p.xpTotal[mid] ?? 0) + xpAdd) }); }}>
                               {giveStatus[`xp_${p.cityId}`] === 'pending' ? '⏳' : giveStatus[`xp_${p.cityId}`] === 'ok' ? '✅' : '+XP'}
                             </button>
                             <input type="number" min="1" max="100" placeholder="→Niv" value={giveNiveauDir[p.cityId] ?? ''} onChange={e => setGiveNiveauDir(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={{ ...inputSm, width:55 }} />
                             <button style={{ ...giveSm, background:'rgba(122,108,176,0.25)', color:'#9a6cb0' }} disabled={!giveNiveauDir[p.cityId] || parseInt(giveNiveauDir[p.cityId]) < 1}
-                              onClick={() => { const mid = parseInt(giveXpMetier[p.cityId] ?? '0'); const niv = Math.max(1, parseInt(giveNiveauDir[p.cityId] || '1')); const tot = xpTotalPourNiveau(niv); adminWorkerCall(p.cityId, `xp_${p.cityId}`, 'set-metier-xp', { metierId: String(mid), level: String(niv), xp: '0', xpTotal: String(tot) }); }}>
+                              onClick={() => { const mid = parseInt(giveXpMetier[p.cityId] ?? '0'); const niv = Math.max(1, parseInt(giveNiveauDir[p.cityId] || '1')); const tot = xpTotalPourNiveau(niv); adminOnChainAction(p.cityId, `xp_${p.cityId}`, 'set-metier-xp', { metierId: String(mid), level: String(niv), xp: '0', xpTotal: String(tot) }); }}>
                               {giveStatus[`xp_${p.cityId}`] === 'pending' ? '⏳' : '→Niv'}
                             </button>
                           </div>
@@ -717,7 +848,7 @@ export function AdminPage() {
                               ? <button style={{ ...giveSm, background:'rgba(255,165,0,0.2)', color:'#ffa500' }} onClick={() => setResetStep(prev => ({ ...prev, [p.cityId]: 1 }))}>Reset ville</button>
                               : <>
                                   <button style={{ ...giveSm, background:'rgba(255,165,0,0.35)', color:'#ffa500' }}
-                                    onClick={async () => { await adminWorkerCall(p.cityId, `reset_${p.cityId}`, 'reset-city', {}); setResetStep(prev => ({ ...prev, [p.cityId]: 0 })); }}>
+                                    onClick={async () => { await adminOnChainAction(p.cityId, `reset_${p.cityId}`, 'reset-city', {}); setResetStep(prev => ({ ...prev, [p.cityId]: 0 })); }}>
                                     {giveStatus[`reset_${p.cityId}`] === 'pending' ? '⏳' : 'Confirmer'}
                                   </button>
                                   <button style={{ ...giveSm, background:'rgba(255,255,255,0.05)', color:'#7a4060' }} onClick={() => setResetStep(prev => ({ ...prev, [p.cityId]: 0 }))}>Annuler</button>

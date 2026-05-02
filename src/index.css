@@ -76,6 +76,48 @@ img {
   }
 }
 
+/* ── Desktop large : zone de jeu plus large ── */
+html[data-viewport="desktop"] #root {
+  max-width: min(1280px, 98vw);
+  width: 98vw;
+}
+
+/* ── Menu bas → rail gauche sur desktop (si .bottom-menu présent dans .app-shell) ── */
+html[data-viewport="desktop"] .app-shell:has(.bottom-menu) .app-main {
+  padding-left: 76px;
+  box-sizing: border-box;
+  height: 100%;
+  overflow: hidden;
+}
+
+html[data-viewport="desktop"] .app-shell .bottom-menu {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: auto;
+  width: 76px;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 16px 8px 24px;
+  gap: 12px;
+  border-top: none;
+  border-right: 1px solid rgba(212, 100, 138, 0.18);
+  min-height: auto;
+}
+
+/* Grille accueil : 3 colonnes sur grand écran */
+html[data-viewport="desktop"] .home-card-grid {
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 16px !important;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+}
+
 .app-container {
   position: relative;
   width: 100%;
