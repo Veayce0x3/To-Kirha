@@ -201,7 +201,7 @@ function VilleIdGuard() {
   return null;
 }
 
-/** Sauvegarde le blob de progression (slots, temple, craft…) sur la chaîne toutes les 2 min. */
+/** Sauvegarde le blob de progression (slots, temple, craft…) — intervalle long pour limiter les signatures wallet. */
 function ProgressAutoSave() {
   const villeId = useGameStore(s => s.villeId);
   const { saveProgress } = useProgressSave();
@@ -210,7 +210,7 @@ function ProgressAutoSave() {
     if (!villeId || villeId === '0') return;
     const id = setInterval(() => {
       void saveProgress().catch(() => {});
-    }, 120_000);
+    }, 300_000);
     return () => clearInterval(id);
   }, [villeId, saveProgress]);
 

@@ -9,8 +9,8 @@ import { MetierId } from '../data/metiers';
 
 export type SaveStatus = 'idle' | 'signing' | 'pending' | 'success' | 'error';
 
-// Relayer Cloudflare Workers URL (placeholder — à mettre à jour après déploiement)
-const RELAYER_URL = 'https://kirha-relayer.tokirha.workers.dev';
+// Relayer Cloudflare Workers (POST /save → batchSaveSigned)
+const RELAYER_BASE = 'https://kirha-relayer.tokirha.workers.dev';
 
 // Mapping métier string → id uint8 on-chain
 const METIER_TO_ID: Record<MetierId, number> = {
@@ -118,7 +118,7 @@ export function useSave() {
           ...signed,
         });
 
-        const res = await fetch(RELAYER_URL, {
+        const res = await fetch(`${RELAYER_BASE.replace(/\/$/, '')}/save`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body,
@@ -174,7 +174,7 @@ export function useSave() {
     error,
     pendingCount:     mintableItems.length + (kirhaEarned > 0 ? 1 : 0),
     isRelayerActive:  !!relayerActive,
-    relayerUrl:       RELAYER_URL,
+    relayerUrl:       RELAYER_BASE,
     reset: () => { setStatus('idle'); setError(null); },
   };
 }

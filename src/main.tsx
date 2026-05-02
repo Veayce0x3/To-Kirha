@@ -10,7 +10,13 @@ import App from './App';
 import '@rainbow-me/rainbowkit/styles.css';
 import './index.css';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Supprime les rejets WalletConnect relay (Origin not allowed) — non critique
 window.addEventListener('unhandledrejection', (e) => {

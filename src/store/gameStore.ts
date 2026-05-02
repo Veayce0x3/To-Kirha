@@ -380,10 +380,21 @@ export const useGameStore = create<GameState>()(
           const current = inventaire[resourceId] ?? 0;
           const vendu = Math.min(current, quantite);
           if (vendu <= 0) return state;
-          inventaire[resourceId] = Math.round(((inventaire[resourceId] ?? 0) - vendu) * 1e10) / 1e10;
+          const apres = Math.round(((inventaire[resourceId] ?? 0) - vendu) * 1e10) / 1e10;
+          if (apres <= 0) delete inventaire[resourceId];
+          else inventaire[resourceId] = apres;
           const gain = prix * vendu;
+          const pending_mints = state.pending_mints
+            .map(p => {
+              if (p.resource_id !== resourceId) return p;
+              const sub = Math.min(p.quantite, vendu);
+              const q = Math.round((p.quantite - sub) * 1e10) / 1e10;
+              return { ...p, quantite: q };
+            })
+            .filter(p => p.quantite > 1e-9);
           return {
             inventaire,
+            pending_mints,
             soldeKirha:  Math.round((state.soldeKirha + gain) * 1e10) / 1e10,
             kirhaEarned: Math.round((state.kirhaEarned + gain) * 1e10) / 1e10,
           };
@@ -423,8 +434,20 @@ export const useGameStore = create<GameState>()(
         set((state) => {
           const inventaire = { ...state.inventaire };
           const current = inventaire[resourceId] ?? 0;
-          inventaire[resourceId] = Math.max(0, Math.round((current - quantite) * 1e10) / 1e10);
-          return { inventaire };
+          const removed = Math.min(current, quantite);
+          if (removed <= 0) return state;
+          const nv = Math.round((current - removed) * 1e10) / 1e10;
+          if (nv <= 0) delete inventaire[resourceId];
+          else inventaire[resourceId] = nv;
+          const pending_mints = state.pending_mints
+            .map(p => {
+              if (p.resource_id !== resourceId) return p;
+              const sub = Math.min(p.quantite, removed);
+              const q = Math.round((p.quantite - sub) * 1e10) / 1e10;
+              return { ...p, quantite: q };
+            })
+            .filter(p => p.quantite > 1e-9);
+          return { inventaire, pending_mints };
         }),
 
       ajouterRessource: (resourceId, quantite) =>
