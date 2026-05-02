@@ -820,8 +820,21 @@ export const useGameStore = create<GameState>()(
           // Déduire les ressources spécifiques
           const inventaire = { ...state.inventaire };
           for (const { id, qty } of cond.items) {
-            inventaire[id as ResourceId] = (inventaire[id as ResourceId] ?? 0) - qty;
+            const rid = id as ResourceId;
+            const next = Math.round(((inventaire[rid] ?? 0) - qty) * 1e10) / 1e10;
+            if (next <= 0) delete inventaire[rid];
+            else inventaire[rid] = next;
           }
+          // Important: conserver la cohérence inventaire <-> pending_mints.
+          // Sans cela, une ressource dépensée pour unlock peut réapparaître après save/refresh.
+          const pending_mints = state.pending_mints
+            .map((p) => {
+              const cost = cond.items.find(i => i.id === p.resource_id);
+              if (!cost) return p;
+              const q = Math.round((p.quantite - cost.qty) * 1e10) / 1e10;
+              return { ...p, quantite: q };
+            })
+            .filter(p => p.quantite > 1e-9);
           const metierSlots = [...state.slots[metier]];
           metierSlots[slotIndex] = { ...metierSlots[slotIndex], debloque: true };
           return {
@@ -829,6 +842,7 @@ export const useGameStore = create<GameState>()(
             soldeKirha: Math.max(0, state.soldeKirha - cond.kirha),
             kirhaEarned: Math.max(0, state.kirhaEarned - cond.kirha),
             inventaire,
+            pending_mints,
           };
         }),
     }),
