@@ -233,7 +233,7 @@ function RouteFallback() {
   );
 }
 
-/** Met à jour `html[data-viewport]` pour le CSS responsive (sidebar desktop, grilles). */
+/** Met à jour `html[data-viewport]` pour le CSS responsive (grilles large écran, etc.). */
 function ViewportRootAttr() {
   const { isDesktop } = useBreakpoint();
   useEffect(() => {
