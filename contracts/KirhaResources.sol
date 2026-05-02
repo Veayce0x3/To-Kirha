@@ -19,7 +19,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract KirhaResources is ERC1155, Ownable {
 
-    uint256 public constant MAX_RESOURCE_ID = 50;
+    uint256 public constant MAX_RESOURCE_ID = 69;
 
     mapping(address => bool) public minters;
 

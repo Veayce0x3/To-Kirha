@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useEffect } from 'react';
 import { useBreakpoint } from './hooks/useBreakpoint';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAccount, usePublicClient } from 'wagmi';
-import { formatEther } from 'viem';
+import { formatEther, hexToString } from 'viem';
 import { ConnectPage }  from './pages/ConnectPage';
 import { HomePage }     from './pages/HomePage';
 const RecoltePage = lazy(() => import('./pages/RecoltePage').then(m => ({ default: m.RecoltePage })));
@@ -19,6 +19,8 @@ import { useGameStore } from './store/gameStore';
 import { MetierId } from './data/metiers';
 import { ResourceId } from './data/resources';
 import { useSave } from './hooks/useSave';
+import { useProgressSave } from './hooks/useProgressSave';
+import { parsePlayerProgressBlob } from './utils/playerProgressCodec';
 import { KIRHA_GAME_ADDRESS } from './contracts/addresses';
 import KirhaGameAbi from './contracts/abis/KirhaGame.json';
 
@@ -57,10 +59,12 @@ function VersionGuard() {
 
 function BeforeUnloadGuard() {
   const { sauvegarder } = useSave();
+  const { saveProgress } = useProgressSave();
 
   useEffect(() => {
     const handler = (_e: BeforeUnloadEvent) => {
       sauvegarder();
+      void saveProgress();
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
@@ -95,9 +99,8 @@ function VilleIdGuard() {
   const { isConnected, address } = useAccount();
   const setVilleId  = useGameStore(s => s.setVilleId);
   const setPseudo   = useGameStore(s => s.setPseudo);
-  const setChainBalances       = useGameStore(s => s.setChainBalances);
-  const setMetierFromChain     = useGameStore(s => s.setMetierFromChain);
-  const addInventaireFromChain = useGameStore(s => s.addInventaireFromChain);
+  const mergeEconomyFromChain  = useGameStore(s => s.mergeEconomyFromChain);
+  const hydratePlayerProgress  = useGameStore(s => s.hydratePlayerProgress);
   const forceChainSync         = useGameStore(s => s.forceChainSync);
   const resetGameData          = useGameStore(s => s.resetGameData);
   const storeMetiers           = useGameStore(s => s.metiers);
@@ -137,7 +140,7 @@ function VilleIdGuard() {
             functionName: 'getCityMetiers', args: [cityId],
           }) as { metierId: number; level: number; xp: number; xpTotal: number }[];
 
-          const allIds = Array.from({ length: 50 }, (_, i) => BigInt(i + 1));
+          const allIds = Array.from({ length: 69 }, (_, i) => BigInt(i + 1));
           const resourcesChain = await publicClient.readContract({
             address: KIRHA_GAME_ADDRESS, abi: KirhaGameAbi,
             functionName: 'getCityResources', args: [cityId, allIds],
@@ -158,8 +161,6 @@ function VilleIdGuard() {
             if (qty > 0) chainInventaire[(i + 1) as ResourceId] = qty;
           }
 
-          // Détecter un reset admin : on-chain tout à zéro/niveau 1
-          // mais le store local a des données plus élevées
           const chainAllLevel1 = chainMetiers.every(m => m.niveau <= 1 && m.xpTotal === 0);
           const chainNoResources = Object.keys(chainInventaire).length === 0;
           const chainNoKirha = chainKirha === 0 && chainPepites === 0;
@@ -168,23 +169,51 @@ function VilleIdGuard() {
             || Object.values(storeMetiers).some(m => m.niveau > 1);
 
           if (chainAllLevel1 && chainNoResources && chainNoKirha && localHasData) {
-            // Reset admin détecté — écraser le store local avec les données on-chain
             forceChainSync(chainKirha, chainPepites, chainVip, chainMetiers, chainInventaire);
           } else {
-            // Sync normale (Math.max — ne jamais downgrader)
-            setChainBalances(chainKirha, chainPepites, chainVip);
-            for (const m of chainMetiers) {
-              setMetierFromChain(m.metierId, m.niveau, m.xp, m.xpTotal);
-            }
-            for (const [rid, qty] of Object.entries(chainInventaire)) {
-              addInventaireFromChain(Number(rid) as ResourceId, qty as number);
-            }
+            mergeEconomyFromChain({
+              chainKirha,
+              chainPepites,
+              chainVip,
+              metiers: chainMetiers,
+              inventaireSlice: chainInventaire,
+            });
           }
+
+          try {
+            const rawProg = await publicClient.readContract({
+              address: KIRHA_GAME_ADDRESS,
+              abi: KirhaGameAbi,
+              functionName: 'playerProgress',
+              args: [cityId],
+            }) as `0x${string}`;
+            if (rawProg && rawProg !== '0x') {
+              const txt = hexToString(rawProg);
+              const parsed = parsePlayerProgressBlob(JSON.parse(txt));
+              if (parsed) hydratePlayerProgress(parsed);
+            }
+          } catch { /* pas encore de blob déployé */ }
         }
       } catch {}
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, address, publicClient]);
+  return null;
+}
+
+/** Sauvegarde le blob de progression (slots, temple, craft…) sur la chaîne toutes les 2 min. */
+function ProgressAutoSave() {
+  const villeId = useGameStore(s => s.villeId);
+  const { saveProgress } = useProgressSave();
+
+  useEffect(() => {
+    if (!villeId || villeId === '0') return;
+    const id = setInterval(() => {
+      void saveProgress().catch(() => {});
+    }, 120_000);
+    return () => clearInterval(id);
+  }, [villeId, saveProgress]);
+
   return null;
 }
 
@@ -221,6 +250,7 @@ export default function App() {
         <VersionGuard />
         <BeforeUnloadGuard />
         <AutoSaveGuard />
+        <ProgressAutoSave />
         <VilleIdGuard />
         <div className="app-shell" style={{ position:'relative', width:'100%', height:'100svh', overflow:'hidden' }}>
           <div className="app-main">

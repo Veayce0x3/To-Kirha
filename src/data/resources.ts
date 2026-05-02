@@ -142,7 +142,7 @@ export const FORGERON_OUTPUT_IDS    = [77, 78] as const;
 export const MEUBLES_CRAFTABLES_IDS = [80, 81, 82, 83, 84, 85, 86] as const;
 export const TISSERAND_EQUIP_IDS    = [125, 126, 127, 128, 129] as const;
 
-/** IDs on-chain uniquement (1-50) */
+/** IDs 1-50 : métiers de récolte on-chain. 51-69 : ferme / craft (KirhaGame cityResources). 70+ : local jusqu’à extension contrat. */
 export const ALL_RESOURCE_IDS = [
   ...BUCHERON_IDS,
   ...PAYSAN_IDS,

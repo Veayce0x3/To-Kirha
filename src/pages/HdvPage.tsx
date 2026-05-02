@@ -224,8 +224,8 @@ function TabHistorique({ myCityId }: { myCityId: bigint | undefined }) {
 
 // ── Onglet HDV on-chain ─────────────────────────────────────
 
-// HDV on-chain: seules les ressources 1..50 sont listables.
-const ONCHAIN_MARKET_MAX_ID = 50;
+// HDV on-chain: ressources persistées dans KirhaGame (1..MAX_CHAIN_RESOURCE_ID).
+const ONCHAIN_MARKET_MAX_ID = 69;
 const UNSELLABLE_ON_HDV = (id: number) => id > ONCHAIN_MARKET_MAX_ID;
 
 const RELAYER_URL = 'https://kirha-relayer.tokirha.workers.dev';
@@ -312,7 +312,7 @@ function TabOnchain() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [sellCategorie, setSellCategorie] = useState<string>('tout');
 
-  // Seules les ressources on-chain (ID 1-50) peuvent être vendues sur le HDV
+  // Ressources dont le solde est sur la chaîne (voir KirhaGame.MAX_CHAIN_RESOURCE_ID)
   const inventaireItemsAll = (Object.entries(inventaire) as [string, number][])
     .filter(([, qty]) => Math.floor(qty) >= 1)
     .filter(([id]) => !UNSELLABLE_ON_HDV(Number(id)))
@@ -379,7 +379,7 @@ function TabOnchain() {
 
   // Toutes les ressources listables par catégorie (affichage complet même sans offres)
   const ALL_CATEGORY_IDS: Record<string, number[]> = {
-    tout:       Array.from({length: 50}, (_, i) => i + 1),
+    tout:       Array.from({ length: ONCHAIN_MARKET_MAX_ID }, (_, i) => i + 1),
     bucheron:   [1,2,3,4,5,6,7,8,9,10],
     paysan:     [11,12,13,14,15,16,17,18,19,20],
     pecheur:    [21,22,23,24,25,26,27,28,29,30],

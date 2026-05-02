@@ -32,7 +32,7 @@ interface PlayerData {
   vipExpiry: number; // timestamp Unix (0 = pas VIP)
 }
 
-const ALL_RESOURCE_IDS = Array.from({ length: 50 }, (_, i) => BigInt(i + 1));
+const ALL_RESOURCE_IDS = Array.from({ length: 69 }, (_, i) => BigInt(i + 1));
 const METIER_NAMES = ['Bûcheron', 'Paysan', 'Pêcheur', 'Mineur', 'Alchimiste'];
 const METIER_IDS: MetierId[] = ['bucheron', 'paysan', 'pecheur', 'mineur', 'alchimiste'];
 
@@ -426,7 +426,7 @@ export function AdminPage() {
         });
         if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
-      for (let rid = 1; rid <= 50; rid++) {
+      for (let rid = 1; rid <= 69; rid++) {
         const qty = Math.floor(snap.resources[rid] ?? 0);
         if (qty >= 1) {
           hash = await writeContractAsync({
@@ -486,7 +486,7 @@ export function AdminPage() {
         });
         if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
       }
-      for (let rid = 1; rid <= 50; rid++) {
+      for (let rid = 1; rid <= 69; rid++) {
         let qty = Math.floor(p.resources[rid] ?? 0);
         if (type === 'resource' && rid === resourceId) qty = Math.max(0, qty - amount);
         if (qty >= 1) {
@@ -532,9 +532,9 @@ export function AdminPage() {
   // ── Stats globales ───────────────────────────────────────
   const resourceTotals: number[] = Array(51).fill(0);
   for (const p of players) {
-    for (let rid = 1; rid <= 50; rid++) resourceTotals[rid] += p.resources[rid] ?? 0;
+    for (let rid = 1; rid <= 69; rid++) resourceTotals[rid] += p.resources[rid] ?? 0;
   }
-  const topResources = Array.from({ length: 50 }, (_, i) => ({ id: i + 1, qty: resourceTotals[i + 1] }))
+  const topResources = Array.from({ length: 69 }, (_, i) => ({ id: i + 1, qty: resourceTotals[i + 1] }))
     .filter(r => r.qty > 0).sort((a, b) => b.qty - a.qty).slice(0, 15);
 
   // ── Accès refusé ─────────────────────────────────────────
@@ -741,7 +741,7 @@ export function AdminPage() {
 
                       {/* Ressources */}
                       <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
-                        {Array.from({ length: 50 }, (_, i) => i + 1).filter(rid => (p.resources[rid] ?? 0) >= 0.01).map(rid => (
+                        {Array.from({ length: 69 }, (_, i) => i + 1).filter(rid => (p.resources[rid] ?? 0) >= 0.01).map(rid => (
                           <span key={rid} style={{ background:'rgba(106,191,68,0.08)', border:'1px solid rgba(106,191,68,0.2)', borderRadius:6, padding:'2px 5px', fontSize:10, color:'#aed6a2' }}>
                             {emojiByResourceId(rid)} ×{p.resources[rid].toFixed(1)}
                           </span>
@@ -818,7 +818,7 @@ export function AdminPage() {
                           <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
                             <span style={labelSm}>📦 Res.</span>
                             <select value={giveResId[p.cityId] ?? '1'} onChange={e => setGiveResId(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={{ ...inputSm, flex:'none', width:120, fontSize:9 }}>
-                              {Array.from({ length: 50 }, (_, i) => i + 1).map(id => <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')}</option>)}
+                              {Array.from({ length: 69 }, (_, i) => i + 1).map(id => <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')}</option>)}
                             </select>
                             <input type="number" min="1" placeholder="Qté" value={giveResAmt[p.cityId] ?? ''} onChange={e => setGiveResAmt(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={{ ...inputSm, width:55 }} />
                             <button style={giveSm} disabled={!giveResAmt[p.cityId]}
@@ -883,7 +883,7 @@ export function AdminPage() {
                           <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
                             <span style={{ ...labelSm, color:'#ff6400' }}>📦 Res.</span>
                             <select value={retirerResId[p.cityId] ?? '1'} onChange={e => setRetirerResId(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={{ ...inputSm, flex:'none', width:120, fontSize:9 }}>
-                              {Array.from({ length: 50 }, (_, i) => i + 1).map(id => <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')} (×{Math.floor(p.resources[id] ?? 0)})</option>)}
+                              {Array.from({ length: 69 }, (_, i) => i + 1).map(id => <option key={id} value={id}>{emojiByResourceId(id)} {getNomRessource(id, 'fr')} (×{Math.floor(p.resources[id] ?? 0)})</option>)}
                             </select>
                             <input type="number" min="1" placeholder="Qté" value={retirerResAmt[p.cityId] ?? ''} onChange={e => setRetirerResAmt(prev => ({ ...prev, [p.cityId]: e.target.value }))} style={{ ...inputSm, width:55 }} />
                             <button style={maxSm} onClick={() => { const rid = parseInt(retirerResId[p.cityId] ?? '1'); setRetirerResAmt(prev => ({ ...prev, [p.cityId]: String(Math.floor(p.resources[rid] ?? 0)) })); }}>MAX</button>

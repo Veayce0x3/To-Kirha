@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 const KIRHA_GAME_ABI = [
   'function batchSave(uint256 cityId, uint256[] resourceIds, uint256[] resourceAmts, uint8[] metierIds, uint32[] metierLevels, uint32[] metierXps, uint32[] metierXpTotals, uint256 kirhaGained) external',
   'function batchSaveSigned(uint256 cityId, uint256[] resourceIds, uint256[] resourceAmts, uint8[] metierIds, uint32[] metierLevels, uint32[] metierXps, uint32[] metierXpTotals, uint256 kirhaGained, uint64 deadline, uint256 nonce, bytes signature) external',
+  'function setPlayerProgress(uint256 cityId, bytes data) external',
   'function playerCityId(address player) external view returns (uint256)',
 ];
 
@@ -75,6 +76,15 @@ interface BuyPayload {
 interface CancelPayload {
   listingId: string;
   cityId: string;
+  wallet: string;
+  nonce: string;
+  deadline: string;
+  signature: string;
+}
+
+interface ProgressPayload {
+  cityId: string;
+  dataHex: string;
   wallet: string;
   nonce: string;
   deadline: string;
@@ -442,6 +452,66 @@ export default {
       try {
         const contract = new ethers.Contract(env.KIRHA_MARKET_ADDRESS, KIRHA_MARKET_ABI, wallet);
         const tx = await contract.cancelListing(BigInt(p.listingId));
+        const receipt = await tx.wait();
+        return jsonResponse(cors, { success: true, txHash: receipt.hash });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        return jsonResponse(cors, { error: cleanError(msg) }, 500);
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    // POST /progress — setPlayerProgress (blob progression client)
+    // ════════════════════════════════════════════════════════
+    if (pathname === '/progress') {
+      const p = body as ProgressPayload;
+
+      if (!p.cityId || !p.dataHex || !p.wallet || !p.signature || !p.nonce || !p.deadline) {
+        return jsonResponse(cors, { error: 'Missing required fields' }, 400);
+      }
+
+      let dataBytes: Uint8Array;
+      try {
+        dataBytes = ethers.getBytes(p.dataHex);
+      } catch {
+        return jsonResponse(cors, { error: 'dataHex invalide' }, 400);
+      }
+
+      const payloadDigest = ethers.keccak256(dataBytes);
+      const signed = await assertSignedRequest(
+        env,
+        'progress',
+        p.wallet,
+        p.cityId,
+        p.nonce,
+        p.deadline,
+        p.signature,
+        { payloadDigest },
+      );
+      if (!signed.ok) return jsonResponse(cors, { error: signed.error }, signed.status);
+
+      const gameReader = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ABI, provider);
+      const ownerCityId = await gameReader.playerCityId(p.wallet);
+      if (ownerCityId.toString() !== p.cityId) {
+        return jsonResponse(cors, { error: 'CityId ne correspond pas au wallet.' }, 403);
+      }
+
+      if (dataBytes.length > 32000) {
+        return jsonResponse(cors, { error: 'Payload trop volumineux' }, 400);
+      }
+
+      const hourBucket = Math.floor(Date.now() / 3_600_000);
+      const rateKey    = `progress:${p.cityId}:${hourBucket}`;
+      const countStr   = await env.RATE_LIMITER.get(rateKey);
+      const count      = parseInt(countStr ?? '0', 10);
+      if (count >= 40) {
+        return jsonResponse(cors, { error: 'Rate limit exceeded (40/hour)' }, 429);
+      }
+      await env.RATE_LIMITER.put(rateKey, String(count + 1), { expirationTtl: 3600 });
+
+      try {
+        const contract = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ABI, wallet);
+        const tx = await contract.setPlayerProgress(BigInt(p.cityId), dataBytes);
         const receipt = await tx.wait();
         return jsonResponse(cors, { success: true, txHash: receipt.hash });
       } catch (err) {

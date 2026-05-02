@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { SerializedPlayerProgressV1 } from '../utils/playerProgressCodec';
 import { MetierId } from '../data/metiers';
 import { ResourceId } from '../data/resources';
 import { Equipement, TypeVetement } from '../data/vetements';
@@ -139,6 +140,15 @@ export interface GameState {
   addInventaireFromChain:   (resourceId: ResourceId, qty: number) => void;
   resetGameData:            () => void;
   forceChainSync:           (kirha: number, pepites: number, vipExpiry: number, metiers: { metierId: MetierId; niveau: number; xp: number; xpTotal: number }[], inventaire: Partial<Record<ResourceId, number>>) => void;
+  /** Fusionne l'économie on-chain (ressources 1–69, métiers récolte, soldes) — la chaîne fait foi. */
+  mergeEconomyFromChain: (args: {
+    chainKirha: number;
+    chainPepites: number;
+    chainVip: number;
+    metiers: { metierId: MetierId; niveau: number; xp: number; xpTotal: number }[];
+    inventaireSlice: Partial<Record<ResourceId, number>>;
+  }) => void;
+  hydratePlayerProgress: (data: SerializedPlayerProgressV1) => void;
   // Buffs actifs
   addBuff:                  (type: BuffType, bonusPercent: number, durationMs: number, sourceId: ResourceId) => void;
   clearExpiredBuffs:        () => void;
@@ -566,6 +576,58 @@ export const useGameStore = create<GameState>()(
           };
         }),
 
+      mergeEconomyFromChain: (args) =>
+        set((state) => {
+          const inventaire = { ...state.inventaire };
+          for (let id = 1; id <= 69; id++) {
+            const rid = id as ResourceId;
+            const q = args.inventaireSlice[rid] ?? 0;
+            if (q > 0) inventaire[rid] = q;
+            else delete inventaire[rid];
+          }
+          const metiers = { ...state.metiers };
+          for (const m of args.metiers) {
+            metiers[m.metierId] = {
+              id: m.metierId,
+              niveau: Math.max(1, m.niveau),
+              xp: m.xp,
+              xp_total: m.xpTotal,
+            };
+          }
+          return {
+            soldeKirha: args.chainKirha + state.kirhaEarned,
+            pepitesOr:  args.chainPepites,
+            vipExpiry:  Math.max(state.vipExpiry, args.chainVip),
+            metiers,
+            inventaire,
+          };
+        }),
+
+      hydratePlayerProgress: (data) =>
+        set(() => ({
+          slots:               data.slots,
+          templeCompletedDate: data.templeCompletedDate,
+          templeCompleted:     data.templeCompleted,
+          templeResetUsed:     data.templeResetUsed,
+          templeResetDate:     data.templeResetDate,
+          templeSlotRerolls:   data.templeSlotRerolls,
+          personageNiveau:     data.personageNiveau,
+          personageXp:         data.personageXp,
+          personageXpTotal:    data.personageXpTotal,
+          competencesPoints:   data.competencesPoints,
+          competences:         data.competences,
+          puitsDerniereRecolte: data.puitsDerniereRecolte,
+          animauxDerniereRecolte: data.animauxDerniereRecolte,
+          outils:              data.outils,
+          craftMetiers:        data.craftMetiers,
+          parcheminsLv100LastDate: data.parcheminsLv100LastDate,
+          activeBuffs:         data.activeBuffs,
+          prestige:            data.prestige,
+          meubles_poses:       data.meubles_poses,
+          artefacts:           data.artefacts,
+          equipement:          data.equipement,
+        })),
+
       ajouterXpPersonage: (xp) =>
         set((state) => {
           let niveau = state.personageNiveau;
@@ -748,74 +810,9 @@ export const useGameStore = create<GameState>()(
         }),
     }),
     {
-      name: 'to-kirha-game',
-      migrate: (persistedState: unknown, version: number) => {
-        if (!persistedState || typeof persistedState !== 'object') return undefined;
-        const state = persistedState as Partial<GameState> & { animauxDerniereRecolte?: unknown };
-        // Migration douce: garder toutes les données existantes, compléter les champs manquants
-        // v9  : reset slots à 2 débloqués par métier
-        // v10 : ajout personnage, compétences, ferme
-        // v11 : animauxDerniereRecolte devient Record<string, number[]>, temple resets
-        // v12 : ajout outils, craftMetiers (Artisan, AlchimisteCraft)
-        // v13 : ajout templeSlotRerolls (reroll quêtes), dates temple Paris
-        // v14 : Mouton/Cochon ferme, chaîne cuisine, parcheminsLv100LastDate
-        // v15 : parcheminPrice configurable admin (défaut 10)
-        // v16 : outils tierId→niveau (2-10), durabiliteMax 60, outil disparaît à 0
-        const oldRecolte = (state.animauxDerniereRecolte ?? {}) as Record<string, unknown>;
-        const migratedRecolte: Record<string, number[]> = {};
-        for (const [k, v] of Object.entries(oldRecolte)) {
-          migratedRecolte[k] = Array.isArray(v) ? (v as number[]) : [v as number];
-        }
-        return {
-          ...state,
-          slots:               version < 9 ? initSlots() : ((state as Partial<GameState>).slots ?? initSlots()),
-          pepitesOr:           (state as Partial<GameState>).pepitesOr           ?? 0,
-          vipExpiry:           (state as Partial<GameState>).vipExpiry            ?? 0,
-          templeCompletedDate: '',
-          templeCompleted:     [],
-          templeResetUsed:     0,
-          templeResetDate:     '',
-          templeSlotRerolls:   [0, 0, 0],
-          kirhaEarned:         (state as Partial<GameState>).kirhaEarned           ?? 0,
-          personageNiveau:     (state as Partial<GameState>).personageNiveau      ?? 1,
-          personageXp:         (state as Partial<GameState>).personageXp          ?? 0,
-          personageXpTotal:    (state as Partial<GameState>).personageXpTotal      ?? 0,
-          competencesPoints:   (state as Partial<GameState>).competencesPoints     ?? 0,
-          competences:         (state as Partial<GameState>).competences           ?? {},
-          puitsDerniereRecolte:   (state as Partial<GameState>).puitsDerniereRecolte   ?? 0,
-          animauxDerniereRecolte: migratedRecolte,
-          outils:              (() => {
-            // Migration v15→v16 : tierId → niveau (2-10)
-            const rawOutils = (state as Partial<GameState>).outils ?? {};
-            const migrated: Partial<Record<ToolType, { niveau: number; durabilite: number }>> = {};
-            for (const [type, o] of Object.entries(rawOutils)) {
-              if (!o) continue;
-              const legacy = o as { tierId?: number; niveau?: number; durabilite: number };
-              const niveau = legacy.niveau ?? (legacy.tierId === 3 ? 7 : legacy.tierId === 2 ? 5 : 2);
-              if (legacy.durabilite > 0) {
-                migrated[type as ToolType] = { niveau: Math.min(10, Math.max(2, niveau)), durabilite: legacy.durabilite };
-              }
-            }
-            return migrated;
-          })(),
-          craftMetiers: (() => {
-            const existing = (state as Partial<GameState>).craftMetiers ?? {};
-            return {
-              artisan:         (existing as Record<string, unknown>).artisan         ?? { niveau: 1, xp: 0, xpTotal: 0 },
-              alchimisteCraft: (existing as Record<string, unknown>).alchimisteCraft ?? { niveau: 1, xp: 0, xpTotal: 0 },
-              tisserand:       (existing as Record<string, unknown>).tisserand       ?? { niveau: 1, xp: 0, xpTotal: 0 },
-              forgeron:        (existing as Record<string, unknown>).forgeron        ?? { niveau: 1, xp: 0, xpTotal: 0 },
-            };
-          })(),
-          parcheminsLv100LastDate: (state as Partial<GameState>).parcheminsLv100LastDate ?? '',
-          parcheminPrice: (state as Partial<GameState>).parcheminPrice ?? 10,
-          activeBuffs:   (state as Partial<GameState>).activeBuffs   ?? [],
-          prestige:      (state as Partial<GameState>).prestige      ?? {},
-          meubles_poses: (state as Partial<GameState>).meubles_poses ?? [],
-          artefacts:     (state as Partial<GameState>).artefacts     ?? {},
-        };
-      },
-      version: 18,
+      name: 'to-kirha-prefs-v2',
+      partialize: (state) => ({ langue: state.langue }),
+      version: 1,
     }
   )
 );

@@ -25,6 +25,9 @@ contract KirhaGame is Ownable, ReentrancyGuard {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
+    /** Aligné sur KirhaResources.MAX_RESOURCE_ID — ressources + ferme / artisanat */
+    uint256 public constant MAX_CHAIN_RESOURCE_ID = 69;
+
     KirhaResources public immutable resources;
     KirhaToken     public immutable kirhaToken;
     KirhaCity      public immutable cityNft;
@@ -68,6 +71,9 @@ contract KirhaGame is Ownable, ReentrancyGuard {
     uint64 public constant MAX_RELAYER_SESSION = 2 days;
     mapping(uint256 => mapping(uint256 => bool)) public usedSaveNonces;
 
+    /** Progression client (slots, temple, craft, etc.) — source hors mappings économiques */
+    mapping(uint256 => bytes) public playerProgress;
+
     // ── VIP ───────────────────────────────────────────────────
     mapping(uint256 => uint64)  public vipExpiry;
     mapping(uint256 => uint256) public cityPepites;
@@ -97,6 +103,7 @@ contract KirhaGame is Ownable, ReentrancyGuard {
     event PepitesBought(uint256 indexed cityId, uint8 packType, uint256 pepites);
     event VipPurchased(uint256 indexed cityId, uint64 expiry, uint8 durationType);
     event CityDeleted(uint256 indexed cityId);
+    event PlayerProgressSaved(uint256 indexed cityId);
 
     // ── Modifiers ─────────────────────────────────────────────
 
@@ -176,7 +183,7 @@ contract KirhaGame is Ownable, ReentrancyGuard {
 
     /** @notice Remet à zéro ressources + $KIRHA + pépites d'une ville (garde NFT, métiers, pseudo). */
     function adminResetCity(uint256 cityId) external onlyOwner {
-        for (uint256 i = 1; i <= 50; i++) {
+        for (uint256 i = 1; i <= MAX_CHAIN_RESOURCE_ID; i++) {
             cityResources[cityId][i] = 0;
         }
         cityKirha[cityId]   = 0;
@@ -201,7 +208,7 @@ contract KirhaGame is Ownable, ReentrancyGuard {
 
     /** @notice Donne une ressource à une ville (amount = quantité entière, scalée ×1e4 en interne). */
     function adminGiveResource(uint256 cityId, uint256 resourceId, uint256 amount) external onlyOwner {
-        require(resourceId >= 1 && resourceId <= 50, "KirhaGame: invalid resource id");
+        require(resourceId >= 1 && resourceId <= MAX_CHAIN_RESOURCE_ID, "KirhaGame: invalid resource id");
         cityResources[cityId][resourceId] += amount * 1e4;
     }
 
@@ -330,7 +337,7 @@ contract KirhaGame is Ownable, ReentrancyGuard {
         );
 
         for (uint256 i = 0; i < resourceIds.length; i++) {
-            require(resourceIds[i] >= 1 && resourceIds[i] <= 50, "KirhaGame: invalid resource id");
+            require(resourceIds[i] >= 1 && resourceIds[i] <= MAX_CHAIN_RESOURCE_ID, "KirhaGame: invalid resource id");
             cityResources[cityId][resourceIds[i]] += resourceAmts[i];
         }
 
@@ -358,6 +365,21 @@ contract KirhaGame is Ownable, ReentrancyGuard {
     ) external nonReentrant onlyCityOwner(cityId) notBanned(cityId) {
         _applyBatchSave(cityId, resourceIds, resourceAmts, metierIds, metierLevels, metierXps, metierXpTotals, kirhaGained);
         emit DataSaved(msg.sender, cityId);
+    }
+
+    /**
+     * @notice Sauvegarde opaque de la progression UI (slots, temple, craft…). Appelée via relayer signé.
+     * @dev Limite taille pour éviter dos gas ; client split si besoin en v2.
+     */
+    function setPlayerProgress(uint256 cityId, bytes calldata data)
+        external
+        nonReentrant
+        onlyCityOwnerOrRelayer(cityId)
+        notBanned(cityId)
+    {
+        require(data.length <= 32000, "KirhaGame: progress too large");
+        playerProgress[cityId] = data;
+        emit PlayerProgressSaved(cityId);
     }
 
     function batchSaveSigned(
