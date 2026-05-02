@@ -83,8 +83,17 @@ html[data-viewport="desktop"] #root {
 }
 
 /* ── Menu bas → rail gauche sur desktop (si .bottom-menu présent dans .app-shell) ── */
+/*
+ * Ne pas utiliser seulement padding-left : les pages en position:absolute; inset:0
+ * se positionnent sur .app-shell (ancêtre positionné), donc le contenu passe SOUS
+ * le rail (z-index) et vole les clics. margin-left + largeur réduite + position:relative
+ * recentrent la zone cliquable à droite du rail.
+ */
 html[data-viewport="desktop"] .app-shell:has(.bottom-menu) .app-main {
-  padding-left: 76px;
+  position: relative;
+  margin-left: 76px;
+  width: calc(100% - 76px);
+  max-width: calc(100% - 76px);
   box-sizing: border-box;
   height: 100%;
   overflow: hidden;
@@ -100,11 +109,17 @@ html[data-viewport="desktop"] .app-shell .bottom-menu {
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  padding: 16px 8px 24px;
+  padding: 16px 8px 24px !important;
   gap: 12px;
   border-top: none;
   border-right: 1px solid rgba(212, 100, 138, 0.18);
   min-height: auto;
+  /* Ne bloquer les clics que sur les boutons, pas sur toute la bande (filet de sécurité) */
+  pointer-events: none;
+}
+
+html[data-viewport="desktop"] .app-shell .bottom-menu button {
+  pointer-events: auto;
 }
 
 /* Grille accueil : 3 colonnes sur grand écran */
@@ -124,8 +139,8 @@ html[data-viewport="desktop"] .home-card-grid {
   height: 100vh;
 }
 
-/* ── Safe area — barre de navigation Android/iOS ── */
-.bottom-menu {
+/* ── Safe area — barre de navigation Android/iOS (mobile seulement ; le desktop surcharge) ── */
+html:not([data-viewport="desktop"]) .bottom-menu {
   padding-bottom: 52px !important;
 }
 
