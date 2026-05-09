@@ -362,34 +362,59 @@ contract KirhaGame is Ownable, ReentrancyGuard {
         uint256 maxKirhaDelta = MAX_KIRHA_BURST_WEI + (elapsed * MAX_KIRHA_RATE_WEI_PER_SEC);
         uint32 maxXpDelta = uint32(MAX_XP_TOTAL_BURST + (elapsed * MAX_XP_TOTAL_RATE_PER_SEC));
 
-        uint256 totalScaled = 0;
-        for (uint256 i = 0; i < resourceIds.length; i++) {
-            require(resourceIds[i] >= 1 && resourceIds[i] <= MAX_CHAIN_RESOURCE_ID, "KirhaGame: invalid resource id");
-            require(resourceAmts[i] <= maxResourceDelta, "KirhaGame: resource delta too high");
-            totalScaled += resourceAmts[i];
-            cityResources[cityId][resourceIds[i]] += resourceAmts[i];
-        }
-        require(totalScaled <= MAX_TOTAL_RESOURCE_SCALED_PER_SAVE, "KirhaGame: total resource delta too high");
-
-        for (uint256 i = 0; i < metierIds.length; i++) {
-            require(metierIds[i] < 5, "KirhaGame: invalid metier id");
-            require(metierLevels[i] >= 1 && metierLevels[i] <= 100, "KirhaGame: invalid metier level");
-            uint32 currentXpTotal = cityMetierXpTotal[cityId][metierIds[i]];
-            uint32 currentLevel = cityMetierLevel[cityId][metierIds[i]];
-            require(metierXpTotals[i] >= currentXpTotal, "KirhaGame: xpTotal regression");
-            require(metierLevels[i] >= currentLevel, "KirhaGame: level regression");
-            require(metierXps[i] <= metierXpTotals[i], "KirhaGame: xp > xpTotal");
-            require(metierXpTotals[i] - currentXpTotal <= maxXpDelta, "KirhaGame: xp delta too high");
-            cityMetierLevel[cityId][metierIds[i]]   = metierLevels[i];
-            cityMetierXp[cityId][metierIds[i]]      = metierXps[i];
-            cityMetierXpTotal[cityId][metierIds[i]] = metierXpTotals[i];
-        }
+        _applyResourceDeltas(cityId, resourceIds, resourceAmts, maxResourceDelta);
+        _applyMetierDeltas(cityId, metierIds, metierLevels, metierXps, metierXpTotals, maxXpDelta);
 
         if (kirhaGained > 0) {
             require(kirhaGained <= maxKirhaDelta, "KirhaGame: kirha delta too high");
             cityKirha[cityId] += kirhaGained;
         }
         lastEconomySaveAt[cityId] = uint64(block.timestamp);
+    }
+
+    function _applyResourceDeltas(
+        uint256 cityId,
+        uint256[] calldata resourceIds,
+        uint256[] calldata resourceAmts,
+        uint256 maxResourceDelta
+    ) internal {
+        uint256 totalScaled = 0;
+        for (uint256 i = 0; i < resourceIds.length; i++) {
+            uint256 rid = resourceIds[i];
+            uint256 amt = resourceAmts[i];
+            require(rid >= 1 && rid <= MAX_CHAIN_RESOURCE_ID, "KirhaGame: invalid resource id");
+            require(amt <= maxResourceDelta, "KirhaGame: resource delta too high");
+            totalScaled += amt;
+            cityResources[cityId][rid] += amt;
+        }
+        require(totalScaled <= MAX_TOTAL_RESOURCE_SCALED_PER_SAVE, "KirhaGame: total resource delta too high");
+    }
+
+    function _applyMetierDeltas(
+        uint256 cityId,
+        uint8[] calldata metierIds,
+        uint32[] calldata metierLevels,
+        uint32[] calldata metierXps,
+        uint32[] calldata metierXpTotals,
+        uint32 maxXpDelta
+    ) internal {
+        for (uint256 i = 0; i < metierIds.length; i++) {
+            uint8 mid = metierIds[i];
+            uint32 lvl = metierLevels[i];
+            uint32 xp = metierXps[i];
+            uint32 xpTotal = metierXpTotals[i];
+            require(mid < 5, "KirhaGame: invalid metier id");
+            require(lvl >= 1 && lvl <= 100, "KirhaGame: invalid metier level");
+            uint32 currentXpTotal = cityMetierXpTotal[cityId][mid];
+            uint32 currentLevel = cityMetierLevel[cityId][mid];
+            require(xpTotal >= currentXpTotal, "KirhaGame: xpTotal regression");
+            require(lvl >= currentLevel, "KirhaGame: level regression");
+            require(xp <= xpTotal, "KirhaGame: xp > xpTotal");
+            require(xpTotal - currentXpTotal <= maxXpDelta, "KirhaGame: xp delta too high");
+            cityMetierLevel[cityId][mid] = lvl;
+            cityMetierXp[cityId][mid] = xp;
+            cityMetierXpTotal[cityId][mid] = xpTotal;
+        }
     }
 
     function _effectiveSaveElapsed(uint256 cityId) internal view returns (uint256) {

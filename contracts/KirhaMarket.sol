@@ -28,6 +28,8 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
 
     address public treasury;
     uint256 public constant TAX_BPS = 5000; // 50%
+    uint256 public constant MAX_LISTING_QTY = 5000;
+    uint256 public constant MAX_BUY_QTY = 2000;
 
     struct Listing {
         uint256 sellerCityId;
@@ -105,6 +107,7 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
         uint256 pricePerUnit
     ) external nonReentrant onlyCityOwnerOrRelayer(cityId) returns (uint256 listingId) {
         require(quantity > 0,     "KirhaMarket: quantity must be > 0");
+        require(quantity <= MAX_LISTING_QTY, "KirhaMarket: quantity too high");
         require(pricePerUnit > 0, "KirhaMarket: price must be > 0");
 
         uint256 scaledQty = quantity * 1e4;
@@ -118,7 +121,6 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
             pricePerUnit: pricePerUnit,
             active:       true
         });
-
         emit ResourceListed(listingId, cityId, resourceId, quantity, pricePerUnit);
     }
 
@@ -137,6 +139,7 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
 
         for (uint256 i = 0; i < resourceIds.length; i++) {
             require(quantities[i] > 0, "KirhaMarket: quantity must be > 0");
+            require(quantities[i] <= MAX_LISTING_QTY, "KirhaMarket: quantity too high");
             require(prices[i] > 0,     "KirhaMarket: price must be > 0");
 
             uint256 scaledQty = quantities[i] * 1e4;
@@ -150,7 +153,6 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
                 pricePerUnit: prices[i],
                 active:       true
             });
-
             emit ResourceListed(listingId, cityId, resourceIds[i], quantities[i], prices[i]);
         }
     }
@@ -163,6 +165,7 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
         Listing storage l = listings[listingId];
         require(l.active,                      "KirhaMarket: listing not active");
         require(quantity > 0,                  "KirhaMarket: quantity must be > 0");
+        require(quantity <= MAX_BUY_QTY,       "KirhaMarket: quantity too high");
         require(buyerCityId != l.sellerCityId, "KirhaMarket: cannot buy own listing");
 
         uint256 scaledQty = quantity * 1e4;
@@ -186,7 +189,9 @@ contract KirhaMarket is Ownable, ReentrancyGuard {
 
         // Ressources → ville acheteur
         l.quantity -= scaledQty;
-        if (l.quantity == 0) l.active = false;
+        if (l.quantity == 0) {
+            l.active = false;
+        }
         game.operatorRestoreResource(buyerCityId, l.resourceId, scaledQty);
 
         emit ResourceSold(listingId, buyerCityId, quantity, totalCost, sellerAmount);

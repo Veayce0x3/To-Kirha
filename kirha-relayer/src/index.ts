@@ -15,6 +15,9 @@ const KIRHA_MARKET_ABI = [
   'function getListing(uint256 listingId) external view returns (tuple(uint256 sellerCityId,uint256 resourceId,uint256 quantity,uint256 pricePerUnit,bool active))',
 ];
 
+const MAX_LIST_QTY = 5000;
+const MAX_BUY_QTY = 2000;
+
 const KIRHA_GAME_ADMIN_ABI = [
   'function adminResetCity(uint256 cityId) external',
   'function adminGiveKirha(uint256 cityId, uint256 amount) external',
@@ -318,13 +321,16 @@ export default {
         { resourceId: p.resourceId, quantity: p.quantity, pricePerUnit: p.pricePerUnit },
       );
       if (!signed.ok) return jsonResponse(cors, { error: signed.error }, signed.status);
+      const listQty = parseInt(p.quantity, 10);
+      if (!Number.isFinite(listQty) || listQty <= 0 || listQty > MAX_LIST_QTY) {
+        return jsonResponse(cors, { error: `Invalid quantity (1-${MAX_LIST_QTY})` }, 400);
+      }
 
       const gameReader = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ABI, provider);
       const ownerCityId = await gameReader.playerCityId(p.wallet);
       if (ownerCityId.toString() !== p.cityId) {
         return jsonResponse(cors, { error: 'CityId ne correspond pas au wallet.' }, 403);
       }
-
       // Rate limiting : max 30 mises en vente/heure par cityId
       const hourBucket = Math.floor(Date.now() / 3_600_000);
       const rateKey    = `list:${p.cityId}:${hourBucket}`;
@@ -383,6 +389,10 @@ export default {
         { listingId: p.listingId, quantity: p.quantity },
       );
       if (!signed.ok) return jsonResponse(cors, { error: signed.error }, signed.status);
+      const buyQty = parseInt(p.quantity, 10);
+      if (!Number.isFinite(buyQty) || buyQty <= 0 || buyQty > MAX_BUY_QTY) {
+        return jsonResponse(cors, { error: `Invalid quantity (1-${MAX_BUY_QTY})` }, 400);
+      }
 
       const gameReader = new ethers.Contract(env.KIRHA_GAME_ADDRESS, KIRHA_GAME_ABI, provider);
       const ownerCityId = await gameReader.playerCityId(p.wallet);

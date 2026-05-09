@@ -1,33 +1,271 @@
 [
   {
     "inputs": [
-      { "internalType": "address", "name": "initialOwner", "type": "address" },
-      { "internalType": "address", "name": "_kirhaToken",  "type": "address" },
-      { "internalType": "address", "name": "_cityNft",     "type": "address" },
-      { "internalType": "address", "name": "_game",        "type": "address" },
-      { "internalType": "address", "name": "_treasury",    "type": "address" }
+      {
+        "internalType": "address",
+        "name": "initialOwner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_kirhaToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_cityNft",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_game",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_treasury",
+        "type": "address"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "cityId",       "type": "uint256" },
-      { "internalType": "uint256", "name": "resourceId",   "type": "uint256" },
-      { "internalType": "uint256", "name": "quantity",     "type": "uint256" },
-      { "internalType": "uint256", "name": "pricePerUnit", "type": "uint256" }
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
     ],
-    "name": "listResource",
-    "outputs": [{ "internalType": "uint256", "name": "listingId", "type": "uint256" }],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "listingId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "sellerCityId",
+        "type": "uint256"
+      }
+    ],
+    "name": "ListingCancelled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "listingId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "sellerCityId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "resourceId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pricePerUnit",
+        "type": "uint256"
+      }
+    ],
+    "name": "ResourceListed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "listingId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "buyerCityId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalPaid",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "sellerReceives",
+        "type": "uint256"
+      }
+    ],
+    "name": "ResourceSold",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newTreasury",
+        "type": "address"
+      }
+    ],
+    "name": "TreasuryUpdated",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_BUY_QTY",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_LISTING_QTY",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "TAX_BPS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "buyerCityId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "listingIds",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "quantities",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "batchBuyResources",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "uint256",   "name": "cityId",      "type": "uint256"   },
-      { "internalType": "uint256[]", "name": "resourceIds", "type": "uint256[]" },
-      { "internalType": "uint256[]", "name": "quantities",  "type": "uint256[]" },
-      { "internalType": "uint256[]", "name": "prices",      "type": "uint256[]" }
+      {
+        "internalType": "uint256",
+        "name": "cityId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "resourceIds",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "quantities",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "prices",
+        "type": "uint256[]"
+      }
     ],
     "name": "batchListResources",
     "outputs": [],
@@ -36,9 +274,21 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "listingId",   "type": "uint256" },
-      { "internalType": "uint256", "name": "buyerCityId", "type": "uint256" },
-      { "internalType": "uint256", "name": "quantity",    "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "listingId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "buyerCityId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
+      }
     ],
     "name": "buyResource",
     "outputs": [],
@@ -47,33 +297,136 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256",   "name": "buyerCityId", "type": "uint256"   },
-      { "internalType": "uint256[]", "name": "listingIds",  "type": "uint256[]" },
-      { "internalType": "uint256[]", "name": "quantities",  "type": "uint256[]" }
+      {
+        "internalType": "uint256",
+        "name": "listingId",
+        "type": "uint256"
+      }
     ],
-    "name": "batchBuyResources",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "uint256", "name": "listingId", "type": "uint256" }],
     "name": "cancelListing",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "listingId", "type": "uint256" }],
+    "inputs": [],
+    "name": "cityNft",
+    "outputs": [
+      {
+        "internalType": "contract KirhaCity",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "game",
+    "outputs": [
+      {
+        "internalType": "contract KirhaGame",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "limit",
+        "type": "uint256"
+      }
+    ],
+    "name": "getActiveListings",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "sellerCityId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "resourceId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "quantity",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "pricePerUnit",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct KirhaMarket.Listing[]",
+        "name": "result",
+        "type": "tuple[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "ids",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "listingId",
+        "type": "uint256"
+      }
+    ],
     "name": "getListing",
     "outputs": [
       {
         "components": [
-          { "internalType": "uint256", "name": "sellerCityId",  "type": "uint256" },
-          { "internalType": "uint256", "name": "resourceId",    "type": "uint256" },
-          { "internalType": "uint256", "name": "quantity",      "type": "uint256" },
-          { "internalType": "uint256", "name": "pricePerUnit",  "type": "uint256" },
-          { "internalType": "bool",    "name": "active",        "type": "bool"    }
+          {
+            "internalType": "uint256",
+            "name": "sellerCityId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "resourceId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "quantity",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "pricePerUnit",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
         ],
         "internalType": "struct KirhaMarket.Listing",
         "name": "",
@@ -84,25 +437,87 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "uint256", "name": "offset", "type": "uint256" },
-      { "internalType": "uint256", "name": "limit",  "type": "uint256" }
-    ],
-    "name": "getActiveListings",
+    "inputs": [],
+    "name": "kirhaToken",
     "outputs": [
       {
-        "components": [
-          { "internalType": "uint256", "name": "sellerCityId",  "type": "uint256" },
-          { "internalType": "uint256", "name": "resourceId",    "type": "uint256" },
-          { "internalType": "uint256", "name": "quantity",      "type": "uint256" },
-          { "internalType": "uint256", "name": "pricePerUnit",  "type": "uint256" },
-          { "internalType": "bool",    "name": "active",        "type": "bool"    }
-        ],
-        "internalType": "struct KirhaMarket.Listing[]",
-        "name": "result",
-        "type": "tuple[]"
+        "internalType": "contract KirhaToken",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "cityId",
+        "type": "uint256"
       },
-      { "internalType": "uint256[]", "name": "ids", "type": "uint256[]" }
+      {
+        "internalType": "uint256",
+        "name": "resourceId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pricePerUnit",
+        "type": "uint256"
+      }
+    ],
+    "name": "listResource",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "listingId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "listings",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "sellerCityId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "resourceId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pricePerUnit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -110,41 +525,73 @@
   {
     "inputs": [],
     "name": "nextListingId",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      { "indexed": true,  "internalType": "uint256", "name": "listingId",    "type": "uint256" },
-      { "indexed": true,  "internalType": "uint256", "name": "sellerCityId", "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "resourceId",   "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "quantity",     "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "pricePerUnit", "type": "uint256" }
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
     ],
-    "name": "ResourceListed",
-    "type": "event"
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      { "indexed": true,  "internalType": "uint256", "name": "listingId",      "type": "uint256" },
-      { "indexed": true,  "internalType": "uint256", "name": "buyerCityId",    "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "quantity",       "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "totalPaid",      "type": "uint256" },
-      { "indexed": false, "internalType": "uint256", "name": "sellerReceives", "type": "uint256" }
-    ],
-    "name": "ResourceSold",
-    "type": "event"
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    "anonymous": false,
     "inputs": [
-      { "indexed": true, "internalType": "uint256", "name": "listingId",    "type": "uint256" },
-      { "indexed": true, "internalType": "uint256", "name": "sellerCityId", "type": "uint256" }
+      {
+        "internalType": "address",
+        "name": "_treasury",
+        "type": "address"
+      }
     ],
-    "name": "ListingCancelled",
-    "type": "event"
+    "name": "setTreasury",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "treasury",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ]
