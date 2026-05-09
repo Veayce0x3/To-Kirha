@@ -391,7 +391,7 @@ export function useMarket() {
       const hash = await Promise.race([
         txPromise,
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Délai dépassé (45s). Déconnecte/reconnecte ton wallet puis réessaie.')), 45_000)
+          setTimeout(() => reject(new Error('Délai dépassé (90s). Déconnecte/reconnecte ton wallet puis réessaie.')), 90_000)
         ),
       ]);
       sessionStorage.removeItem(WC_RELAYER_SESSION_KEY);

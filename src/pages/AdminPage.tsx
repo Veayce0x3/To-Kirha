@@ -55,6 +55,9 @@ export function AdminPage() {
   const [tab, setTab] = useState<Tab>('joueurs');
   const [adminToken, setAdminToken] = useState('');
   const [tokenStatus, setTokenStatus] = useState<'idle' | 'ok' | 'bad'>('idle');
+  const [relayerHealthy, setRelayerHealthy] = useState<boolean | null>(null);
+  const [relayerLatencyMs, setRelayerLatencyMs] = useState<number | null>(null);
+  const [lastInfraCheckAt, setLastInfraCheckAt] = useState<number | null>(null);
 
   const [players, setPlayers] = useState<PlayerData[]>([]);
   const [totalCities, setTotalCities] = useState<number | null>(null);
@@ -64,6 +67,8 @@ export function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [showOnlyBanned, setShowOnlyBanned] = useState(false);
+  const [sortMode, setSortMode] = useState<'city' | 'kirha' | 'resources'>('city');
   const [expandedCity, setExpandedCity] = useState<number | null>(null);
   const [snapshots, setSnapshots] = useState<Record<number, PlayerData>>({});
 
@@ -102,6 +107,11 @@ export function AdminPage() {
       .catch(() => {});
   }, [setParcheminPrice]);
 
+  React.useEffect(() => {
+    const stored = sessionStorage.getItem('kirha_admin_token') ?? '';
+    if (stored) setAdminToken(stored);
+  }, []);
+
   async function testerToken() {
     if (!adminToken) return;
     setTokenStatus('idle');
@@ -110,6 +120,23 @@ export function AdminPage() {
       setTokenStatus('ok');
     } catch {
       setTokenStatus('bad');
+    }
+  }
+
+  async function checkRelayerHealth() {
+    const started = performance.now();
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 8000);
+      const res = await fetch(`${ADMIN_RELAYER_URL}/config`, { signal: ctl.signal });
+      clearTimeout(t);
+      setRelayerHealthy(res.ok);
+      setRelayerLatencyMs(Math.round(performance.now() - started));
+      setLastInfraCheckAt(Date.now());
+    } catch {
+      setRelayerHealthy(false);
+      setRelayerLatencyMs(null);
+      setLastInfraCheckAt(Date.now());
     }
   }
 
@@ -136,6 +163,7 @@ export function AdminPage() {
     setLoading(true);
     setError(null);
     try {
+      await checkRelayerHealth();
       setRelayerBalance(await publicClient.getBalance({ address: RELAYER_ADDRESS }));
       const count = (await publicClient.readContract({
         address: KIRHA_GAME_ADDRESS,
@@ -477,12 +505,19 @@ export function AdminPage() {
     );
   }
 
-  const filtered = players.filter(
-    p =>
-      !search ||
-      p.pseudo.toLowerCase().includes(search.toLowerCase()) ||
-      String(p.cityId).includes(search),
-  );
+  const filtered = players
+    .filter(
+      p =>
+        (!search ||
+          p.pseudo.toLowerCase().includes(search.toLowerCase()) ||
+          String(p.cityId).includes(search)) &&
+        (!showOnlyBanned || p.isBanned),
+    )
+    .sort((a, b) => {
+      if (sortMode === 'kirha') return b.kirhaWei === a.kirhaWei ? 0 : b.kirhaWei > a.kirhaWei ? 1 : -1;
+      if (sortMode === 'resources') return b.resources.reduce((x, y) => x + y, 0) - a.resources.reduce((x, y) => x + y, 0);
+      return a.cityId - b.cityId;
+    });
 
   const resourceTotals: number[] = Array(MAX_RES + 1).fill(0);
   for (const p of players) {
@@ -511,7 +546,7 @@ export function AdminPage() {
       <header
         style={{
           flexShrink: 0,
-          padding: '12px 14px',
+          padding: '12px 14px 10px',
           borderBottom: '1px solid rgba(212,100,138,0.2)',
           background: 'rgba(255,255,255,0.9)',
           display: 'flex',
@@ -539,7 +574,7 @@ export function AdminPage() {
           </button>
           <span style={{ fontWeight: 800, color: '#c43070' }}>Administration</span>
           <span style={{ fontSize: 11, color: '#7a4060' }}>
-            Relayer + token — aucune action sur ton inventaire local ici.
+            Console on-chain + relayer (zéro action locale).
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -549,6 +584,7 @@ export function AdminPage() {
             value={adminToken}
             onChange={e => {
               setAdminToken(e.target.value);
+              sessionStorage.setItem('kirha_admin_token', e.target.value);
               setTokenStatus('idle');
             }}
             style={{
@@ -576,10 +612,75 @@ export function AdminPage() {
           >
             Tester
           </button>
+          <button
+            type="button"
+            onClick={() => void checkRelayerHealth()}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 8,
+              border: '1px solid rgba(212,100,138,0.3)',
+              background: '#fff',
+              color: '#7a4060',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Ping relayer
+          </button>
         </div>
       </header>
 
-      <div style={{ display: 'flex', borderBottom: '1px solid rgba(212,100,138,0.15)', flexShrink: 0 }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(212,100,138,0.15)', background: 'rgba(255,255,255,0.7)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 8 }}>
+          <div style={kpiBox}>
+            <span style={kpiLabel}>Relayer</span>
+            <strong style={{ ...kpiValue, color: relayerHealthy === false ? '#b71c1c' : relayerHealthy === true ? '#2e7d32' : '#7a4060' }}>
+              {relayerHealthy == null ? '—' : relayerHealthy ? 'UP' : 'DOWN'}
+            </strong>
+          </div>
+          <div style={kpiBox}>
+            <span style={kpiLabel}>Ping</span>
+            <strong style={kpiValue}>{relayerLatencyMs != null ? `${relayerLatencyMs} ms` : '—'}</strong>
+          </div>
+          <div style={kpiBox}>
+            <span style={kpiLabel}>Villes</span>
+            <strong style={kpiValue}>{totalCities ?? '—'}</strong>
+          </div>
+          <div style={kpiBox}>
+            <span style={kpiLabel}>Listings actifs</span>
+            <strong style={kpiValue}>{activeListings ?? '—'}</strong>
+          </div>
+          <div style={kpiBox}>
+            <span style={kpiLabel}>Relayer ETH</span>
+            <strong style={{ ...kpiValue, color: relayerBalance != null && relayerBalance < 50_000_000_000_000_000n ? '#b71c1c' : '#1e0a16' }}>
+              {relayerBalance != null ? parseFloat(formatEther(relayerBalance)).toFixed(4) : '—'}
+            </strong>
+          </div>
+        </div>
+        <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => void charger()}
+            disabled={loading}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 10,
+              border: 'none',
+              background: '#c43070',
+              color: '#fff',
+              fontWeight: 700,
+              cursor: loading ? 'wait' : 'pointer',
+            }}
+          >
+            {loading ? 'Chargement…' : 'Rafraîchir toutes les données'}
+          </button>
+          <span style={{ fontSize: 11, color: '#7a4060', alignSelf: 'center' }}>
+            {lastInfraCheckAt ? `Dernier check: ${new Date(lastInfraCheckAt).toLocaleTimeString()}` : 'Pas encore de check infra'}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', borderBottom: '1px solid rgba(212,100,138,0.15)', flexShrink: 0, background: '#fff' }}>
         {(
           [
             ['stats', '📊 Infra'],
@@ -629,22 +730,6 @@ export function AdminPage() {
       <div style={{ flex: 1, overflowY: 'auto', padding: 14, paddingBottom: 100 }}>
         {tab === 'stats' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <button
-              type="button"
-              onClick={() => void charger()}
-              disabled={loading}
-              style={{
-                padding: 12,
-                background: '#c43070',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 12,
-                fontWeight: 700,
-                cursor: loading ? 'wait' : 'pointer',
-              }}
-            >
-              {loading ? 'Chargement…' : 'Charger / rafraîchir les données'}
-            </button>
             {relayerBalance != null && (
               <div
                 style={{
@@ -677,6 +762,23 @@ export function AdminPage() {
                 </div>
               </div>
             )}
+            <div style={{ border: '1px solid rgba(212,100,138,0.2)', borderRadius: 12, padding: 12, background: '#fff' }}>
+              <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 11, color: '#c43070' }}>État service</p>
+              <div style={{ fontSize: 12, color: '#7a4060', lineHeight: 1.6 }}>
+                <div>
+                  Endpoint relayer : <strong style={{ color: '#1e0a16' }}>{ADMIN_RELAYER_URL}</strong>
+                </div>
+                <div>
+                  Token admin :{' '}
+                  <strong style={{ color: tokenStatus === 'ok' ? '#2e7d32' : tokenStatus === 'bad' ? '#b71c1c' : '#7a4060' }}>
+                    {tokenStatus === 'ok' ? 'valide' : tokenStatus === 'bad' ? 'invalide' : 'non testé'}
+                  </strong>
+                </div>
+                <div>
+                  Conseil : garde au moins <strong>0.05 ETH</strong> sur le relayer pour éviter les coupures.
+                </div>
+              </div>
+            </div>
             {topResources.length > 0 && (
               <div style={{ border: '1px solid rgba(212,100,138,0.2)', borderRadius: 12, padding: 12, background: '#fff' }}>
                 <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 11, color: '#c43070' }}>Top ressources (agrégé)</p>
@@ -698,19 +800,42 @@ export function AdminPage() {
             {players.length === 0 && (
               <p style={{ textAlign: 'center', color: '#7a4060', padding: 32 }}>Charge d’abord l’onglet Infra.</p>
             )}
-            <input
-              type="search"
-              placeholder="Pseudo ou #ville…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{
-                width: '100%',
-                padding: 10,
-                borderRadius: 10,
-                border: '1px solid rgba(212,100,138,0.25)',
-                boxSizing: 'border-box',
-              }}
-            />
+            <div style={{ position: 'sticky', top: 0, zIndex: 2, background: '#fdf0f5', paddingBottom: 8 }}>
+              <input
+                type="search"
+                placeholder="Pseudo ou #ville…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: 10,
+                  borderRadius: 10,
+                  border: '1px solid rgba(212,100,138,0.25)',
+                  boxSizing: 'border-box',
+                }}
+              />
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                <button
+                  type="button"
+                  style={{ ...btnSm, background: showOnlyBanned ? 'rgba(196,48,112,0.1)' : '#fff' }}
+                  onClick={() => setShowOnlyBanned(v => !v)}
+                >
+                  {showOnlyBanned ? 'Bannis seulement: ON' : 'Bannis seulement: OFF'}
+                </button>
+                <select
+                  value={sortMode}
+                  onChange={e => setSortMode(e.target.value as 'city' | 'kirha' | 'resources')}
+                  style={{ ...inp, maxWidth: 190, background: '#fff' }}
+                >
+                  <option value="city">Tri: ID ville</option>
+                  <option value="kirha">Tri: KIRHA décroissant</option>
+                  <option value="resources">Tri: ressources décroissant</option>
+                </select>
+                <span style={{ fontSize: 11, color: '#7a4060', alignSelf: 'center' }}>
+                  {filtered.length} joueur(s) affiché(s)
+                </span>
+              </div>
+            </div>
             {filtered.map(p => {
               const open = expandedCity === p.cityId;
               const kirha = parseFloat(formatEther(p.kirhaWei));
@@ -1299,3 +1424,14 @@ const btnGo: React.CSSProperties = {
   fontSize: 11,
   cursor: 'pointer',
 };
+const kpiBox: React.CSSProperties = {
+  border: '1px solid rgba(212,100,138,0.18)',
+  borderRadius: 10,
+  background: '#fff',
+  padding: '8px 10px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
+};
+const kpiLabel: React.CSSProperties = { fontSize: 10, color: '#7a4060', fontWeight: 700 };
+const kpiValue: React.CSSProperties = { fontSize: 16, color: '#1e0a16', lineHeight: 1.1 };

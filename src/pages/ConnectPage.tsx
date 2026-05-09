@@ -7,6 +7,7 @@ import { useGameStore } from '../store/gameStore';
 import { useT } from '../utils/i18n';
 import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
 import KirhaGameAbi from '../contracts/abis/KirhaGame.json';
+import { isWalletConnectEnabled } from '../config/wagmi';
 
 const PSEUDO_REGEX = /^[a-zA-Z0-9_]+$/;
 
@@ -58,6 +59,7 @@ export function ConnectPage() {
   const [copyUrlOk, setCopyUrlOk] = useState(false);
   const isLikelyMobile = typeof navigator !== 'undefined'
     && /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const hasInjectedWallet = typeof window !== 'undefined' && !!(window as Window & { ethereum?: unknown }).ethereum;
   const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://veayce0x3.github.io/To-Kirha/#/';
   const encodedCurrentUrl = encodeURIComponent(currentUrl);
   const roninUniversalLink = `https://wallet.roninchain.com/in_app_browser?url=${encodedCurrentUrl}`;
@@ -270,14 +272,14 @@ export function ConnectPage() {
         {({ openConnectModal }) => (
           <div style={s.btnCol}>
             <button
-              onClick={() => { setLoginMode('login'); openConnectModal(); }}
+              onClick={() => { setLoginMode('login'); openConnectModal?.(); }}
               type="button"
               style={s.btnLogin}
             >
               🔑 Se connecter
             </button>
             <button
-              onClick={() => { setLoginMode('register'); openConnectModal(); }}
+              onClick={() => { setLoginMode('register'); openConnectModal?.(); }}
               type="button"
               style={s.btnCreate}
             >
@@ -286,13 +288,22 @@ export function ConnectPage() {
           </div>
         )}
       </ConnectButton.Custom>
+      <div style={s.quickConnectRow}>
+        <ConnectButton showBalance={false} />
+      </div>
 
       <div style={s.walletHintCard}>
         <p style={s.walletHintTitle}>🔐 Connexion wallet</p>
         <p style={s.walletHintText}>
-          Utilise prioritairement un wallet injecté (MetaMask, Coinbase, Ronin in-app browser).
-          {isLikelyMobile ? ' Sur mobile Ronin : ouvre le jeu directement dans le navigateur Ronin.' : ''}
+          Utilise prioritairement un wallet injecté (MetaMask, Coinbase, navigateur Ronin).
+          {isLikelyMobile ? ' Depuis un raccourci mobile, passe par WalletConnect ou ouvre le lien dans Ronin.' : ''}
         </p>
+        {isLikelyMobile && !hasInjectedWallet && !isWalletConnectEnabled && (
+          <p style={s.walletWarnText}>
+            ⚠️ WalletConnect n&apos;est pas configuré. Depuis un raccourci mobile, la connexion wallet peut échouer.
+            Ajoute `VITE_WALLETCONNECT_PROJECT_ID` puis redeploie le front.
+          </p>
+        )}
         <div style={s.walletHintActions}>
           <a
             href={roninUniversalLink}
@@ -343,9 +354,11 @@ const s: Record<string, React.CSSProperties> = {
   walletHintCard: { width:'100%', background:'rgba(212,100,138,0.06)', border:'1px solid rgba(212,100,138,0.18)', borderRadius:'12px', padding:'10px 12px', marginTop:'10px' },
   walletHintTitle: { color:'#c43070', fontSize:'12px', fontWeight:800, margin:'0 0 4px' },
   walletHintText: { color:'#7a4060', fontSize:'11px', lineHeight:'1.45', margin:0 },
+  walletWarnText: { color:'#b71c1c', fontSize:'11px', lineHeight:'1.45', margin:'8px 0 0' },
   walletHintActions: { display:'flex', gap:'8px', marginTop:'8px' },
   roninBtn: { flex:1, textAlign:'center', textDecoration:'none', padding:'8px 10px', borderRadius:'9px', background:'#4f46e5', color:'#fff', fontSize:'11px', fontWeight:800, letterSpacing:'0.2px' },
   copyBtn: { flex:1, padding:'8px 10px', borderRadius:'9px', border:'1px solid rgba(212,100,138,0.25)', background:'#fff', color:'#7a4060', fontSize:'11px', fontWeight:700, cursor:'pointer' },
+  quickConnectRow: { width:'100%', marginTop:'10px', display:'flex', justifyContent:'center' },
   network:  { color:'rgba(196,48,112,0.4)', fontSize:'11px', marginTop:'14px', letterSpacing:'0.5px' },
   pseudoCard: { width:'100%', maxWidth:'360px', background:'#ffffff', border:'1px solid rgba(212,100,138,0.25)', borderRadius:'20px', padding:'32px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:'16px', boxShadow:'0 4px 24px rgba(196,48,112,0.1)' },
   pseudoTitle:    { color:'#1e0a16', fontSize:'22px', fontWeight:800, margin:0 },
