@@ -178,31 +178,6 @@ export function ConnectPage() {
     );
   }
 
-  // ── Écran : wallet connecté, pas de compte, choix du mode ──
-  if (isConnected && address && !(onChainPseudo as string) && loginMode === null) {
-    return (
-      <div style={s.page}>
-        <LangToggle />
-        <div style={s.pseudoCard}>
-          <span style={{ fontSize: 42 }}>🔐</span>
-          <h2 style={s.pseudoTitle}>Wallet connecté</h2>
-          <p style={s.pseudoSub}>
-            Choisis la suite.
-          </p>
-          <button onClick={() => setLoginMode('login')} style={s.btnConfirm}>
-            J&apos;ai déjà un compte
-          </button>
-          <button onClick={() => setLoginMode('register')} style={s.btnBack}>
-            Créer une ville
-          </button>
-          <button onClick={handleDisconnect} style={s.btnBack}>
-            Se déconnecter
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // ── Écran : wallet connecté, mode login, pas de compte ─────
   if (isConnected && address && !(onChainPseudo as string) && loginMode === 'login') {
     return (
@@ -292,15 +267,32 @@ export function ConnectPage() {
         ))}
       </div>
 
-      <div style={s.btnCol}>
-        <ConnectButton showBalance={false} />
-      </div>
-
+      {/* Deux boutons : connexion existante vs création */}
+      <ConnectButton.Custom>
+        {({ openConnectModal }) => (
+          <div style={s.btnCol}>
+            <button
+              onClick={() => { setLoginMode('login'); openConnectModal?.(); }}
+              type="button"
+              style={s.btnLogin}
+            >
+              🔑 Se connecter
+            </button>
+            <button
+              onClick={() => { setLoginMode('register'); openConnectModal?.(); }}
+              type="button"
+              style={s.btnCreate}
+            >
+              🏙️ {t('connect.create_city')}
+            </button>
+          </div>
+        )}
+      </ConnectButton.Custom>
       <div style={s.walletHintCard}>
         <p style={s.walletHintTitle}>🔐 Connexion wallet</p>
         <p style={s.walletHintText}>
           Utilise prioritairement un wallet injecté (MetaMask, Coinbase, navigateur Ronin).
-          {isLikelyMobile ? ' Depuis un raccourci mobile, passe par WalletConnect ou ouvre le lien dans Ronin.' : ''}
+          {isLikelyMobile ? ' Si un wallet ne répond pas dans la popup, utilise le bouton Ronin ci-dessous.' : ''}
         </p>
         {isLikelyMobile && !hasInjectedWallet && !isWalletConnectEnabled && (
           <p style={s.walletWarnText}>
@@ -353,6 +345,8 @@ const s: Record<string, React.CSSProperties> = {
   featureEmoji: { fontSize:'20px', width:'28px' },
   featureLabel: { color:'#7a4060', fontSize:'14px' },
   btnCol:   { width:'100%', display:'flex', flexDirection:'column', gap:'10px' },
+  btnLogin: { width:'100%', padding:'14px 0', background:'rgba(196,48,112,0.08)', color:'#c43070', border:'2px solid rgba(196,48,112,0.3)', borderRadius:'12px', fontSize:'14px', fontWeight:700, cursor:'pointer', letterSpacing:'0.3px' },
+  btnCreate:{ width:'100%', padding:'14px 0', background:'#c43070', color:'#ffffff', border:'none', borderRadius:'12px', fontSize:'14px', fontWeight:700, cursor:'pointer', letterSpacing:'0.3px' },
   walletHintCard: { width:'100%', background:'rgba(212,100,138,0.06)', border:'1px solid rgba(212,100,138,0.18)', borderRadius:'12px', padding:'10px 12px', marginTop:'10px' },
   walletHintTitle: { color:'#c43070', fontSize:'12px', fontWeight:800, margin:'0 0 4px' },
   walletHintText: { color:'#7a4060', fontSize:'11px', lineHeight:'1.45', margin:0 },
