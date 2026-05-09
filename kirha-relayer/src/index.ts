@@ -239,7 +239,7 @@ export default {
     // ════════════════════════════════════════════════════════
     // POST /save  — batchSave
     // ════════════════════════════════════════════════════════
-    if (pathname === '/' || pathname === '/save') {
+    if (pathname === '/save') {
       const p = body as SavePayload;
 
       if (!p.cityId || !p.metierIds || !p.metierLevels || !p.wallet || !p.signature || !p.nonce || !p.deadline) {

@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useWriteContract, usePublicClient, useReadContract, useSwitchChain, useAccount, useSignMessage } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
+import { useReadContract, useAccount, useSignMessage } from 'wagmi';
 import { parseEther } from 'viem';
 import { useGameStore } from '../store/gameStore';
 import { KIRHA_GAME_ADDRESS } from '../contracts/addresses';
@@ -30,11 +29,8 @@ export function useSave() {
   const setSauvegarde          = useGameStore(s => s.setSauvegarde);
   const resetKirhaEarned       = useGameStore(s => s.resetKirhaEarned);
 
-  const { writeContractAsync } = useWriteContract();
-  const { switchChainAsync }   = useSwitchChain();
   const { address } = useAccount();
   const { signMessageAsync } = useSignMessage();
-  const publicClient = usePublicClient();
 
   const villeIdBn = villeId && villeId !== '0' ? BigInt(villeId) : undefined;
 
@@ -101,54 +97,33 @@ export function useSave() {
 
       setStatus('pending');
 
-      if (relayerActive) {
-        const signed = await signRelayerPayload('save', villeId, {
-          kirhaGained: kirhaWei.toString(),
-        });
-        // ── Voie relayer (gasless) ────────────────────────────
-        const body = JSON.stringify({
-          cityId:         villeId,
-          resourceIds:    resourceIds.map(String),
-          resourceAmts:   resourceAmts.map(String),
-          metierIds:      metierIds.map(String),
-          metierLevels:   metierLevels.map(String),
-          metierXps:      metierXps.map(String),
-          metierXpTotals: metierXpTotals.map(String),
-          kirhaGained:    kirhaWei.toString(),
-          ...signed,
-        });
+      if (!relayerActive) {
+        throw new Error('Relayer inactif. Active le mode gasless dans HDV avant de sauvegarder.');
+      }
+      const signed = await signRelayerPayload('save', villeId, {
+        kirhaGained: kirhaWei.toString(),
+      });
+      const body = JSON.stringify({
+        cityId:         villeId,
+        resourceIds:    resourceIds.map(String),
+        resourceAmts:   resourceAmts.map(String),
+        metierIds:      metierIds.map(String),
+        metierLevels:   metierLevels.map(String),
+        metierXps:      metierXps.map(String),
+        metierXpTotals: metierXpTotals.map(String),
+        kirhaGained:    kirhaWei.toString(),
+        ...signed,
+      });
 
-        const res = await fetch(`${RELAYER_BASE.replace(/\/$/, '')}/save`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body,
-        });
+      const res = await fetch(`${RELAYER_BASE.replace(/\/$/, '')}/save`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
 
-        if (!res.ok) {
-          const text = await res.text().catch(() => 'Erreur relayer');
-          throw new Error(text);
-        }
-      } else {
-        // ── Voie directe (fallback wallet) ────────────────────
-        try { await switchChainAsync({ chainId: baseSepolia.id }); } catch {}
-        const hash = await writeContractAsync({
-          address:      KIRHA_GAME_ADDRESS,
-          abi:          KirhaGameAbi,
-          functionName: 'batchSave',
-          args: [
-            BigInt(villeId),
-            resourceIds,
-            resourceAmts,
-            metierIds,
-            metierLevels,
-            metierXps,
-            metierXpTotals,
-            kirhaWei,
-          ],
-          chainId: baseSepolia.id,
-        });
-
-        if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+      if (!res.ok) {
+        const text = await res.text().catch(() => 'Erreur relayer');
+        throw new Error(text);
       }
 
       soustraireMintesPending(mintableItems);
@@ -163,7 +138,7 @@ export function useSave() {
     }
   }, [
     hasSomethingToSave, mintableItems, metiers, villeId, kirhaEarned,
-    status, relayerActive, writeContractAsync, publicClient,
+    status, relayerActive,
     signRelayerPayload,
     soustraireMintesPending, setSauvegarde, resetKirhaEarned,
   ]);

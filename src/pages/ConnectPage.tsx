@@ -55,6 +55,8 @@ export function ConnectPage() {
   const [pseudoInput, setPseudoInput] = useState('');
   const [pseudoError, setPseudoError] = useState<string | null>(null);
   const [registering, setRegistering] = useState(false);
+  const isLikelyMobile = typeof navigator !== 'undefined'
+    && /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   const { writeContractAsync } = useWriteContract();
 
@@ -281,6 +283,14 @@ export function ConnectPage() {
         )}
       </ConnectButton.Custom>
 
+      <div style={s.walletHintCard}>
+        <p style={s.walletHintTitle}>🔐 Connexion wallet</p>
+        <p style={s.walletHintText}>
+          Utilise prioritairement un wallet injecté (MetaMask, Coinbase, Ronin in-app browser).
+          {isLikelyMobile ? ' Sur mobile Ronin : ouvre le jeu directement dans le navigateur Ronin.' : ''}
+        </p>
+      </div>
+
       <p style={s.network}>{t('connect.network')}</p>
     </div>
   );
@@ -301,6 +311,9 @@ const s: Record<string, React.CSSProperties> = {
   btnCol:   { width:'100%', display:'flex', flexDirection:'column', gap:'10px' },
   btnLogin: { width:'100%', padding:'14px 0', background:'rgba(196,48,112,0.08)', color:'#c43070', border:'2px solid rgba(196,48,112,0.3)', borderRadius:'12px', fontSize:'14px', fontWeight:700, cursor:'pointer', letterSpacing:'0.3px' },
   btnCreate:{ width:'100%', padding:'14px 0', background:'#c43070', color:'#ffffff', border:'none', borderRadius:'12px', fontSize:'14px', fontWeight:700, cursor:'pointer', letterSpacing:'0.3px' },
+  walletHintCard: { width:'100%', background:'rgba(212,100,138,0.06)', border:'1px solid rgba(212,100,138,0.18)', borderRadius:'12px', padding:'10px 12px', marginTop:'10px' },
+  walletHintTitle: { color:'#c43070', fontSize:'12px', fontWeight:800, margin:'0 0 4px' },
+  walletHintText: { color:'#7a4060', fontSize:'11px', lineHeight:'1.45', margin:0 },
   network:  { color:'rgba(196,48,112,0.4)', fontSize:'11px', marginTop:'14px', letterSpacing:'0.5px' },
   pseudoCard: { width:'100%', maxWidth:'360px', background:'#ffffff', border:'1px solid rgba(212,100,138,0.25)', borderRadius:'20px', padding:'32px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:'16px', boxShadow:'0 4px 24px rgba(196,48,112,0.1)' },
   pseudoTitle:    { color:'#1e0a16', fontSize:'22px', fontWeight:800, margin:0 },

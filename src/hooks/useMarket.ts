@@ -72,7 +72,7 @@ export function useMarket() {
     abi:          KirhaGameAbi,
     functionName: 'isRelayerActive',
     args:         cityIdBn ? [cityIdBn] : undefined,
-    query: { enabled: !!cityIdBn, refetchInterval: 5_000 },
+    query: { enabled: !!cityIdBn, refetchInterval: 15_000, refetchOnWindowFocus: false },
   });
 
   // ── Lire les listings actifs ───────────────────────────────
@@ -81,7 +81,7 @@ export function useMarket() {
     abi:          KirhaMarketAbi,
     functionName: 'getActiveListings',
     args:         [0n, 100n],
-    query:        { refetchInterval: 5000 },
+    query:        { refetchInterval: 15_000, refetchOnWindowFocus: false },
   });
 
   // IDs uniques des villes vendeuses (pour batch-fetch des pseudos)

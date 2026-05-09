@@ -1,6 +1,5 @@
 import { useCallback, useRef } from 'react';
-import { useAccount, useSignMessage, useReadContract, useWriteContract, useSwitchChain } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
+import { useAccount, useSignMessage, useReadContract } from 'wagmi';
 import { keccak256, stringToBytes } from 'viem';
 import { useGameStore } from '../store/gameStore';
 import { pickProgressForSave } from '../utils/playerProgressCodec';
@@ -12,8 +11,6 @@ const RELAYER_URL = 'https://kirha-relayer.tokirha.workers.dev';
 export function useProgressSave() {
   const { address } = useAccount();
   const { signMessageAsync } = useSignMessage();
-  const { writeContractAsync } = useWriteContract();
-  const { switchChainAsync } = useSwitchChain();
   const villeId = useGameStore(s => s.villeId);
   const lastDigest = useRef<string | null>(null);
 
@@ -29,6 +26,8 @@ export function useProgressSave() {
 
   const saveProgress = useCallback(async () => {
     if (!address || !villeId || villeId === '0') return;
+    // Progress save est volontairement relayer-only pour éviter des popups wallet fréquentes.
+    if (!relayerActive) return;
     const state = useGameStore.getState();
     const picked = pickProgressForSave(state);
     const json = JSON.stringify(picked);
@@ -51,41 +50,28 @@ export function useProgressSave() {
     const signature = await signMessageAsync({ message });
 
     try {
-      if (relayerActive) {
-        const res = await fetch(`${RELAYER_URL}/progress`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            cityId: villeId,
-            dataHex,
-            wallet: address,
-            nonce,
-            deadline,
-            signature,
-          }),
-        });
-        if (!res.ok) {
-          const t = await res.text().catch(() => '');
-          throw new Error(t.slice(0, 120));
-        }
-      } else {
-        try {
-          await switchChainAsync({ chainId: baseSepolia.id });
-        } catch { /* noop */ }
-        await writeContractAsync({
-          address:      KIRHA_GAME_ADDRESS,
-          abi:          KirhaGameAbi,
-          functionName: 'setPlayerProgress',
-          args:         [BigInt(villeId), bytes],
-          chainId:      baseSepolia.id,
-        });
+      const res = await fetch(`${RELAYER_URL}/progress`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cityId: villeId,
+          dataHex,
+          wallet: address,
+          nonce,
+          deadline,
+          signature,
+        }),
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(() => '');
+        throw new Error(t.slice(0, 120));
       }
       lastDigest.current = payloadDigest;
     } catch (e) {
       lastDigest.current = null;
       throw e;
     }
-  }, [address, villeId, signMessageAsync, relayerActive, writeContractAsync, switchChainAsync]);
+  }, [address, villeId, signMessageAsync, relayerActive]);
 
   return { saveProgress };
 }

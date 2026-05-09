@@ -1,20 +1,18 @@
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import {
+  injectedWallet,
   metaMaskWallet,
-  walletConnectWallet,
   coinbaseWallet
 } from '@rainbow-me/rainbowkit/wallets';
 import { createConfig, http } from 'wagmi';
 import { baseSepolia } from 'viem/chains';
-
-const PROJECT_ID = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? 'YOUR_PROJECT_ID';
 
 const connectors = connectorsForWallets(
   [
     {
       groupName: 'Mobile & Desktop',
       wallets: [
-        walletConnectWallet,
+        injectedWallet,
         metaMaskWallet,
         coinbaseWallet,
       ],
@@ -24,7 +22,8 @@ const connectors = connectorsForWallets(
     appName:        'To-Kirha',
     appDescription: 'Jeu Web3 thème sakura — récoltez, vendez, progressez.',
     appUrl:         'https://veayce0x3.github.io/To-Kirha',
-    projectId:      PROJECT_ID,
+    // On garde la clé si d'autres wallets RainbowKit la nécessitent à l'avenir.
+    projectId:      import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? 'YOUR_PROJECT_ID',
   }
 );
 

@@ -18,8 +18,6 @@ import "./KirhaCity.sol";
  *
  * Métiers : bucheron=0  paysan=1  pecheur=2  mineur=3  alchimiste=4
  *
- * NOTE TESTNET : batchSave accepte kirhaGained sans vérification de signature.
- *   Réactiver ECDSA avant mainnet.
  */
 contract KirhaGame is Ownable, ReentrancyGuard {
     using ECDSA for bytes32;
@@ -70,6 +68,7 @@ contract KirhaGame is Ownable, ReentrancyGuard {
     bool public relayerGloballyEnabled = true;
     uint64 public constant MAX_RELAYER_SESSION = 2 days;
     mapping(uint256 => mapping(uint256 => bool)) public usedSaveNonces;
+    mapping(uint256 => uint64) public lastEconomySaveAt;
 
     /** Progression client (slots, temple, craft, etc.) — source hors mappings économiques */
     mapping(uint256 => bytes) public playerProgress;
@@ -88,6 +87,17 @@ contract KirhaGame is Ownable, ReentrancyGuard {
     uint256 public constant VIP_7D_PEPITES  = 100;
     uint256 public constant VIP_30D_PEPITES = 300;
     uint256 public constant VIP_90D_PEPITES = 700;
+
+    // ── Garde-fous anti-abus (save économie) ──────────────────
+    uint64  public constant MIN_SAVE_INTERVAL = 10; // secondes
+    uint64  public constant SAVE_ELAPSED_CAP  = 6 hours;
+    uint256 public constant MAX_RESOURCE_BURST_SCALED = 200_000;      // 20.0000 unités
+    uint256 public constant MAX_RESOURCE_RATE_SCALED_PER_SEC = 4_000; // +0.4000 unité/s
+    uint256 public constant MAX_TOTAL_RESOURCE_SCALED_PER_SAVE = 12_000_000; // 1200 unités
+    uint256 public constant MAX_KIRHA_BURST_WEI = 3 ether;
+    uint256 public constant MAX_KIRHA_RATE_WEI_PER_SEC = 2e15; // 0.002 KIRHA / s
+    uint32  public constant MAX_XP_TOTAL_BURST = 2_000;
+    uint32  public constant MAX_XP_TOTAL_RATE_PER_SEC = 8;
 
     // ── Events ────────────────────────────────────────────────
     event PseudoRegistered(address indexed player, string pseudo, uint256 indexed cityId);
@@ -313,7 +323,7 @@ contract KirhaGame is Ownable, ReentrancyGuard {
     }
 
     // --------------------------------------------------------
-    // Sauvegarde on-chain (TESTNET — sans vérification signature)
+    // Sauvegarde on-chain
     // --------------------------------------------------------
 
     /**
@@ -328,7 +338,6 @@ contract KirhaGame is Ownable, ReentrancyGuard {
      * @param metierXpTotals XP total accumulé
      * @param kirhaGained    $KIRHA gagné depuis la dernière sauvegarde (en wei)
      *
-     * NOTE TESTNET : kirhaGained n'est pas validé on-chain.
      */
     function _applyBatchSave(
         uint256          cityId,
@@ -348,21 +357,48 @@ contract KirhaGame is Ownable, ReentrancyGuard {
             "KirhaGame: metiers length mismatch"
         );
 
+        uint256 elapsed = _effectiveSaveElapsed(cityId);
+        uint256 maxResourceDelta = MAX_RESOURCE_BURST_SCALED + (elapsed * MAX_RESOURCE_RATE_SCALED_PER_SEC);
+        uint256 maxKirhaDelta = MAX_KIRHA_BURST_WEI + (elapsed * MAX_KIRHA_RATE_WEI_PER_SEC);
+        uint32 maxXpDelta = uint32(MAX_XP_TOTAL_BURST + (elapsed * MAX_XP_TOTAL_RATE_PER_SEC));
+
+        uint256 totalScaled = 0;
         for (uint256 i = 0; i < resourceIds.length; i++) {
             require(resourceIds[i] >= 1 && resourceIds[i] <= MAX_CHAIN_RESOURCE_ID, "KirhaGame: invalid resource id");
+            require(resourceAmts[i] <= maxResourceDelta, "KirhaGame: resource delta too high");
+            totalScaled += resourceAmts[i];
             cityResources[cityId][resourceIds[i]] += resourceAmts[i];
         }
+        require(totalScaled <= MAX_TOTAL_RESOURCE_SCALED_PER_SAVE, "KirhaGame: total resource delta too high");
 
         for (uint256 i = 0; i < metierIds.length; i++) {
             require(metierIds[i] < 5, "KirhaGame: invalid metier id");
+            require(metierLevels[i] >= 1 && metierLevels[i] <= 100, "KirhaGame: invalid metier level");
+            uint32 currentXpTotal = cityMetierXpTotal[cityId][metierIds[i]];
+            uint32 currentLevel = cityMetierLevel[cityId][metierIds[i]];
+            require(metierXpTotals[i] >= currentXpTotal, "KirhaGame: xpTotal regression");
+            require(metierLevels[i] >= currentLevel, "KirhaGame: level regression");
+            require(metierXps[i] <= metierXpTotals[i], "KirhaGame: xp > xpTotal");
+            require(metierXpTotals[i] - currentXpTotal <= maxXpDelta, "KirhaGame: xp delta too high");
             cityMetierLevel[cityId][metierIds[i]]   = metierLevels[i];
             cityMetierXp[cityId][metierIds[i]]      = metierXps[i];
             cityMetierXpTotal[cityId][metierIds[i]] = metierXpTotals[i];
         }
 
         if (kirhaGained > 0) {
+            require(kirhaGained <= maxKirhaDelta, "KirhaGame: kirha delta too high");
             cityKirha[cityId] += kirhaGained;
         }
+        lastEconomySaveAt[cityId] = uint64(block.timestamp);
+    }
+
+    function _effectiveSaveElapsed(uint256 cityId) internal view returns (uint256) {
+        uint64 last = lastEconomySaveAt[cityId];
+        if (last == 0) return 300; // bootstrap tolérant (5 min)
+        require(uint64(block.timestamp) >= last + MIN_SAVE_INTERVAL, "KirhaGame: save too frequent");
+        uint256 elapsed = uint64(block.timestamp) - last;
+        if (elapsed > SAVE_ELAPSED_CAP) return SAVE_ELAPSED_CAP;
+        return elapsed;
     }
 
     function batchSave(
