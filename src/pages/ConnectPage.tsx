@@ -178,31 +178,6 @@ export function ConnectPage() {
     );
   }
 
-  // ── Écran : wallet connecté, pas de compte, choix du mode ──
-  if (isConnected && address && !(onChainPseudo as string) && loginMode === null) {
-    return (
-      <div style={s.page}>
-        <LangToggle />
-        <div style={s.pseudoCard}>
-          <span style={{ fontSize: 42 }}>🔐</span>
-          <h2 style={s.pseudoTitle}>Wallet connecté</h2>
-          <p style={s.pseudoSub}>
-            Choisis la suite.
-          </p>
-          <button onClick={() => setLoginMode('login')} style={s.btnConfirm}>
-            J&apos;ai déjà un compte
-          </button>
-          <button onClick={() => setLoginMode('register')} style={s.btnBack}>
-            Créer une ville
-          </button>
-          <button onClick={handleDisconnect} style={s.btnBack}>
-            Se déconnecter
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // ── Écran : wallet connecté, mode login, pas de compte ─────
   if (isConnected && address && !(onChainPseudo as string) && loginMode === 'login') {
     return (
@@ -292,7 +267,28 @@ export function ConnectPage() {
         ))}
       </div>
 
-      <div style={s.btnCol}>
+      {/* Deux boutons : connexion existante vs création */}
+      <ConnectButton.Custom>
+        {({ openConnectModal }) => (
+          <div style={s.btnCol}>
+            <button
+              onClick={() => { setLoginMode('login'); openConnectModal?.(); }}
+              type="button"
+              style={s.btnLogin}
+            >
+              🔑 Se connecter
+            </button>
+            <button
+              onClick={() => { setLoginMode('register'); openConnectModal?.(); }}
+              type="button"
+              style={s.btnCreate}
+            >
+              🏙️ {t('connect.create_city')}
+            </button>
+          </div>
+        )}
+      </ConnectButton.Custom>
+      <div style={s.quickConnectRow}>
         <ConnectButton showBalance={false} />
       </div>
 
@@ -353,6 +349,8 @@ const s: Record<string, React.CSSProperties> = {
   featureEmoji: { fontSize:'20px', width:'28px' },
   featureLabel: { color:'#7a4060', fontSize:'14px' },
   btnCol:   { width:'100%', display:'flex', flexDirection:'column', gap:'10px' },
+  btnLogin: { width:'100%', padding:'14px 0', background:'rgba(196,48,112,0.08)', color:'#c43070', border:'2px solid rgba(196,48,112,0.3)', borderRadius:'12px', fontSize:'14px', fontWeight:700, cursor:'pointer', letterSpacing:'0.3px' },
+  btnCreate:{ width:'100%', padding:'14px 0', background:'#c43070', color:'#ffffff', border:'none', borderRadius:'12px', fontSize:'14px', fontWeight:700, cursor:'pointer', letterSpacing:'0.3px' },
   walletHintCard: { width:'100%', background:'rgba(212,100,138,0.06)', border:'1px solid rgba(212,100,138,0.18)', borderRadius:'12px', padding:'10px 12px', marginTop:'10px' },
   walletHintTitle: { color:'#c43070', fontSize:'12px', fontWeight:800, margin:'0 0 4px' },
   walletHintText: { color:'#7a4060', fontSize:'11px', lineHeight:'1.45', margin:0 },
@@ -360,6 +358,7 @@ const s: Record<string, React.CSSProperties> = {
   walletHintActions: { display:'flex', gap:'8px', marginTop:'8px' },
   roninBtn: { flex:1, textAlign:'center', textDecoration:'none', padding:'8px 10px', borderRadius:'9px', background:'#4f46e5', color:'#fff', fontSize:'11px', fontWeight:800, letterSpacing:'0.2px' },
   copyBtn: { flex:1, padding:'8px 10px', borderRadius:'9px', border:'1px solid rgba(212,100,138,0.25)', background:'#fff', color:'#7a4060', fontSize:'11px', fontWeight:700, cursor:'pointer' },
+  quickConnectRow: { width:'100%', marginTop:'10px', display:'flex', justifyContent:'center' },
   network:  { color:'rgba(196,48,112,0.4)', fontSize:'11px', marginTop:'14px', letterSpacing:'0.5px' },
   pseudoCard: { width:'100%', maxWidth:'360px', background:'#ffffff', border:'1px solid rgba(212,100,138,0.25)', borderRadius:'20px', padding:'32px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:'16px', boxShadow:'0 4px 24px rgba(196,48,112,0.1)' },
   pseudoTitle:    { color:'#1e0a16', fontSize:'22px', fontWeight:800, margin:0 },
