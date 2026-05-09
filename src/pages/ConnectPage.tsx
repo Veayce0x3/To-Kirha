@@ -55,8 +55,12 @@ export function ConnectPage() {
   const [pseudoInput, setPseudoInput] = useState('');
   const [pseudoError, setPseudoError] = useState<string | null>(null);
   const [registering, setRegistering] = useState(false);
+  const [copyUrlOk, setCopyUrlOk] = useState(false);
   const isLikelyMobile = typeof navigator !== 'undefined'
     && /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://veayce0x3.github.io/To-Kirha/#/';
+  const encodedCurrentUrl = encodeURIComponent(currentUrl);
+  const roninUniversalLink = `https://wallet.roninchain.com/in_app_browser?url=${encodedCurrentUrl}`;
 
   const { writeContractAsync } = useWriteContract();
 
@@ -289,6 +293,31 @@ export function ConnectPage() {
           Utilise prioritairement un wallet injecté (MetaMask, Coinbase, Ronin in-app browser).
           {isLikelyMobile ? ' Sur mobile Ronin : ouvre le jeu directement dans le navigateur Ronin.' : ''}
         </p>
+        <div style={s.walletHintActions}>
+          <a
+            href={roninUniversalLink}
+            style={s.roninBtn}
+            target="_blank"
+            rel="noreferrer"
+          >
+            🦊 Ouvrir dans Ronin
+          </a>
+          <button
+            type="button"
+            style={s.copyBtn}
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(currentUrl);
+                setCopyUrlOk(true);
+                setTimeout(() => setCopyUrlOk(false), 1800);
+              } catch {
+                setCopyUrlOk(false);
+              }
+            }}
+          >
+            {copyUrlOk ? '✅ URL copiée' : '📋 Copier URL'}
+          </button>
+        </div>
       </div>
 
       <p style={s.network}>{t('connect.network')}</p>
@@ -314,6 +343,9 @@ const s: Record<string, React.CSSProperties> = {
   walletHintCard: { width:'100%', background:'rgba(212,100,138,0.06)', border:'1px solid rgba(212,100,138,0.18)', borderRadius:'12px', padding:'10px 12px', marginTop:'10px' },
   walletHintTitle: { color:'#c43070', fontSize:'12px', fontWeight:800, margin:'0 0 4px' },
   walletHintText: { color:'#7a4060', fontSize:'11px', lineHeight:'1.45', margin:0 },
+  walletHintActions: { display:'flex', gap:'8px', marginTop:'8px' },
+  roninBtn: { flex:1, textAlign:'center', textDecoration:'none', padding:'8px 10px', borderRadius:'9px', background:'#4f46e5', color:'#fff', fontSize:'11px', fontWeight:800, letterSpacing:'0.2px' },
+  copyBtn: { flex:1, padding:'8px 10px', borderRadius:'9px', border:'1px solid rgba(212,100,138,0.25)', background:'#fff', color:'#7a4060', fontSize:'11px', fontWeight:700, cursor:'pointer' },
   network:  { color:'rgba(196,48,112,0.4)', fontSize:'11px', marginTop:'14px', letterSpacing:'0.5px' },
   pseudoCard: { width:'100%', maxWidth:'360px', background:'#ffffff', border:'1px solid rgba(212,100,138,0.25)', borderRadius:'20px', padding:'32px 24px', display:'flex', flexDirection:'column', alignItems:'center', gap:'16px', boxShadow:'0 4px 24px rgba(196,48,112,0.1)' },
   pseudoTitle:    { color:'#1e0a16', fontSize:'22px', fontWeight:800, margin:0 },
