@@ -7,16 +7,17 @@ function asset(...parts) {
 
 const B = 'metiers/bucheron ';
 const P = 'metiers/paysan';
+const F = 'metiers/pecheur';
 const V = 'icone page ville';
 const D = 'divers icone';
 
 export const UI = {
   kirha: asset(D, 'token_transparent.png'),
-  scroll: asset(D, 'parchemin_ancien transparent.png'),
+  scroll: asset(D, 'parchemin ancien transparent.png'),
   nugget: asset('pepites d_or', 'pepite_150_transparent.png'),
   vip: asset(D, 'vip_transparent.png'),
   settings: asset(D, 'parametre_transparent.png'),
-  appIcon: asset('icone application ', 'icone_application.jpg'),
+  appIcon: asset('icone application ', 'icone application.jpg'),
   save: asset(V, 'sauvegarde_transparent.png'),
   ferme: asset(V, 'ferme_transparent.png'),
 };
@@ -24,7 +25,7 @@ export const UI = {
 export const NAV_ICONS = {
   character: asset(V, 'maison_transparent.png'),
   world: asset(V, 'kirha_city_transparent.png'),
-  missions: asset(D, 'parchemin_ancien transparent.png'),
+  missions: asset(D, 'parchemin ancien transparent.png'),
   job_lumberjack: asset(B, 'icone_bucheron_transparent.png'),
   job_fisher: asset('metiers/pecheur', 'icone_pecheur_transparent.png'),
   job_miner: asset('metiers/mineur', 'icone_mineur_transparent.png'),
@@ -136,6 +137,25 @@ const LUMBERJACK_FILES = {
   },
 };
 
+/** Slot récolte pêcheur : même visuel pour toutes les espèces ; inventaire par ressource si dispo */
+const FISHER_SLOT_SPRITES = {
+  available: asset(F, 'pecheur_avec_poisson_transparent.png'),
+  regrowing: asset(F, 'pecheur_sans_poisson_transparent.png'),
+};
+
+const FISHER_INVENTORY_FILES = {
+  dorade: 'dorade_transparent.png',
+};
+
+function getFisherSprites(resourceId) {
+  const invFile = FISHER_INVENTORY_FILES[resourceId];
+  return {
+    available: FISHER_SLOT_SPRITES.available,
+    regrowing: FISHER_SLOT_SPRITES.regrowing,
+    inventory: invFile ? asset(F, invFile) : null,
+  };
+}
+
 function farmerSprite(id, kind) {
   const file = FARMER_FILES[id]?.[kind];
   return file ? asset(P, file) : null;
@@ -208,7 +228,7 @@ export function labelWithIcon(resource, className = 'resource-icon-img') {
 
 export function applyAssetPaths(resources) {
   for (const [id, res] of Object.entries(resources)) {
-    const sprites = getResourceSprites(id);
+    const sprites = getResourceSprites(id) || (res.job === 'fisher' ? getFisherSprites(id) : null);
     if (sprites) {
       if (!res.visual) res.visual = {};
       res.visual.sprite = sprites;

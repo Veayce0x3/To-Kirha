@@ -34,7 +34,7 @@ function stripTutorialBtnClass(el) {
   el?.classList?.remove(TUTORIAL_BTN_CLASS);
 }
 
-const BRAND_LOGO = './asset%20to-kirha/icone%20application%20/icone_application.jpg';
+const BRAND_LOGO = './asset%20to-kirha/icone%20application%20/icone%20application.jpg';
 
 const NAV_HINTS = {
   job_lumberjack: { finger: '👆 BÛCHERON', label: 'Bûcheron' },
