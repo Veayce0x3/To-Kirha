@@ -991,13 +991,6 @@ function getPickerChipVisual(res, selectedId, slot) {
   };
 }
 
-function getPickerToggleHint(slot, progress) {
-  if (!slot?.resourceId) return 'Choisir';
-  if (slot.active?.phase === 'harvesting') return 'Récolte…';
-  if (slot.active?.phase === 'regrowing') return `Repousse ${Math.floor(progress * 100)}%`;
-  return 'Changer';
-}
-
 function getPickerOptions(picker) {
   const optionsId = picker.querySelector('.picker-toggle')?.getAttribute('aria-controls');
   return optionsId ? document.getElementById(optionsId) : picker.querySelector('.picker-options');
@@ -1089,13 +1082,11 @@ function syncPickerToggle(picker, selectedId, assignable, slot, progress = 0) {
 
   const iconWrap = toggle.querySelector('.pick-icon-wrap');
   const nameEl = toggle.querySelector('.picker-toggle-name');
-  const hintEl = toggle.querySelector('.picker-toggle-hint');
   if (iconWrap) iconWrap.innerHTML = chip.icon;
   if (nameEl) {
     nameEl.textContent = chip.name;
     nameEl.title = chip.name;
   }
-  if (hintEl) hintEl.textContent = getPickerToggleHint(slot, progress);
 }
 
 function collapseResourcePicker(picker) {
@@ -1125,10 +1116,8 @@ function buildResourcePicker(game, jobId, slotIndex, assignable, selectedId, slo
   toggle.setAttribute('aria-expanded', 'false');
   toggle.setAttribute('aria-controls', `picker-options-${jobId}-${slotIndex}`);
   toggle.innerHTML = `
-    <span class="pick-icon-wrap">${toggleChip.icon}</span>
     <span class="picker-toggle-text">
       <span class="picker-toggle-name" title="${toggleChip.name}">${toggleChip.name}</span>
-      <span class="picker-toggle-hint">${getPickerToggleHint(slot, progress)}</span>
     </span>
     <span class="picker-chevron" aria-hidden="true">▼</span>
   `;
@@ -1204,8 +1193,10 @@ function buildResourcePicker(game, jobId, slotIndex, assignable, selectedId, slo
   return picker;
 }
 
-function getHarvestBtnLabel(phase) {
-  if (phase === 'harvesting' || phase === 'regrowing') return '…';
+function getHarvestBtnLabel(phase, progress = 0) {
+  const pct = Math.floor(progress * 100);
+  if (phase === 'harvesting') return `Récolte ${pct}%`;
+  if (phase === 'regrowing') return `Repousse ${pct}%`;
   return 'Récolter';
 }
 
@@ -1226,39 +1217,16 @@ function renderHarvestSlot(game, jobId, slotIndex, container) {
   card.dataset.slot = String(slotIndex);
   card.dataset.visualState = display.visualState;
 
-  let statsHtml = '';
-  if (selected && display.visualState === 'available') {
-    const harvestSec = (getHarvestTime(selected, game.state, game.jobs, game.balance) / 1000).toFixed(0);
-    const regrowthSec = (getRegrowthTime(selected, game.state, game.jobs, game.balance) / 1000).toFixed(0);
-    const yield_ = getHarvestYield(selected, game.state, game.jobs, game.balance);
-    statsHtml = `<div class="tile-stats slot-stats-detail">⏱ ${harvestSec}s · 🌱 ${regrowthSec}s · 💰 ${selected.sellPrice} · +${selected.xpPerHarvest} XP · ×${yield_}</div>`;
-  }
-
   const phase = slot?.active?.phase;
-  const btnLabel = getHarvestBtnLabel(phase);
-  const pct = Math.floor(progress * 100);
+  const btnLabel = getHarvestBtnLabel(phase, progress);
 
   const spriteHtml = display.sprite
     ? `<img class="slot-visual-sprite" src="${display.sprite}" alt="" />`
     : `<span class="slot-visual-emoji" aria-hidden="true">${display.emoji || '⬜'}</span>`;
 
   card.innerHTML = `
-    <div class="slot-hero">
-      <div class="slot-visual" data-state="${display.visualState}">
-        ${spriteHtml}
-      </div>
-      <div class="slot-visual-meta">
-        <div class="slot-state-label">${display.label}</div>
-        ${statsHtml}
-      </div>
-    </div>
-    <div class="slot-progress${phase === 'harvesting' ? ' phase-harvesting' : phase === 'regrowing' ? ' phase-regrowing' : ''}" style="${active ? '' : 'display:none'}">
-      <div class="slot-progress-row">
-        <div class="slot-progress-track">
-          <div class="progress-bar slot-progress-bar" style="width:${progress * 100}%"></div>
-        </div>
-        <span class="slot-progress-pct">${pct}%</span>
-      </div>
+    <div class="slot-visual" data-state="${display.visualState}">
+      ${spriteHtml}
     </div>
     <div class="slot-footer">
       <div class="slot-picker-mount"></div>
@@ -1297,7 +1265,6 @@ export function updateHarvestSlotProgresses(game) {
       const progress = game.getSlotHarvestProgress(jobId, slotIndex);
       const resource = slot.resourceId ? game.resources[slot.resourceId] : null;
       const display = getSlotVisualDisplay(resource, slot, progress);
-      const pct = Math.floor(progress * 100);
 
       card.dataset.visualState = display.visualState;
       card.classList.remove('state-available', 'state-regrowing', 'state-harvesting', 'state-empty');
@@ -1321,31 +1288,13 @@ export function updateHarvestSlotProgresses(game) {
       const emojiEl = card.querySelector('.slot-visual-emoji');
       if (emojiEl) emojiEl.textContent = display.emoji || '⬜';
 
-      const labelEl = card.querySelector('.slot-state-label');
-      if (labelEl) labelEl.textContent = display.label;
-
       const btn = card.querySelector('.btn-start');
       if (btn) {
-        btn.textContent = getHarvestBtnLabel(display.phase);
-        btn.classList.toggle('harvesting-btn', !!display.phase);
+        btn.textContent = getHarvestBtnLabel(display.phase, progress);
+        btn.classList.toggle('harvesting-btn', display.phase === 'harvesting');
+        btn.classList.toggle('regrowing-btn', display.phase === 'regrowing');
         btn.disabled = !!display.phase || !slot.resourceId;
       }
-
-      const progressWrap = card.querySelector('.slot-progress');
-      if (progressWrap) {
-        progressWrap.style.display = slot.active ? '' : 'none';
-        progressWrap.classList.remove('phase-harvesting', 'phase-regrowing');
-        if (display.phase === 'harvesting') progressWrap.classList.add('phase-harvesting');
-        if (display.phase === 'regrowing') progressWrap.classList.add('phase-regrowing');
-      }
-
-      const phaseLabelEl = card.querySelector('.slot-phase-label');
-      if (phaseLabelEl) phaseLabelEl.textContent = '';
-
-      const bar = card.querySelector('.slot-progress-bar');
-      const pctEl = card.querySelector('.slot-progress-pct');
-      if (bar) bar.style.width = `${pct}%`;
-      if (pctEl) pctEl.textContent = `${pct}%`;
 
       const picker = card.querySelector('.resource-picker.picker-slot');
       if (picker) {
