@@ -5,6 +5,7 @@ import {
   getChosenTutorialRecipeId,
 } from '../systems/tutorialSandbox.js';
 import { resolveItem } from '../systems/combat.js';
+import { emit } from '../core/events.js';
 
 let spotlightTarget = null;
 let spotlightSelector = null;
@@ -518,6 +519,53 @@ function renderWeaponGallery(game, container) {
   renderTutorialWeaponOffer(game, container);
 }
 
+function renderNicknameModal(game, container) {
+  const maxLen = game.characterConfig.nicknameMaxLength || 20;
+  const ui = game.getTutorialUi();
+
+  container.innerHTML = tutorialModalShell(
+    ui ? `Formation ${ui.stepNumber}/${ui.stepTotal}` : 'Formation',
+    '🌸 Choisis ton pseudo',
+    `
+      <p class="tutorial-modal-desc">Avant de commencer la formation, donne un nom à ton personnage. Tu pourras le renommer plus tard (payant).</p>
+      <div class="nickname-form tutorial-nickname-form">
+        <label class="nickname-label" for="tutorial-nickname-input">Ton pseudo</label>
+        <input id="tutorial-nickname-input" class="nickname-input" type="text" maxlength="${maxLen}" placeholder="Ex. Kira le Bûcheron" autocomplete="nickname" />
+        <p class="nickname-hint">Lettres, chiffres, espaces, tirets — max ${maxLen} caractères.</p>
+      </div>
+    `,
+    '<button type="button" class="btn-tutorial" id="tutorial-nickname-confirm">Valider mon pseudo</button>',
+  );
+
+  const input = container.querySelector('#tutorial-nickname-input');
+  input?.focus();
+
+  const submit = () => {
+    const result = game.setCharacterNickname(input?.value || '', false);
+    if (!result.ok) {
+      if (result.reason) emit('nicknameError', { reason: result.reason });
+      return;
+    }
+    if (!game.completeTutorialNicknameStep()) return;
+    hideTutorialModal();
+    requestAnimationFrame(() => {
+      if (game.shouldShowTutorialIntro()) {
+        showTutorialIntroModal(game);
+      } else {
+        renderTutorialOverlay(game);
+      }
+    });
+  };
+
+  container.querySelector('#tutorial-nickname-confirm')?.addEventListener('click', submit);
+  input?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submit();
+    }
+  });
+}
+
 function renderIntroModal(game, container) {
   container.innerHTML = tutorialModalShell(
     'Formation',
@@ -603,7 +651,12 @@ export function showTutorialIntroModal(game) {
   const modal = document.getElementById('tutorial-modal');
   const body = document.getElementById('tutorial-modal-body');
   if (!modal || !body) return;
-  renderIntroModal(game, body);
+  const ui = game.getTutorialUi();
+  if (ui?.isNickname) {
+    renderNicknameModal(game, body);
+  } else {
+    renderIntroModal(game, body);
+  }
   modal.classList.add('active');
   document.body.classList.add('tutorial-modal-open');
 }
@@ -638,8 +691,18 @@ export function renderTutorialOverlay(game) {
   }
 
   if (document.getElementById('tutorial-modal')?.classList.contains('active')
-    && !ui.isIntro && !ui.isGraduate && !ui.isWeaponOffer && !ui.isWeaponGallery) {
+    && !ui.isIntro && !ui.isNickname && !ui.isGraduate && !ui.isWeaponOffer && !ui.isWeaponGallery) {
     hideTutorialSpotlight();
+    return;
+  }
+
+  if (ui.isNickname && modal && modalBody) {
+    strip.classList.add('hidden');
+    hideTutorialSpotlight();
+    unbindSpotlightScroll();
+    renderNicknameModal(game, modalBody);
+    modal.classList.add('active');
+    document.body.classList.add('tutorial-modal-open');
     return;
   }
 

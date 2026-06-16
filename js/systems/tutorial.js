@@ -1,4 +1,5 @@
 import { isQuestCompleted } from './quests.js';
+import { hasCharacterNickname } from './character.js';
 import {
   ensureTutorialFlags,
   getChosenTutorialRecipeId,
@@ -69,12 +70,23 @@ export function isTutorialActive(state) {
   return t && !t.completed && !t.dismissed;
 }
 
-export function shouldShowTutorialIntro(state) {
+export function shouldShowTutorialIntro(state, tutorialData) {
   const t = state.tutorial;
-  if (!t || t.completed || t.dismissed) return false;
-  if (t.replay) return true;
-  const onIntro = (t.stepIndex || 0) === 0 && !t.sandbox;
-  return onIntro;
+  if (!t || t.completed || t.dismissed || t.sandbox) return false;
+
+  const steps = tutorialData?.steps || [];
+  const idx = Math.min(t.stepIndex || 0, steps.length - 1);
+  const step = steps[idx];
+  if (!step) return false;
+
+  if (step.screen === 'nickname') {
+    if (t.replay || hasCharacterNickname(state)) return false;
+    return true;
+  }
+
+  if (step.screen === 'intro') return true;
+
+  return false;
 }
 
 export function getTutorialStep(state, tutorialData) {
@@ -86,6 +98,12 @@ export function getTutorialStep(state, tutorialData) {
 
 export function getTutorialStepIndex(tutorialData, stepId) {
   return (tutorialData?.steps || []).findIndex((s) => s.id === stepId);
+}
+
+function shouldSkipNicknameStep(state, step) {
+  if (step?.screen !== 'nickname') return false;
+  if (state.tutorial?.replay) return true;
+  return hasCharacterNickname(state);
 }
 
 function isFlagComplete(step, state) {
@@ -123,6 +141,12 @@ export function syncTutorialProgress(state, tutorialData, quests, extras = {}) {
     const step = steps[state.tutorial.stepIndex];
     if (!step) break;
 
+    if (shouldSkipNicknameStep(state, step)) {
+      state.tutorial.stepIndex += 1;
+      changed = true;
+      continue;
+    }
+
     if (step.complete) {
       state.tutorial.completed = true;
       state.tutorial.sandbox = false;
@@ -153,6 +177,15 @@ export function syncTutorialProgress(state, tutorialData, quests, extras = {}) {
   }
 
   return changed;
+}
+
+export function completeTutorialNicknameStep(state, tutorialData) {
+  if (!isTutorialActive(state)) return false;
+  if (!hasCharacterNickname(state)) return false;
+  const step = getTutorialStep(state, tutorialData);
+  if (step?.screen !== 'nickname') return false;
+  state.tutorial.stepIndex += 1;
+  return true;
 }
 
 export function advanceTutorialManual(state, tutorialData) {
@@ -242,6 +275,7 @@ export function getTutorialUi(state, tutorialData, quests, extras = {}) {
     showGo: false,
     isFinal: !!step.complete,
     isIntro: step.screen === 'intro',
+    isNickname: step.screen === 'nickname',
     isGraduate: step.screen === 'graduate',
     isWeaponGallery: step.screen === 'weapon_gallery' || step.screen === 'weapon_offer',
     isWeaponOffer: step.screen === 'weapon_offer',

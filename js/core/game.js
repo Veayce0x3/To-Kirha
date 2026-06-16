@@ -27,6 +27,7 @@ import {
   syncTutorialProgress,
   buildDefaultTutorialState,
   isTutorialActive,
+  completeTutorialNicknameStep,
   shouldShowTutorialIntro,
   beginTutorialSandbox,
   getTutorialStepIndex,
@@ -458,7 +459,15 @@ export class Game {
   }
 
   shouldShowTutorialIntro() {
-    return shouldShowTutorialIntro(this.state);
+    return shouldShowTutorialIntro(this.state, this.tutorialData);
+  }
+
+  completeTutorialNicknameStep() {
+    if (!completeTutorialNicknameStep(this.state, this.tutorialData)) return false;
+    syncTutorialProgress(this.state, this.tutorialData, this.quests);
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return true;
   }
 
   getTutorialSyncExtras() {

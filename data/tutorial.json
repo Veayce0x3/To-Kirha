@@ -3,6 +3,12 @@
   "targetDurationMin": 5,
   "steps": [
     {
+      "id": "nickname",
+      "title": "Ton identité",
+      "text": "Choisis le pseudo qui accompagnera ton aventure à Kirha.",
+      "screen": "nickname"
+    },
+    {
       "id": "intro",
       "title": "Formation du village",
       "text": "Bienvenue à Kirha. En quelques minutes, tu vas récolter, choisir ton arme, forger, combattre en donjon et acheter ton premier parchemin.",
