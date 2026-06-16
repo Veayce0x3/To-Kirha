@@ -1,0 +1,111 @@
+{
+  "upgradeCostMultiplier": 1.15,
+  "startingKirha": 0,
+  "saveVersion": 22,
+  "betaMode": false,
+  "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
+  "combat": {
+    "dailyLimits": {
+      "soloMob": 20,
+      "soloBoss": 5,
+      "dungeonRun": 2
+    },
+    "dungeonUnlock": {
+      "killsPerMonster": 3,
+      "requireBossSoloKill": true
+    }
+  },
+  "dismantle": {
+    "recoveryRate": 0.45
+  },
+  "offlineCapMs": 21600000,
+  "harvest": {
+    "baseHarvestTimeMs": 3000,
+    "regrowthBaseMs": 11000,
+    "regrowthPerTierMs": 2000,
+    "minRegrowthTimeMs": 3000
+  },
+  "harvestSlots": {
+    "startingSlots": 2,
+    "maxSlots": 10,
+    "unlockCosts": [0, 0, 400, 1200, 3500, 8000, 20000, 50000, 120000, 300000]
+  },
+  "prestige": {
+    "minTotalEarned": 100000,
+    "requiredZones": ["lotus_sanctuary"],
+    "minBossKills": { "lotus_sanctuary": 1 },
+    "requireQuestsChapter": "lotus_sanctuary",
+    "bonusesPerSeason": {
+      "kirhaMultiplier": 0.05,
+      "xpMultiplier": 0.05
+    },
+    "levelCaps": {
+      "character": { "firstSeasonCap": 55, "perSeason": 11, "absoluteMax": 200 },
+      "jobs": { "firstSeasonCap": 95, "perSeason": 12, "absoluteMax": 200 }
+    }
+  },
+  "upgrades": {},
+  "zoneBossUnlocks": {
+    "petal_forest": { "bossCombatZone": "village_sakura" },
+    "mist_river": { "bossCombatZone": "petal_forest" },
+    "jade_mountains": { "bossCombatZone": "mist_river" },
+    "lotus_sanctuary": { "bossCombatZone": "jade_mountains" }
+  },
+  "combatSetBonuses": {
+    "tier4": { "minPieces": 4, "hp": 12, "atk": 4, "def": 3 },
+    "tier8": { "minPieces": 8, "hp": 25, "atk": 8, "def": 6 }
+  },
+  "zoneBossUnlocksAfter": {
+    "village_sakura": "petal_forest",
+    "petal_forest": "mist_river",
+    "mist_river": "jade_mountains",
+    "jade_mountains": "lotus_sanctuary"
+  },
+  "zones": {
+    "village_sakura": {
+      "id": "village_sakura",
+      "name": "Village Sakura",
+      "emoji": "🌸",
+      "description": "Point de départ. Temple du Cerisier.",
+      "dungeon": "temple_sakura",
+      "unlocked": true,
+      "unlockCost": 0
+    },
+    "petal_forest": {
+      "id": "petal_forest",
+      "name": "Forêt des Pétales",
+      "emoji": "🌿",
+      "description": "Ressources intermédiaires. Tanière des Pétales.",
+      "dungeon": "petal_den",
+      "unlocked": false,
+      "unlockCost": 1200
+    },
+    "mist_river": {
+      "id": "mist_river",
+      "name": "Rivière de Brume",
+      "emoji": "🌫️",
+      "description": "Eaux brumeuses et herbes rares.",
+      "dungeon": "mist_shrine",
+      "unlocked": false,
+      "unlockCost": 3500
+    },
+    "jade_mountains": {
+      "id": "jade_mountains",
+      "name": "Montagnes de Jade",
+      "emoji": "⛩️",
+      "description": "Ressources avancées. Grotte de Jade.",
+      "dungeon": "jade_cavern",
+      "unlocked": false,
+      "unlockCost": 10000
+    },
+    "lotus_sanctuary": {
+      "id": "lotus_sanctuary",
+      "name": "Sanctuaire du Lotus",
+      "emoji": "🪷",
+      "description": "Sommet de la saison. Floraison éternelle.",
+      "dungeon": "lotus_hall",
+      "unlocked": false,
+      "unlockCost": 25000
+    }
+  }
+}

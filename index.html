@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>To-Kirha 🌸</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="./asset%20to-kirha/icone%20application%20/icone_application.jpg" type="image/jpeg">
+  <link rel="stylesheet" href="./css/main.css">
+  <link rel="stylesheet" href="./css/layout.css">
+</head>
+<body>
+  <div class="sakura-bg"></div>
+  <div class="sakura-petals" id="sakura-petals"></div>
+  <div class="level-flash" id="level-flash"></div>
+
+  <div class="app-shell">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <img class="brand-logo" src="./asset%20to-kirha/icone%20application%20/icone_application.jpg" alt="" width="36" height="36" />
+        <span class="brand-title">To-Kirha</span>
+        <span class="season-badge" id="season-badge">Saison 1</span>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer" id="sidebar-footer"></div>
+    </aside>
+
+    <div class="main-area">
+      <header class="top-bar">
+        <button class="burger-btn" id="burger-btn" type="button" aria-label="Menu">☰</button>
+        <div class="top-bar-left">
+          <h1 class="view-title" id="view-title">Personnage</h1>
+          <span class="top-zone" id="zone-subtitle">Village Sakura</span>
+        </div>
+        <div class="top-bar-center">
+          <button class="top-quick-btn" id="quick-char" type="button" title="Personnage" aria-label="Personnage">
+            <img class="quick-btn-icon" src="./asset%20to-kirha/icone%20page%20ville/maison_transparent.png" alt="" />
+          </button>
+          <button class="top-quick-btn" id="quick-combat" type="button" title="Combat" aria-label="Combat">
+            <img class="quick-btn-icon" src="./asset%20to-kirha/icone%20page%20ville/temple_transparent.png" alt="" />
+          </button>
+        </div>
+        <div class="top-bar-right">
+          <button class="top-scroll-btn" id="quick-scroll" type="button" title="Parchemins des Anciens — Hôtel des Ventes">
+            <span id="scroll-amount">0</span>
+            <img class="scroll-icon" src="./asset%20to-kirha/divers%20icone/parchemin_ancien%20transparent.png" alt="" width="22" height="22" />
+          </button>
+          <div class="top-nugget-chip" title="Pépites d'or">
+            <span id="gold-nugget-amount">0</span>
+            <img class="nugget-icon" src="./asset%20to-kirha/pepites%20d_or/pepite_150_transparent.png" alt="" width="22" height="22" />
+          </div>
+          <span class="kirha-amount" id="kirha-amount">0</span>
+          <img class="kirha-icon" src="./asset%20to-kirha/divers%20icone/token_transparent.png" alt="Kirha" width="28" height="28" />
+        </div>
+      </header>
+
+      <div class="tutorial-strip hidden" id="tutorial-strip" role="region" aria-label="Tutoriel"></div>
+
+      <div class="content-wrapper">
+        <main class="view-container" id="view-container"></main>
+        <aside class="skill-minibar" id="skill-minibar"></aside>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">To-Kirha v1.0.0</footer>
+
+  <div class="modal-overlay" id="offline-modal">
+    <div class="modal">
+      <h2>🌸 Bon retour !</h2>
+      <p class="modal-duration" id="offline-duration"></p>
+      <div class="modal-gains" id="offline-gains"></div>
+      <p class="modal-cap" id="offline-cap"></p>
+      <button class="btn btn-modal-close" id="offline-close">Continuer</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="prestige-modal">
+    <div class="modal modal-prestige">
+      <h2>🌸 Nouvelle Saison</h2>
+      <p class="modal-desc">La Saison <span id="prestige-modal-next-season"></span> commence. Tu gardes tes bonus permanents.</p>
+      <div class="prestige-gains" id="prestige-gains"></div>
+      <div class="modal-actions">
+        <button class="btn btn-modal-cancel" id="prestige-cancel">Annuler</button>
+        <button class="btn btn-prestige" id="prestige-confirm">Commencer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="item-modal">
+    <div class="modal modal-item" id="item-modal-body"></div>
+  </div>
+
+  <div class="modal-overlay" id="dungeon-combat-modal">
+    <div class="modal modal-combat" id="dungeon-combat-body"></div>
+  </div>
+
+  <div class="modal-overlay" id="dungeon-result-modal">
+    <div class="modal" id="dungeon-result-body"></div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+
+  <div class="tutorial-overlay hidden" id="tutorial-overlay" aria-hidden="true">
+    <div class="tutorial-spotlight-hole" id="tutorial-spotlight-hole"></div>
+  </div>
+
+  <div class="modal-overlay" id="tutorial-modal">
+    <div class="modal modal-tutorial" id="tutorial-modal-body"></div>
+  </div>
+
+  <div class="picker-sheet-backdrop" id="picker-sheet-backdrop"></div>
+  <div id="picker-sheet-portal"></div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

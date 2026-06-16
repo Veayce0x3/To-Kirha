@@ -1,0 +1,16 @@
+{
+  "slots": {
+    "weapon": { "id": "weapon", "name": "Outil principal", "emoji": "🛠️" },
+    "accessory": { "id": "accessory", "name": "Accessoire métier", "emoji": "🧰" }
+  },
+  "equipable": {
+    "sakura_axe": { "recipeId": "sakura_axe", "slot": "weapon", "job": "lumberjack" },
+    "fishing_rod": { "recipeId": "fishing_rod", "slot": "weapon", "job": "fisher" },
+    "jade_pickaxe": { "recipeId": "jade_pickaxe", "slot": "weapon", "job": "miner" },
+    "farm_sickle": { "recipeId": "farm_sickle", "slot": "weapon", "job": "farmer" },
+    "herb_gloves": { "recipeId": "herb_gloves", "slot": "weapon", "job": "alchemist" },
+    "herb_basket": { "recipeId": "herb_basket", "slot": "accessory", "job": "lumberjack" },
+    "fish_trap": { "recipeId": "fish_trap", "slot": "accessory", "job": "fisher" },
+    "master_toolkit": { "recipeId": "master_toolkit", "slot": "accessory", "job": null }
+  }
+}

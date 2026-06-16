@@ -1,0 +1,67 @@
+{
+  "temple_sakura": {
+    "id": "temple_sakura",
+    "name": "Temple du Cerisier",
+    "emoji": "🌸",
+    "zone": "village_sakura",
+    "requiredCharLevel": 1,
+    "charXpReward": 150,
+    "kirhaReward": 60,
+    "rooms": [
+      { "name": "Allée des Lanternes", "enemy": "spirit_lantern", "emoji": "👻" },
+      { "name": "Jardin Intérieur", "enemy": "petal_slime", "emoji": "🌸" },
+      { "name": "Sanctuaire Mineur", "enemy": "temple_guard", "emoji": "⛩️" },
+      { "name": "Gardien du Cerisier", "enemy": "sakura_boss", "emoji": "🌺", "boss": true }
+    ],
+    "loot": {
+      "set_sakura_ring": 0.22,
+      "set_sakura_ring_right": 0.12,
+      "set_sakura_amulet": 0.15,
+      "set_sakura_shield": 0.18
+    }
+  },
+  "petal_den": {
+    "id": "petal_den",
+    "name": "Tanière des Pétales",
+    "emoji": "🌿",
+    "zone": "petal_forest",
+    "requiredCharLevel": 10,
+    "charXpReward": 400,
+    "kirhaReward": 180,
+    "rooms": [
+      { "name": "Sous-bois", "enemy": "wild_fox", "emoji": "🦊" },
+      { "name": "Clairière", "enemy": "thorn_beast", "emoji": "🌹" },
+      { "name": "Racines Anciennes", "enemy": "root_golem", "emoji": "🌳" },
+      { "name": "Esprit de la Forêt", "enemy": "petal_boss", "emoji": "🌺", "boss": true }
+    ],
+    "loot": {
+      "set_petal_boots": 0.2,
+      "set_petal_ring": 0.14,
+      "set_petal_ring_right": 0.1,
+      "set_petal_amulet": 0.1,
+      "set_petal_shield": 0.12
+    }
+  },
+  "jade_cavern": {
+    "id": "jade_cavern",
+    "name": "Grotte de Jade",
+    "emoji": "⛩️",
+    "zone": "jade_mountains",
+    "requiredCharLevel": 25,
+    "charXpReward": 900,
+    "kirhaReward": 450,
+    "rooms": [
+      { "name": "Entrée Humide", "enemy": "cave_bat", "emoji": "🦇" },
+      { "name": "Galerie Cristalline", "enemy": "crystal_sprite", "emoji": "💎" },
+      { "name": "Pont de Pierre", "enemy": "stone_warden", "emoji": "🗿" },
+      { "name": "Golem de Jade", "enemy": "jade_boss", "emoji": "🌙", "boss": true }
+    ],
+    "loot": {
+      "set_jade_boots": 0.2,
+      "set_jade_ring": 0.12,
+      "set_jade_ring_right": 0.08,
+      "set_jade_amulet": 0.08,
+      "set_jade_shield": 0.1
+    }
+  }
+}

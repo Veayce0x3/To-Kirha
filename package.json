@@ -1,0 +1,15 @@
+{
+  "name": "to-kirha",
+  "version": "0.5.0",
+  "private": true,
+  "description": "Jeu web économique zen — métiers, craft, Kirha",
+  "scripts": {
+    "dev": "live-server --port=5173 --open=index.html --watch=.",
+    "credits": "node scripts/cursor-credits.mjs",
+    "credits:summary": "node scripts/cursor-credits.mjs summary",
+    "credits:events": "node scripts/cursor-credits.mjs events"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}

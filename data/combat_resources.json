@@ -1,0 +1,10 @@
+{
+  "gold_nugget": {
+    "id": "gold_nugget",
+    "name": "Pépite d'or",
+    "combatOnly": true,
+    "notSellable": true,
+    "sellPrice": 0,
+    "rarity": "common"
+  }
+}

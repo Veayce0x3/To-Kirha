@@ -1,0 +1,937 @@
+{
+  "sakura_axe": {
+    "id": "sakura_axe",
+    "name": "Hache de Frêne",
+    "emoji": "🪓",
+    "description": "+8% vitesse bûcheron",
+    "kirhaCost": 60,
+    "maxUses": 350,
+    "ingredients": {
+      "frene": 8,
+      "ortie": 3
+    },
+    "effect": {
+      "type": "speed",
+      "job": "lumberjack",
+      "bonus": 0.08
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 1,
+    "jobXp": 12
+  },
+  "fishing_rod": {
+    "id": "fishing_rod",
+    "name": "Canne en bambou",
+    "emoji": "🎣",
+    "description": "+8% vitesse pêcheur",
+    "kirhaCost": 60,
+    "maxUses": 350,
+    "ingredients": {
+      "frene": 10,
+      "ortie": 3
+    },
+    "effect": {
+      "type": "speed",
+      "job": "fisher",
+      "bonus": 0.08
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 1,
+    "jobXp": 12
+  },
+  "farm_sickle": {
+    "id": "farm_sickle",
+    "name": "Faucille du Paysan",
+    "emoji": "🌾",
+    "description": "+8% vitesse paysan",
+    "kirhaCost": 55,
+    "maxUses": 350,
+    "ingredients": {
+      "ble": 8,
+      "frene": 4
+    },
+    "effect": {
+      "type": "speed",
+      "job": "farmer",
+      "bonus": 0.08
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 1,
+    "jobXp": 12
+  },
+  "herb_gloves": {
+    "id": "herb_gloves",
+    "name": "Gants d'alchimiste",
+    "emoji": "🧤",
+    "description": "+8% vitesse alchimiste",
+    "kirhaCost": 55,
+    "maxUses": 350,
+    "ingredients": {
+      "ortie": 12
+    },
+    "effect": {
+      "type": "speed",
+      "job": "alchemist",
+      "bonus": 0.08
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 1,
+    "jobXp": 12
+  },
+  "herb_basket": {
+    "id": "herb_basket",
+    "name": "Panier renforcé",
+    "emoji": "🧺",
+    "description": "+1 rendement bûcheron",
+    "kirhaCost": 280,
+    "maxUses": 200,
+    "ingredients": {
+      "frene": 12,
+      "ortie": 6,
+      "ancient_scroll": 1
+    },
+    "effect": {
+      "type": "yield",
+      "job": "lumberjack",
+      "bonus": 1
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 5,
+    "jobXp": 20
+  },
+  "fish_trap": {
+    "id": "fish_trap",
+    "name": "Nasse traditionnelle",
+    "emoji": "🪤",
+    "description": "+1 rendement pêcheur",
+    "kirhaCost": 280,
+    "maxUses": 200,
+    "ingredients": {
+      "frene": 8,
+      "goujon": 5,
+      "ancient_scroll": 1
+    },
+    "effect": {
+      "type": "yield",
+      "job": "fisher",
+      "bonus": 1
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 5,
+    "jobXp": 20
+  },
+  "jade_pickaxe": {
+    "id": "jade_pickaxe",
+    "name": "Pioche de Pierre",
+    "emoji": "⛏️",
+    "description": "+12% vitesse mineur",
+    "kirhaCost": 650,
+    "maxUses": 150,
+    "ingredients": {
+      "fer": 6,
+      "frene": 12,
+      "goujon": 5,
+      "ancient_scroll": 2
+    },
+    "effect": {
+      "type": "speed",
+      "job": "miner",
+      "bonus": 0.12
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 20,
+    "jobXp": 30
+  },
+  "master_toolkit": {
+    "id": "master_toolkit",
+    "name": "Boîte à outils",
+    "emoji": "🧰",
+    "description": "+4% vitesse tous métiers",
+    "kirhaCost": 1200,
+    "maxUses": 100,
+    "ingredients": {
+      "frene": 20,
+      "ble": 12,
+      "goujon": 10,
+      "ortie": 12,
+      "ancient_scroll": 3
+    },
+    "effect": {
+      "type": "speed",
+      "job": null,
+      "bonus": 0.04
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 30,
+    "jobXp": 45
+  },
+  "tutorial_sakura_blade": {
+    "id": "tutorial_sakura_blade",
+    "name": "Lame du débutant",
+    "emoji": "⚔️",
+    "description": "Formation — Katana léger pour apprendre l'atelier (Chevalier).",
+    "ingredients": {
+      "frene": 5,
+      "ble": 3
+    },
+    "combatItem": "set_sakura_weapon",
+    "unique": true,
+    "tutorialOnly": true,
+    "craftJob": "blacksmith",
+    "jobXp": 12
+  },
+  "set_sakura_helmet": {
+    "id": "set_sakura_helmet",
+    "name": "Casque du Cerisier",
+    "emoji": "🪖",
+    "description": "Équipement combat — Temple Sakura",
+    "ingredients": {
+      "frene": 30,
+      "ble": 20,
+      "ortie": 12,
+      "ancient_scroll": 2,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_sakura_helmet",
+    "unique": true,
+    "craftJob": "armorer",
+    "requiredJobLevel": 8,
+    "jobXp": 40
+  },
+  "set_sakura_chest": {
+    "id": "set_sakura_chest",
+    "name": "Haubert du Cerisier",
+    "emoji": "🥋",
+    "description": "Équipement combat — Temple Sakura",
+    "ingredients": {
+      "frene": 40,
+      "ble": 28,
+      "orge": 12,
+      "ancient_scroll": 3,
+      "gold_nugget": 18
+    },
+    "combatItem": "set_sakura_chest",
+    "unique": true,
+    "craftJob": "armorer",
+    "requiredJobLevel": 12,
+    "jobXp": 50
+  },
+  "set_sakura_boots": {
+    "id": "set_sakura_boots",
+    "name": "Bottes du Cerisier",
+    "emoji": "👢",
+    "description": "Équipement combat — Temple Sakura",
+    "ingredients": {
+      "frene": 24,
+      "ortie": 16,
+      "ancient_scroll": 2,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_sakura_boots",
+    "unique": true,
+    "craftJob": "shoemaker",
+    "requiredJobLevel": 8,
+    "jobXp": 35
+  },
+  "set_sakura_weapon": {
+    "id": "set_sakura_weapon",
+    "name": "Katana Sakura",
+    "emoji": "⚔️",
+    "description": "Arme Chevalier — départ Village Sakura",
+    "ingredients": {
+      "frene": 14,
+      "goujon": 10,
+      "fer": 12,
+      "ble": 10,
+      "ortie": 10,
+      "ancient_scroll": 1,
+      "gold_nugget": 15
+    },
+    "combatItem": "set_sakura_weapon",
+    "repeatable": true,
+    "craftJob": "blacksmith",
+    "requiredJobLevel": 6,
+    "jobXp": 15
+  },
+  "set_sakura_guardian_blade": {
+    "id": "set_sakura_guardian_blade",
+    "name": "Épée du Gardien",
+    "emoji": "🗡️",
+    "description": "Arme Paladin — départ Village Sakura",
+    "ingredients": {
+      "frene": 14,
+      "goujon": 10,
+      "fer": 14,
+      "ble": 12,
+      "ortie": 8,
+      "ancient_scroll": 1,
+      "gold_nugget": 15
+    },
+    "combatItem": "set_sakura_guardian_blade",
+    "repeatable": true,
+    "craftJob": "blacksmith",
+    "requiredJobLevel": 6,
+    "jobXp": 15
+  },
+  "set_sakura_bow": {
+    "id": "set_sakura_bow",
+    "name": "Arc du Cerisier",
+    "emoji": "🏹",
+    "description": "Arme Archer — départ Village Sakura",
+    "ingredients": {
+      "frene": 16,
+      "goujon": 10,
+      "fer": 8,
+      "ble": 8,
+      "ortie": 10,
+      "ancient_scroll": 1,
+      "gold_nugget": 14
+    },
+    "combatItem": "set_sakura_bow",
+    "repeatable": true,
+    "craftJob": "carver",
+    "requiredJobLevel": 6,
+    "jobXp": 15
+  },
+  "set_sakura_staff": {
+    "id": "set_sakura_staff",
+    "name": "Bâton du Temple",
+    "emoji": "🪄",
+    "description": "Arme Miko — départ Village Sakura",
+    "ingredients": {
+      "frene": 10,
+      "goujon": 8,
+      "fer": 8,
+      "ble": 10,
+      "ortie": 18,
+      "ancient_scroll": 1,
+      "gold_nugget": 14
+    },
+    "combatItem": "set_sakura_staff",
+    "repeatable": true,
+    "craftJob": "carver",
+    "requiredJobLevel": 6,
+    "jobXp": 15
+  },
+  "set_sakura_dagger": {
+    "id": "set_sakura_dagger",
+    "name": "Dague Pétale",
+    "emoji": "🔪",
+    "description": "Arme Assassin — départ Village Sakura",
+    "ingredients": {
+      "frene": 10,
+      "goujon": 12,
+      "fer": 14,
+      "ble": 8,
+      "ortie": 10,
+      "ancient_scroll": 1,
+      "gold_nugget": 16
+    },
+    "combatItem": "set_sakura_dagger",
+    "repeatable": true,
+    "craftJob": "blacksmith",
+    "requiredJobLevel": 6,
+    "jobXp": 15
+  },
+  "set_sakura_spear": {
+    "id": "set_sakura_spear",
+    "name": "Lance du Cerisier",
+    "emoji": "🔱",
+    "description": "Arme Lancier — départ Village Sakura",
+    "ingredients": {
+      "frene": 14,
+      "goujon": 10,
+      "fer": 16,
+      "ble": 8,
+      "ortie": 8,
+      "ancient_scroll": 1,
+      "gold_nugget": 15
+    },
+    "combatItem": "set_sakura_spear",
+    "repeatable": true,
+    "craftJob": "blacksmith",
+    "requiredJobLevel": 6,
+    "jobXp": 15
+  },
+  "set_sakura_ring": {
+    "id": "set_sakura_ring",
+    "name": "Anneau Pétale",
+    "emoji": "💍",
+    "description": "Anneau combat — craft ou drop donjon",
+    "ingredients": {
+      "ortie": 28,
+      "ble": 18,
+      "ancient_scroll": 2,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_sakura_ring",
+    "unique": true,
+    "craftJob": "jeweler",
+    "requiredJobLevel": 8,
+    "jobXp": 30
+  },
+  "set_sakura_amulet": {
+    "id": "set_sakura_amulet",
+    "name": "Amulette du Temple",
+    "emoji": "📿",
+    "description": "Amulette combat — craft ou drop donjon",
+    "ingredients": {
+      "ortie": 35,
+      "orge": 18,
+      "ancient_scroll": 2,
+      "gold_nugget": 14
+    },
+    "combatItem": "set_sakura_amulet",
+    "unique": true,
+    "craftJob": "jeweler",
+    "requiredJobLevel": 10,
+    "jobXp": 35
+  },
+  "set_sakura_cape": {
+    "id": "set_sakura_cape",
+    "name": "Cape du Cerisier",
+    "emoji": "🧣",
+    "description": "Cape combat — Temple Sakura",
+    "ingredients": {
+      "ortie": 22,
+      "ble": 22,
+      "frene": 16,
+      "ancient_scroll": 2,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_sakura_cape",
+    "unique": true,
+    "craftJob": "tailor",
+    "requiredJobLevel": 9,
+    "jobXp": 38
+  },
+  "set_sakura_shield": {
+    "id": "set_sakura_shield",
+    "name": "Bouclier Pétale",
+    "emoji": "🛡️",
+    "description": "Bouclier combat — craft ou drop donjon",
+    "ingredients": {
+      "frene": 32,
+      "orge": 16,
+      "ancient_scroll": 2,
+      "gold_nugget": 12
+    },
+    "combatItem": "set_sakura_shield",
+    "unique": true,
+    "craftJob": "blacksmith",
+    "requiredJobLevel": 10,
+    "jobXp": 42
+  },
+  "set_sakura_belt": {
+    "id": "set_sakura_belt",
+    "name": "Ceinture du Temple",
+    "emoji": "🎗️",
+    "description": "Ceinture combat — Temple Sakura",
+    "ingredients": {
+      "ble": 22,
+      "ortie": 18,
+      "ancient_scroll": 2,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_sakura_belt",
+    "unique": true,
+    "craftJob": "shoemaker",
+    "requiredJobLevel": 9,
+    "jobXp": 32
+  },
+  "set_sakura_ring_right": {
+    "id": "set_sakura_ring_right",
+    "name": "Anneau Brume",
+    "emoji": "💎",
+    "description": "Anneau D. — craft ou drop donjon",
+    "ingredients": {
+      "ortie": 22,
+      "goujon": 12,
+      "ancient_scroll": 2,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_sakura_ring_right",
+    "unique": true,
+    "craftJob": "jeweler",
+    "requiredJobLevel": 9,
+    "jobXp": 30
+  },
+  "set_petal_helmet": {
+    "id": "set_petal_helmet",
+    "name": "Couronne Florale",
+    "emoji": "🪖",
+    "ingredients": {
+      "avoine": 20,
+      "trefle": 15,
+      "noyer": 10,
+      "ancient_scroll": 3,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_petal_helmet",
+    "unique": true,
+    "craftJob": "armorer",
+    "requiredJobLevel": 25,
+    "jobXp": 80
+  },
+  "set_petal_chest": {
+    "id": "set_petal_chest",
+    "name": "Armure Florale",
+    "emoji": "🥋",
+    "ingredients": {
+      "avoine": 30,
+      "chene": 15,
+      "truite": 10,
+      "ancient_scroll": 3,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_petal_chest",
+    "unique": true,
+    "craftJob": "armorer",
+    "requiredJobLevel": 30,
+    "jobXp": 100
+  },
+  "set_petal_weapon": {
+    "id": "set_petal_weapon",
+    "name": "Arc des Pétales",
+    "emoji": "🏹",
+    "ingredients": {
+      "noyer": 25,
+      "brochet": 15,
+      "menthe": 10,
+      "ancient_scroll": 3,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_petal_weapon",
+    "craftJob": "carver",
+    "requiredJobLevel": 35,
+    "jobXp": 120,
+    "repeatable": true
+  },
+  "set_petal_boots": {
+    "id": "set_petal_boots",
+    "name": "Bottes Florales",
+    "emoji": "👢",
+    "description": "Bottes combat — Tanière des Pétales",
+    "ingredients": {
+      "houblon": 20,
+      "trefle": 15,
+      "ancient_scroll": 3,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_petal_boots",
+    "unique": true,
+    "craftJob": "shoemaker",
+    "requiredJobLevel": 25,
+    "jobXp": 70
+  },
+  "set_petal_ring": {
+    "id": "set_petal_ring",
+    "name": "Anneau des Pétales",
+    "emoji": "💍",
+    "description": "Anneau combat — craft ou drop donjon",
+    "ingredients": {
+      "menthe": 18,
+      "avoine": 15,
+      "trefle": 10,
+      "ancient_scroll": 3,
+      "gold_nugget": 9
+    },
+    "combatItem": "set_petal_ring",
+    "unique": true,
+    "craftJob": "jeweler",
+    "requiredJobLevel": 22,
+    "jobXp": 65
+  },
+  "set_petal_amulet": {
+    "id": "set_petal_amulet",
+    "name": "Amulette Florale",
+    "emoji": "📿",
+    "description": "Amulette combat — craft ou drop donjon",
+    "ingredients": {
+      "chene": 18,
+      "houblon": 12,
+      "brochet": 8,
+      "ancient_scroll": 3,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_petal_amulet",
+    "unique": true,
+    "craftJob": "jeweler",
+    "requiredJobLevel": 28,
+    "jobXp": 75
+  },
+  "set_petal_cape": {
+    "id": "set_petal_cape",
+    "name": "Cape Florale",
+    "emoji": "🧣",
+    "ingredients": {
+      "avoine": 22,
+      "trefle": 18,
+      "ancient_scroll": 3,
+      "gold_nugget": 9
+    },
+    "combatItem": "set_petal_cape",
+    "unique": true,
+    "craftJob": "tailor",
+    "requiredJobLevel": 24,
+    "jobXp": 72
+  },
+  "set_petal_shield": {
+    "id": "set_petal_shield",
+    "name": "Bouclier des Pétales",
+    "emoji": "🛡️",
+    "ingredients": {
+      "chene": 20,
+      "noyer": 15,
+      "ancient_scroll": 3,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_petal_shield",
+    "unique": true,
+    "craftJob": "blacksmith",
+    "requiredJobLevel": 28,
+    "jobXp": 85
+  },
+  "set_petal_belt": {
+    "id": "set_petal_belt",
+    "name": "Ceinture Florale",
+    "emoji": "🎗️",
+    "ingredients": {
+      "houblon": 18,
+      "menthe": 12,
+      "ancient_scroll": 3,
+      "gold_nugget": 9
+    },
+    "combatItem": "set_petal_belt",
+    "unique": true,
+    "craftJob": "shoemaker",
+    "requiredJobLevel": 23,
+    "jobXp": 68
+  },
+  "set_petal_ring_right": {
+    "id": "set_petal_ring_right",
+    "name": "Anneau Rosée",
+    "emoji": "💎",
+    "ingredients": {
+      "menthe": 15,
+      "truite": 8,
+      "ancient_scroll": 3,
+      "gold_nugget": 9
+    },
+    "combatItem": "set_petal_ring_right",
+    "unique": true,
+    "craftJob": "jeweler",
+    "requiredJobLevel": 22,
+    "jobXp": 62
+  },
+  "set_jade_helmet": {
+    "id": "set_jade_helmet",
+    "name": "Heaume de Jade",
+    "emoji": "🪖",
+    "ingredients": {
+      "kobalte": 15,
+      "erable": 20,
+      "ginseng": 10,
+      "ancient_scroll": 4,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_jade_helmet",
+    "unique": true,
+    "craftJob": "armorer",
+    "requiredJobLevel": 50,
+    "jobXp": 150
+  },
+  "set_jade_chest": {
+    "id": "set_jade_chest",
+    "name": "Plastron de Jade",
+    "emoji": "🥋",
+    "ingredients": {
+      "kobalte": 25,
+      "if": 20,
+      "belladone": 15,
+      "ancient_scroll": 5,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_jade_chest",
+    "unique": true,
+    "craftJob": "armorer",
+    "requiredJobLevel": 55,
+    "jobXp": 180
+  },
+  "set_jade_weapon": {
+    "id": "set_jade_weapon",
+    "name": "Bâton de Jade",
+    "emoji": "🪄",
+    "description": "Arme combat — Grotte de Jade",
+    "ingredients": {
+      "argent": 20,
+      "bambou": 25,
+      "raie": 15,
+      "ancient_scroll": 5,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_jade_weapon",
+    "craftJob": "carver",
+    "requiredJobLevel": 60,
+    "jobXp": 200,
+    "repeatable": true
+  },
+  "set_jade_boots": {
+    "id": "set_jade_boots",
+    "name": "Bottes de Jade",
+    "emoji": "👢",
+    "description": "Bottes combat — craft ou drop donjon",
+    "ingredients": {
+      "erable": 22,
+      "bambou": 18,
+      "kobalte": 12,
+      "ancient_scroll": 4,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_jade_boots",
+    "unique": true,
+    "craftJob": "shoemaker",
+    "requiredJobLevel": 48,
+    "jobXp": 140
+  },
+  "set_jade_ring": {
+    "id": "set_jade_ring",
+    "name": "Anneau de Jade",
+    "emoji": "💍",
+    "description": "Anneau combat — craft ou drop donjon",
+    "ingredients": {
+      "argent": 18,
+      "belladone": 14,
+      "raie": 10,
+      "ancient_scroll": 4,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_jade_ring",
+    "unique": true,
+    "craftJob": "jeweler",
+    "requiredJobLevel": 45,
+    "jobXp": 130
+  },
+  "set_jade_amulet": {
+    "id": "set_jade_amulet",
+    "name": "Amulette de Jade",
+    "emoji": "📿",
+    "description": "Amulette combat — craft ou drop donjon",
+    "ingredients": {
+      "if": 22,
+      "ginseng": 16,
+      "kobalte": 14,
+      "ancient_scroll": 5,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_jade_amulet",
+    "unique": true,
+    "craftJob": "jeweler",
+    "requiredJobLevel": 52,
+    "jobXp": 160
+  },
+  "set_jade_cape": {
+    "id": "set_jade_cape",
+    "name": "Cape de Jade",
+    "emoji": "🧣",
+    "ingredients": {
+      "erable": 25,
+      "belladone": 12,
+      "ancient_scroll": 4,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_jade_cape",
+    "unique": true,
+    "craftJob": "tailor",
+    "requiredJobLevel": 48,
+    "jobXp": 145
+  },
+  "set_jade_shield": {
+    "id": "set_jade_shield",
+    "name": "Bouclier de Jade",
+    "emoji": "🛡️",
+    "ingredients": {
+      "kobalte": 20,
+      "if": 18,
+      "ancient_scroll": 4,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_jade_shield",
+    "unique": true,
+    "craftJob": "blacksmith",
+    "requiredJobLevel": 50,
+    "jobXp": 155
+  },
+  "set_jade_belt": {
+    "id": "set_jade_belt",
+    "name": "Ceinture de Jade",
+    "emoji": "🎗️",
+    "ingredients": {
+      "bambou": 20,
+      "ginseng": 14,
+      "ancient_scroll": 4,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_jade_belt",
+    "unique": true,
+    "craftJob": "shoemaker",
+    "requiredJobLevel": 46,
+    "jobXp": 135
+  },
+  "set_jade_ring_right": {
+    "id": "set_jade_ring_right",
+    "name": "Anneau Lunaire",
+    "emoji": "💎",
+    "ingredients": {
+      "argent": 16,
+      "raie": 12,
+      "ancient_scroll": 4,
+      "gold_nugget": 10
+    },
+    "combatItem": "set_jade_ring_right",
+    "unique": true,
+    "craftJob": "jeweler",
+    "requiredJobLevel": 44,
+    "jobXp": 125
+  },
+  "jade_amulet": {
+    "id": "jade_amulet",
+    "name": "Amulette de Jade",
+    "emoji": "📿",
+    "description": "Objet précieux",
+    "ingredients": {
+      "kobalte": 3,
+      "ginseng": 2,
+      "ancient_scroll": 1
+    },
+    "output": "jade_amulet",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "jeweler",
+    "requiredJobLevel": 20,
+    "jobXp": 25
+  },
+  "sacred_incense": {
+    "id": "sacred_incense",
+    "name": "Encens du Temple",
+    "emoji": "🕯️",
+    "ingredients": {
+      "ortie": 5,
+      "sauge": 3,
+      "ble": 5,
+      "ancient_scroll": 1
+    },
+    "output": "sacred_incense",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "tailor",
+    "requiredJobLevel": 10,
+    "jobXp": 20
+  },
+  "companion_sakura_armor": {
+    "id": "companion_sakura_armor",
+    "name": "Tenue légère du Cerisier",
+    "emoji": "🥋",
+    "description": "Tenue d'équipier — Temple Sakura",
+    "ingredients": {
+      "frene": 8,
+      "ble": 6,
+      "ancient_scroll": 1,
+      "gold_nugget": 2
+    },
+    "combatItem": "companion_sakura_armor",
+    "craftJob": "armorer",
+    "requiredJobLevel": 4,
+    "jobXp": 25,
+    "repeatable": true
+  },
+  "companion_sakura_charm": {
+    "id": "companion_sakura_charm",
+    "name": "Charme du Cerisier",
+    "emoji": "💍",
+    "description": "Charme d'équipier — Temple Sakura",
+    "ingredients": {
+      "frene": 5,
+      "ortie": 4,
+      "ancient_scroll": 1,
+      "gold_nugget": 2
+    },
+    "combatItem": "companion_sakura_charm",
+    "craftJob": "jeweler",
+    "requiredJobLevel": 4,
+    "jobXp": 22,
+    "repeatable": true
+  },
+  "companion_petal_armor": {
+    "id": "companion_petal_armor",
+    "name": "Tenue légère des Pétales",
+    "emoji": "🥋",
+    "description": "Tenue d'équipier — Forêt des Pétales",
+    "ingredients": {
+      "noyer": 10,
+      "ancient_scroll": 1,
+      "gold_nugget": 5
+    },
+    "combatItem": "companion_petal_armor",
+    "craftJob": "armorer",
+    "requiredJobLevel": 12,
+    "jobXp": 40,
+    "repeatable": true
+  },
+  "companion_petal_charm": {
+    "id": "companion_petal_charm",
+    "name": "Charme des Pétales",
+    "emoji": "💍",
+    "description": "Charme d'équipier — Forêt des Pétales",
+    "ingredients": {
+      "noyer": 6,
+      "ancient_scroll": 1,
+      "gold_nugget": 5
+    },
+    "combatItem": "companion_petal_charm",
+    "craftJob": "jeweler",
+    "requiredJobLevel": 12,
+    "jobXp": 38,
+    "repeatable": true
+  },
+  "companion_jade_armor": {
+    "id": "companion_jade_armor",
+    "name": "Tenue légère de Jade",
+    "emoji": "🥋",
+    "description": "Tenue d'équipier — Montagnes de Jade",
+    "ingredients": {
+      "erable": 12,
+      "ancient_scroll": 2,
+      "gold_nugget": 6
+    },
+    "combatItem": "companion_jade_armor",
+    "craftJob": "armorer",
+    "requiredJobLevel": 20,
+    "jobXp": 55,
+    "repeatable": true
+  },
+  "companion_jade_charm": {
+    "id": "companion_jade_charm",
+    "name": "Charme de Jade",
+    "emoji": "💍",
+    "description": "Charme d'équipier — Montagnes de Jade",
+    "ingredients": {
+      "erable": 8,
+      "ancient_scroll": 2,
+      "gold_nugget": 6
+    },
+    "combatItem": "companion_jade_charm",
+    "craftJob": "jeweler",
+    "requiredJobLevel": 20,
+    "jobXp": 50,
+    "repeatable": true
+  }
+}

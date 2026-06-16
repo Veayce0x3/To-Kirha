@@ -1,0 +1,57 @@
+{
+  "mode": "sandbox",
+  "targetDurationMin": 5,
+  "steps": [
+    {
+      "id": "intro",
+      "title": "Formation du village",
+      "text": "Bienvenue à Kirha. En quelques minutes, tu vas récolter, choisir ton arme, forger, combattre en donjon et acheter ton premier parchemin.",
+      "screen": "intro"
+    },
+    {
+      "id": "harvest",
+      "title": "Récolte",
+      "text": "Assigne le Frêne sur l'emplacement, puis touche Récolter. La récolte est accélérée pendant la formation.",
+      "view": "job_lumberjack",
+      "highlight": ".slots-grid",
+      "completeWhen": "tutorial_harvest_done"
+    },
+    {
+      "id": "weapon_pick",
+      "title": "Ton arme de débutant",
+      "text": "Tu commences en Chevalier avec le Katana Sakura. Touche « Accepter » pour recevoir les matériaux et forger à l'Atelier.",
+      "screen": "weapon_offer",
+      "completeWhen": "tutorial_weapon_chosen"
+    },
+    {
+      "id": "craft",
+      "title": "Forge ton arme",
+      "text": "L'Atelier t'attend avec les matériaux nécessaires. Fabrique puis équipe ton arme sur Personnage.",
+      "view": "workshop",
+      "highlight": "#workshop-content",
+      "completeWhen": "tutorial_weapon_equipped"
+    },
+    {
+      "id": "dungeon",
+      "title": "Donjon d'entraînement",
+      "text": "Affronte un donjon court au Temple du Cerisier pour tester ton arme en situation réelle.",
+      "view": "combat",
+      "highlight": ".tutorial-dungeon-panel",
+      "completeWhen": "tutorial_dungeon_won"
+    },
+    {
+      "id": "scrolls",
+      "title": "Parchemins des Anciens",
+      "text": "Vends tes récoltes à la Banque si besoin, puis achète un parchemin à l'Hôtel des Ventes — indispensable pour la plupart des crafts.",
+      "view": "auction_house",
+      "highlight": ".auction-offers",
+      "completeWhen": "tutorial_scroll_bought"
+    },
+    {
+      "id": "graduate",
+      "title": "Tu es prêt !",
+      "text": "Tu maîtrises récolte, craft, combat et économie. Les Missions te guideront pour la suite. Bon voyage à Kirha.",
+      "screen": "graduate"
+    }
+  ]
+}

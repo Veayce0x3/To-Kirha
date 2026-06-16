@@ -1,0 +1,19 @@
+{
+  "defaultName": "Voyageur Sakura",
+  "nicknameMaxLength": 20,
+  "nicknameRenameCost": 50000,
+  "nicknameRenameCooldownMs": 2592000000,
+  "maxLevel": 200,
+  "xpPerLevel": 75,
+  "xpScaling": 1.11,
+  "baseStats": {
+    "hp": 50,
+    "atk": 8,
+    "def": 3
+  },
+  "statsPerLevel": {
+    "hp": 12,
+    "atk": 2,
+    "def": 1
+  }
+}

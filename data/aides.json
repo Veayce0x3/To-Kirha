@@ -1,0 +1,68 @@
+{
+  "sakura_apprentice": {
+    "id": "sakura_apprentice",
+    "name": "Apprenti bûcheron",
+    "emoji": "👤",
+    "description": "Récolte du Frêne automatiquement",
+    "resource": "frene",
+    "zone": "village_sakura",
+    "baseInterval": 8000,
+    "baseCost": 120,
+    "costMultiplier": 1.18,
+    "maxLevel": 15,
+    "yieldPerLevel": 1
+  },
+  "herb_gatherer": {
+    "id": "herb_gatherer",
+    "name": "Cueilleur de plantes",
+    "emoji": "🧑‍🌾",
+    "description": "Cueille du Pissenlit en arrière-plan",
+    "resource": "ortie",
+    "zone": "village_sakura",
+    "baseInterval": 12000,
+    "baseCost": 200,
+    "costMultiplier": 1.2,
+    "maxLevel": 10,
+    "yieldPerLevel": 1
+  },
+  "farm_hand": {
+    "id": "farm_hand",
+    "name": "Moissonneur",
+    "emoji": "🌾",
+    "description": "Récolte du Blé en arrière-plan",
+    "resource": "ble",
+    "zone": "village_sakura",
+    "baseInterval": 10000,
+    "baseCost": 180,
+    "costMultiplier": 1.2,
+    "maxLevel": 10,
+    "yieldPerLevel": 1
+  },
+  "fishing_companion": {
+    "id": "fishing_companion",
+    "name": "Compagnon pêcheur",
+    "emoji": "🐟",
+    "description": "Pêche des Carpes Japonaises en arrière-plan",
+    "resource": "goujon",
+    "zone": "village_sakura",
+    "baseInterval": 10000,
+    "baseCost": 350,
+    "costMultiplier": 1.22,
+    "maxLevel": 10,
+    "yieldPerLevel": 1
+  },
+  "jade_miner": {
+    "id": "jade_miner",
+    "name": "Mineur apprenti",
+    "emoji": "⛏️",
+    "description": "Mine de la Pierre en arrière-plan",
+    "resource": "fer",
+    "zone": "jade_mountains",
+    "baseInterval": 14000,
+    "baseCost": 500,
+    "costMultiplier": 1.25,
+    "maxLevel": 10,
+    "yieldPerLevel": 1,
+    "requiresZone": "jade_mountains"
+  }
+}

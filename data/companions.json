@@ -1,0 +1,16 @@
+{
+  "companion_1": {
+    "id": "companion_1",
+    "name": "Équipier 1",
+    "emoji": "🥷",
+    "description": "Compagnon de combat — placeholder",
+    "unlockCost": 5000
+  },
+  "companion_2": {
+    "id": "companion_2",
+    "name": "Équipier 2",
+    "emoji": "🏹",
+    "description": "Compagnon de combat — placeholder",
+    "unlockCost": 25000
+  }
+}
