@@ -1911,14 +1911,10 @@ export function renderOptions(game, el) {
 export function renderSettingsIn(game, container) {
   const s = game.state.settings;
   container.innerHTML = `
-    <label class="setting-row"><span>🎵 Musique</span><input type="checkbox" id="set-music" ${s.music ? 'checked' : ''}></label>
-    <label class="setting-row"><span>🔔 SFX</span><input type="checkbox" id="set-sfx" ${s.sfx ? 'checked' : ''}></label>
-    <label class="setting-row"><span>Vol. musique</span><input type="range" id="set-mv" min="0" max="100" value="${Math.round(s.musicVolume * 100)}"></label>
-    <label class="setting-row"><span>Vol. SFX</span><input type="range" id="set-sv" min="0" max="100" value="${Math.round(s.sfxVolume * 100)}"></label>
+    <label class="setting-row"><span>🔔 Effets sonores</span><input type="checkbox" id="set-sfx" ${s.sfx ? 'checked' : ''}></label>
+    <label class="setting-row"><span>Volume SFX</span><input type="range" id="set-sv" min="0" max="100" value="${Math.round((s.sfxVolume ?? 0.35) * 100)}"></label>
   `;
-  container.querySelector('#set-music').addEventListener('change', (e) => game.updateSettings({ music: e.target.checked }));
   container.querySelector('#set-sfx').addEventListener('change', (e) => game.updateSettings({ sfx: e.target.checked }));
-  container.querySelector('#set-mv').addEventListener('input', (e) => game.updateSettings({ musicVolume: e.target.value / 100 }));
   container.querySelector('#set-sv').addEventListener('input', (e) => game.updateSettings({ sfxVolume: e.target.value / 100 }));
 }
 

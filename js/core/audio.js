@@ -1,78 +1,22 @@
 /**
- * Audio zen procédural — Web Audio API, sans fichiers externes.
- * Compatible GitHub Pages.
+ * Effets sonores procéduraux — Web Audio API, sans fichiers externes.
  */
-
-const NOTES = {
-  C4: 261.63, E4: 329.63, G4: 392.0, A4: 440.0, C5: 523.25,
-};
 
 export class AudioManager {
   constructor() {
     this.ctx = null;
-    this.musicNodes = [];
-    this.musicInterval = null;
     this.initialized = false;
-    this.settings = { music: true, sfx: true, musicVolume: 0.18, sfxVolume: 0.35 };
+    this.settings = { sfx: true, sfxVolume: 0.35 };
   }
 
   updateSettings(settings) {
     this.settings = { ...this.settings, ...settings };
-    if (this.initialized) {
-      if (this.settings.music) this.startMusic();
-      else this.stopMusic();
-    }
   }
 
   init() {
     if (this.initialized) return;
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     this.initialized = true;
-    if (this.settings.music) this.startMusic();
-  }
-
-  startMusic() {
-    if (!this.ctx || !this.settings.music) return;
-    this.stopMusic();
-
-    const freqs = [NOTES.C4, NOTES.E4, NOTES.G4];
-    const master = this.ctx.createGain();
-    master.gain.value = this.settings.musicVolume * 0.4;
-    master.connect(this.ctx.destination);
-
-    for (const freq of freqs) {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.value = 0.15;
-      osc.connect(gain);
-      gain.connect(master);
-      osc.start();
-      this.musicNodes.push({ osc, gain });
-    }
-
-    let t = 0;
-    this.musicInterval = setInterval(() => {
-      if (!this.ctx) return;
-      t += 0.02;
-      this.musicNodes.forEach(({ gain }, i) => {
-        const wave = Math.sin(t * (0.3 + i * 0.1)) * 0.5 + 0.5;
-        gain.gain.linearRampToValueAtTime(
-          wave * 0.12 * this.settings.musicVolume,
-          this.ctx.currentTime + 0.1
-        );
-      });
-    }, 200);
-  }
-
-  stopMusic() {
-    clearInterval(this.musicInterval);
-    this.musicInterval = null;
-    for (const { osc } of this.musicNodes) {
-      try { osc.stop(); } catch { /* already stopped */ }
-    }
-    this.musicNodes = [];
   }
 
   playSfx(type) {
