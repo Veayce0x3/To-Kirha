@@ -218,7 +218,7 @@ export function bootstrapTutorialStep(state, balance, recipes, stepId) {
 }
 
 export function isTutorialHarvestStep(state, tutorialData) {
-  if (!state.tutorial?.sandbox || hasTutorialRewardsClaimed(state)) return false;
+  if (!state.tutorial?.sandbox) return false;
   const step = tutorialData?.steps?.[state.tutorial.stepIndex];
   return step?.id === 'harvest' && !state.tutorial.flags?.harvestDone;
 }
