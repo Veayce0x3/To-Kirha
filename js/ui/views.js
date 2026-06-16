@@ -1116,6 +1116,7 @@ function buildResourcePicker(game, jobId, slotIndex, assignable, selectedId, slo
   toggle.setAttribute('aria-expanded', 'false');
   toggle.setAttribute('aria-controls', `picker-options-${jobId}-${slotIndex}`);
   toggle.innerHTML = `
+    <span class="pick-icon-wrap">${toggleChip.icon}</span>
     <span class="picker-toggle-text">
       <span class="picker-toggle-name" title="${toggleChip.name}">${toggleChip.name}</span>
     </span>

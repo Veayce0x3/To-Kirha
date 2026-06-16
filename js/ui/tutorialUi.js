@@ -27,7 +27,7 @@ const HINT_CLASS = 'tutorial-hint';
 const TUTORIAL_BTN_CLASS = 'btn-tutorial';
 
 function isTutorialInteractive(el) {
-  return el?.matches?.('.btn, .nav-btn, .burger-btn, .workshop-tab, .char-tab-btn, .dq-cmd-btn');
+  return el?.matches?.('.btn, .nav-btn, .burger-btn, .workshop-tab, .char-tab-btn, .dq-cmd-btn, .picker-toggle');
 }
 
 function stripTutorialBtnClass(el) {
@@ -408,10 +408,19 @@ function resolveMicroHint(ui, currentView, game) {
     if (currentView !== 'job_lumberjack') {
       return resolveNavMicroHint('job_lumberjack', 'Récolte', '① ');
     }
+    const slot0 = game?.state?.harvestSlots?.lumberjack?.[0];
+    if (!slot0?.resourceId) {
+      return {
+        selector: '.slots-grid .picker-toggle',
+        title: 'Récolte',
+        text: '② Choisis le Frêne dans le menu déroulant.',
+        finger: '👆 CHOISIR',
+      };
+    }
     return {
       selector: '.slots-grid .btn-harvest-compact:not([disabled]), .slots-grid .harvest-slot .btn-start:not([disabled])',
       title: 'Récolte',
-      text: '② Touche le bouton vert « Récolter » sur le Frêne.',
+      text: '② Touche le bouton violet « Récolter ».',
       finger: '👆 RÉCOLTER',
     };
   }

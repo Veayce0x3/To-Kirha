@@ -508,6 +508,10 @@ export class Game {
       this.combatEquipment.items
     );
     this.prepareTutorialCraftIfNeeded();
+    const step = getTutorialStep(this.state, this.tutorialData);
+    if (step?.id === 'harvest' && this.state.tutorial?.sandbox) {
+      bootstrapTutorialStep(this.state, this.balance, this.recipes, 'harvest');
+    }
     return buildTutorialUi(this.state, this.tutorialData, this.quests, syncExtras);
   }
 

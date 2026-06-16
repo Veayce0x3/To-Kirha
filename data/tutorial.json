@@ -17,7 +17,7 @@
     {
       "id": "harvest",
       "title": "Récolte",
-      "text": "Assigne le Frêne sur l'emplacement, puis touche Récolter. La récolte est accélérée pendant la formation.",
+      "text": "Assigne le Frêne sur l'emplacement, puis touche le bouton violet « Récolter ». La récolte est accélérée pendant la formation.",
       "view": "job_lumberjack",
       "highlight": ".slots-grid",
       "completeWhen": "tutorial_harvest_done"
