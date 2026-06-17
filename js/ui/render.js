@@ -53,6 +53,7 @@ export function initUI(game, audio) {
     sidebarFooter: document.getElementById('sidebar-footer'),
     sidebarOverlay: document.getElementById('sidebar-overlay'),
     burgerBtn: document.getElementById('burger-btn'),
+    quickOptions: document.getElementById('quick-options'),
     quickChar: document.getElementById('quick-char'),
     quickCombat: document.getElementById('quick-combat'),
     toasts: document.getElementById('toasts'),
@@ -267,6 +268,7 @@ export function initUI(game, audio) {
 
   els.burgerBtn?.addEventListener('click', openSidebar);
   els.sidebarOverlay?.addEventListener('click', closeSidebar);
+  els.quickOptions?.addEventListener('click', () => navigate('options'));
   els.quickChar?.addEventListener('click', () => navigate('character'));
   els.quickCombat?.addEventListener('click', () => navigate('combat'));
   els.quickScroll?.addEventListener('click', () => navigate('auction_house'));

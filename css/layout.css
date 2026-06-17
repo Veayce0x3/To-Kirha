@@ -21,7 +21,8 @@
   padding: 0.75rem 0.5rem;
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   backdrop-filter: blur(10px);
   overflow: hidden;
 }
@@ -64,9 +65,11 @@
 
 .sidebar-nav {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 0.15rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sidebar-footer {
@@ -1651,6 +1654,11 @@
   color: var(--violet-sakura);
 }
 
+.top-quick-options {
+  display: none;
+  flex-shrink: 0;
+}
+
 .sidebar-overlay {
   display: none;
   position: fixed;
@@ -3209,6 +3217,10 @@
     position: fixed;
     left: 0;
     top: 0;
+    bottom: 0;
+    width: min(280px, 88vw);
+    height: 100dvh;
+    max-height: 100dvh;
     z-index: 100;
     transform: translateX(-105%);
     transition: transform 0.25s ease;
@@ -3218,6 +3230,14 @@
 
   .sidebar.open {
     transform: translateX(0);
+  }
+
+  .sidebar-footer {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .top-quick-options {
+    display: inline-flex;
   }
 
   .main-area {
