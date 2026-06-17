@@ -63,12 +63,19 @@ Monnaie : **Kirha**. Stack : vanilla JS, HTML, CSS, JSON. Hébergement cible : G
 - [x] Anti-idle (pas de passif prestige / aides / offline gains)
 - [x] Preview craft équipement + rôles armes
 - [x] Personnage onglets, récolte 2×2 mobile, fond combat sakura
+- [x] **Ferme éleveur** — 6 bâtiments, rations, slots, métier Éleveur (`farm.json`)
+- [x] **Durabilité outils** — usure, affichage craft/métier/minibar/ferme, refabrication
+- [x] **Outilleur unifié** — tous les outils de métier dans un seul onglet
+- [x] **Récolte début** — 1ʳᵉ ressource Nv.1 sans outil (lente) + paliers `toolTier`
+- [x] **Cuisine** — métier Cuisinier, repas, buffs donjon (`consumables.js`)
+- [x] **Tutoriel étendu** — hache offerte, puits, poulailler, sync progression
+- [x] **UI ferme** — coûts rations visibles, fix bouton après production
 
 ### Gameplay & contenu (reste)
 
-- [ ] Balancing fin XP métiers / perso / combat / slots (playtest)
+- [ ] Balancing fin XP métiers / perso / combat / slots / ferme / durabilité (playtest)
 - [ ] Sets Brume / Lotus
-- [ ] Nourriture paysan → soin en combat
+- [x] Nourriture paysan → buff en donjon (Cuisine livrée — soin HP direct en combat : optionnel)
 - [ ] Plus de zones + contenu (paliers 100–200+)
 
 ### UI & polish (reste)
@@ -92,6 +99,8 @@ Monnaie : **Kirha**. Stack : vanilla JS, HTML, CSS, JSON. Hébergement cible : G
 
 ## Historique versions
 
+- **v1.3** — Ferme éleveur, durabilité outils, cuisine, tutoriel étendu, Outilleur unifié (`saveVersion` 24)
+- **v1.2** — Tutoriel, anti-idle, combat DQ équipe, saisons, guidage, assets récolte
 - **v1.1** — Combat PA, 7 crafts, Hôtel des Ventes, zones combat, sets fixes
 - **v1.0.0** — 5 métiers, slots, perso, donjons, burger mobile
 - **v0.6.0** — UI 3 colonnes, minibar, banque

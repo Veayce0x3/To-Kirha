@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.3.0] — 2026-06-11
+
+### Ferme, durabilité outils & refonte tuto/atelier (`saveVersion` 24)
+
+**Ferme éleveur**
+- Métier **Éleveur** + 6 bâtiments (Puits, Poulailler, Étable, Bergerie, Porcherie, Ruches)
+- Emplacements par bâtiment (1 → 4), production timer, XP Éleveur
+- **Rations** : toutes les options visibles ; coût par production (`stock/requis`) ; alternatives via `feedEfficiency`
+- Outil éleveur requis (seau, palier) — `js/systems/farm.js`, `data/farm.json`
+
+**Durabilité outils**
+- `maxUses` sur outils de récolte / éleveur — usure à chaque emploi
+- Affichage : craft (hint + barre), page métier, minibar, Perso → Outils, ferme
+- Outil usé → refabrication ; migration `toolDurability` sur saves existantes
+
+**Récolte & outils**
+- 1ʳᵉ ressource Nv.1 récoltable **sans outil** (lente)
+- Paliers outil (`toolTier`) vs palier ressource
+- Atelier **Outilleur** : tous les outils équipables métier regroupés
+
+**Cuisine**
+- Métier **Cuisinier** + vue Cuisine
+- Repas craftés → buff **1 donjon** (HP/ATK/DEF, regain entre salles)
+
+**Tutoriel & UI**
+- Étape hache : modale « Recevoir ma hache »
+- Étapes ferme : puits + poulailler
+- Fix bouton ferme bloqué après production ; sync slots
+
 ## [1.2.6] — 2026-06-11
 
 ### Récolte repousse + assets (`saveVersion` 18)

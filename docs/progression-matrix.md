@@ -84,4 +84,4 @@ Leviers anti-rush : `minTotalEarned`, coûts zones, `regrowthBaseMs` (11 s).
 ## Dev
 
 - `betaMode: true` en dev — passer à `false` avant release.
-- `saveVersion: 19` — plafonds calculés depuis `state.season` (pas de migration).
+- `saveVersion: 24` — plafonds calculés depuis `state.season` (pas de migration).

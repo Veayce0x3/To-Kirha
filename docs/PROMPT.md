@@ -1,4 +1,4 @@
-# 🌸 TO-KIRHA — Prompt Projet (v4)
+# 🌸 TO-KIRHA — Prompt Projet (v5)
 
 > Source de vérité du concept. Référence principale pour reprendre le projet.
 
@@ -9,7 +9,7 @@ Tu es un développeur full-stack senior + game designer expert en jeux web écon
 - **Nom :** TO-KIRHA
 - **Monnaie :** 💰 Kirha
 - **Format :** Jeu web 2D, 100% navigateur
-- **Version actuelle :** v1.1 (`saveVersion` 12)
+- **Version actuelle :** v1.4 (`saveVersion` 24)
 
 ## Objectif du projet
 
@@ -36,9 +36,11 @@ Univers inspiré du Japon féodal fantastique — ambiance **zen sakura** :
 | Pilier | Description |
 |--------|-------------|
 | **Récolte parallèle** | Emplacements indépendants, timers par slot, filtre par zone |
-| **Métiers & craft** | 5 récoltes + 7 ateliers spécialisés, recettes par niveau de métier |
-| **Progression par zone** | 3 zones monde, sets d'équipement fixe par zone, matériaux de combat |
-| **Combat PvE** | Zones de combat, monstres + boss rejouables, tour par tour (PA) |
+| **Métiers & craft** | 5 récoltes + éleveur + 8 ateliers (dont Cuisine), recettes par niveau |
+| **Ferme** | 6 bâtiments, rations, production animale, métier Éleveur |
+| **Outils** | Durabilité (`maxUses`), paliers, refabrication |
+| **Progression par zone** | 3 zones monde, sets d'équipement fixe par zone, pépites combat |
+| **Combat PvE** | Donjons DQ à 3, monstres + boss, tour par tour |
 | **Économie Kirha** | Vente récolte, upgrades, parchemins, prestige saisons |
 
 ## Architecture gameplay
@@ -46,7 +48,7 @@ Univers inspiré du Japon féodal fantastique — ambiance **zen sakura** :
 ### 3 progressions distinctes
 
 1. **Personnage** — niveau + XP (combat), stats HP/ATK/DEF, équipement combat (10 slots)
-2. **Métiers** — 5 récoltes + 7 crafts ; niveaux **indépendants** du perso
+2. **Métiers** — 5 récoltes + éleveur + 8 crafts ; niveaux **indépendants** du perso
 3. **Économie** — Kirha, zones, prestige « Nouvelle Saison »
 
 ### Métiers de récolte (tous dispos dès le début)
@@ -55,13 +57,24 @@ Bûcheron · Pêcheur · Mineur · Paysan · Alchimiste
 
 - ~11 ressources par métier (noms thème sakura)
 - Déblocage par **niveau de métier** (~tous les 20 niveaux)
+- **1ʳᵉ ressource Nv.1** récoltable sans outil (lente) ; outil équipé requis au-delà
+- Outils à **durabilité** : usure par récolte, paliers outil vs palier ressource
 
-### Métiers de craft (7 ateliers)
+### Ferme (Éleveur)
 
-Outilleur · Forgeron · Sculpteur · Armurier · Tailleur · Cordonnier · Bijoutier
+Puits · Poulailler · Étable · Bergerie · Porcherie · Ruches
 
-- Outilleur : 8 outils de récolte
-- Autres : pièces d'équipement combat par zone
+- Métier **Éleveur** (XP indépendant) · emplacements par bâtiment (1 → 4)
+- **Rations** consommées par cycle ; choix parmi plusieurs céréales/plantes
+- Outil éleveur (seau) requis · durabilité comme les outils de récolte
+
+### Métiers de craft (8 ateliers)
+
+Outilleur · Forgeron · Sculpteur · Armurier · Tailleur · Cordonnier · Bijoutier · **Cuisinier**
+
+- Outilleur : **tous** les outils de récolte / éleveur (regroupés dans un onglet)
+- Forgeron → Bijoutier : pièces d'équipement combat par zone
+- Cuisinier : repas → buff **1 donjon** (HP/ATK/DEF, regain entre salles)
 - Niveau métier = verrou de recette (pas de vente d'équipement combat)
 - **Stats d'équipement fixes** — pas de jets aléatoires
 
@@ -71,7 +84,8 @@ Outilleur · Forgeron · Sculpteur · Armurier · Tailleur · Cordonnier · Bijo
 - **2 slots** gratuits au départ, jusqu'à **10** achetables en Kirha
 - Assigner une ressource → bouton **Récolter** → timer indépendant par slot
 - **Pas de gain passif** : seuls les emplacements actifs produisent (pas d'aides auto ni offline)
-- Ressource récoltable si : **niveau métier OK** + **zone actuelle OK** (filtre dur)
+- Récolte **3 s** fixe ; **repousse** séparée (8–30 s selon tier/zone)
+- Ressource récoltable si : **niveau métier OK** + **zone actuelle OK** + **outil palier OK** (ou 1ʳᵉ ressource sans outil)
 
 ### Boucle zone → combat → craft
 
@@ -82,11 +96,12 @@ Débloquer zone → récolter ressources zone → combattre (mats + XP)
 
 ### Combat
 
+- Donjons **DQ à 3** (héros + 2 équipiers) : 1 action / membre / tour
 - 3 zones de combat (`combat_zones.json`) : monstres libres + boss illimité
-- Combat **tour par tour** : 6 PA, jusqu'à 4 compétences selon l'arme
-- Types d'armes : épée+bouclier, épée 2 mains, arc, bâton
-- Récompenses : XP personnage, Kirha, matériaux de combat (drops garantis ou à chance sur boss)
-- Recettes équipement = mats récolte + mats combat + drop boss + parchemins
+- 6 classes d'armes : Paladin, Chevalier, Archer, Miko, Assassin, Lancier
+- Récompenses : XP personnage, **pépites d'or** (pas de Kirha en combat)
+- **Repas** (Cuisine) : buff optionnel consommé au lancement d'un donjon
+- Recettes équipement = mats récolte + pépites + drop boss + parchemins
 
 ### Hôtel des Ventes
 
@@ -117,26 +132,29 @@ récolter → vendre → améliorer métiers / acheter slots → craft → comba
 
 - **Desktop :** sidebar catégories + top bar + contenu + minibar métiers
 - **Mobile :** burger ☰ → même sidebar en overlay
-- Écrans : Perso, Monde, 5 métiers récolte, 7 ateliers craft, Banque, Hôtel des Ventes, Stratégie, Combat, Options
-- **Tutoriel début** : bandeau + spotlight (~5–10 min), puis Missions / guidage
+- Écrans : Perso, Monde, 5 métiers récolte, **6 bâtiments ferme**, Atelier, **Cuisine**, Banque, Hôtel des Ventes, Combat, Options
+- **Tutoriel début** : récolte → banque → hache → ferme → arme → donjon → parchemins (~5–10 min)
+- Durabilité outils visible : craft, page métier, minibar, Perso → Outils
 
 ## Sauvegarde
 
 - **Actuel :** localStorage (`SaveProvider`) + export/import base64
 - **Futur :** Supabase (`CloudSaveProvider` stub dans `js/core/save.js`)
-- `saveVersion: 19` dans `data/balance.json`
+- `saveVersion: 24` dans `data/balance.json`
 
 ## Systèmes livrés
 
-- [x] Récolte slots parallèles
-- [x] 7 métiers craft + sets combat par zone (stats fixes)
-- [x] Combat PA + zones + 4 types d'armes
+- [x] Récolte slots parallèles + repousse séparée
+- [x] 8 métiers craft + sets combat par zone (stats fixes)
+- [x] Combat DQ équipe à 3 + 6 classes d'armes
 - [x] Hôtel des Ventes + parchemins
-- [x] Offline progress (cap 6h via aides)
-- [x] Aides semi-passives
-- [x] Rentabilité (stratégie)
+- [x] Prestige saisons + plafonds
+- [x] Tutoriel guidé + guidage dynamique
+- [x] Ferme éleveur (6 bâtiments, rations, slots)
+- [x] Durabilité outils + paliers + Outilleur unifié
+- [x] Cuisine (repas → buff donjon)
 - [x] Audio Web Audio procédural + settings
-- [x] Prestige saisons
+- [x] Anti-idle (pas de passif / offline gains)
 
 ## Fichiers clés
 
