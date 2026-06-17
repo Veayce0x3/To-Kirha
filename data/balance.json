@@ -1,7 +1,7 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 0,
-  "saveVersion": 22,
+  "saveVersion": 24,
   "betaMode": false,
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
   "combat": {
@@ -28,7 +28,28 @@
   "harvestSlots": {
     "startingSlots": 2,
     "maxSlots": 10,
-    "unlockCosts": [0, 0, 400, 1200, 3500, 8000, 20000, 50000, 120000, 300000]
+    "unlockCosts": [0, 0, 400, 1200, 3500, 8000, 20000, 50000, 120000, 300000],
+    "unlockResourceByJob": {
+      "lumberjack": "frene",
+      "farmer": "ble",
+      "miner": "fer",
+      "fisher": "goujon",
+      "alchemist": "ortie"
+    },
+    "unlockResourceAmountPerSlot": 10
+  },
+  "farmSlots": {
+    "maxPerBuilding": 4,
+    "unlockCosts": [0, 600, 2000, 6000],
+    "unlockResourceByBuilding": {
+      "well": "eau",
+      "chicken_coop": "oeuf",
+      "barn": "lait",
+      "sheepfold": "laine",
+      "pigsty": "bacon",
+      "beehive": "miel"
+    },
+    "unlockResourceAmountPerSlot": 3
   },
   "prestige": {
     "minTotalEarned": 100000,
@@ -78,7 +99,16 @@
       "description": "Ressources intermédiaires. Tanière des Pétales.",
       "dungeon": "petal_den",
       "unlocked": false,
-      "unlockCost": 1200
+      "unlockCost": 1200,
+      "unlockRequirements": {
+        "kirha": 1200,
+        "minJobId": "lumberjack",
+        "minJobLevel": 5,
+        "resources": {
+          "frene": 10,
+          "ble": 10
+        }
+      }
     },
     "mist_river": {
       "id": "mist_river",
@@ -87,7 +117,16 @@
       "description": "Eaux brumeuses et herbes rares.",
       "dungeon": "mist_shrine",
       "unlocked": false,
-      "unlockCost": 3500
+      "unlockCost": 3500,
+      "unlockRequirements": {
+        "kirha": 3500,
+        "minJobId": "fisher",
+        "minJobLevel": 10,
+        "resources": {
+          "goujon": 10,
+          "ortie": 10
+        }
+      }
     },
     "jade_mountains": {
       "id": "jade_mountains",
@@ -96,7 +135,16 @@
       "description": "Ressources avancées. Grotte de Jade.",
       "dungeon": "jade_cavern",
       "unlocked": false,
-      "unlockCost": 10000
+      "unlockCost": 10000,
+      "unlockRequirements": {
+        "kirha": 10000,
+        "minJobId": "miner",
+        "minJobLevel": 15,
+        "resources": {
+          "fer": 10,
+          "frene": 15
+        }
+      }
     },
     "lotus_sanctuary": {
       "id": "lotus_sanctuary",
@@ -105,7 +153,16 @@
       "description": "Sommet de la saison. Floraison éternelle.",
       "dungeon": "lotus_hall",
       "unlocked": false,
-      "unlockCost": 25000
+      "unlockCost": 25000,
+      "unlockRequirements": {
+        "kirha": 25000,
+        "minJobId": "alchemist",
+        "minJobLevel": 20,
+        "resources": {
+          "ortie": 15,
+          "ble": 15
+        }
+      }
     }
   }
 }

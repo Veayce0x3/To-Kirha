@@ -1193,5 +1193,163 @@
     "craftOnly": true,
     "merchantOnly": true,
     "notSellable": true
+  },
+  "eau": {
+    "id": "eau",
+    "name": "Eau",
+    "emoji": "💧",
+    "zone": "village_sakura",
+    "job": "breeder",
+    "sellPrice": 2,
+    "farmOnly": true,
+    "notHarvestable": true
+  },
+  "oeuf": {
+    "id": "oeuf",
+    "name": "Œuf",
+    "emoji": "🥚",
+    "zone": "village_sakura",
+    "job": "breeder",
+    "sellPrice": 6,
+    "farmOnly": true,
+    "notHarvestable": true
+  },
+  "plume": {
+    "id": "plume",
+    "name": "Plume",
+    "emoji": "🪶",
+    "zone": "village_sakura",
+    "job": "breeder",
+    "sellPrice": 4,
+    "farmOnly": true,
+    "notHarvestable": true
+  },
+  "lait": {
+    "id": "lait",
+    "name": "Lait",
+    "emoji": "🥛",
+    "zone": "village_sakura",
+    "job": "breeder",
+    "sellPrice": 8,
+    "farmOnly": true,
+    "notHarvestable": true
+  },
+  "cuir": {
+    "id": "cuir",
+    "name": "Cuir",
+    "emoji": "🟤",
+    "zone": "village_sakura",
+    "job": "breeder",
+    "sellPrice": 12,
+    "farmOnly": true,
+    "notHarvestable": true
+  },
+  "laine": {
+    "id": "laine",
+    "name": "Laine",
+    "emoji": "🧶",
+    "zone": "village_sakura",
+    "job": "breeder",
+    "sellPrice": 10,
+    "farmOnly": true,
+    "notHarvestable": true
+  },
+  "lait_brebis": {
+    "id": "lait_brebis",
+    "name": "Lait de brebis",
+    "emoji": "🍼",
+    "zone": "village_sakura",
+    "job": "breeder",
+    "sellPrice": 9,
+    "farmOnly": true,
+    "notHarvestable": true
+  },
+  "bacon": {
+    "id": "bacon",
+    "name": "Bacon",
+    "emoji": "🥓",
+    "zone": "village_sakura",
+    "job": "breeder",
+    "sellPrice": 14,
+    "farmOnly": true,
+    "notHarvestable": true
+  },
+  "jambon": {
+    "id": "jambon",
+    "name": "Jambon",
+    "emoji": "🍖",
+    "zone": "village_sakura",
+    "job": "breeder",
+    "sellPrice": 18,
+    "farmOnly": true,
+    "notHarvestable": true
+  },
+  "miel": {
+    "id": "miel",
+    "name": "Miel",
+    "emoji": "🍯",
+    "zone": "village_sakura",
+    "job": "breeder",
+    "sellPrice": 15,
+    "farmOnly": true,
+    "notHarvestable": true
+  },
+  "gelee_royale": {
+    "id": "gelee_royale",
+    "name": "Gelée royale",
+    "emoji": "👑",
+    "zone": "village_sakura",
+    "job": "breeder",
+    "sellPrice": 25,
+    "farmOnly": true,
+    "notHarvestable": true
+  },
+  "meal_onigiri": {
+    "id": "meal_onigiri",
+    "name": "Onigiri",
+    "emoji": "🍙",
+    "sellPrice": 18,
+    "craftOnly": true,
+    "consumable": true
+  },
+  "meal_oeufs": {
+    "id": "meal_oeufs",
+    "name": "Œufs brouillés",
+    "emoji": "🍳",
+    "sellPrice": 22,
+    "craftOnly": true,
+    "consumable": true
+  },
+  "meal_soupe": {
+    "id": "meal_soupe",
+    "name": "Soupe au lait",
+    "emoji": "🥣",
+    "sellPrice": 28,
+    "craftOnly": true,
+    "consumable": true
+  },
+  "meal_brochette": {
+    "id": "meal_brochette",
+    "name": "Brochette",
+    "emoji": "🍢",
+    "sellPrice": 35,
+    "craftOnly": true,
+    "consumable": true
+  },
+  "meal_gateau": {
+    "id": "meal_gateau",
+    "name": "Gâteau au miel",
+    "emoji": "🍰",
+    "sellPrice": 55,
+    "craftOnly": true,
+    "consumable": true
+  },
+  "meal_festin": {
+    "id": "meal_festin",
+    "name": "Festin du Temple",
+    "emoji": "🍱",
+    "sellPrice": 120,
+    "craftOnly": true,
+    "consumable": true
   }
 }

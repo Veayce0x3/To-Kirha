@@ -62,7 +62,16 @@ export function canCraft(recipeId, recipes, state, balance, jobs) {
   return true;
 }
 
-export function getCraftBlockReason(recipeId, recipes, state, balance, jobs) {
+export function formatMissingIngredients(missing, resources = {}) {
+  return missing
+    .map(({ resId, need, have }) => {
+      const name = resources[resId]?.name || resId;
+      return `${name} ${have}/${need}`;
+    })
+    .join(' · ');
+}
+
+export function getCraftBlockReason(recipeId, recipes, state, balance, jobs, resources = {}) {
   const recipe = recipes[recipeId];
   if (!recipe) return null;
 
@@ -104,7 +113,8 @@ export function getCraftBlockReason(recipeId, recipes, state, balance, jobs) {
     if (have < amount) missing.push({ resId, need: amount, have });
   }
   if (missing.length > 0) {
-    return { type: 'ingredients', message: 'Ingrédients manquants', missing };
+    const detail = formatMissingIngredients(missing, resources);
+    return { type: 'ingredients', message: `Il manque : ${detail}`, missing };
   }
 
   const kirhaCost = recipe.kirhaCost || 0;
@@ -116,6 +126,50 @@ export function getCraftBlockReason(recipeId, recipes, state, balance, jobs) {
   }
 
   return null;
+}
+
+function applyCraftResult(recipeId, recipe, state) {
+  if (isDurabilityTool(recipe)) {
+    if (!state.crafted) state.crafted = [];
+    if (!state.crafted.includes(recipeId)) state.crafted.push(recipeId);
+    initToolDurability(state, recipeId, recipe.maxUses);
+  } else if (recipe.unique && !recipe.repeatable) {
+    if (!state.crafted) state.crafted = [];
+    if (!state.crafted.includes(recipeId)) state.crafted.push(recipeId);
+  }
+}
+
+/** Formation : applique un craft garanti (matériaux fournis si besoin). */
+export function tutorialCompleteCraft(recipeId, recipes, state) {
+  const recipe = recipes[recipeId];
+  if (!recipe) return false;
+
+  for (const [resId, amount] of Object.entries(recipe.ingredients || {})) {
+    if ((state.inventory[resId] || 0) < amount) {
+      state.inventory[resId] = amount;
+    }
+  }
+  const kirhaCost = recipe.kirhaCost || 0;
+  if (kirhaCost > 0 && (state.kirha || 0) < kirhaCost) {
+    state.kirha = kirhaCost;
+  }
+
+  for (const [resId, amount] of Object.entries(recipe.ingredients || {})) {
+    state.inventory[resId] = (state.inventory[resId] || 0) - amount;
+  }
+  if (kirhaCost > 0) state.kirha -= kirhaCost;
+
+  if (recipe.output) {
+    const outAmt = recipe.outputAmount || 1;
+    state.inventory[recipe.output] = (state.inventory[recipe.output] || 0) + outAmt;
+  }
+
+  if (recipe.combatItem) {
+    grantCombatItem(state, recipe.combatItem);
+  }
+
+  applyCraftResult(recipeId, recipe, state);
+  return recipe;
 }
 
 export function craft(recipeId, recipes, state, balance, resources = {}, jobs = {}) {
@@ -139,15 +193,33 @@ export function craft(recipeId, recipes, state, balance, resources = {}, jobs = 
     grantCombatItem(state, recipe.combatItem);
   }
 
-  if (isDurabilityTool(recipe)) {
-    if (!state.crafted) state.crafted = [];
-    if (!state.crafted.includes(recipeId)) state.crafted.push(recipeId);
-    initToolDurability(state, recipeId, recipe.maxUses);
-  } else if (recipe.unique && !recipe.repeatable) {
-    if (!state.crafted) state.crafted = [];
-    state.crafted.push(recipeId);
+  applyCraftResult(recipeId, recipe, state);
+  return recipe;
+}
+
+/** Formation sandbox : craft sans garde-fous (ressources déjà garanties). */
+export function craftForced(recipeId, recipes, state, balance, resources = {}) {
+  const recipe = recipes[recipeId];
+  if (!recipe) return false;
+  if (recipe.output && resources[recipe.output]?.merchantOnly) return false;
+
+  for (const [resId, amount] of Object.entries(recipe.ingredients)) {
+    state.inventory[resId] = (state.inventory[resId] || 0) - amount;
   }
 
+  const kirhaCost = recipe.kirhaCost || 0;
+  if (kirhaCost > 0) state.kirha -= kirhaCost;
+
+  if (recipe.output) {
+    const amount = recipe.outputAmount || 1;
+    state.inventory[recipe.output] = (state.inventory[recipe.output] || 0) + amount;
+  }
+
+  if (recipe.combatItem) {
+    grantCombatItem(state, recipe.combatItem);
+  }
+
+  applyCraftResult(recipeId, recipe, state);
   return recipe;
 }
 

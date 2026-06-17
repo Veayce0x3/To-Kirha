@@ -25,14 +25,14 @@ export function isResourceInZone(resource, state) {
 }
 
 export function isResourceHarvestable(resource, state, balance) {
-  if (resource.craftOnly || resource.combatOnly) return false;
+  if (resource.craftOnly || resource.combatOnly || resource.farmOnly || resource.notHarvestable) return false;
   if (!isZoneUnlocked(resource.zone, state, balance)) return false;
   if (!isResourceInZone(resource, state)) return false;
   return isResourceUnlockedByJob(resource, state);
 }
 
 export function canSeeResource(resource, state, balance) {
-  if (resource.craftOnly || resource.combatOnly) return false;
+  if (resource.craftOnly || resource.combatOnly || resource.farmOnly) return false;
   if (!isZoneUnlocked(resource.zone, state, balance)) return false;
   return resource.job && resource.zone === state.zone;
 }
@@ -47,4 +47,23 @@ export function getResourcesForJob(resources, jobId, state, balance) {
     if (!isZoneUnlocked(r.zone, state, balance)) return false;
     return r.zone === state.zone;
   }).sort((a, b) => (a.requiredJobLevel || 1) - (b.requiredJobLevel || 1));
+}
+
+/** Première ressource récoltable Nv.1 du métier dans la zone (récolte sans outil, plus lente). */
+export function isStarterHarvestResource(resource, resources) {
+  if (!resource?.job || resource.craftOnly || resource.combatOnly || resource.farmOnly || resource.notHarvestable) {
+    return false;
+  }
+  if ((resource.requiredJobLevel || 1) !== 1) return false;
+  const jobResources = Object.values(resources)
+    .filter((r) =>
+      r.job === resource.job
+      && r.zone === resource.zone
+      && !r.craftOnly
+      && !r.combatOnly
+      && !r.farmOnly
+      && !r.notHarvestable
+    )
+    .sort((a, b) => (a.requiredJobLevel || 1) - (b.requiredJobLevel || 1) || a.id.localeCompare(b.id));
+  return jobResources[0]?.id === resource.id;
 }

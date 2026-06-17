@@ -1,9 +1,13 @@
 import { resolveItem } from './combat.js';
 import { assignSlotResource, ensureSlots } from './slots.js';
+import { equip } from './equipment.js';
+import { ensureFarmSlots } from './farm.js';
+import { hasWorkingTool, initToolDurability, isDurabilityTool } from './toolDurability.js';
 
 const DEFAULT_REWARDS_CLAIMED = {
   materials: false,
   harvestKirha: false,
+  farmPrep: false,
   scrollPrep: false,
   graduateKirha: false,
   dungeonDrops: false,
@@ -65,6 +69,12 @@ export function ensureTutorialFlags(state) {
   if (!state.tutorial.flags) {
     state.tutorial.flags = {
       harvestDone: false,
+      tutorialManualHarvestDone: false,
+      woodSold: false,
+      starterAxeEquipped: false,
+      axeCrafted: false,
+      farmStarted: false,
+      farmChickenStarted: false,
       weaponChosen: false,
       weaponCrafted: false,
       weaponEquipped: false,
@@ -192,14 +202,41 @@ export function grantRecipeIngredients(state, recipes, recipeId) {
   return true;
 }
 
-export function bootstrapTutorialStep(state, balance, recipes, stepId) {
+export function bootstrapTutorialStep(state, balance, recipes, stepId, equipmentData = null, farmData = null) {
   ensureTutorialFlags(state);
   ensureSlots(state, balance);
 
   if (stepId === 'harvest') {
     assignSlotResource(state, 'lumberjack', 0, 'frene');
-    claimTutorialReward(state, 'harvestKirha', () => {
-      if (state.kirha < 20) state.kirha = 20;
+    return;
+  }
+
+  if (stepId === 'craft_axe') {
+    if ((state.inventory.frene || 0) < 5) state.inventory.frene = 5;
+    if ((state.kirha || 0) < 5) state.kirha = 5;
+    return;
+  }
+
+  if (stepId === 'farm') {
+    claimTutorialReward(state, 'farmPrep', () => {
+      const recipeId = 'breeder_bucket';
+      if (!state.crafted) state.crafted = [];
+      if (!state.crafted.includes(recipeId)) state.crafted.push(recipeId);
+      if (!state.toolDurability) state.toolDurability = {};
+      state.toolDurability[recipeId] = recipes[recipeId]?.maxUses || 30;
+      if (equipmentData) equip(recipeId, state, equipmentData, recipes);
+      if (farmData) ensureFarmSlots(state, farmData, balance);
+    });
+    return;
+  }
+
+  if (stepId === 'farm_chicken') {
+    claimTutorialReward(state, 'farmChickenPrep', () => {
+      if ((state.inventory.ble || 0) < 2) state.inventory.ble = 2;
+      if ((state.inventory.eau || 0) < 1) state.inventory.eau = 1;
+      if (farmData) ensureFarmSlots(state, farmData, balance);
+      const slot = state.farmSlots?.chicken_coop?.[0];
+      if (slot && !slot.active) slot.feedId = 'ble';
     });
     return;
   }
@@ -211,8 +248,8 @@ export function bootstrapTutorialStep(state, balance, recipes, stepId) {
 
   if (stepId === 'scrolls') {
     claimTutorialReward(state, 'scrollPrep', () => {
-      if (state.kirha < 50) state.kirha = 50;
-      state.inventory.frene = (state.inventory.frene || 0) + 10;
+      state.inventory.ancient_scroll = 0;
+      if ((state.kirha || 0) < 25) state.kirha = 25;
     });
   }
 }
@@ -230,6 +267,95 @@ export function getTutorialHarvestDurationMs(defaultMs) {
 export function markTutorialHarvestDone(state) {
   ensureTutorialFlags(state);
   state.tutorial.flags.harvestDone = true;
+}
+
+export function markTutorialManualHarvestDone(state) {
+  ensureTutorialFlags(state);
+  state.tutorial.flags.tutorialManualHarvestDone = true;
+}
+
+export function markTutorialWoodSold(state) {
+  ensureTutorialFlags(state);
+  state.tutorial.flags.woodSold = true;
+}
+
+export function grantTutorialStarterAxe(state, recipes, equipmentData = null, autoEquip = false) {
+  if (!state.tutorial?.sandbox) return false;
+  const recipeId = 'tutorial_starter_axe';
+  if (!state.crafted.includes(recipeId)) state.crafted.push(recipeId);
+  state.toolDurability[recipeId] = recipes[recipeId]?.maxUses || 10;
+  if (autoEquip && equipmentData) {
+    equip(recipeId, state, equipmentData, recipes);
+    state.tutorial.flags.starterAxeEquipped = true;
+  }
+  return true;
+}
+
+export function markTutorialStarterAxeEquipped(state) {
+  ensureTutorialFlags(state);
+  state.tutorial.flags.starterAxeEquipped = true;
+}
+
+export function markTutorialAxeCrafted(state) {
+  ensureTutorialFlags(state);
+  state.tutorial.flags.axeCrafted = true;
+}
+
+export function isTutorialFarmStep(state, tutorialData) {
+  if (!state.tutorial?.sandbox) return false;
+  const step = tutorialData?.steps?.[state.tutorial.stepIndex];
+  return step?.id === 'farm' && !state.tutorial.flags?.farmStarted;
+}
+
+export function getTutorialFarmDurationMs(defaultMs) {
+  return Math.min(defaultMs, 1800);
+}
+
+export function markTutorialFarmStarted(state) {
+  ensureTutorialFlags(state);
+  state.tutorial.flags.farmStarted = true;
+}
+
+export function isTutorialFarmChickenStep(state, tutorialData) {
+  if (!state.tutorial?.sandbox) return false;
+  const step = tutorialData?.steps?.[state.tutorial.stepIndex];
+  return step?.id === 'farm_chicken' && !state.tutorial.flags?.farmChickenStarted;
+}
+
+export function markTutorialFarmChickenStarted(state) {
+  ensureTutorialFlags(state);
+  state.tutorial.flags.farmChickenStarted = true;
+}
+
+export function grantTutorialSakuraAxe(state, recipes, equipmentData = null) {
+  const recipeId = 'sakura_axe';
+  const recipe = recipes?.[recipeId];
+  if (!recipe) return false;
+
+  if (state.crafted?.includes('tutorial_starter_axe')) {
+    if (state.equipment?.jobs?.lumberjack === 'tutorial_starter_axe') {
+      state.equipment.jobs.lumberjack = null;
+    }
+  }
+
+  if (!state.crafted) state.crafted = [];
+  if (!state.crafted.includes(recipeId)) state.crafted.push(recipeId);
+  if (!state.toolDurability) state.toolDurability = {};
+  state.toolDurability[recipeId] = recipe.maxUses ?? 25;
+  return true;
+}
+
+export function reconcileTutorialAxeProgress(state, recipes, tutorialData = null) {
+  if (!state.tutorial || state.tutorial.flags?.axeCrafted) return;
+  if (tutorialData) {
+    const step = tutorialData.steps?.[state.tutorial.stepIndex];
+    if (step?.id === 'craft_axe') return;
+  }
+  const recipe = recipes?.sakura_axe;
+  if (!recipe || !isDurabilityTool(recipe)) return;
+  if (hasWorkingTool(state, 'sakura_axe', recipe)) {
+    state.tutorial.flags.axeCrafted = true;
+  }
 }
 
 export function checkTutorialWeaponEquipped(state, recipes, combatItems) {
@@ -269,6 +395,6 @@ export function graduateTutorial(state) {
   state.tutorial.completed = true;
   state.tutorial.replay = false;
   claimTutorialReward(state, 'graduateKirha', () => {
-    if (state.kirha < 30) state.kirha = Math.max(state.kirha, 30);
+    if ((state.kirha || 0) < 10) state.kirha = 10;
   });
 }

@@ -21,13 +21,16 @@ const CRAFT_TAB_LABEL = {
   tailor: 'Tailleur',
   shoemaker: 'Cordonnier',
   jeweler: 'Bijoutier',
+  cook: 'Cuisinier',
 };
 
 const HINT_CLASS = 'tutorial-hint';
 const TUTORIAL_BTN_CLASS = 'btn-tutorial';
 
 function isTutorialInteractive(el) {
-  return el?.matches?.('.btn, .nav-btn, .burger-btn, .workshop-tab, .char-tab-btn, .dq-cmd-btn, .picker-toggle');
+  return el?.matches?.(
+    '.btn, .btn-craft, .nav-btn, .burger-btn, .workshop-tab, .char-tab-btn, .dq-cmd-btn, .picker-toggle, .bank-row, .btn-sell, .btn-sell-all, .craft-tile, .link-btn, .farm-feed-btn'
+  );
 }
 
 function stripTutorialBtnClass(el) {
@@ -39,9 +42,17 @@ const BRAND_LOGO = './asset%20to-kirha/icone%20application%20/icone%20applicatio
 const NAV_HINTS = {
   job_lumberjack: { finger: '👆 BÛCHERON', label: 'Bûcheron' },
   workshop: { finger: '👆 ATELIER', label: 'Atelier' },
+  cuisine: { finger: '👆 CUISINE', label: 'Cuisine' },
   character: { finger: '👆 PERSO', label: 'Perso' },
   combat: { finger: '👆 COMBAT', label: 'Combat' },
   auction_house: { finger: '👆 HDV', label: 'Hôtel des Ventes' },
+  inventory: { finger: '👆 BANQUE', label: 'Banque' },
+  farm_well: { finger: '👆 PUITS', label: 'Puits' },
+  farm_chicken_coop: { finger: '👆 POULAILLER', label: 'Poulailler' },
+  farm_barn: { finger: '👆 ÉTABLE', label: 'Étable' },
+  farm_sheepfold: { finger: '👆 BERGERIE', label: 'Bergerie' },
+  farm_pigsty: { finger: '👆 PORCHERIE', label: 'Porcherie' },
+  farm_beehive: { finger: '👆 RUCHES', label: 'Ruches' },
 };
 
 let combatHintEl = null;
@@ -151,6 +162,18 @@ function tutorialModalShell(stepLabel, title, innerHtml, actionsHtml = '') {
 
 function queryTarget(selector) {
   if (!selector) return null;
+  if (selector.includes(',')) {
+    for (const part of selector.split(',')) {
+      const el = document.querySelector(part.trim());
+      if (el && el.getClientRects().length > 0) return el;
+    }
+    return null;
+  }
+  const itemModal = document.getElementById('item-modal');
+  if (itemModal?.classList.contains('active')) {
+    const inModal = itemModal.querySelector(selector);
+    if (inModal) return inModal;
+  }
   const root = document.getElementById('view-container');
   return root?.querySelector(selector) || document.querySelector(selector);
 }
@@ -266,12 +289,16 @@ function isMobileNav() {
 
 function getNavLabel(viewId) {
   if (viewId?.startsWith('workshop_')) return 'Atelier';
+  if (viewId === 'cuisine') return 'Cuisine';
+  if (viewId?.startsWith('farm_')) return NAV_HINTS[viewId]?.label || 'Ferme';
   return VIEWS[viewId]?.label || viewId;
 }
 
 function navSelector(viewId) {
-  const navView = viewId?.startsWith('workshop') ? 'workshop' : viewId;
-  return `.nav-btn[data-view="${navView}"]`;
+  if (viewId?.startsWith('workshop_')) return '.nav-btn[data-view="workshop"]';
+  if (viewId === 'cuisine') return '.nav-btn[data-view="cuisine"]';
+  if (viewId?.startsWith('farm_')) return `.nav-btn[data-view="${viewId}"]`;
+  return `.nav-btn[data-view="${viewId}"]`;
 }
 
 function isEquipmentTabActive() {
@@ -385,9 +412,13 @@ function isWorkshopTabActive(craftJob) {
   return !!document.querySelector(`.workshop-tab[data-craft-job="${craftJob}"].active`);
 }
 
-function isBlockingGameModalOpen() {
-  return ['dungeon-result-modal', 'dungeon-combat-modal', 'offline-modal', 'prestige-modal', 'item-modal']
-    .some((id) => document.getElementById(id)?.classList.contains('active'));
+function isBlockingGameModalOpen(ui) {
+  const blocking = ['dungeon-result-modal', 'dungeon-combat-modal', 'offline-modal', 'prestige-modal'];
+  if (blocking.some((id) => document.getElementById(id)?.classList.contains('active'))) return true;
+  if (document.getElementById('item-modal')?.classList.contains('active')) {
+    return ui?.stepId !== 'sell_wood';
+  }
+  return false;
 }
 
 function hideTutorialSpotlight() {
@@ -425,35 +456,168 @@ function resolveMicroHint(ui, currentView, game) {
     };
   }
 
-  if (ui.stepId === 'craft' && ui.craftPhase === 'craft') {
-    if (game && getChosenTutorialRecipeId(game.state)) {
-      const recipeId = getChosenTutorialRecipeId(game.state);
-      const recipe = game.recipes[recipeId];
-      if (recipe && game.state.tutorial?.flags?.weaponCrafted) {
-        return resolveEquipMicroHint(game, mobile);
-      }
-    }
-    if (!currentView.startsWith('workshop')) {
-      return resolveNavMicroHint('workshop', 'Forge ton arme', '① ');
-    }
-    if (craftJob && !isWorkshopTabActive(craftJob)) {
+  if (ui.stepId === 'sell_wood') {
+    if (document.getElementById('item-modal')?.classList.contains('active')) {
       return {
-        selector: `.workshop-tab[data-craft-job="${craftJob}"]`,
-        title: 'Forge ton arme',
-        text: `② Touche l'onglet « ${craftLabel} » en haut de l'écran.`,
-        finger: `👆 ${craftLabel.toUpperCase()}`,
+        selector: '#modal-sell-1, #modal-sell-all',
+        title: 'Vendre ton Frêne',
+        text: 'Touche « Vendre 1 » ou « Vendre tout » pour obtenir des 💰.',
+        finger: '👆 VENDRE',
+      };
+    }
+    if (currentView !== 'inventory') {
+      return resolveNavMicroHint('inventory', 'Vendre au marché', '③ ');
+    }
+    const hasFrene = (game?.state?.inventory?.frene || 0) > 0;
+    if (hasFrene) {
+      return {
+        selector: '.bank-row[data-resource-id="frene"]',
+        title: 'Vendre au marché',
+        text: '③ Touche la ligne Frêne dans le tableau.',
+        finger: '👆 FRÊNE',
       };
     }
     return {
-      selector: '#craft-available .btn-craft:not([disabled]), #craft-panels .affordable .btn-craft:not([disabled])',
-      title: 'Forge ton arme',
-      text: '③ Touche le gros bouton « Fabriquer » sur ton arme.',
-      finger: '👆 FABRIQUER',
+      selector: '.bank-resource-list',
+      title: 'Vendre au marché',
+      text: 'Ouvre la Banque et vends ton Frêne.',
+      finger: '👆 BANQUE',
     };
   }
 
-  if (ui.stepId === 'craft' && ui.craftPhase === 'equip') {
-    return resolveEquipMicroHint(game, mobile);
+  if (ui.stepId === 'craft_axe') {
+    return null;
+  }
+
+  if (ui.stepId === 'farm') {
+    if (game?.state?.tutorial?.flags?.farmStarted) {
+      return {
+        selector: null,
+        title: 'Production lancée',
+        text: '✅ Parfait ! Ta ferme produit — on continue…',
+        finger: '✅',
+      };
+    }
+    if (currentView !== 'farm_well') {
+      return resolveNavMicroHint('farm_well', 'La Ferme', '⑥ ');
+    }
+    const wellActive = game?.state?.farmSlots?.well?.[0]?.active;
+    if (wellActive) {
+      return {
+        selector: null,
+        title: 'Production lancée',
+        text: '✅ Parfait ! Le Puits produit de l\'eau — on continue…',
+        finger: '✅',
+      };
+    }
+    const farmBtn = queryTarget('#tutorial-farm-start-well');
+    if (farmBtn) {
+      return {
+        selector: '#tutorial-farm-start-well',
+        title: 'Puits',
+        text: '⑥ Touche le bouton violet pour lancer la production d\'eau.',
+        finger: '👆 PRODUIRE',
+      };
+    }
+    return {
+      selector: '.farm-slot[data-building="well"][data-slot="0"] .btn-start',
+      title: 'Puits',
+      text: '⑥ Touche le bouton violet pour lancer la production d\'eau.',
+      finger: '👆 PRODUIRE',
+    };
+  }
+
+  if (ui.stepId === 'farm_chicken') {
+    if (game?.state?.tutorial?.flags?.farmChickenStarted) {
+      return {
+        selector: null,
+        title: 'Œufs en cours',
+        text: '✅ Parfait ! Le Poulailler produit — on continue…',
+        finger: '✅',
+      };
+    }
+    if (currentView !== 'farm_chicken_coop') {
+      return resolveNavMicroHint('farm_chicken_coop', 'Le Poulailler', '⑦ ');
+    }
+    const slot = game?.state?.farmSlots?.chicken_coop?.[0];
+    if (slot?.active) {
+      return {
+        selector: null,
+        title: 'Œufs en cours',
+        text: '✅ Parfait ! Le Poulailler produit — on continue…',
+        finger: '✅',
+      };
+    }
+    if (slot && !slot.feedId) {
+      const feedBtn = queryTarget('.farm-slot[data-building="chicken_coop"] .farm-feed-btn[data-feed="ble"]');
+      if (feedBtn) {
+        return {
+          selector: '.farm-slot[data-building="chicken_coop"] .farm-feed-btn[data-feed="ble"]',
+          title: 'Ration',
+          text: '⑦ Touche « Blé » pour choisir la ration (2 Blé + 1 Eau).',
+          finger: '👆 BLÉ',
+        };
+      }
+    }
+    const chickenBtn = queryTarget('#tutorial-farm-start-chicken');
+    if (chickenBtn) {
+      return {
+        selector: '#tutorial-farm-start-chicken',
+        title: 'Poulailler',
+        text: '⑦ Touche le bouton violet pour lancer la production d\'œufs.',
+        finger: '👆 PRODUIRE',
+      };
+    }
+    return {
+      selector: '.farm-slot[data-building="chicken_coop"][data-slot="0"] .btn-start',
+      title: 'Poulailler',
+      text: '⑦ Choisis une ration puis touche « Produire ».',
+      finger: '👆 PRODUIRE',
+    };
+  }
+
+  if (ui.stepId === 'craft') {
+    if (ui.craftPhase === 'equip' || ui.craftEquipPhase) {
+      return resolveEquipMicroHint(game, mobile);
+    }
+    if (ui.craftPhase === 'craft' || game?.state?.tutorial?.flags?.weaponChosen) {
+      if (game && getChosenTutorialRecipeId(game.state)) {
+        const recipeId = getChosenTutorialRecipeId(game.state);
+        const recipe = game.recipes[recipeId];
+        if (recipe && game.state.tutorial?.flags?.weaponCrafted) {
+          return resolveEquipMicroHint(game, mobile);
+        }
+      }
+      if (!currentView.startsWith('workshop')) {
+        return resolveNavMicroHint('workshop', 'Forge ton arme', '① ');
+      }
+      if (craftJob && !isWorkshopTabActive(craftJob)) {
+        return {
+          selector: `.workshop-tab[data-craft-job="${craftJob}"]`,
+          title: 'Forge ton arme',
+          text: `② Touche l'onglet « ${craftLabel} » en haut de l'écran.`,
+          finger: `👆 ${craftLabel.toUpperCase()}`,
+        };
+      }
+      const chosenId = getChosenTutorialRecipeId(game?.state);
+      if (chosenId) {
+        const specificBtn = queryTarget(`.craft-tile[data-recipe-id="${chosenId}"] .btn-craft:not([disabled])`);
+        if (specificBtn) {
+          return {
+            selector: `.craft-tile[data-recipe-id="${chosenId}"] .btn-craft:not([disabled])`,
+            title: 'Forge ton arme',
+            text: '③ Touche « Fabriquer » sur ton arme.',
+            finger: '👆 FABRIQUER',
+          };
+        }
+      }
+      return {
+        selector: '#craft-available .btn-craft:not([disabled]), #craft-panels .affordable .btn-craft:not([disabled]), #workshop-content',
+        title: 'Forge ton arme',
+        text: '③ Touche le gros bouton « Fabriquer » sur ton arme.',
+        finger: '👆 FABRIQUER',
+      };
+    }
   }
 
   if (ui.stepId === 'dungeon') {
@@ -471,6 +635,15 @@ function resolveMicroHint(ui, currentView, game) {
   if (ui.stepId === 'scrolls') {
     if (currentView !== 'auction_house') {
       return resolveNavMicroHint('auction_house', 'Parchemins', '');
+    }
+    const hasScrollBtn = queryTarget('.auction-buy-row .btn-buy-scroll:not([disabled]), .auction-buy-row .btn:not([disabled])');
+    if (!hasScrollBtn) {
+      return {
+        selector: '.auction-tip .link-btn, #goto-bank',
+        title: 'Gagner des Kirha',
+        text: 'Vends des récoltes à la Banque si tu manques de 💰, puis reviens acheter un parchemin.',
+        finger: '👆 BANQUE',
+      };
     }
     return {
       selector: '.auction-buy-row .btn-buy-scroll:not([disabled]), .auction-buy-row .btn:not([disabled])',
@@ -491,6 +664,40 @@ function resolveMicroHint(ui, currentView, game) {
 function getSigPreview(game, role) {
   const sig = role?.signatureSkill ? game.combatSkills[role.signatureSkill] : null;
   return sig ? `${sig.emoji} ${sig.name}` : '—';
+}
+
+function renderAxeOfferModal(game, container, ui) {
+  if (container.querySelector('#tutorial-accept-axe')) return;
+
+  const recipe = game.recipes.sakura_axe;
+  const stepLabel = ui ? `Formation ${ui.stepNumber}/${ui.stepTotal}` : 'Formation';
+
+  container.innerHTML = tutorialModalShell(
+    stepLabel,
+    '🪓 Ta première hache',
+    `
+      <p class="tutorial-modal-desc">Pour récolter du bois efficacement, tu as besoin d'une hache. Celle-ci t'est <strong>offerte</strong> pour la formation.</p>
+      <div class="tutorial-weapon-single tutorial-hint">
+        <span class="tutorial-weapon-emoji">${recipe?.emoji || '🪓'}</span>
+        <div class="tutorial-weapon-single-main">
+          <strong>${recipe?.name || 'Hache de Frêne'}</strong>
+          <p class="tutorial-weapon-craft-hint">Palier 1 · 25 utilisations · équipée automatiquement</p>
+        </div>
+      </div>
+    `,
+    '<button type="button" class="btn-tutorial" id="tutorial-accept-axe">Recevoir ma hache</button>',
+  );
+}
+
+function handleTutorialAxeAccept(game, e) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (!game.acceptTutorialAxe()) {
+    emit('tutorialAxeError', { reason: 'Impossible de valider l\'étape — réessaie ou recharge avec ?newgame=1' });
+    return;
+  }
+  hideTutorialModal();
+  requestAnimationFrame(() => renderTutorialOverlay(game));
 }
 
 function renderTutorialWeaponOffer(game, container) {
@@ -524,6 +731,44 @@ function renderTutorialWeaponOffer(game, container) {
   });
 }
 
+function renderStarterAxeModal(game, container) {
+  const recipe = game.recipes.tutorial_starter_axe;
+  const ui = game.getTutorialUi();
+  const alreadyEquipped = game.state.tutorial?.flags?.starterAxeEquipped;
+
+  container.innerHTML = tutorialModalShell(
+    ui ? `Formation ${ui.stepNumber}/${ui.stepTotal}` : 'Formation',
+    '🪓 Hache du débutant',
+    `
+      <p class="tutorial-modal-desc">Cette hache de formation te permet de récolter du bois (10 utilisations, palier 1).</p>
+      <div class="tutorial-weapon-single tutorial-hint">
+        <span class="tutorial-weapon-emoji">${recipe?.emoji || '🪓'}</span>
+        <div class="tutorial-weapon-single-main">
+          <strong>${recipe?.name || 'Hache du débutant'}</strong>
+          <p class="tutorial-weapon-craft-hint">Ensuite, fabrique une Hache de Frêne durable à l'Outilleur.</p>
+        </div>
+      </div>
+    `,
+    alreadyEquipped
+      ? '<button type="button" class="btn-tutorial" id="tutorial-starter-axe-done">Continuer</button>'
+      : '<button type="button" class="btn-tutorial" id="tutorial-equip-starter-axe">Équiper la hache</button>',
+  );
+
+  if (alreadyEquipped) {
+    container.querySelector('#tutorial-starter-axe-done')?.addEventListener('click', () => {
+      hideTutorialModal();
+      requestAnimationFrame(() => renderTutorialOverlay(game));
+    });
+    return;
+  }
+
+  container.querySelector('#tutorial-equip-starter-axe')?.addEventListener('click', () => {
+    if (!game.doEquip('tutorial_starter_axe')) return;
+    hideTutorialModal();
+    requestAnimationFrame(() => renderTutorialOverlay(game));
+  });
+}
+
 function renderWeaponGallery(game, container) {
   renderTutorialWeaponOffer(game, container);
 }
@@ -550,7 +795,7 @@ function renderNicknameModal(game, container) {
   input?.focus();
 
   const submit = () => {
-    const result = game.setCharacterNickname(input?.value || '', false);
+    const result = game.setCharacterNickname(input?.value || '', false, { silent: true });
     if (!result.ok) {
       if (result.reason) emit('nicknameError', { reason: result.reason });
       return;
@@ -561,7 +806,7 @@ function renderNicknameModal(game, container) {
       if (game.shouldShowTutorialIntro()) {
         showTutorialIntroModal(game);
       } else {
-        renderTutorialOverlay(game);
+        scheduleTutorialOverlayRefresh(game);
       }
     });
   };
@@ -582,7 +827,9 @@ function renderIntroModal(game, container) {
     `
       <p class="tutorial-modal-desc">On va te montrer pas à pas où cliquer. C'est simple !</p>
       <ul class="tutorial-modal-list">
-        <li>🪓 Récolter du bois</li>
+        <li>🪓 Recevoir ta hache de bûcheron</li>
+        <li>💰 Vendre à la Banque</li>
+        <li>🪣 Découvrir la Ferme</li>
         <li>⚔️ Recevoir ton arme de débutant</li>
         <li>🔨 Forger et équiper</li>
         <li>🚪 Combattre en donjon</li>
@@ -671,8 +918,74 @@ export function showTutorialIntroModal(game) {
 }
 
 export function hideTutorialModal() {
+  const body = document.getElementById('tutorial-modal-body');
+  if (body) body.innerHTML = '';
   document.getElementById('tutorial-modal')?.classList.remove('active');
   document.body.classList.remove('tutorial-modal-open');
+}
+
+/** Amène le joueur sur la vue de l'étape (Atelier Outilleur, Banque, etc.). */
+function ensureTutorialNavigation(ui) {
+  const target = ui?.hintView || ui?.targetView;
+  if (!target || ui?.screen) return;
+
+  if (ui.stepId === 'sell_wood' && document.getElementById('item-modal')?.classList.contains('active')) {
+    return;
+  }
+
+  const current = getView();
+  if (current === target) {
+    lastTutorialNavKey = `${ui.stepId}:${target}`;
+    return;
+  }
+
+  if (target.startsWith('workshop')) {
+    if (target.startsWith('workshop_')) {
+      const craftJob = target.replace('workshop_', '');
+      if (current.startsWith('workshop') && isWorkshopTabActive(craftJob)) {
+        lastTutorialNavKey = `${ui.stepId}:${target}`;
+        return;
+      }
+    }
+    if (!current.startsWith('workshop')) {
+      const navKey = `${ui.stepId}:${target}`;
+      if (lastTutorialNavKey === navKey) return;
+      lastTutorialNavKey = navKey;
+      navigate(target === 'workshop' ? 'workshop' : target);
+      return;
+    }
+    if (target.startsWith('workshop_') && current !== target) {
+      const navKey = `${ui.stepId}:${target}`;
+      if (lastTutorialNavKey === navKey) return;
+      lastTutorialNavKey = navKey;
+      navigate(target);
+    }
+    return;
+  }
+
+  const navKey = `${ui.stepId}:${target}`;
+  if (lastTutorialNavKey === navKey) return;
+  lastTutorialNavKey = navKey;
+  navigate(target);
+}
+
+let overlayRefreshToken = 0;
+let lastTutorialNavKey = null;
+let lastTutorialStepId = null;
+
+export function scheduleTutorialOverlayRefresh(game, frames = 2) {
+  const token = ++overlayRefreshToken;
+  let remaining = frames;
+  const tick = () => {
+    if (token !== overlayRefreshToken) return;
+    remaining -= 1;
+    if (remaining <= 0) {
+      renderTutorialOverlay(game);
+      return;
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 export function renderTutorialOverlay(game) {
@@ -683,6 +996,11 @@ export function renderTutorialOverlay(game) {
   if (!strip) return;
 
   let ui = game.getTutorialUi();
+
+  if (ui?.stepId !== lastTutorialStepId) {
+    lastTutorialStepId = ui?.stepId || null;
+    lastTutorialNavKey = null;
+  }
 
   if (ui?.craftEquipPhase) {
     game.syncTutorialInventory();
@@ -700,7 +1018,7 @@ export function renderTutorialOverlay(game) {
   }
 
   if (document.getElementById('tutorial-modal')?.classList.contains('active')
-    && !ui.isIntro && !ui.isNickname && !ui.isGraduate && !ui.isWeaponOffer && !ui.isWeaponGallery) {
+    && !ui.isIntro && !ui.isNickname && !ui.isGraduate && !ui.isWeaponOffer && !ui.isWeaponGallery && !ui.isStarterAxe && !ui.isAxeOffer) {
     hideTutorialSpotlight();
     return;
   }
@@ -722,6 +1040,48 @@ export function renderTutorialOverlay(game) {
     renderIntroModal(game, modalBody);
     modal.classList.add('active');
     document.body.classList.add('tutorial-modal-open');
+    return;
+  }
+
+  if (ui.isStarterAxe && modal && modalBody) {
+    strip.classList.remove('hidden');
+    overlay?.classList.add('hidden');
+    clearAllHints();
+    unbindSpotlightScroll();
+    renderStarterAxeModal(game, modalBody);
+    modal.classList.add('active');
+    document.body.classList.add('tutorial-modal-open');
+    document.body.classList.add('tutorial-active');
+    strip.innerHTML = `
+      <div class="tutorial-strip-inner">
+        <div class="tutorial-strip-main">
+          <span class="tutorial-strip-step">Étape ${ui.stepNumber}/${ui.stepTotal}</span>
+          <strong class="tutorial-strip-title">Hache de formation</strong>
+          <span class="tutorial-strip-text tutorial-strip-emphasis">👆 Touche « Équiper la hache » dans la fenêtre.</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (ui.isAxeOffer && modal && modalBody) {
+    strip.classList.remove('hidden');
+    overlay?.classList.add('hidden');
+    clearAllHints();
+    unbindSpotlightScroll();
+    renderAxeOfferModal(game, modalBody, ui);
+    modal.classList.add('active');
+    document.body.classList.add('tutorial-modal-open');
+    document.body.classList.add('tutorial-active');
+    strip.innerHTML = `
+      <div class="tutorial-strip-inner">
+        <div class="tutorial-strip-main">
+          <span class="tutorial-strip-step">Étape ${ui.stepNumber}/${ui.stepTotal}</span>
+          <strong class="tutorial-strip-title">Ta première hache</strong>
+          <span class="tutorial-strip-text tutorial-strip-emphasis">👆 Touche « Recevoir ma hache » dans la fenêtre.</span>
+        </div>
+      </div>
+    `;
     return;
   }
 
@@ -759,10 +1119,14 @@ export function renderTutorialOverlay(game) {
   hideTutorialModal();
   document.body.classList.add('tutorial-active');
 
+  if (!ui.screen && !ui.isWeaponOffer && !ui.isStarterAxe && !ui.isAxeOffer) {
+    ensureTutorialNavigation(ui);
+  }
+
   const currentView = getView();
   const micro = resolveMicroHint(ui, currentView, game);
 
-  if (isBlockingGameModalOpen()) {
+  if (isBlockingGameModalOpen(ui)) {
     hideTutorialSpotlight();
     strip.classList.remove('hidden');
     const stepLabel = ui.stepTotal ? `Étape ${ui.stepNumber}/${ui.stepTotal}` : 'Formation';
@@ -809,12 +1173,19 @@ export function renderTutorialOverlay(game) {
   overlay?.classList.remove('hidden');
 
   if (!micro.selector && micro.finger === '✅') {
-    game.syncTutorialInventory();
-    const nextUi = game.getTutorialUi();
-    if (nextUi && nextUi.stepId !== ui.stepId) {
-      requestAnimationFrame(() => renderTutorialOverlay(game));
-      return;
-    }
+    scheduleTutorialOverlayRefresh(game, 2);
+    strip.classList.remove('hidden');
+    const stepLabel = ui.stepTotal ? `Étape ${ui.stepNumber}/${ui.stepTotal}` : 'Formation';
+    strip.innerHTML = `
+      <div class="tutorial-strip-inner">
+        <div class="tutorial-strip-main">
+          <span class="tutorial-strip-step">${stepLabel}</span>
+          <strong class="tutorial-strip-title">${micro.title}</strong>
+          <span class="tutorial-strip-text tutorial-strip-emphasis">${micro.text}</span>
+        </div>
+      </div>
+    `;
+    return;
   }
 
   if (micro.selector) {
@@ -824,6 +1195,7 @@ export function renderTutorialOverlay(game) {
     document.getElementById('tutorial-spotlight-hole')?.style.setProperty('display', 'none');
   }
 
+  const fingerPrefix = micro.finger && micro.finger !== '✅' ? `${micro.finger} ` : '';
   const stepLabel = ui.stepTotal ? `Étape ${ui.stepNumber}/${ui.stepTotal}` : 'Formation';
 
   strip.innerHTML = `
@@ -831,7 +1203,7 @@ export function renderTutorialOverlay(game) {
       <div class="tutorial-strip-main">
         <span class="tutorial-strip-step">${stepLabel}</span>
         <strong class="tutorial-strip-title">${micro.title}</strong>
-        <span class="tutorial-strip-text tutorial-strip-emphasis">${micro.text}</span>
+        <span class="tutorial-strip-text tutorial-strip-emphasis">${fingerPrefix}${micro.text}</span>
       </div>
       <div class="tutorial-strip-actions">
         ${ui.showSkip ? '<button type="button" class="btn-tutorial btn-tutorial-compact" id="tutorial-skip">Passer la formation</button>' : ''}
@@ -848,6 +1220,8 @@ export function renderTutorialOverlay(game) {
 }
 
 export function teardownTutorialOverlay() {
+  overlayRefreshToken += 1;
+  lastTutorialNavKey = null;
   clearAllHints();
   unbindSpotlightScroll();
   hideTutorialModal();
@@ -859,6 +1233,17 @@ export function teardownTutorialOverlay() {
 }
 
 let sidebarTutorialBound = false;
+let tutorialModalBound = false;
+
+export function bindTutorialModalListeners(game) {
+  if (tutorialModalBound) return;
+  tutorialModalBound = true;
+
+  document.getElementById('tutorial-modal')?.addEventListener('click', (e) => {
+    if (!e.target.closest('#tutorial-accept-axe')) return;
+    handleTutorialAxeAccept(game, e);
+  });
+}
 
 export function bindTutorialSidebarListeners(game) {
   if (sidebarTutorialBound) return;

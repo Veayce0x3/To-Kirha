@@ -1,4 +1,5 @@
 import { emit } from '../core/events.js';
+import { FARM_BUILDING_IDS, FARM_BUILDING_LABELS } from '../systems/farm.js';
 
 let currentView = 'character';
 
@@ -18,10 +19,26 @@ function craftViewId(jobId) {
   return `workshop_${jobId}`;
 }
 
+function farmViewId(buildingId) {
+  return `farm_${buildingId}`;
+}
+
 const CRAFT_VIEWS = Object.fromEntries(
   CRAFT_NAV.map(({ id, emoji, label }) => [
     craftViewId(id),
     { id: craftViewId(id), label, emoji, title: label, craftJob: id },
+  ])
+);
+
+const FARM_VIEWS = Object.fromEntries(
+  FARM_BUILDING_IDS.map((id) => [
+    farmViewId(id),
+    {
+      id: farmViewId(id),
+      label: FARM_BUILDING_LABELS[id] || id,
+      title: FARM_BUILDING_LABELS[id] || id,
+      building: id,
+    },
   ])
 );
 
@@ -38,9 +55,13 @@ export const VIEWS = {
   auction_house: { id: 'auction_house', label: 'Hôtel des Ventes', title: 'Hôtel des Ventes' },
   combat: { id: 'combat', label: 'Combat', title: 'Combat' },
   workshop: { id: 'workshop', label: 'Atelier', title: 'Atelier' },
+  cuisine: { id: 'cuisine', label: 'Cuisine', title: 'Cuisine', emoji: '👨‍🍳', job: 'cook' },
   options: { id: 'options', label: 'Options', title: 'Options' },
   ...CRAFT_VIEWS,
+  ...FARM_VIEWS,
 };
+
+export const FARM_BUILDING_VIEWS = FARM_BUILDING_IDS.map(farmViewId);
 
 export const NAV_CATEGORIES = [
   {
@@ -63,10 +84,23 @@ export const NAV_CATEGORIES = [
     items: ['job_lumberjack', 'job_fisher', 'job_miner', 'job_farmer', 'job_alchemist'],
   },
   {
+    id: 'ferme',
+    label: 'Ferme',
+    collapsible: true,
+    defaultOpen: true,
+    items: FARM_BUILDING_VIEWS,
+  },
+  {
     id: 'artisanat',
     label: 'Atelier',
     collapsible: false,
     items: ['workshop'],
+  },
+  {
+    id: 'cuisine',
+    label: 'Cuisine',
+    collapsible: false,
+    items: ['cuisine'],
   },
   {
     id: 'gestion',
@@ -92,18 +126,64 @@ export const JOB_VIEW_MAP = {
   tailor: 'workshop_tailor',
   shoemaker: 'workshop_shoemaker',
   jeweler: 'workshop_jeweler',
+  cook: 'cuisine',
 };
 
+export const HARVEST_JOB_VIEWS = [
+  'job_lumberjack',
+  'job_fisher',
+  'job_miner',
+  'job_farmer',
+  'job_alchemist',
+];
+
+export function getAdjacentHarvestView(viewId, direction) {
+  const idx = HARVEST_JOB_VIEWS.indexOf(viewId);
+  if (idx < 0) return null;
+  const next = (idx + direction + HARVEST_JOB_VIEWS.length) % HARVEST_JOB_VIEWS.length;
+  return HARVEST_JOB_VIEWS[next];
+}
+
+export function getAdjacentFarmView(viewId, direction) {
+  const idx = FARM_BUILDING_VIEWS.indexOf(viewId);
+  if (idx < 0) return null;
+  const next = (idx + direction + FARM_BUILDING_VIEWS.length) % FARM_BUILDING_VIEWS.length;
+  return FARM_BUILDING_VIEWS[next];
+}
+
+export function getHarvestViewForJob(jobId) {
+  return JOB_VIEW_MAP[jobId] || null;
+}
+
+export function getFarmViewForBuilding(buildingId) {
+  return farmViewId(buildingId);
+}
+
+export function getBuildingFromFarmView(viewId) {
+  if (!viewId?.startsWith('farm_')) return null;
+  return viewId.slice(5);
+}
+
+export function isFarmView(viewId) {
+  return viewId?.startsWith('farm_');
+}
+
 export function getCraftJobFromView(viewId) {
+  if (viewId === 'cuisine') return 'cook';
   const view = VIEWS[viewId];
   return view?.craftJob || null;
 }
 
+export function isCuisineView(viewId) {
+  return viewId === 'cuisine';
+}
+
 export function isWorkshopView(viewId) {
-  return viewId.startsWith('workshop_');
+  return viewId === 'workshop' || (viewId.startsWith('workshop_') && viewId !== 'workshop_cook');
 }
 
 export function navigate(viewId) {
+  if (viewId === 'workshop_cook') viewId = 'cuisine';
   if (!VIEWS[viewId]) return;
   currentView = viewId;
   emit('navigate', viewId);

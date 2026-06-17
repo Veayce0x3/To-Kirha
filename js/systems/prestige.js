@@ -83,7 +83,7 @@ export function canPrestige(state, balance, quests = {}, combatZones = {}) {
   return getPrestigeBlockers(state, balance, quests, combatZones).length === 0;
 }
 
-const GATHER_JOBS = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist'];
+const GATHER_JOBS = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist', 'breeder'];
 
 export function getSeasonCapProximity(state, balance) {
   const charCap = getSeasonLevelCap('character', state, balance);

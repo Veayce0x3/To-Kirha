@@ -7,6 +7,7 @@ import {
   getRegrowthTime,
   getHarvestYield,
   getHarvestXp,
+  getStarterHarvestDurationMs,
   addJobXp,
   getXpForLevel,
 } from '../systems/harvest.js';
@@ -16,7 +17,8 @@ import {
   getResourcesForJob,
   getJobLevel,
 } from '../systems/zones.js';
-import { canCraft, craft } from '../systems/craft.js';
+import { canCraft, craft, craftForced, getCraftBlockReason, tutorialCompleteCraft } from '../systems/craft.js';
+import { hasWorkingTool } from '../systems/toolDurability.js';
 import { getVendorOffer, canBuyOffer, buyOffer } from '../systems/merchant.js';
 import {
   advanceTutorialManual,
@@ -55,6 +57,18 @@ import {
   reconcileTutorialWeaponProgress,
   findTutorialWeaponOwnedRef,
   ownsTutorialChosenWeapon,
+  markTutorialManualHarvestDone,
+  markTutorialWoodSold,
+  markTutorialStarterAxeEquipped,
+  markTutorialAxeCrafted,
+  markTutorialFarmStarted,
+  markTutorialFarmChickenStarted,
+  isTutorialFarmStep,
+  isTutorialFarmChickenStep,
+  getTutorialFarmDurationMs,
+  reconcileTutorialAxeProgress,
+  grantTutorialStarterAxe,
+  grantTutorialSakuraAxe,
 } from '../systems/tutorialSandbox.js';
 import { getAideCost } from '../systems/passive.js';
 import { applyOfflineProgress } from '../systems/offline.js';
@@ -80,6 +94,8 @@ import {
   getSlotProgress,
   canBuySlot,
   getSlotUnlockCost,
+  getSlotUnlockRequirements,
+  normalizePurchasedSlots,
 } from '../systems/slots.js';
 import { getJobHarvestNavStatus } from '../systems/resourceVisual.js';
 import {
@@ -151,6 +167,7 @@ import {
   canPayUnlockZone,
   tryAutoUnlockFromBoss,
   getZoneUnlockHint,
+  formatZoneUnlockRequirements,
 } from '../systems/zoneProgress.js';
 import {
   buildDefaultCompanions,
@@ -167,7 +184,27 @@ import {
   applyCompanionNickname,
   getCompanionDisplayName,
 } from '../systems/companions.js';
-import { equip, unequip, unequipGathering, canEquip, migrateEquipment, getDefaultEquipment } from '../systems/equipment.js';
+import { equip, unequip, unequipGathering, canEquip, migrateEquipment, getDefaultEquipment, equipForced } from '../systems/equipment.js';
+import {
+  ensureFarmSlots,
+  startFarmProduction,
+  completeFarmProduction,
+  getFarmSlotProgress,
+  isAnyFarmActive,
+  buyFarmSlot as purchaseFarmSlot,
+  canBuyFarmSlot as checkCanBuyFarmSlot,
+  getFarmSlotUnlockRequirements,
+  getMaxFarmSlots as getMaxFarmSlotsForBuilding,
+  getFarmBuildingNavStatus,
+} from '../systems/farm.js';
+import { getFarmToolCheck, getHarvestToolCheck } from '../systems/toolTier.js';
+import {
+  setActiveMeal,
+  clearActiveMeal,
+  consumeActiveMealForRun,
+  clearCombatMealBuff,
+  MEAL_EFFECTS,
+} from '../systems/consumables.js';
 
 const LEGACY_COMBAT_RESOURCES = [
   'spirit_ember', 'petal_gel', 'temple_fragment', 'sakura_core',
@@ -200,7 +237,7 @@ function migrateLegacyCombatResources(state) {
 }
 
 export class Game {
-  constructor(resources, jobs, balance, recipes, aides, equipment, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, quests, tutorialData, weaponRoles) {
+  constructor(resources, jobs, balance, recipes, aides, equipment, farmData, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, quests, tutorialData, weaponRoles) {
     this.resources = resources;
     this.jobs = jobs;
     this.balance = balance;
@@ -208,6 +245,7 @@ export class Game {
     this.recipes = recipes;
     this.aides = aides;
     this.equipment = equipment;
+    this.farmData = farmData || { buildings: {} };
     this.characterConfig = characterConfig;
     this.combatEquipment = combatEquipment;
     this.combatZones = combatZones;
@@ -220,6 +258,7 @@ export class Game {
     this.weaponRoles = weaponRoles || {};
     this.state = null;
     this.harvestTimers = {};
+    this.farmTimers = {};
     this.saveTimer = null;
     this.passiveAccum = {};
     this.lastTick = Date.now();
@@ -254,7 +293,7 @@ export class Game {
       equipment: getDefaultEquipment(),
       combatEquipment: getDefaultCombatEquipment(),
       ownedCombatItems: [],
-      purchasedSlots: this.balance.harvestSlots.startingSlots,
+      purchasedSlots: normalizePurchasedSlots(null, this.balance),
       harvestSlots: {},
       aides: {},
       bossKills: {},
@@ -273,8 +312,13 @@ export class Game {
       lastOnline: Date.now(),
       stats: { totalHarvests: 0, totalEarned: 0, passiveHarvests: 0, offlineHarvests: 0 },
       quests: buildDefaultQuestState(),
+      farmSlots: {},
+      purchasedFarmSlots: {},
+      activeMeal: null,
+      combatMealBuff: null,
     };
     ensureSlots(state, this.balance);
+    ensureFarmSlots(state, this.farmData, this.balance);
     return state;
   }
 
@@ -325,7 +369,7 @@ export class Game {
       combatEquipment: migrateCombatEquipment(saved.combatEquipment),
       ownedCombatItems: saved.ownedCombatItems || [],
       combatItemInstances: saved.combatItemInstances || [],
-      purchasedSlots: saved.purchasedSlots ?? defaults.purchasedSlots,
+      purchasedSlots: normalizePurchasedSlots(saved.purchasedSlots, this.balance),
       aides: saved.aides || {},
       bossKills: saved.bossKills || saved.dungeonClears || {},
       combatKillStats: saved.combatKillStats || {},
@@ -343,9 +387,14 @@ export class Game {
       settings: mergeSettings(saved.settings),
       stats: { ...defaults.stats, ...(saved.stats || {}) },
       harvestSlots: this.migrateHarvestSlots(saved.harvestSlots),
+      farmSlots: saved.farmSlots || {},
+      purchasedFarmSlots: saved.purchasedFarmSlots || {},
+      activeMeal: saved.activeMeal || null,
+      combatMealBuff: null,
       quests: migrateQuests(saved.quests),
     };
     ensureSlots(merged, this.balance);
+    ensureFarmSlots(merged, this.farmData, this.balance);
     migrateCombatItemInstances(merged, this.combatEquipment.items);
     migrateLegacyCombatResources(merged);
     migrateToolDurability(merged, this.recipes);
@@ -362,6 +411,7 @@ export class Game {
     this.state.lastOnline = Date.now();
 
     this.restoreHarvestTimers();
+    this.restoreFarmTimers();
     syncTutorialProgress(this.state, this.tutorialData, this.quests, {
       recipes: this.recipes,
       combatItems: this.combatEquipment.items,
@@ -427,7 +477,11 @@ export class Game {
   }
 
   canUnlockZone(zoneId) {
-    return canPayUnlockZone(zoneId, this.state, this.balance, this.combatZones);
+    return canPayUnlockZone(zoneId, this.state, this.balance, this.combatZones, this.resources, this.jobs);
+  }
+
+  getZoneUnlockRequirementsList(zoneId) {
+    return formatZoneUnlockRequirements(zoneId, this.balance, this.resources, this.jobs);
   }
 
   getZoneUnlockHint(zoneId) {
@@ -435,6 +489,7 @@ export class Game {
   }
 
   processQuests() {
+    if (this.state.tutorial?.sandbox) return false;
     let changed = false;
     for (const quest of Object.values(this.quests)) {
       if (isQuestCompleted(this.state, quest.id)) continue;
@@ -507,17 +562,20 @@ export class Game {
       this.recipes,
       this.combatEquipment.items
     );
-    this.prepareTutorialCraftIfNeeded();
-    const step = getTutorialStep(this.state, this.tutorialData);
-    if (step?.id === 'harvest' && this.state.tutorial?.sandbox) {
-      bootstrapTutorialStep(this.state, this.balance, this.recipes, 'harvest');
-    }
+    this.prepareTutorialSandboxForStep();
     return buildTutorialUi(this.state, this.tutorialData, this.quests, syncExtras);
   }
 
   beginTutorial() {
     beginTutorialSandbox(this.state, this.tutorialData);
-    bootstrapTutorialStep(this.state, this.balance, this.recipes, 'harvest');
+    bootstrapTutorialStep(
+      this.state,
+      this.balance,
+      this.recipes,
+      'harvest',
+      this.equipment,
+      this.farmData
+    );
     syncTutorialProgress(this.state, this.tutorialData, this.quests);
     emit('tutorialBegin', {});
     emit('stateChange', this.state);
@@ -545,6 +603,41 @@ export class Game {
       this.combatEquipment.items
     )) return false;
     return this._afterTutorialWeaponChosen();
+  }
+
+  acceptTutorialAxe() {
+    if (!this.state.tutorial || this.state.tutorial.completed || this.state.tutorial.dismissed) {
+      return false;
+    }
+
+    this.ensureTutorialSandboxMode();
+    const axeStepIdx = getTutorialStepIndex(this.tutorialData, 'craft_axe');
+    if (axeStepIdx < 0) return false;
+
+    if ((this.state.tutorial.stepIndex || 0) < axeStepIdx) {
+      this.state.tutorial.stepIndex = axeStepIdx;
+    }
+
+    const recipe = this.recipes.sakura_axe;
+    if (!recipe) return false;
+
+    grantTutorialSakuraAxe(this.state, this.recipes, this.equipment);
+    equipForced('sakura_axe', this.state, this.equipment);
+    markTutorialAxeCrafted(this.state);
+
+    const jobXp = getRecipeJobXp(recipe);
+    const craftJob = getRecipeCraftJob(recipe);
+    let levelResult = null;
+    if (jobXp) {
+      levelResult = addJobXp(this.state, craftJob, jobXp, this.jobs, this.balance);
+    }
+
+    syncTutorialProgress(this.state, this.tutorialData, this.quests);
+    emit('craft', { recipeId: 'sakura_axe', recipe, levelResult, tutorialFakeCraft: true });
+    emit('tutorialAxeReceived', {});
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return true;
   }
 
   _afterTutorialWeaponChosen() {
@@ -579,22 +672,95 @@ export class Game {
   }
 
   prepareTutorialCraftIfNeeded() {
-    if (!this.state.tutorial?.sandbox) return;
+    this.prepareTutorialSandboxForStep();
+  }
+
+  ensureTutorialSandboxMode() {
+    if (!isTutorialActive(this.state)) return;
+    if (!this.state.tutorial.sandbox) {
+      this.state.tutorial.sandbox = true;
+    }
+  }
+
+  /** Garantit ressources / slots pour l'étape sandbox en cours (avant rendu UI). */
+  prepareTutorialSandboxForStep() {
+    if (!isTutorialActive(this.state)) return;
+    this.ensureTutorialSandboxMode();
     const step = getTutorialStep(this.state, this.tutorialData);
-    if (step?.id === 'craft' || this.state.tutorial.flags?.weaponChosen) {
+    if (!step) return;
+
+    const bootstrapSteps = new Set(['harvest', 'craft_axe', 'farm', 'farm_chicken', 'craft', 'scrolls']);
+    if (bootstrapSteps.has(step.id)) {
+      bootstrapTutorialStep(
+        this.state,
+        this.balance,
+        this.recipes,
+        step.id,
+        this.equipment,
+        this.farmData
+      );
+    }
+    if (step.id !== 'craft_axe') {
+      reconcileTutorialAxeProgress(this.state, this.recipes, this.tutorialData);
+    } else if (this.state.tutorial.flags?.axeCrafted) {
+      const axeRecipe = this.recipes.sakura_axe;
+      if (axeRecipe && !hasWorkingTool(this.state, 'sakura_axe', axeRecipe)) {
+        this.state.tutorial.flags.axeCrafted = false;
+      }
+    }
+    if (step.id === 'craft' || this.state.tutorial.flags?.weaponChosen) {
       ensureTutorialCraftSupplies(this.state, this.recipes);
     }
+    if (step.id === 'craft_axe' && this.state.tutorial.flags?.axeCrafted) {
+      syncTutorialProgress(this.state, this.tutorialData, this.quests);
+    }
+  }
+
+  isTutorialForcedCraft(recipeId) {
+    if (!isTutorialActive(this.state)) return false;
+    this.ensureTutorialSandboxMode();
+    const step = getTutorialStep(this.state, this.tutorialData);
+    if (recipeId === 'sakura_axe') {
+      return step?.id === 'craft_axe' && !this.state.tutorial.flags?.axeCrafted;
+    }
+    const chosen = getChosenTutorialRecipeId(this.state);
+    if (
+      chosen
+      && recipeId === chosen
+      && this.state.tutorial.flags?.weaponChosen
+      && !this.state.tutorial.flags?.weaponCrafted
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  getCraftFailureMessage(recipeId) {
+    const recipe = this.recipes[recipeId];
+    if (!recipe) return 'Recette inconnue.';
+    const block = getCraftBlockReason(
+      recipeId,
+      this.recipes,
+      this.state,
+      this.balance,
+      this.jobs,
+      this.resources
+    );
+    return block?.message || 'Impossible de fabriquer pour le moment.';
   }
 
   isTutorialCraftRecipe(recipeId) {
     this.prepareTutorialCraftIfNeeded();
-    if (!this.state.tutorial?.sandbox) return true;
+    if (!isTutorialActive(this.state)) return true;
+    if (!this.state.tutorial.flags?.axeCrafted) {
+      return recipeId === 'sakura_axe';
+    }
     const recipe = this.recipes[recipeId];
-    if (recipe && getRecipeCraftJob(recipe) === 'toolmaker') return true;
-    const chosen = getChosenTutorialRecipeId(this.state);
-    if (!chosen) return false;
     const step = this.tutorialData?.steps?.[this.state.tutorial.stepIndex];
+    const chosen = getChosenTutorialRecipeId(this.state);
     if (step?.id === 'craft') return recipeId === chosen;
+    if (recipe && getRecipeCraftJob(recipe) === 'toolmaker') return true;
+    if (!chosen) return false;
     if (this.state.tutorial.flags?.weaponChosen && !this.state.tutorial.flags?.weaponEquipped) {
       return recipeId === chosen;
     }
@@ -689,6 +855,7 @@ export class Game {
         emit('zoneUnlock', { zoneId: unlocked, zone, auto: true });
       }
     }
+    clearCombatMealBuff(this.state);
     this.processQuests();
   }
 
@@ -722,25 +889,30 @@ export class Game {
     return true;
   }
 
-  getMaxHarvestSlots() {
-    return getMaxSlots(this.state, this.balance);
+  getMaxHarvestSlots(jobId) {
+    return getMaxSlots(this.state, this.balance, jobId);
   }
 
-  buyHarvestSlot() {
-    if (!buySlot(this.state, this.balance)) return false;
-    emit('slotUnlock', { slots: getMaxSlots(this.state, this.balance) });
+  buyHarvestSlot(jobId) {
+    if (!buySlot(this.state, this.balance, jobId)) return false;
+    emit('slotUnlock', { slots: getMaxSlots(this.state, this.balance, jobId), jobId });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
   }
 
-  getNextSlotCost() {
-    const current = getMaxSlots(this.state, this.balance);
+  getNextSlotCost(jobId) {
+    const current = getMaxSlots(this.state, this.balance, jobId);
     return getSlotUnlockCost(current, this.balance);
   }
 
-  canBuyHarvestSlot() {
-    return canBuySlot(this.state, this.balance);
+  getSlotUnlockPreview(jobId) {
+    const current = getMaxSlots(this.state, this.balance, jobId);
+    return getSlotUnlockRequirements(jobId, current, this.balance);
+  }
+
+  canBuyHarvestSlot(jobId) {
+    return canBuySlot(this.state, this.balance, jobId);
   }
 
   assignResourceToSlot(jobId, slotIndex, resourceId) {
@@ -788,6 +960,211 @@ export class Game {
     }
   }
 
+  restoreFarmTimers() {
+    Object.values(this.farmTimers).forEach(clearTimeout);
+    this.farmTimers = {};
+
+    for (const [buildingId, slots] of Object.entries(this.state.farmSlots || {})) {
+      slots.forEach((slot, slotIndex) => {
+        if (!slot?.active) return;
+        const elapsed = Date.now() - slot.active.start;
+        const remaining = slot.active.duration - elapsed;
+        if (remaining <= 0) {
+          this.completeFarmSlot(buildingId, slotIndex);
+        } else {
+          this.scheduleFarmTimer(buildingId, slotIndex, remaining);
+        }
+      });
+    }
+  }
+
+  scheduleFarmTimer(buildingId, slotIndex, delayMs) {
+    const key = `farm_${buildingId}_${slotIndex}`;
+    clearTimeout(this.farmTimers[key]);
+    this.farmTimers[key] = setTimeout(
+      () => this.completeFarmSlot(buildingId, slotIndex),
+      Math.max(0, delayMs)
+    );
+  }
+
+  setFarmFeed(buildingId, slotIndex, feedId) {
+    const slot = this.state.farmSlots?.[buildingId]?.[slotIndex];
+    if (!slot || slot.active) return false;
+    slot.feedId = feedId || null;
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return true;
+  }
+
+  startFarmSlot(buildingId, slotIndex) {
+    const building = this.farmData.buildings?.[buildingId];
+    if (!building) return { ok: false, reason: 'Bâtiment inconnu' };
+
+    const tutorialFarm = isTutorialFarmStep(this.state, this.tutorialData)
+      || isTutorialFarmChickenStep(this.state, this.tutorialData);
+    if (tutorialFarm) {
+      this.prepareTutorialSandboxForStep();
+    }
+
+    const toolCheck = getFarmToolCheck(this.state, this.recipes, this.equipment);
+    if (!toolCheck.ok && !tutorialFarm) {
+      return { ok: false, reason: toolCheck.message };
+    }
+
+    const result = startFarmProduction(this.state, this.farmData, buildingId, slotIndex);
+    if (!result.ok) return result;
+
+    let duration = result.duration;
+    if (tutorialFarm) {
+      const slot = this.state.farmSlots?.[buildingId]?.[slotIndex];
+      if (slot?.active) {
+        duration = getTutorialFarmDurationMs(slot.active.duration || duration);
+        slot.active.duration = duration;
+      }
+      if (isTutorialFarmStep(this.state, this.tutorialData)) {
+        markTutorialFarmStarted(this.state);
+      }
+      if (isTutorialFarmChickenStep(this.state, this.tutorialData)) {
+        markTutorialFarmChickenStarted(this.state);
+      }
+      syncTutorialProgress(this.state, this.tutorialData, this.quests);
+    }
+
+    this.scheduleFarmTimer(buildingId, slotIndex, duration);
+    emit('farmStart', { buildingId, slotIndex, duration });
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return { ok: true };
+  }
+
+  completeFarmSlot(buildingId, slotIndex) {
+    const key = `farm_${buildingId}_${slotIndex}`;
+    delete this.farmTimers[key];
+
+    const outcome = completeFarmProduction(
+      this.state,
+      this.farmData,
+      buildingId,
+      slotIndex,
+      this.jobs,
+      this.balance
+    );
+    if (!outcome) return;
+
+    const wornTools = wearBreederTool(this.state, this.recipes, this.equipment);
+    for (const { recipeId, remaining } of wornTools) {
+      if (remaining <= 0) {
+        const recipe = this.recipes[recipeId];
+        emit('toolBroken', { recipeId, name: recipe?.name || recipeId });
+      }
+    }
+
+    for (const [resId, qty] of Object.entries(outcome.products || {})) {
+      this.onHarvestForQuests(resId, qty);
+    }
+
+    emit('farmComplete', outcome);
+    emit('stateChange', this.state);
+    this.scheduleSave();
+  }
+
+  getFarmSlotProgress(buildingId, slotIndex) {
+    const slot = this.state.farmSlots?.[buildingId]?.[slotIndex];
+    return getFarmSlotProgress(slot);
+  }
+
+  isFarmActive() {
+    return isAnyFarmActive(this.state);
+  }
+
+  getFarmToolBlockReason(buildingId) {
+    const building = this.farmData.buildings?.[buildingId];
+    if (!building) return null;
+    const check = getFarmToolCheck(this.state, this.recipes, this.equipment);
+    return check.ok ? null : check.message;
+  }
+
+  getHarvestToolBlockReason(jobId, resourceId) {
+    const resource = this.resources[resourceId];
+    if (!resource) return null;
+    const check = getHarvestToolCheck(
+      this.state,
+      jobId,
+      resource,
+      this.recipes,
+      this.equipment,
+      this.tutorialData,
+      this.resources
+    );
+    return check.ok ? null : check.message;
+  }
+
+  getHarvestSlotHint(jobId, resourceId) {
+    const resource = this.resources[resourceId];
+    if (!resource) return null;
+    const check = getHarvestToolCheck(
+      this.state,
+      jobId,
+      resource,
+      this.recipes,
+      this.equipment,
+      this.tutorialData,
+      this.resources
+    );
+    if (check.starterHarvest) return 'Sans outil — récolte plus lente';
+    return check.ok ? null : check.message;
+  }
+
+  setActiveMealForRun(mealId) {
+    if (!setActiveMeal(this.state, mealId)) return false;
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return true;
+  }
+
+  clearActiveMealForRun() {
+    clearActiveMeal(this.state);
+    emit('stateChange', this.state);
+    this.scheduleSave();
+  }
+
+  getActiveMealId() {
+    return this.state.activeMeal || null;
+  }
+
+  getOwnedMeals() {
+    return Object.keys(MEAL_EFFECTS).filter((id) => (this.state.inventory[id] || 0) > 0);
+  }
+
+  getMaxFarmSlots(buildingId) {
+    return getMaxFarmSlotsForBuilding(this.state, this.farmData, this.balance, buildingId);
+  }
+
+  canBuyFarmSlot(buildingId) {
+    return checkCanBuyFarmSlot(this.state, this.farmData, this.balance, buildingId);
+  }
+
+  getFarmSlotUnlockPreview(buildingId) {
+    const current = getMaxFarmSlotsForBuilding(this.state, this.farmData, this.balance, buildingId);
+    return getFarmSlotUnlockRequirements(buildingId, current, this.balance);
+  }
+
+  buyFarmSlot(buildingId) {
+    if (!purchaseFarmSlot(this.state, this.farmData, this.balance, buildingId)) return false;
+    emit('farmSlotUnlock', { buildingId, slots: this.getMaxFarmSlots(buildingId) });
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return true;
+  }
+
+  getFarmBuildingNavStatus(buildingId) {
+    return getFarmBuildingNavStatus(this.state, buildingId);
+  }
+
+  isFarmBuildingActive(buildingId) {
+    return (this.state.farmSlots?.[buildingId] || []).some((s) => s.active);
+  }
+
   startSlotHarvest(jobId, slotIndex) {
     const slot = this.state.harvestSlots?.[jobId]?.[slotIndex];
     if (!slot || slot.active || !slot.resourceId) return false;
@@ -795,9 +1172,27 @@ export class Game {
     const resource = this.resources[slot.resourceId];
     if (!resource || !isResourceHarvestable(resource, this.state, this.balance)) return false;
 
-    const duration = isTutorialHarvestStep(this.state, this.tutorialData)
-      ? getTutorialHarvestDurationMs(getHarvestTime(resource, this.state, this.jobs, this.balance))
-      : getHarvestTime(resource, this.state, this.jobs, this.balance);
+    const toolCheck = getHarvestToolCheck(
+      this.state,
+      jobId,
+      resource,
+      this.recipes,
+      this.equipment,
+      this.tutorialData,
+      this.resources
+    );
+    if (!toolCheck.ok) {
+      emit('harvestBlocked', { jobId, slotIndex, resourceId: resource.id, message: toolCheck.message });
+      return false;
+    }
+
+    const baseTime = getHarvestTime(resource, this.state, this.jobs, this.balance);
+    let duration = baseTime;
+    if (isTutorialHarvestStep(this.state, this.tutorialData)) {
+      duration = getTutorialHarvestDurationMs(baseTime);
+    } else if (toolCheck.starterHarvest) {
+      duration = getStarterHarvestDurationMs(baseTime);
+    }
     slot.active = { phase: 'harvesting', start: Date.now(), duration, resourceId: resource.id };
     this.scheduleHarvestTimer(jobId, slotIndex, duration);
 
@@ -834,6 +1229,7 @@ export class Game {
       }
       if (isTutorialHarvestStep(this.state, this.tutorialData)) {
         markTutorialHarvestDone(this.state);
+        markTutorialManualHarvestDone(this.state);
         slot.active = null;
         syncTutorialProgress(this.state, this.tutorialData, this.quests);
         emit('harvestComplete', { resourceId, jobId, slotIndex, yield: yield_, xp, levelResult });
@@ -907,6 +1303,14 @@ export class Game {
     if (earnings > 0) {
       this.state.kirha += earnings;
       this.trackEarnings(earnings);
+      if (
+        this.state.tutorial?.sandbox
+        && resourceId === 'frene'
+        && getTutorialStep(this.state, this.tutorialData)?.id === 'sell_wood'
+      ) {
+        markTutorialWoodSold(this.state);
+        syncTutorialProgress(this.state, this.tutorialData, this.quests);
+      }
       emit('sell', { resourceId, amount: sellAmount, earnings });
       emit('stateChange', this.state);
       this.scheduleSave();
@@ -917,10 +1321,12 @@ export class Game {
   sellEverything() {
     let rawTotal = 0;
     const artisanBonus = getCraftSellBonus(this.state, this.jobs);
+    let soldFrene = false;
 
     for (const [id, amount] of Object.entries({ ...this.state.inventory })) {
       if (amount <= 0 || !this.resources[id]) continue;
       if (this.resources[id].notSellable || this.resources[id].merchantOnly) continue;
+      if (id === 'frene') soldFrene = true;
       const mult = this.resources[id].craftOnly ? artisanBonus : 1;
       rawTotal += this.resources[id].sellPrice * amount * mult;
       this.state.inventory[id] = 0;
@@ -930,6 +1336,14 @@ export class Game {
     if (earnings > 0) {
       this.state.kirha += earnings;
       this.trackEarnings(earnings);
+      if (
+        this.state.tutorial?.sandbox
+        && soldFrene
+        && getTutorialStep(this.state, this.tutorialData)?.id === 'sell_wood'
+      ) {
+        markTutorialWoodSold(this.state);
+        syncTutorialProgress(this.state, this.tutorialData, this.quests);
+      }
       emit('sell', { all: true, earnings });
       emit('stateChange', this.state);
       this.scheduleSave();
@@ -968,8 +1382,16 @@ export class Game {
   }
 
   buyMerchant(vendorId, offerId, quantity) {
+    let qty = quantity;
+    if (
+      this.state.tutorial?.sandbox
+      && offerId === 'ancient_scroll'
+      && getTutorialStep(this.state, this.tutorialData)?.id === 'scrolls'
+    ) {
+      qty = 1;
+    }
     const offer = getVendorOffer(this.merchant, vendorId, offerId);
-    const result = buyOffer(offer, quantity, this.state, this.resources);
+    const result = buyOffer(offer, qty, this.state, this.resources);
     if (!result) return false;
     if (this.state.tutorial?.sandbox && offer?.resourceId === 'ancient_scroll') {
       markTutorialScrollBought(this.state);
@@ -981,12 +1403,73 @@ export class Game {
     return true;
   }
 
+  doTutorialForcedCraft(recipeId) {
+    this.prepareTutorialSandboxForStep();
+    const recipe = this.recipes[recipeId];
+    if (!recipe) return false;
+
+    if (recipeId === 'sakura_axe') {
+      grantTutorialSakuraAxe(this.state, this.recipes, this.equipment);
+      equip(recipeId, this.state, this.equipment, this.recipes);
+      markTutorialAxeCrafted(this.state);
+      syncTutorialProgress(this.state, this.tutorialData, this.quests);
+
+      let levelResult = null;
+      const jobXp = getRecipeJobXp(recipe);
+      const craftJob = getRecipeCraftJob(recipe);
+      if (jobXp) {
+        levelResult = addJobXp(this.state, craftJob, jobXp, this.jobs, this.balance);
+      }
+
+      emit('craft', { recipeId, recipe, levelResult, tutorialFakeCraft: true });
+      emit('stateChange', this.state);
+      this.scheduleSave();
+      return true;
+    }
+
+    if (hasWorkingTool(this.state, recipeId, recipe)) {
+      emit('craft', { recipeId, recipe, levelResult: null, tutorialAlreadyOwned: true });
+      emit('stateChange', this.state);
+      this.scheduleSave();
+      return true;
+    }
+
+    const crafted = tutorialCompleteCraft(recipeId, this.recipes, this.state);
+    if (!crafted) return false;
+    if (recipeId === TUTORIAL_RECIPE_ID && recipe.combatItem) {
+      markTutorialWeaponCrafted(this.state);
+      reconcileTutorialWeaponProgress(this.state, this.recipes, this.combatEquipment.items);
+    }
+
+    let levelResult = null;
+    const jobXp = getRecipeJobXp(recipe);
+    const craftJob = getRecipeCraftJob(recipe);
+    if (jobXp) {
+      levelResult = addJobXp(this.state, craftJob, jobXp, this.jobs, this.balance);
+    }
+
+    emit('craft', { recipeId, recipe, levelResult });
+    this.processQuests();
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return true;
+  }
+
   doCraft(recipeId) {
-    this.prepareTutorialCraftIfNeeded();
+    if (this.isTutorialForcedCraft(recipeId)) {
+      return this.doTutorialForcedCraft(recipeId);
+    }
+
+    this.prepareTutorialSandboxForStep();
     if (!canCraft(recipeId, this.recipes, this.state, this.balance, this.jobs)) return false;
 
     const recipe = craft(recipeId, this.recipes, this.state, this.balance, this.resources, this.jobs);
     if (!recipe) return false;
+    if (this.state.tutorial?.sandbox && recipeId === 'sakura_axe') {
+      markTutorialAxeCrafted(this.state);
+      syncTutorialProgress(this.state, this.tutorialData, this.quests);
+      equip(recipeId, this.state, this.equipment, this.recipes);
+    }
     if (
       this.state.tutorial?.sandbox
       && recipeId === TUTORIAL_RECIPE_ID
@@ -1015,6 +1498,10 @@ export class Game {
 
   doEquip(recipeId) {
     if (!equip(recipeId, this.state, this.equipment, this.recipes)) return false;
+    if (this.state.tutorial?.sandbox && recipeId === 'tutorial_starter_axe') {
+      markTutorialStarterAxeEquipped(this.state);
+      syncTutorialProgress(this.state, this.tutorialData, this.quests);
+    }
     emit('equip', { recipeId });
     emit('stateChange', this.state);
     this.scheduleSave();
@@ -1157,13 +1644,15 @@ export class Game {
     return getNicknameRenameInfo(this.state, this.characterConfig);
   }
 
-  setCharacterNickname(name, isRename = false) {
+  setCharacterNickname(name, isRename = false, options = {}) {
     const result = applyCharacterNickname(this.state, name, this.characterConfig, { isRename });
     if (!result.ok) return result;
 
     emit('nicknameChange', result);
-    emit('stateChange', this.state);
-    this.scheduleSave();
+    if (!options.silent) {
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
     return result;
   }
 
@@ -1292,6 +1781,8 @@ export class Game {
     const combatZone = this.combatZones[zoneId];
     if (!combatZone) return { ok: false, reason: 'Zone inconnue' };
 
+    consumeActiveMealForRun(this.state);
+
     const result = startZoneDungeonRun(
       combatZone,
       this.state,
@@ -1399,6 +1890,7 @@ export class Game {
       if (result.levelResult) emit('charLevelUp', result.levelResult);
       this.scheduleSave();
     } else if (result.victory === false) {
+      clearCombatMealBuff(this.state);
       emit('combatFail', result);
       this.scheduleSave();
     } else {
@@ -1415,6 +1907,7 @@ export class Game {
     if (!result) return null;
 
     if (result.victory === false) {
+      clearCombatMealBuff(this.state);
       emit('combatFail', result);
       this.scheduleSave();
     } else if (result.cleared) {
@@ -1441,6 +1934,7 @@ export class Game {
       if (result.levelResult) emit('charLevelUp', result.levelResult);
       this.scheduleSave();
     } else if (result.victory === false) {
+      clearCombatMealBuff(this.state);
       emit('combatFail', result);
       this.scheduleSave();
     } else {
@@ -1454,6 +1948,7 @@ export class Game {
 
   abandonCombat() {
     clearCombatEncounter(this.state);
+    clearCombatMealBuff(this.state);
     emit('combatAbandon', {});
     emit('stateChange', this.state);
     this.scheduleSave();
@@ -1571,7 +2066,11 @@ export class Game {
   }
 
   getCraftJobs() {
-    return Object.values(this.jobs).filter((j) => j.gathering === false);
+    return Object.values(this.jobs).filter((j) => j.gathering === false && j.id !== 'cook');
+  }
+
+  getCuisineJob() {
+    return this.jobs.cook || null;
   }
 
   getGatheringJobs() {

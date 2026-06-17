@@ -4,6 +4,7 @@ import {
   ensureTutorialFlags,
   getChosenTutorialRecipeId,
   reconcileTutorialWeaponProgress,
+  reconcileTutorialAxeProgress,
   normalizeRewardsClaimed,
   hasTutorialRewardsClaimed,
 } from './tutorialSandbox.js';
@@ -27,6 +28,12 @@ export function buildDefaultTutorialState() {
     trainingFightWon: false,
     flags: {
       harvestDone: false,
+      tutorialManualHarvestDone: false,
+      woodSold: false,
+      starterAxeEquipped: false,
+      axeCrafted: false,
+      farmStarted: false,
+      farmChickenStarted: false,
       weaponChosen: false,
       weaponCrafted: false,
       weaponEquipped: false,
@@ -36,6 +43,7 @@ export function buildDefaultTutorialState() {
     rewardsClaimed: {
       materials: false,
       harvestKirha: false,
+      farmPrep: false,
       scrollPrep: false,
       graduateKirha: false,
       dungeonDrops: false,
@@ -112,6 +120,16 @@ function isFlagComplete(step, state) {
   switch (step.completeWhen) {
     case 'tutorial_harvest_done':
       return !!flags.harvestDone;
+    case 'tutorial_wood_sold':
+      return !!flags.woodSold;
+    case 'tutorial_starter_axe_equipped':
+      return !!flags.starterAxeEquipped;
+    case 'tutorial_axe_crafted':
+      return !!flags.axeCrafted;
+    case 'tutorial_farm_started':
+      return !!flags.farmStarted;
+    case 'tutorial_farm_chicken_started':
+      return !!flags.farmChickenStarted;
     case 'tutorial_weapon_chosen':
       return !!flags.weaponChosen;
     case 'tutorial_weapon_equipped':
@@ -132,6 +150,9 @@ export function syncTutorialProgress(state, tutorialData, quests, extras = {}) {
 
   if (extras.recipes && extras.combatItems) {
     reconcileTutorialWeaponProgress(state, extras.recipes, extras.combatItems);
+  }
+  if (extras.recipes) {
+    reconcileTutorialAxeProgress(state, extras.recipes, tutorialData);
   }
 
   const steps = tutorialData?.steps || [];
@@ -258,6 +279,8 @@ export function getTutorialUi(state, tutorialData, quests, extras = {}) {
     text = 'Va sur Perso, section Équipement, et équipe l\'arme que tu viens de forger.';
   }
 
+  const craftJobFromView = view?.startsWith('workshop_') ? view.replace('workshop_', '') : null;
+
   return {
     stepId: step.id,
     title,
@@ -267,7 +290,7 @@ export function getTutorialUi(state, tutorialData, quests, extras = {}) {
     hintView: view,
     hintJob,
     targetView: view === 'workshop' && hintJob ? null : view,
-    targetCraftJob: view === 'workshop' ? hintJob : null,
+    targetCraftJob: view === 'workshop' ? hintJob : craftJobFromView,
     craftPhase,
     screen: step.screen || null,
     showNext: canManualNext,
@@ -279,6 +302,8 @@ export function getTutorialUi(state, tutorialData, quests, extras = {}) {
     isGraduate: step.screen === 'graduate',
     isWeaponGallery: step.screen === 'weapon_gallery' || step.screen === 'weapon_offer',
     isWeaponOffer: step.screen === 'weapon_offer',
+    isAxeOffer: step.screen === 'axe_offer',
+    isStarterAxe: step.screen === 'starter_axe',
     isDungeonStep: step.id === 'dungeon',
     craftEquipPhase: craftPhase === 'equip',
     stepNumber: (state.tutorial.stepIndex || 0) + 1,

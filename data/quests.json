@@ -11,9 +11,21 @@
     "rewardKirha": 40,
     "hintJob": "lumberjack"
   },
+  "q_v1_farm": {
+    "id": "q_v1_farm",
+    "order": 2,
+    "chapter": "village_sakura",
+    "title": "Premiers élevages",
+    "description": "Collecte 3 ressources à la Ferme (eau, œufs, lait…).",
+    "type": "harvest_resource",
+    "resourceIds": ["eau", "oeuf", "lait", "plume", "cuir", "laine", "miel", "bacon"],
+    "target": 3,
+    "rewardKirha": 35,
+    "hintView": "farm_chicken_coop"
+  },
   "q_v1_tool": {
     "id": "q_v1_tool",
-    "order": 2,
+    "order": 3,
     "chapter": "village_sakura",
     "title": "Outil du village",
     "description": "Fabrique un outil de récolte à l'Outilleur.",

@@ -1,6 +1,7 @@
 import { resolveItemId } from './combat.js';
 import { getActiveSetBonus } from './setBonus.js';
 import { getSeasonLevelCap } from './prestige.js';
+import { getCombatMealBuff, applyMealBuffToStats } from './consumables.js';
 
 export function getXpForCharLevel(config, level) {
   return Math.floor(config.xpPerLevel * Math.pow(config.xpScaling, level - 1));
@@ -38,7 +39,9 @@ export function getCombatStatsBreakdown(state, characterConfig, combatEquipment,
     def: base.def + equipment.def + setBonus.def,
   };
 
-  return { base, equipment, setBonus, sets, total };
+  const buffed = applyMealBuffToStats(total, getCombatMealBuff(state));
+
+  return { base, equipment, setBonus, sets, total: buffed };
 }
 
 export function getCombatStats(state, characterConfig, combatEquipment, combatItems, balance) {

@@ -11,6 +11,11 @@ export function getHarvestTime(_resource, _state, _jobs, balance) {
   return balance?.harvest?.baseHarvestTimeMs ?? 3000;
 }
 
+/** Durée rallongée pour la 1ère ressource Nv.1 récoltée sans outil. */
+export function getStarterHarvestDurationMs(baseMs) {
+  return Math.min(Math.round(baseMs * 2.5), 8000);
+}
+
 function getSpeedBonus(resource, state, jobs, balance) {
   const job = jobs[resource.job];
   const jobData = state.jobs[resource.job] || { level: 1 };

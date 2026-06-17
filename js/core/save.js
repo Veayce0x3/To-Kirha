@@ -16,6 +16,11 @@ export const SaveProvider = {
 
   async load() {
     try {
+      if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('newgame') === '1') {
+        localStorage.removeItem(SAVE_KEY);
+        window.history.replaceState({}, '', window.location.pathname);
+        return null;
+      }
       const raw = localStorage.getItem(SAVE_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch (err) {

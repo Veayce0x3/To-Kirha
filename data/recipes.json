@@ -1,14 +1,30 @@
 {
+  "tutorial_starter_axe": {
+    "id": "tutorial_starter_axe",
+    "name": "Hache du débutant",
+    "emoji": "🪓",
+    "description": "Outil de formation — palier 1",
+    "kirhaCost": 0,
+    "maxUses": 10,
+    "toolTier": 1,
+    "ingredients": {},
+    "effect": { "type": "speed", "job": "lumberjack", "bonus": 0.05 },
+    "unique": true,
+    "tutorialOnly": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 1,
+    "jobXp": 0
+  },
   "sakura_axe": {
     "id": "sakura_axe",
     "name": "Hache de Frêne",
     "emoji": "🪓",
-    "description": "+8% vitesse bûcheron",
-    "kirhaCost": 60,
-    "maxUses": 350,
+    "description": "Palier 1 — bûcheron",
+    "kirhaCost": 5,
+    "maxUses": 25,
+    "toolTier": 1,
     "ingredients": {
-      "frene": 8,
-      "ortie": 3
+      "frene": 5
     },
     "effect": {
       "type": "speed",
@@ -25,11 +41,11 @@
     "name": "Canne en bambou",
     "emoji": "🎣",
     "description": "+8% vitesse pêcheur",
-    "kirhaCost": 60,
-    "maxUses": 350,
+    "kirhaCost": 5,
+    "maxUses": 25,
+    "toolTier": 1,
     "ingredients": {
-      "frene": 10,
-      "ortie": 3
+      "frene": 10
     },
     "effect": {
       "type": "speed",
@@ -46,15 +62,38 @@
     "name": "Faucille du Paysan",
     "emoji": "🌾",
     "description": "+8% vitesse paysan",
-    "kirhaCost": 55,
-    "maxUses": 350,
+    "kirhaCost": 5,
+    "maxUses": 25,
+    "toolTier": 1,
     "ingredients": {
-      "ble": 8,
-      "frene": 4
+      "ble": 5,
+      "frene": 2
     },
     "effect": {
       "type": "speed",
       "job": "farmer",
+      "bonus": 0.08
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 1,
+    "jobXp": 12
+  },
+  "miner_pickaxe": {
+    "id": "miner_pickaxe",
+    "name": "Pioche du Village",
+    "emoji": "⛏️",
+    "description": "+8% vitesse mineur",
+    "kirhaCost": 5,
+    "maxUses": 25,
+    "toolTier": 1,
+    "ingredients": {
+      "fer": 5,
+      "frene": 2
+    },
+    "effect": {
+      "type": "speed",
+      "job": "miner",
       "bonus": 0.08
     },
     "unique": true,
@@ -67,10 +106,11 @@
     "name": "Gants d'alchimiste",
     "emoji": "🧤",
     "description": "+8% vitesse alchimiste",
-    "kirhaCost": 55,
-    "maxUses": 350,
+    "kirhaCost": 5,
+    "maxUses": 25,
+    "toolTier": 1,
     "ingredients": {
-      "ortie": 12
+      "ortie": 8
     },
     "effect": {
       "type": "speed",
@@ -933,5 +973,209 @@
     "requiredJobLevel": 20,
     "jobXp": 50,
     "repeatable": true
+  },
+  "breeder_bucket": {
+    "id": "breeder_bucket",
+    "name": "Seau de Frêne",
+    "emoji": "🪣",
+    "description": "Palier 1 — élevage",
+    "kirhaCost": 5,
+    "maxUses": 30,
+    "toolTier": 1,
+    "ingredients": { "frene": 4, "fer": 2 },
+    "effect": { "type": "speed", "job": "breeder", "bonus": 0.05 },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 1,
+    "jobXp": 10
+  },
+  "breeder_bucket_iron": {
+    "id": "breeder_bucket_iron",
+    "name": "Seau de Fer",
+    "emoji": "🪣",
+    "description": "Palier 2 — élevage",
+    "kirhaCost": 80,
+    "maxUses": 55,
+    "toolTier": 2,
+    "ingredients": { "fer": 8, "frene": 4 },
+    "effect": { "type": "speed", "job": "breeder", "bonus": 0.1 },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 8,
+    "jobXp": 22
+  },
+  "sequoia_axe": {
+    "id": "sequoia_axe",
+    "name": "Hache de Séquoia",
+    "emoji": "🪓",
+    "description": "Palier 2 — bûcheron Nv.20",
+    "kirhaCost": 120,
+    "maxUses": 50,
+    "toolTier": 2,
+    "ingredients": { "chataignier": 6, "frene": 8 },
+    "effect": { "type": "speed", "job": "lumberjack", "bonus": 0.1 },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 8,
+    "jobXp": 25
+  },
+  "recipe_onigiri": {
+    "id": "recipe_onigiri",
+    "name": "Onigiri",
+    "emoji": "🍙",
+    "description": "Repas — +5 % HP (1 donjon)",
+    "ingredients": { "ble": 3, "eau": 1 },
+    "output": "meal_onigiri",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 1,
+    "jobXp": 12
+  },
+  "recipe_oeufs": {
+    "id": "recipe_oeufs",
+    "name": "Œufs brouillés",
+    "emoji": "🍳",
+    "ingredients": { "oeuf": 2, "eau": 1 },
+    "output": "meal_oeufs",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 2,
+    "jobXp": 14
+  },
+  "recipe_soupe": {
+    "id": "recipe_soupe",
+    "name": "Soupe au lait",
+    "emoji": "🥣",
+    "ingredients": { "lait": 2, "eau": 1, "ble": 1 },
+    "output": "meal_soupe",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 4,
+    "jobXp": 16
+  },
+  "recipe_brochette": {
+    "id": "recipe_brochette",
+    "name": "Brochette",
+    "emoji": "🍢",
+    "ingredients": { "jambon": 1, "bacon": 1, "eau": 1 },
+    "output": "meal_brochette",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 6,
+    "jobXp": 20
+  },
+  "recipe_gateau": {
+    "id": "recipe_gateau",
+    "name": "Gâteau au miel",
+    "emoji": "🍰",
+    "ingredients": { "miel": 2, "ble": 3, "gelee_royale": 1 },
+    "output": "meal_gateau",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 10,
+    "jobXp": 28
+  },
+  "recipe_festin": {
+    "id": "recipe_festin",
+    "name": "Festin du Temple",
+    "emoji": "🍱",
+    "description": "Buff premium donjon",
+    "ingredients": {
+      "jambon": 2,
+      "lait": 2,
+      "miel": 2,
+      "ble": 5,
+      "gelee_royale": 1,
+      "goujon": 2,
+      "frene": 3,
+      "ancient_scroll": 1
+    },
+    "output": "meal_festin",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 15,
+    "jobXp": 45
+  },
+  "recipe_tablier": {
+    "id": "recipe_tablier",
+    "name": "Tablier de cuisinier",
+    "emoji": "🧑‍🍳",
+    "description": "+6 % vitesse cuisinier",
+    "kirhaCost": 25,
+    "maxUses": 50,
+    "ingredients": { "laine": 4, "cuir": 2 },
+    "effect": { "type": "speed", "job": "cook", "bonus": 0.06 },
+    "unique": true,
+    "craftJob": "tailor",
+    "requiredJobLevel": 5,
+    "jobXp": 18
+  },
+  "recipe_bottes_cuir": {
+    "id": "recipe_bottes_cuir",
+    "name": "Bottes en cuir",
+    "emoji": "👢",
+    "description": "+6 % vitesse éleveur",
+    "kirhaCost": 30,
+    "maxUses": 40,
+    "toolTier": 1,
+    "ingredients": { "cuir": 6, "frene": 4 },
+    "effect": { "type": "speed", "job": "breeder", "bonus": 0.06 },
+    "unique": true,
+    "craftJob": "shoemaker",
+    "requiredJobLevel": 5,
+    "jobXp": 18
+  },
+  "recipe_tonique_miel": {
+    "id": "recipe_tonique_miel",
+    "name": "Tonique au miel",
+    "emoji": "🧪",
+    "ingredients": { "miel": 2, "gelee_royale": 1, "eau": 2, "ortie": 3 },
+    "output": "sacred_incense",
+    "outputAmount": 2,
+    "repeatable": true,
+    "craftJob": "tailor",
+    "requiredJobLevel": 6,
+    "jobXp": 20
+  },
+  "recipe_amulette_gelee": {
+    "id": "recipe_amulette_gelee",
+    "name": "Amulette royale",
+    "emoji": "📿",
+    "ingredients": { "gelee_royale": 2, "miel": 3, "fer": 2 },
+    "output": "jade_amulet",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "jeweler",
+    "requiredJobLevel": 10,
+    "jobXp": 30
+  },
+  "recipe_marmite": {
+    "id": "recipe_marmite",
+    "name": "Marmite",
+    "emoji": "🍲",
+    "description": "Débloque plats avancés",
+    "kirhaCost": 40,
+    "ingredients": { "fer": 6, "frene": 4 },
+    "unique": true,
+    "craftJob": "blacksmith",
+    "requiredJobLevel": 4,
+    "jobXp": 15
+  },
+  "recipe_ruche_amelioree": {
+    "id": "recipe_ruche_amelioree",
+    "name": "Ruche améliorée",
+    "emoji": "🐝",
+    "ingredients": { "frene": 10, "miel": 2 },
+    "effect": { "type": "yield", "job": "breeder", "bonus": 1 },
+    "unique": true,
+    "craftJob": "carver",
+    "requiredJobLevel": 6,
+    "jobXp": 20
   }
 }

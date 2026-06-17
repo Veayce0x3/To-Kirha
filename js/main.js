@@ -8,9 +8,9 @@ async function loadJSON(path) {
   return res.json();
 }
 
-async function main() {
+  async function main() {
   const [
-    resources, jobs, balance, recipes, aides, equipment,
+    resources, jobs, balance, recipes, aides, equipment, farmData,
     characterConfig, combatEquipment, combatZones, enemies, merchant,
     combatSkills, combatResources, companions, quests, tutorialData, weaponRoles,
   ] = await Promise.all([
@@ -20,6 +20,7 @@ async function main() {
     loadJSON('./data/recipes.json'),
     loadJSON('./data/aides.json'),
     loadJSON('./data/equipment.json'),
+    loadJSON('./data/farm.json'),
     loadJSON('./data/character.json'),
     loadJSON('./data/combat_equipment.json'),
     loadJSON('./data/combat_zones.json'),
@@ -39,7 +40,7 @@ async function main() {
   applyJobIcons(jobs);
 
   const game = new Game(
-    resources, jobs, balance, recipes, aides, equipment,
+    resources, jobs, balance, recipes, aides, equipment, farmData,
     characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, quests,
     tutorialData, weaponRoles
   );

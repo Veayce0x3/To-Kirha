@@ -119,5 +119,27 @@
     "xpScaling": 1.1,
     "bonusesPerLevel": { "craftValueBonus": 0.012 },
     "gathering": false
+  },
+  "breeder": {
+    "id": "breeder",
+    "name": "Éleveur",
+    "emoji": "🐄",
+    "maxLevel": 200,
+    "xpPerLevel": 100,
+    "xpScaling": 1.08,
+    "bonusesPerLevel": { "speedBonus": 0.005, "yieldBonus": 0.003 },
+    "gathering": true,
+    "farmJob": true
+  },
+  "cook": {
+    "id": "cook",
+    "name": "Cuisinier",
+    "emoji": "👨‍🍳",
+    "maxLevel": 200,
+    "xpPerLevel": 120,
+    "xpScaling": 1.1,
+    "bonusesPerLevel": { "craftValueBonus": 0.01 },
+    "gathering": false,
+    "craftCategory": "cuisine"
   }
 }

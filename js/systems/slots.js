@@ -1,7 +1,25 @@
-export function getMaxSlots(state, balance) {
+const GATHERING_JOBS = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist'];
+
+export function normalizePurchasedSlots(saved, balance) {
+  const starting = balance.harvestSlots.startingSlots;
+  if (typeof saved === 'number') {
+    return Object.fromEntries(GATHERING_JOBS.map((j) => [j, saved]));
+  }
+  if (!saved || typeof saved !== 'object') {
+    return Object.fromEntries(GATHERING_JOBS.map((j) => [j, starting]));
+  }
+  const out = {};
+  for (const j of GATHERING_JOBS) {
+    out[j] = saved[j] ?? starting;
+  }
+  return out;
+}
+
+export function getMaxSlots(state, balance, jobId) {
   const cfg = balance.harvestSlots;
-  const purchased = state.purchasedSlots || cfg.startingSlots;
-  return Math.min(purchased, cfg.maxSlots);
+  const purchased = normalizePurchasedSlots(state.purchasedSlots, balance);
+  const count = purchased[jobId] ?? cfg.startingSlots;
+  return Math.min(count, cfg.maxSlots);
 }
 
 export function getSlotUnlockCost(slotIndex, balance) {
@@ -9,28 +27,67 @@ export function getSlotUnlockCost(slotIndex, balance) {
   return costs[slotIndex] ?? null;
 }
 
-export function canBuySlot(state, balance) {
-  const current = getMaxSlots(state, balance);
-  if (current >= balance.harvestSlots.maxSlots) return false;
-  const cost = getSlotUnlockCost(current, balance);
-  return cost !== null && state.kirha >= cost;
+export function getSlotResourceCost(jobId, slotIndex, balance) {
+  const resId = balance.harvestSlots.unlockResourceByJob?.[jobId];
+  const amount = balance.harvestSlots.unlockResourceAmountPerSlot ?? 0;
+  if (!resId || amount <= 0 || slotIndex < 2) return null;
+  return { [resId]: amount };
 }
 
-export function buySlot(state, balance) {
-  const current = getMaxSlots(state, balance);
+export function getSlotUnlockRequirements(jobId, slotIndex, balance) {
+  return {
+    kirha: getSlotUnlockCost(slotIndex, balance),
+    resources: getSlotResourceCost(jobId, slotIndex, balance),
+  };
+}
+
+export function canBuySlot(state, balance, jobId) {
+  const current = getMaxSlots(state, balance, jobId);
   if (current >= balance.harvestSlots.maxSlots) return false;
-  const cost = getSlotUnlockCost(current, balance);
-  if (cost === null || state.kirha < cost) return false;
-  state.kirha -= cost;
-  state.purchasedSlots = current + 1;
+  const { kirha, resources } = getSlotUnlockRequirements(jobId, current, balance);
+  if (kirha === null) return false;
+  if ((state.kirha || 0) < kirha) return false;
+  if (resources) {
+    for (const [resId, amount] of Object.entries(resources)) {
+      if ((state.inventory[resId] || 0) < amount) return false;
+    }
+  }
+  return true;
+}
+
+export function buySlot(state, balance, jobId) {
+  const current = getMaxSlots(state, balance, jobId);
+  if (current >= balance.harvestSlots.maxSlots) return false;
+  const { kirha, resources } = getSlotUnlockRequirements(jobId, current, balance);
+  if (kirha === null || (state.kirha || 0) < kirha) return false;
+  if (resources) {
+    for (const [resId, amount] of Object.entries(resources)) {
+      if ((state.inventory[resId] || 0) < amount) return false;
+    }
+  }
+
+  state.kirha -= kirha;
+  if (resources) {
+    for (const [resId, amount] of Object.entries(resources)) {
+      state.inventory[resId] -= amount;
+    }
+  }
+
+  if (!state.purchasedSlots || typeof state.purchasedSlots === 'number') {
+    state.purchasedSlots = normalizePurchasedSlots(state.purchasedSlots, balance);
+  }
+  state.purchasedSlots[jobId] = current + 1;
   ensureSlots(state, balance);
   return true;
 }
 
 export function ensureSlots(state, balance) {
   if (!state.harvestSlots) state.harvestSlots = {};
-  const max = getMaxSlots(state, balance);
-  for (const jobId of Object.keys(state.jobs || {})) {
+  state.purchasedSlots = normalizePurchasedSlots(state.purchasedSlots, balance);
+
+  for (const jobId of GATHERING_JOBS) {
+    if (!state.jobs?.[jobId]) continue;
+    const max = getMaxSlots(state, balance, jobId);
     if (!state.harvestSlots[jobId]) state.harvestSlots[jobId] = [];
     while (state.harvestSlots[jobId].length < max) {
       state.harvestSlots[jobId].push({ resourceId: null, active: null });

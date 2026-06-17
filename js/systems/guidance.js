@@ -102,7 +102,7 @@ export function getCurrentObjective(ctx) {
     );
   }
 
-  const gatherJobs = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist'];
+  const gatherJobs = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist', 'breeder'];
   const zoneId = state.zone || 'village_sakura';
   const missingTool = gatherJobs.find((jobId) => !getJobEquippedTool(state, jobId));
   if (missingTool && (state.jobs?.[missingTool]?.level || 1) >= 1) {

@@ -4,11 +4,18 @@
     "accessory": { "id": "accessory", "name": "Accessoire métier", "emoji": "🧰" }
   },
   "equipable": {
+    "tutorial_starter_axe": { "recipeId": "tutorial_starter_axe", "slot": "weapon", "job": "lumberjack" },
     "sakura_axe": { "recipeId": "sakura_axe", "slot": "weapon", "job": "lumberjack" },
+    "sequoia_axe": { "recipeId": "sequoia_axe", "slot": "weapon", "job": "lumberjack" },
     "fishing_rod": { "recipeId": "fishing_rod", "slot": "weapon", "job": "fisher" },
+    "miner_pickaxe": { "recipeId": "miner_pickaxe", "slot": "weapon", "job": "miner" },
     "jade_pickaxe": { "recipeId": "jade_pickaxe", "slot": "weapon", "job": "miner" },
     "farm_sickle": { "recipeId": "farm_sickle", "slot": "weapon", "job": "farmer" },
     "herb_gloves": { "recipeId": "herb_gloves", "slot": "weapon", "job": "alchemist" },
+    "breeder_bucket": { "recipeId": "breeder_bucket", "slot": "weapon", "job": "breeder" },
+    "breeder_bucket_iron": { "recipeId": "breeder_bucket_iron", "slot": "weapon", "job": "breeder" },
+    "recipe_bottes_cuir": { "recipeId": "recipe_bottes_cuir", "slot": "accessory", "job": "breeder" },
+    "recipe_tablier": { "recipeId": "recipe_tablier", "slot": "accessory", "job": "cook" },
     "herb_basket": { "recipeId": "herb_basket", "slot": "accessory", "job": "lumberjack" },
     "fish_trap": { "recipeId": "fish_trap", "slot": "accessory", "job": "fisher" },
     "master_toolkit": { "recipeId": "master_toolkit", "slot": "accessory", "job": null }

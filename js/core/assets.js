@@ -31,9 +31,11 @@ export const NAV_ICONS = {
   job_miner: asset('metiers/mineur', 'icone_mineur_transparent.png'),
   job_farmer: asset(P, 'icone_paysan_transparent.png'),
   job_alchemist: asset('metiers/alchimiste ', 'icone_alchimiste_transparent.png'),
+  farm: asset(V, 'ferme_transparent.png'),
   inventory: asset(V, 'banque_transparent.png'),
   auction_house: asset(V, 'hdv_transparent.png'),
   workshop: asset(V, 'craft.jpg'),
+  cuisine: asset(D, 'cuisine_transparent.png'),
   strategy: asset(D, 'vip_transparent.png'),
   combat: asset(V, 'temple_transparent.png'),
   options: asset(D, 'parametre_transparent.png'),
@@ -41,11 +43,13 @@ export const NAV_ICONS = {
 
 export const CATEGORY_ICONS = {
   recolte: asset(V, 'recolte_transparent.png'),
+  ferme: asset(V, 'ferme_transparent.png'),
   gestion: asset(V, 'inventaire_transparent.png'),
   monde: asset(V, 'kirha_city_transparent.png'),
   personnage: asset(V, 'maison_transparent.png'),
   outillage: asset(V, 'ferme_transparent.png'),
   artisanat: asset(V, 'craft.jpg'),
+  cuisine: asset(D, 'cuisine_transparent.png'),
 };
 
 export const JOB_ICONS = {
@@ -54,6 +58,26 @@ export const JOB_ICONS = {
   miner: NAV_ICONS.job_miner,
   farmer: NAV_ICONS.job_farmer,
   alchemist: NAV_ICONS.job_alchemist,
+  breeder: UI.ferme,
+  cook: asset(D, 'cuisine_transparent.png'),
+};
+
+const FARM_BUILDING_FILES = {
+  well: asset('eau', 'puit_transparent.png'),
+  chicken_coop: asset('ferme', 'poulallier_transparent.png'),
+  barn: asset('ferme', 'etable_transparent.png'),
+  sheepfold: asset('ferme', 'bergerie_transparent.png'),
+  pigsty: asset('ferme', 'porcherie_transparent.png'),
+  beehive: asset('ferme', 'ruches_transparent.png'),
+};
+
+const FARM_PRODUCT_FILES = {
+  eau: asset('eau', 'eau_inventaire_transparent.png'),
+  oeuf: asset('ferme', 'oeuf_transparent.png'),
+  lait: asset('ferme', 'lait_transparent.png'),
+  laine: asset('ferme', 'laine_transparent.png'),
+  bacon: asset('ferme', 'bacon_transparent.png'),
+  miel: asset('ferme', 'miel_transparent.png'),
 };
 
 const FARMER_FILES = {
@@ -188,7 +212,18 @@ export function getJobIcon(jobId) {
   return JOB_ICONS[jobId] || null;
 }
 
+export function getFarmBuildingIcon(buildingId) {
+  return FARM_BUILDING_FILES[buildingId] || UI.ferme;
+}
+
+export function getFarmProductIcon(productId) {
+  return FARM_PRODUCT_FILES[productId] || null;
+}
+
 export function getNavIcon(viewId) {
+  if (viewId?.startsWith('farm_')) {
+    return getFarmBuildingIcon(viewId.slice(5));
+  }
   return NAV_ICONS[viewId] || null;
 }
 

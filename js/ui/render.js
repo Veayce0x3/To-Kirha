@@ -9,8 +9,12 @@ import {
   toggleCategory,
   SIDEBAR_FOOTER,
   VIEWS,
+  isFarmView,
 } from './router.js';
-import { renderTutorialOverlay, showTutorialIntroModal, teardownTutorialOverlay, bindTutorialSidebarListeners, showTutorialDungeonVictory } from './tutorialUi.js';
+import { renderTutorialOverlay, showTutorialIntroModal, teardownTutorialOverlay, bindTutorialSidebarListeners, bindTutorialModalListeners, showTutorialDungeonVictory, scheduleTutorialOverlayRefresh } from './tutorialUi.js';
+import { syncTutorialProgress } from '../systems/tutorial.js';
+import { reconcileTutorialAxeProgress } from '../systems/tutorialSandbox.js';
+import { isRecipeEquipped } from '../systems/equipment.js';
 import {
   renderView,
   renderMinibar,
@@ -19,8 +23,13 @@ import {
   initSakuraPetals,
   formatNumber,
   updateHarvestSlotProgresses,
+  updateFarmSlotProgresses,
+  patchFarmSlot,
+  syncStaleFarmSlots,
   patchHarvestSlot,
   closeAllResourcePickers,
+  isResourcePickerOpen,
+  refreshJobViewLight,
   openDungeonCombatModal,
   refreshDungeonCombatModal,
   closeDungeonCombatModal,
@@ -84,6 +93,8 @@ export function initUI(game, audio) {
     let levelHtml = '';
     if (showLevel && view.job) {
       levelHtml = `<span class="nav-level">${game.getJobLevel(view.job)}</span>`;
+    } else if (showLevel && view.building) {
+      levelHtml = `<span class="nav-level">${game.getJobLevel('breeder')}</span>`;
     } else if (showLevel && viewId === 'character') {
       levelHtml = `<span class="nav-level">${game.getCharacterProgress().level}</span>`;
     }
@@ -93,7 +104,7 @@ export function initUI(game, audio) {
       ? iconHtml(navIcon, 'nav-icon', view.label)
       : (view.emoji ? `<span class="nav-emoji">${view.emoji}</span>` : '');
 
-    const statusDot = view.job ? '<span class="nav-status-dot" aria-hidden="true"></span>' : '';
+    const statusDot = (view.job || view.building) ? '<span class="nav-status-dot" aria-hidden="true"></span>' : '';
 
     btn.innerHTML = `
       ${iconPart}
@@ -148,6 +159,15 @@ export function initUI(game, audio) {
         if (btn) items.appendChild(btn);
       }
 
+      if (cat.id === 'recolte' || cat.id === 'ferme') {
+        const hint = document.createElement('p');
+        hint.className = 'nav-cat-hint';
+        hint.textContent = cat.id === 'recolte'
+          ? 'Chiffre = niveau du métier · Point coloré = état récolte (prêt, en cours, repousse).'
+          : 'Chiffre = niveau Éleveur · Point coloré = production en cours dans le bâtiment.';
+        items.appendChild(hint);
+      }
+
       section.appendChild(items);
       els.sidebarNav.appendChild(section);
     }
@@ -176,15 +196,22 @@ export function initUI(game, audio) {
       delete btn.dataset.harvestStatus;
 
       const viewDef = VIEWS[vid];
-      if (!viewDef?.job) return;
-
-      const status = game.getJobHarvestNavStatus(viewDef.job);
-      btn.dataset.harvestStatus = status;
-      btn.classList.add(`nav-harvest-${status}`);
+      if (viewDef?.job) {
+        const status = game.getJobHarvestNavStatus(viewDef.job);
+        btn.dataset.harvestStatus = status;
+        btn.classList.add(`nav-harvest-${status}`);
+        return;
+      }
+      if (viewDef?.building) {
+        const status = game.getFarmBuildingNavStatus(viewDef.building);
+        btn.dataset.harvestStatus = status;
+        btn.classList.add(`nav-harvest-${status}`);
+      }
     });
   }
 
   function refreshView() {
+    game.prepareTutorialSandboxForStep?.();
     closeAllResourcePickers();
     const view = getView();
     renderView(game, els.viewContainer, view);
@@ -196,7 +223,9 @@ export function initUI(game, audio) {
       },
     });
     updateNavActive();
-    renderTutorialOverlay(game);
+    if (game.isTutorialActive()) {
+      scheduleTutorialOverlayRefresh(game, 3);
+    }
   }
 
   function refreshHeader(state) {
@@ -214,19 +243,27 @@ export function initUI(game, audio) {
     els.zoneSubtitle.textContent = zone ? `${zone.emoji} ${zone.name}` : '';
   }
 
-  function tickHarvestUI() {
-    if (game.isHarvesting()) {
-      updateHarvestSlotProgresses(game);
+  function tickActiveUI() {
+    const harvesting = game.isHarvesting();
+    const farming = game.isFarmActive();
+    if (harvesting) updateHarvestSlotProgresses(game);
+    if (farming) updateFarmSlotProgresses(game);
+    if (harvesting || farming) {
       updateNavActive();
-      animFrame = requestAnimationFrame(tickHarvestUI);
+      animFrame = requestAnimationFrame(tickActiveUI);
     } else {
       cancelAnimationFrame(animFrame);
       animFrame = null;
     }
   }
 
+  function tickHarvestUI() {
+    tickActiveUI();
+  }
+
   buildNav();
   bindTutorialSidebarListeners(game);
+  bindTutorialModalListeners(game);
 
   els.burgerBtn?.addEventListener('click', openSidebar);
   els.sidebarOverlay?.addEventListener('click', closeSidebar);
@@ -264,11 +301,39 @@ export function initUI(game, audio) {
     els.prestigeModal.classList.add('active');
   });
 
-  on('navigate', () => { refreshView(); refreshHeader(game.state); closeSidebar(); });
+  on('navigate', () => {
+    refreshView();
+    refreshHeader(game.state);
+    closeSidebar();
+    updateNavActive();
+  });
   on('stateChange', (state) => {
     refreshHeader(state);
+    const view = getView();
+    const jobId = VIEWS[view]?.job;
+    const tutStep = game.isTutorialActive()
+      ? game.tutorialData?.steps?.[game.state.tutorial?.stepIndex]?.id
+      : null;
+    const tutoFarmLight = isFarmView(view) && (tutStep === 'farm' || tutStep === 'farm_chicken');
+    if (isFarmView(view)) {
+      syncStaleFarmSlots(game);
+    }
+    if (isResourcePickerOpen() && jobId) {
+      game.prepareTutorialSandboxForStep?.();
+      refreshJobViewLight(game, jobId);
+      updateNavActive();
+      if (game.isTutorialActive()) scheduleTutorialOverlayRefresh(game, 2);
+      if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
+      return;
+    }
+    if (tutoFarmLight) {
+      updateFarmSlotProgresses(game);
+      if (game.isTutorialActive()) scheduleTutorialOverlayRefresh(game, 2);
+      if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
+      return;
+    }
     refreshView();
-    if (game.isHarvesting() && !animFrame) tickHarvestUI();
+    if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
   });
 
   on('harvestStart', ({ jobId, slotIndex }) => {
@@ -368,7 +433,7 @@ export function initUI(game, audio) {
     if (recipe.combatItem) {
       if (game.isTutorialActive() && game.state.tutorial?.flags?.weaponCrafted) {
         showTutorialVictoryToast(els, '✅ Arme forgée ! Maintenant, va sur Perso pour l\'équiper.');
-        renderTutorialOverlay(game);
+        scheduleTutorialOverlayRefresh(game);
       } else {
         showToast(els, `${msg} — Va sur Perso pour l'équiper !`, 'craft');
       }
@@ -376,6 +441,10 @@ export function initUI(game, audio) {
       showToast(els, msg, 'craft', { label: 'Équiper', onClick: () => game.doEquip(recipeId) });
     } else {
       showToast(els, msg, 'craft');
+    }
+    if (game.isTutorialActive() && recipeId === 'sakura_axe') {
+      showTutorialVictoryToast(els, '✅ Hache de Frêne reçue ! On continue…');
+      requestAnimationFrame(() => renderTutorialOverlay(game));
     }
     audio.playSfx('craft');
   });
@@ -388,6 +457,33 @@ export function initUI(game, audio) {
   });
   on('toolBroken', ({ name }) => {
     showToast(els, `🔧 ${name || 'Outil'} usé — refabrique-le à l'atelier`, 'sell');
+  });
+  on('craftBlocked', ({ message }) => {
+    showToast(els, message || 'Fabrication impossible', 'sell');
+  });
+  on('harvestBlocked', ({ message }) => {
+    showToast(els, message || 'Outil requis pour récolter', 'sell');
+  });
+  on('farmBlocked', ({ message }) => {
+    showToast(els, message || 'Impossible de produire', 'sell');
+  });
+  on('farmComplete', ({ buildingId, slotIndex }) => {
+    if (buildingId != null && slotIndex != null) {
+      patchFarmSlot(game, buildingId, slotIndex);
+    }
+    syncStaleFarmSlots(game);
+    if (isFarmView(getView())) {
+      refreshView();
+    }
+    if (game.isFarmActive() && !animFrame) tickHarvestUI();
+  });
+  on('farmSlotUnlock', ({ buildingId, slots }) => {
+    showToast(els, `Nouvel emplacement ferme ! (${slots} slots)`, 'upgrade');
+    if (isFarmView(getView())) refreshView();
+  });
+  on('farmStart', () => {
+    if (!animFrame) tickHarvestUI();
+    if (game.isTutorialActive()) scheduleTutorialOverlayRefresh(game, 2);
   });
   on('equip', ({ recipeId }) => {
     const r = game.recipes[recipeId];
@@ -411,6 +507,13 @@ export function initUI(game, audio) {
   on('prestige', ({ season }) => showToast(els, `🌸 Saison ${season} !`, 'prestige'));
   on('settingsChange', (s) => audio.updateSettings(s));
 
+  on('tutorialAxeReceived', () => {
+    showTutorialVictoryToast(els, '✅ Hache de Frêne reçue ! On continue…');
+    renderTutorialOverlay(game);
+  });
+  on('tutorialAxeError', ({ reason }) => {
+    showToast(els, reason || 'Impossible de recevoir la hache', 'sell');
+  });
   on('tutorialWeaponChosen', () => {
     showTutorialVictoryToast(els, '⚔️ Arme acceptée ! Va à l\'Atelier forger la Lame du débutant.');
     renderTutorialOverlay(game);
@@ -419,15 +522,12 @@ export function initUI(game, audio) {
     showTutorialIntroModal(game);
   });
   on('tutorialBegin', () => {
-    renderTutorialOverlay(game);
-  });
-  on('stateChange', () => {
-    if (game.isTutorialActive()) renderTutorialOverlay(game);
+    scheduleTutorialOverlayRefresh(game, 3);
   });
 
   refreshHeader(game.state);
   refreshView();
-  if (game.isHarvesting()) tickHarvestUI();
+  if (game.isHarvesting() || game.isFarmActive()) tickHarvestUI();
   if (game.shouldShowTutorialIntro()) {
     showTutorialIntroModal(game);
   } else {

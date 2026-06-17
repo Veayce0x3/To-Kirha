@@ -11,16 +11,47 @@
     {
       "id": "intro",
       "title": "Formation du village",
-      "text": "Bienvenue à Kirha. En quelques minutes, tu vas récolter, choisir ton arme, forger, combattre en donjon et acheter ton premier parchemin.",
+      "text": "Bienvenue à Kirha. En quelques minutes, tu vas récolter, fabriquer ta hache, découvrir la ferme, forger ton arme, combattre en donjon et acheter ton premier parchemin.",
       "screen": "intro"
     },
     {
       "id": "harvest",
-      "title": "Récolte",
-      "text": "Assigne le Frêne sur l'emplacement, puis touche le bouton violet « Récolter ». La récolte est accélérée pendant la formation.",
+      "title": "Première récolte",
+      "text": "Assigne le Frêne sur l'emplacement, puis touche « Récolter ». Ta première coupe est manuelle et accélérée.",
       "view": "job_lumberjack",
       "highlight": ".slots-grid",
       "completeWhen": "tutorial_harvest_done"
+    },
+    {
+      "id": "sell_wood",
+      "title": "Vendre au marché",
+      "text": "Va à la Banque et vends ton Frêne pour obtenir des 💰.",
+      "view": "inventory",
+      "highlight": ".bank-resource-list",
+      "completeWhen": "tutorial_wood_sold"
+    },
+    {
+      "id": "craft_axe",
+      "title": "Ta première hache",
+      "text": "Voici ta Hache de Frêne de formation — touche « Recevoir ma hache » pour continuer.",
+      "screen": "axe_offer",
+      "completeWhen": "tutorial_axe_crafted"
+    },
+    {
+      "id": "farm",
+      "title": "Découvre la Ferme",
+      "text": "Va au Puits et lance une production d'eau avec ton seau d'éleveur.",
+      "view": "farm_well",
+      "highlight": ".farm-slot[data-building=\"well\"]",
+      "completeWhen": "tutorial_farm_started"
+    },
+    {
+      "id": "farm_chicken",
+      "title": "Le Poulailler",
+      "text": "Choisis une ration (Blé + Eau) puis lance la production d'œufs.",
+      "view": "farm_chicken_coop",
+      "highlight": ".farm-slot[data-building=\"chicken_coop\"]",
+      "completeWhen": "tutorial_farm_chicken_started"
     },
     {
       "id": "weapon_pick",
@@ -56,7 +87,7 @@
     {
       "id": "graduate",
       "title": "Tu es prêt !",
-      "text": "Tu maîtrises récolte, craft, combat et économie. Les Missions te guideront pour la suite. Bon voyage à Kirha.",
+      "text": "Tu maîtrises récolte, ferme, craft, combat et économie. Les Missions te guideront pour la suite. Bon voyage à Kirha.",
       "screen": "graduate"
     }
   ]

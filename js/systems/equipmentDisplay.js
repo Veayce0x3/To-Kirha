@@ -48,6 +48,28 @@ export function renderDurabilityBar(state, recipeId, recipe) {
   `;
 }
 
+/** Affichage durabilité au craft (avant possession) ou barre si déjà possédé. */
+export function renderCraftDurabilityInfo(state, recipeId, recipe, { owned = false, broken = false } = {}) {
+  if (!isDurabilityTool(recipe)) return '';
+  if (owned || broken) return renderDurabilityBar(state, recipeId, recipe);
+  return `<p class="tile-stats craft-durability-hint">🔧 ${recipe.maxUses} utilisations — s'use à chaque emploi</p>`;
+}
+
+export function renderEquippedToolRow(state, recipeId, recipes, slotLabel = 'Outil') {
+  const recipe = recipes[recipeId];
+  if (!recipe) return '';
+  const dur = isDurabilityTool(recipe) ? renderDurabilityBar(state, recipeId, recipe) : '';
+  return `
+    <div class="job-tool-row">
+      <div class="job-tool-row-head">
+        <span class="job-tool-slot">${slotLabel}</span>
+        <strong>${recipe.emoji} ${recipe.name}</strong>
+      </div>
+      ${dur}
+    </div>
+  `;
+}
+
 export function renderDQStatsBlock(breakdown, charProg, { compact = false } = {}) {
   const { total, base, equipment, setBonus } = breakdown;
   const setLine = setBonus.hp || setBonus.atk || setBonus.def

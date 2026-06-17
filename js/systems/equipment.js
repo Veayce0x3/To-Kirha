@@ -1,4 +1,6 @@
-const GATHER_JOBS = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist'];
+import { isToolBroken } from './toolDurability.js';
+
+const GATHER_JOBS = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist', 'breeder', 'cook'];
 
 export function getDefaultEquipment() {
   return {
@@ -60,6 +62,20 @@ export function isRecipeEquipped(state, recipeId) {
   return getEquippedRecipeIds(state).includes(recipeId);
 }
 
+export function isGatheringEquipableRecipe(recipeId, equipmentData) {
+  return !!equipmentData?.equipable?.[recipeId];
+}
+
+/** Onglet atelier : outils de récolte regroupés sous Outilleur. */
+export function recipeBelongsToWorkshopTab(recipeId, recipe, craftJobId, equipmentData) {
+  const isGatheringTool = isGatheringEquipableRecipe(recipeId, equipmentData);
+  if (craftJobId === 'toolmaker') {
+    return isGatheringTool || recipe?.craftJob === 'toolmaker';
+  }
+  if (recipe?.craftJob !== craftJobId) return false;
+  return !isGatheringTool;
+}
+
 export function getJobEquippedTool(state, jobId) {
   ensureEquipment(state);
   return state.equipment.jobs?.[jobId] || null;
@@ -79,7 +95,13 @@ export function canEquip(recipeId, state, equipmentData, recipes = {}) {
 
 export function equip(recipeId, state, equipmentData, recipes = {}) {
   if (!canEquip(recipeId, state, equipmentData, recipes)) return false;
+  return equipForced(recipeId, state, equipmentData);
+}
+
+/** Équipe sans garde-fous (formation, récompenses). */
+export function equipForced(recipeId, state, equipmentData) {
   const item = equipmentData.equipable[recipeId];
+  if (!item) return false;
   ensureEquipment(state, equipmentData.equipable);
 
   if (item.job == null) {
@@ -140,4 +162,41 @@ export function getGatheringEquipmentRows(state, jobs, recipes) {
       accessoryLabel: getEquippedLabel(accId, recipes),
     };
   });
+}
+
+/** Tous les outils/accessoires de métier possédés (équipés ou en réserve), liste plate. */
+export function getOwnedGatheringEquipment(state, equipmentData, recipes, jobs) {
+  ensureEquipment(state);
+  const equipable = equipmentData?.equipable || {};
+  const items = [];
+
+  for (const recipeId of state.crafted || []) {
+    const meta = equipable[recipeId];
+    if (!meta) continue;
+    const recipe = recipes[recipeId];
+    if (!recipe) continue;
+    const job = meta.job ? jobs[meta.job] : null;
+    const slotKind = meta.job == null ? 'global' : (meta.slot === 'accessory' ? 'accessory' : 'tool');
+    items.push({
+      recipeId,
+      recipe,
+      jobId: meta.job,
+      jobName: job?.name || 'Tous métiers',
+      jobEmoji: job?.emoji || '🌐',
+      slotKind,
+      equipped: isRecipeEquipped(state, recipeId),
+      canEquip: canEquip(recipeId, state, equipmentData, recipes),
+      broken: isToolBroken(state, recipeId, recipe),
+    });
+  }
+
+  items.sort((a, b) => {
+    if (a.equipped !== b.equipped) return a.equipped ? -1 : 1;
+    const jobCmp = a.jobName.localeCompare(b.jobName, 'fr');
+    if (jobCmp !== 0) return jobCmp;
+    if (a.slotKind !== b.slotKind) return a.slotKind === 'tool' ? -1 : 1;
+    return (a.recipe.name || '').localeCompare(b.recipe.name || '', 'fr');
+  });
+
+  return items;
 }
