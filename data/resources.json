@@ -1310,7 +1310,8 @@
     "emoji": "🍙",
     "sellPrice": 18,
     "craftOnly": true,
-    "consumable": true
+    "consumable": true,
+    "description": "Soin en combat : +15 % PV max"
   },
   "meal_poisson": {
     "id": "meal_poisson",
@@ -1318,7 +1319,8 @@
     "emoji": "🐟",
     "sellPrice": 16,
     "craftOnly": true,
-    "consumable": true
+    "consumable": true,
+    "description": "Soin en combat : +20 % PV max"
   },
   "meal_oeufs": {
     "id": "meal_oeufs",
@@ -1326,7 +1328,8 @@
     "emoji": "🍳",
     "sellPrice": 22,
     "craftOnly": true,
-    "consumable": true
+    "consumable": true,
+    "description": "Soin en combat : +12 % PV max"
   },
   "meal_soupe": {
     "id": "meal_soupe",
@@ -1334,7 +1337,8 @@
     "emoji": "🥣",
     "sellPrice": 28,
     "craftOnly": true,
-    "consumable": true
+    "consumable": true,
+    "description": "Soin en combat : +25 % PV max"
   },
   "meal_brochette": {
     "id": "meal_brochette",
@@ -1342,7 +1346,8 @@
     "emoji": "🍢",
     "sellPrice": 35,
     "craftOnly": true,
-    "consumable": true
+    "consumable": true,
+    "description": "Soin en combat : +10 % PV max"
   },
   "meal_gateau": {
     "id": "meal_gateau",
@@ -1350,7 +1355,8 @@
     "emoji": "🍰",
     "sellPrice": 55,
     "craftOnly": true,
-    "consumable": true
+    "consumable": true,
+    "description": "Soin en combat : +30 % PV max"
   },
   "meal_festin": {
     "id": "meal_festin",
@@ -1358,6 +1364,7 @@
     "emoji": "🍱",
     "sellPrice": 120,
     "craftOnly": true,
-    "consumable": true
+    "consumable": true,
+    "description": "Soin en combat : +50 % PV max"
   }
 }

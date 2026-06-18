@@ -47,6 +47,8 @@ export function getCombatDailyStatus(state, balance) {
 }
 
 export function canSpendDailyCombat(state, balance, kind) {
+  if (kind === 'dungeonRun') return { ok: true };
+
   const daily = ensureCombatDaily(state);
   const limits = getCombatDailyLimits(balance);
 
@@ -55,9 +57,6 @@ export function canSpendDailyCombat(state, balance, kind) {
   }
   if (kind === 'soloBoss' && daily.soloBoss >= limits.soloBoss) {
     return { ok: false, reason: `Limite journalière : ${limits.soloBoss} boss rapides atteints.` };
-  }
-  if (kind === 'dungeonRun' && daily.dungeonRuns >= limits.dungeonRun) {
-    return { ok: false, reason: `Limite journalière : ${limits.dungeonRun} donjon(s) atteint(s).` };
   }
   return { ok: true };
 }

@@ -41,9 +41,13 @@ function renderRecipeCard(game, info) {
   if (recipe.combatItem) {
     const preview = getCombatItemPreview(recipe.combatItem, game.combatEquipment.items, game.weaponRoles);
     if (preview) {
+      const durHint = preview.item?.maxDurability
+        ? `<div class="tile-stats">🔧 ${preview.item.maxDurability} combats — s'use après chaque salle</div>`
+        : '';
       combatHtml = `
         <div class="craft-combat-preview">
           <div class="tile-stats">Nv.${preview.level} · ${preview.statsLine}</div>
+          ${durHint}
         </div>
       `;
     }
@@ -150,7 +154,7 @@ function paintCraftPanel(game, craftJobId, panelEl, headerEl) {
   } else if (isCook) {
     hints = `
       <div class="merchant-hint panel-inner cuisine-hint">
-        <span>🍲 Les plats consommables donnent des bonus en donjon. Équipe ton tablier sur Perso si tu en as un.</span>
+        <span>🍲 Les plats soignent en combat via le menu <strong>Objets</strong> (1 repas par tour de groupe).</span>
       </div>
     `;
   }

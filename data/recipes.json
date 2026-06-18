@@ -178,17 +178,16 @@
     "emoji": "🪖",
     "description": "Équipement combat — Temple Sakura",
     "ingredients": {
-      "frene": 30,
-      "ble": 20,
-      "ortie": 12,
-      "ancient_scroll": 2,
-      "gold_nugget": 10
+      "frene": 6,
+      "ble": 4,
+      "ortie": 2,
+      "gold_nugget": 2
     },
     "combatItem": "set_sakura_helmet",
-    "unique": true,
     "craftJob": "armorer",
-    "requiredJobLevel": 8,
-    "jobXp": 40
+    "requiredJobLevel": 1,
+    "jobXp": 40,
+    "repeatable": true
   },
   "set_sakura_chest": {
     "id": "set_sakura_chest",
@@ -196,17 +195,16 @@
     "emoji": "🥋",
     "description": "Équipement combat — Temple Sakura",
     "ingredients": {
-      "frene": 40,
-      "ble": 28,
-      "orge": 12,
-      "ancient_scroll": 3,
-      "gold_nugget": 18
+      "frene": 8,
+      "ble": 6,
+      "orge": 2,
+      "gold_nugget": 3
     },
     "combatItem": "set_sakura_chest",
-    "unique": true,
     "craftJob": "armorer",
-    "requiredJobLevel": 12,
-    "jobXp": 50
+    "requiredJobLevel": 1,
+    "jobXp": 50,
+    "repeatable": true
   },
   "set_sakura_boots": {
     "id": "set_sakura_boots",
@@ -214,16 +212,15 @@
     "emoji": "👢",
     "description": "Équipement combat — Temple Sakura",
     "ingredients": {
-      "frene": 24,
-      "ortie": 16,
-      "ancient_scroll": 2,
-      "gold_nugget": 10
+      "frene": 5,
+      "ortie": 3,
+      "gold_nugget": 2
     },
     "combatItem": "set_sakura_boots",
-    "unique": true,
     "craftJob": "shoemaker",
-    "requiredJobLevel": 8,
-    "jobXp": 35
+    "requiredJobLevel": 1,
+    "jobXp": 35,
+    "repeatable": true
   },
   "set_sakura_weapon": {
     "id": "set_sakura_weapon",
@@ -231,18 +228,16 @@
     "emoji": "⚔️",
     "description": "Arme Chevalier — départ Village Sakura",
     "ingredients": {
-      "frene": 14,
-      "goujon": 10,
-      "fer": 12,
-      "ble": 10,
-      "ortie": 10,
-      "ancient_scroll": 1,
-      "gold_nugget": 15
+      "frene": 4,
+      "goujon": 3,
+      "fer": 3,
+      "ble": 2,
+      "gold_nugget": 3
     },
     "combatItem": "set_sakura_weapon",
     "repeatable": true,
     "craftJob": "blacksmith",
-    "requiredJobLevel": 6,
+    "requiredJobLevel": 1,
     "jobXp": 15
   },
   "set_sakura_guardian_blade": {
@@ -251,18 +246,16 @@
     "emoji": "🗡️",
     "description": "Arme Paladin — départ Village Sakura",
     "ingredients": {
-      "frene": 14,
-      "goujon": 10,
-      "fer": 14,
-      "ble": 12,
-      "ortie": 8,
-      "ancient_scroll": 1,
-      "gold_nugget": 15
+      "frene": 4,
+      "goujon": 3,
+      "fer": 3,
+      "ble": 2,
+      "gold_nugget": 3
     },
     "combatItem": "set_sakura_guardian_blade",
     "repeatable": true,
     "craftJob": "blacksmith",
-    "requiredJobLevel": 6,
+    "requiredJobLevel": 1,
     "jobXp": 15
   },
   "set_sakura_bow": {
@@ -271,18 +264,16 @@
     "emoji": "🏹",
     "description": "Arme Archer — départ Village Sakura",
     "ingredients": {
-      "frene": 16,
-      "goujon": 10,
-      "fer": 8,
-      "ble": 8,
-      "ortie": 10,
-      "ancient_scroll": 1,
-      "gold_nugget": 14
+      "frene": 5,
+      "goujon": 3,
+      "fer": 2,
+      "ortie": 2,
+      "gold_nugget": 3
     },
     "combatItem": "set_sakura_bow",
     "repeatable": true,
     "craftJob": "carver",
-    "requiredJobLevel": 6,
+    "requiredJobLevel": 1,
     "jobXp": 15
   },
   "set_sakura_staff": {
@@ -291,18 +282,15 @@
     "emoji": "🪄",
     "description": "Arme Miko — départ Village Sakura",
     "ingredients": {
-      "frene": 10,
-      "goujon": 8,
-      "fer": 8,
-      "ble": 10,
-      "ortie": 18,
-      "ancient_scroll": 1,
-      "gold_nugget": 14
+      "frene": 4,
+      "goujon": 2,
+      "ortie": 4,
+      "gold_nugget": 3
     },
     "combatItem": "set_sakura_staff",
     "repeatable": true,
     "craftJob": "carver",
-    "requiredJobLevel": 6,
+    "requiredJobLevel": 1,
     "jobXp": 15
   },
   "set_sakura_dagger": {
@@ -311,18 +299,15 @@
     "emoji": "🔪",
     "description": "Arme Assassin — départ Village Sakura",
     "ingredients": {
-      "frene": 10,
-      "goujon": 12,
-      "fer": 14,
-      "ble": 8,
-      "ortie": 10,
-      "ancient_scroll": 1,
-      "gold_nugget": 16
+      "frene": 3,
+      "goujon": 3,
+      "fer": 3,
+      "gold_nugget": 3
     },
     "combatItem": "set_sakura_dagger",
     "repeatable": true,
     "craftJob": "blacksmith",
-    "requiredJobLevel": 6,
+    "requiredJobLevel": 1,
     "jobXp": 15
   },
   "set_sakura_spear": {
@@ -331,18 +316,15 @@
     "emoji": "🔱",
     "description": "Arme Lancier — départ Village Sakura",
     "ingredients": {
-      "frene": 14,
-      "goujon": 10,
-      "fer": 16,
-      "ble": 8,
-      "ortie": 8,
-      "ancient_scroll": 1,
-      "gold_nugget": 15
+      "frene": 4,
+      "goujon": 3,
+      "fer": 4,
+      "gold_nugget": 3
     },
     "combatItem": "set_sakura_spear",
     "repeatable": true,
     "craftJob": "blacksmith",
-    "requiredJobLevel": 6,
+    "requiredJobLevel": 1,
     "jobXp": 15
   },
   "set_sakura_ring": {
@@ -351,16 +333,15 @@
     "emoji": "💍",
     "description": "Anneau combat — craft ou drop donjon",
     "ingredients": {
-      "ortie": 28,
-      "ble": 18,
-      "ancient_scroll": 2,
-      "gold_nugget": 10
+      "ortie": 4,
+      "ble": 3,
+      "gold_nugget": 2
     },
     "combatItem": "set_sakura_ring",
-    "unique": true,
     "craftJob": "jeweler",
-    "requiredJobLevel": 8,
-    "jobXp": 30
+    "requiredJobLevel": 2,
+    "jobXp": 30,
+    "repeatable": true
   },
   "set_sakura_amulet": {
     "id": "set_sakura_amulet",
@@ -368,16 +349,15 @@
     "emoji": "📿",
     "description": "Amulette combat — craft ou drop donjon",
     "ingredients": {
-      "ortie": 35,
-      "orge": 18,
-      "ancient_scroll": 2,
-      "gold_nugget": 14
+      "ortie": 5,
+      "orge": 3,
+      "gold_nugget": 2
     },
     "combatItem": "set_sakura_amulet",
-    "unique": true,
     "craftJob": "jeweler",
-    "requiredJobLevel": 10,
-    "jobXp": 35
+    "requiredJobLevel": 2,
+    "jobXp": 35,
+    "repeatable": true
   },
   "set_sakura_cape": {
     "id": "set_sakura_cape",
@@ -385,17 +365,16 @@
     "emoji": "🧣",
     "description": "Cape combat — Temple Sakura",
     "ingredients": {
-      "ortie": 22,
-      "ble": 22,
-      "frene": 16,
-      "ancient_scroll": 2,
-      "gold_nugget": 10
+      "ortie": 4,
+      "ble": 4,
+      "frene": 3,
+      "gold_nugget": 2
     },
     "combatItem": "set_sakura_cape",
-    "unique": true,
     "craftJob": "tailor",
-    "requiredJobLevel": 9,
-    "jobXp": 38
+    "requiredJobLevel": 2,
+    "jobXp": 38,
+    "repeatable": true
   },
   "set_sakura_shield": {
     "id": "set_sakura_shield",
@@ -403,16 +382,15 @@
     "emoji": "🛡️",
     "description": "Bouclier combat — craft ou drop donjon",
     "ingredients": {
-      "frene": 32,
-      "orge": 16,
-      "ancient_scroll": 2,
-      "gold_nugget": 12
+      "frene": 6,
+      "orge": 3,
+      "gold_nugget": 2
     },
     "combatItem": "set_sakura_shield",
-    "unique": true,
     "craftJob": "blacksmith",
-    "requiredJobLevel": 10,
-    "jobXp": 42
+    "requiredJobLevel": 2,
+    "jobXp": 42,
+    "repeatable": true
   },
   "set_sakura_belt": {
     "id": "set_sakura_belt",
@@ -420,16 +398,15 @@
     "emoji": "🎗️",
     "description": "Ceinture combat — Temple Sakura",
     "ingredients": {
-      "ble": 22,
-      "ortie": 18,
-      "ancient_scroll": 2,
-      "gold_nugget": 10
+      "ble": 4,
+      "ortie": 3,
+      "gold_nugget": 2
     },
     "combatItem": "set_sakura_belt",
-    "unique": true,
     "craftJob": "shoemaker",
-    "requiredJobLevel": 9,
-    "jobXp": 32
+    "requiredJobLevel": 2,
+    "jobXp": 32,
+    "repeatable": true
   },
   "set_sakura_ring_right": {
     "id": "set_sakura_ring_right",
@@ -437,16 +414,15 @@
     "emoji": "💎",
     "description": "Anneau D. — craft ou drop donjon",
     "ingredients": {
-      "ortie": 22,
-      "goujon": 12,
-      "ancient_scroll": 2,
-      "gold_nugget": 10
+      "ortie": 4,
+      "goujon": 2,
+      "gold_nugget": 2
     },
     "combatItem": "set_sakura_ring_right",
-    "unique": true,
     "craftJob": "jeweler",
-    "requiredJobLevel": 9,
-    "jobXp": 30
+    "requiredJobLevel": 2,
+    "jobXp": 30,
+    "repeatable": true
   },
   "set_petal_helmet": {
     "id": "set_petal_helmet",
@@ -826,14 +802,13 @@
     "emoji": "🥋",
     "description": "Tenue d'équipier — Temple Sakura",
     "ingredients": {
-      "frene": 8,
-      "ble": 6,
-      "ancient_scroll": 1,
-      "gold_nugget": 2
+      "frene": 2,
+      "ble": 2,
+      "gold_nugget": 1
     },
     "combatItem": "companion_sakura_armor",
     "craftJob": "armorer",
-    "requiredJobLevel": 4,
+    "requiredJobLevel": 1,
     "jobXp": 25,
     "repeatable": true
   },
@@ -843,14 +818,13 @@
     "emoji": "💍",
     "description": "Charme d'équipier — Temple Sakura",
     "ingredients": {
-      "frene": 5,
-      "ortie": 4,
-      "ancient_scroll": 1,
-      "gold_nugget": 2
+      "frene": 2,
+      "ortie": 2,
+      "gold_nugget": 1
     },
     "combatItem": "companion_sakura_charm",
     "craftJob": "jeweler",
-    "requiredJobLevel": 4,
+    "requiredJobLevel": 1,
     "jobXp": 22,
     "repeatable": true
   },
@@ -987,7 +961,7 @@
     "id": "recipe_onigiri",
     "name": "Onigiri",
     "emoji": "🍙",
-    "description": "Repas — +5 % HP (1 donjon)",
+    "description": "Soin en combat : +15 % PV max",
     "ingredients": {
       "goujon": 2,
       "eau": 1,
@@ -1004,7 +978,7 @@
     "id": "recipe_poisson",
     "name": "Poisson grillé",
     "emoji": "🐟",
-    "description": "Repas — +8 % HP (1 donjon)",
+    "description": "Soin en combat : +20 % PV max",
     "ingredients": {
       "goujon": 3,
       "eau": 1,
@@ -1030,7 +1004,8 @@
     "repeatable": true,
     "craftJob": "cook",
     "requiredJobLevel": 2,
-    "jobXp": 14
+    "jobXp": 14,
+    "description": "Soin en combat : +12 % PV max"
   },
   "recipe_soupe": {
     "id": "recipe_soupe",
@@ -1046,7 +1021,8 @@
     "repeatable": true,
     "craftJob": "cook",
     "requiredJobLevel": 4,
-    "jobXp": 16
+    "jobXp": 16,
+    "description": "Soin en combat : +25 % PV max"
   },
   "recipe_brochette": {
     "id": "recipe_brochette",
@@ -1062,7 +1038,8 @@
     "repeatable": true,
     "craftJob": "cook",
     "requiredJobLevel": 6,
-    "jobXp": 20
+    "jobXp": 20,
+    "description": "Soin en combat : +10 % PV max"
   },
   "recipe_gateau": {
     "id": "recipe_gateau",
@@ -1078,13 +1055,14 @@
     "repeatable": true,
     "craftJob": "cook",
     "requiredJobLevel": 10,
-    "jobXp": 28
+    "jobXp": 28,
+    "description": "Soin en combat : +30 % PV max"
   },
   "recipe_festin": {
     "id": "recipe_festin",
     "name": "Festin du Temple",
     "emoji": "🍱",
-    "description": "Buff premium donjon",
+    "description": "Soin en combat : +50 % PV max",
     "ingredients": {
       "jambon": 2,
       "lait": 2,
@@ -1107,11 +1085,11 @@
     "name": "Tablier de cuisinier",
     "emoji": "🧑‍🍳",
     "description": "+6 % vitesse cuisinier",
-    "kirhaCost": 25,
+    "kirhaCost": 10,
     "maxUses": 50,
     "ingredients": {
-      "laine": 4,
-      "cuir": 2
+      "laine": 2,
+      "cuir": 1
     },
     "effect": {
       "type": "speed",
@@ -1120,7 +1098,7 @@
     },
     "unique": true,
     "craftJob": "tailor",
-    "requiredJobLevel": 5,
+    "requiredJobLevel": 1,
     "jobXp": 18
   },
   "recipe_bottes_cuir": {
@@ -1128,12 +1106,12 @@
     "name": "Bottes en cuir",
     "emoji": "👢",
     "description": "+6 % vitesse éleveur",
-    "kirhaCost": 30,
+    "kirhaCost": 10,
     "maxUses": 40,
     "toolTier": 1,
     "ingredients": {
-      "cuir": 6,
-      "frene": 4
+      "cuir": 2,
+      "frene": 2
     },
     "effect": {
       "type": "speed",
@@ -1142,7 +1120,7 @@
     },
     "unique": true,
     "craftJob": "shoemaker",
-    "requiredJobLevel": 5,
+    "requiredJobLevel": 1,
     "jobXp": 18
   },
   "recipe_tonique_miel": {
@@ -1183,14 +1161,14 @@
     "name": "Marmite",
     "emoji": "🍲",
     "description": "Débloque plats avancés",
-    "kirhaCost": 40,
+    "kirhaCost": 15,
     "ingredients": {
-      "fer": 6,
-      "frene": 4
+      "fer": 2,
+      "frene": 2
     },
     "unique": true,
     "craftJob": "blacksmith",
-    "requiredJobLevel": 4,
+    "requiredJobLevel": 1,
     "jobXp": 15
   },
   "recipe_ruche_amelioree": {

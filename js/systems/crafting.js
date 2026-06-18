@@ -2,6 +2,7 @@
  * Système de fabrication — logique unique, sans couches intermédiaires.
  */
 import { grantCombatItem } from './combat.js';
+import { hasWorkingCombatItem } from './combatDurability.js';
 import { equip, getJobEquippedTool, recipeBelongsToWorkshopTab } from './equipment.js';
 import { initToolDurability, isDurabilityTool, isToolEffectActive } from './toolDurability.js';
 import { addJobXp } from './harvest.js';
@@ -14,6 +15,7 @@ export function makeCraftContext(game) {
     jobs: game.jobs,
     balance: game.balance,
     equipment: game.equipment,
+    combatItems: game.combatEquipment?.items || {},
   };
 }
 
@@ -35,8 +37,13 @@ function isZoneUnlocked(zoneId, state, balance) {
 }
 
 /** Outil unique encore utilisable (pas besoin d'en refaire un). */
-export function isRecipeStillOwned(state, recipeId, recipe) {
+export function isRecipeStillOwned(state, recipeId, recipe, combatItems = {}) {
   if (!recipe) return false;
+
+  if (recipe.combatItem && combatItems) {
+    if (hasWorkingCombatItem(state, recipe.combatItem, combatItems)) return true;
+  }
+
   const crafted = state.crafted || [];
   if (!crafted.includes(recipeId)) return false;
 
@@ -52,7 +59,7 @@ export function whyCannotCraft(recipeId, ctx) {
   const recipe = ctx.recipes[recipeId];
   if (!recipe) return 'Recette inconnue.';
 
-  if (isRecipeStillOwned(ctx.state, recipeId, recipe)) {
+  if (isRecipeStillOwned(ctx.state, recipeId, recipe, ctx.combatItems)) {
     return 'Déjà possédé et encore utilisable.';
   }
 
@@ -133,7 +140,7 @@ export function performCraft(recipeId, ctx) {
     ctx.state.inventory[outId] = invQty(ctx.state, outId) + amount;
   }
 
-  if (recipe.combatItem) grantCombatItem(ctx.state, recipe.combatItem);
+  if (recipe.combatItem) grantCombatItem(ctx.state, recipe.combatItem, ctx.combatItems || {});
 
   applyCraftResult(recipeId, recipe, ctx.state);
 
@@ -169,18 +176,21 @@ export function inspectRecipe(recipeId, ctx) {
   const craftJob = recipe.craftJob || 'blacksmith';
   const required = recipe.requiredJobLevel ?? 1;
   const level = jobLevel(ctx.state, craftJob);
-  const owned = isRecipeStillOwned(ctx.state, recipeId, recipe);
+  const owned = isRecipeStillOwned(ctx.state, recipeId, recipe, ctx.combatItems);
   const broken = isDurabilityTool(recipe)
     && (ctx.state.crafted || []).includes(recipeId)
     && !owned;
+  const hasBrokenCombat = recipe.combatItem && !owned
+    && (ctx.state.combatItemInstances || []).some((i) => i.itemId === recipe.combatItem);
   const locked = level < required;
   const block = whyCannotCraft(recipeId, ctx);
   const canMake = !block;
+  const isBroken = broken || hasBrokenCombat;
 
   let buttonLabel = 'Fabriquer';
   if (locked) buttonLabel = 'Verrouillé';
   else if (owned) buttonLabel = 'Possédé';
-  else if (broken) buttonLabel = 'Refabriquer';
+  else if (isBroken) buttonLabel = 'Refabriquer';
   else if (!canMake) buttonLabel = 'Fabriquer';
 
   const ingredients = Object.entries(recipe.ingredients || {}).map(([resId, need]) => {
@@ -200,7 +210,7 @@ export function inspectRecipe(recipeId, ctx) {
     level,
     locked,
     owned,
-    broken,
+    broken: isBroken,
     canMake,
     blockReason: block,
     buttonLabel,

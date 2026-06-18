@@ -14,7 +14,6 @@ import {
 import { isRecipeEquipped } from '../systems/equipment.js';
 import {
   renderView,
-  renderMinibar,
   renderJobSwitcherDock,
   updateJobSwitcherDockStatus,
   showOfflineModal,
@@ -50,7 +49,6 @@ export function initUI(game, audio) {
     viewTitle: document.getElementById('view-title'),
     zoneSubtitle: document.getElementById('zone-subtitle'),
     viewContainer: document.getElementById('view-container'),
-    skillMinibar: document.getElementById('skill-minibar'),
     jobSwitcherDock: document.getElementById('job-switcher-dock'),
     sidebar: document.getElementById('sidebar'),
     sidebarNav: document.getElementById('sidebar-nav'),
@@ -75,7 +73,6 @@ export function initUI(game, audio) {
 
   let lastKirha = game.state.kirha;
   let animFrame = null;
-  let minibarCollapsed = false;
 
   function openSidebar() {
     els.sidebar?.classList.add('open');
@@ -220,13 +217,6 @@ export function initUI(game, audio) {
     closeAllResourcePickers();
     const view = getView();
     renderView(game, els.viewContainer, view);
-    renderMinibar(game, els.skillMinibar, view, {
-      collapsed: minibarCollapsed,
-      onToggle: () => {
-        minibarCollapsed = !minibarCollapsed;
-        els.skillMinibar.classList.toggle('collapsed', minibarCollapsed);
-      },
-    });
     renderJobSwitcherDock(game, els.jobSwitcherDock, view);
     updateNavActive();
   }

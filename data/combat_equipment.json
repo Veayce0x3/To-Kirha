@@ -1,17 +1,67 @@
 {
   "slots": {
-    "helmet": { "id": "helmet", "name": "Coiffe", "emoji": "🪖" },
-    "cape": { "id": "cape", "name": "Cape", "emoji": "🧣" },
-    "amulet": { "id": "amulet", "name": "Amulette", "emoji": "📿" },
-    "weapon": { "id": "weapon", "name": "Arme", "emoji": "⚔️" },
-    "shield": { "id": "shield", "name": "Bouclier", "emoji": "🛡️" },
-    "ring_left": { "id": "ring_left", "name": "Anneau G.", "emoji": "💍" },
-    "ring_right": { "id": "ring_right", "name": "Anneau D.", "emoji": "💎" },
-    "belt": { "id": "belt", "name": "Ceinture", "emoji": "🎗️" },
-    "chest": { "id": "chest", "name": "Plastron", "emoji": "🥋" },
-    "boots": { "id": "boots", "name": "Bottes", "emoji": "👢" },
-    "companion_armor": { "id": "companion_armor", "name": "Tenue", "emoji": "🥋", "companionOnly": true },
-    "companion_charm": { "id": "companion_charm", "name": "Charme", "emoji": "📿", "companionOnly": true }
+    "helmet": {
+      "id": "helmet",
+      "name": "Coiffe",
+      "emoji": "🪖"
+    },
+    "cape": {
+      "id": "cape",
+      "name": "Cape",
+      "emoji": "🧣"
+    },
+    "amulet": {
+      "id": "amulet",
+      "name": "Amulette",
+      "emoji": "📿"
+    },
+    "weapon": {
+      "id": "weapon",
+      "name": "Arme",
+      "emoji": "⚔️"
+    },
+    "shield": {
+      "id": "shield",
+      "name": "Bouclier",
+      "emoji": "🛡️"
+    },
+    "ring_left": {
+      "id": "ring_left",
+      "name": "Anneau G.",
+      "emoji": "💍"
+    },
+    "ring_right": {
+      "id": "ring_right",
+      "name": "Anneau D.",
+      "emoji": "💎"
+    },
+    "belt": {
+      "id": "belt",
+      "name": "Ceinture",
+      "emoji": "🎗️"
+    },
+    "chest": {
+      "id": "chest",
+      "name": "Plastron",
+      "emoji": "🥋"
+    },
+    "boots": {
+      "id": "boots",
+      "name": "Bottes",
+      "emoji": "👢"
+    },
+    "companion_armor": {
+      "id": "companion_armor",
+      "name": "Tenue",
+      "emoji": "🥋",
+      "companionOnly": true
+    },
+    "companion_charm": {
+      "id": "companion_charm",
+      "name": "Charme",
+      "emoji": "📿",
+      "companionOnly": true
+    }
   },
   "items": {
     "set_sakura_helmet": {
@@ -20,7 +70,12 @@
       "emoji": "🪖",
       "slot": "helmet",
       "zone": "village_sakura",
-      "stats": { "hp": 15, "atk": 2, "def": 3 }
+      "stats": {
+        "hp": 15,
+        "atk": 2,
+        "def": 3
+      },
+      "maxDurability": 80
     },
     "set_sakura_cape": {
       "id": "set_sakura_cape",
@@ -28,7 +83,12 @@
       "emoji": "🧣",
       "slot": "cape",
       "zone": "village_sakura",
-      "stats": { "hp": 18, "atk": 1, "def": 4 }
+      "stats": {
+        "hp": 18,
+        "atk": 1,
+        "def": 4
+      },
+      "maxDurability": 80
     },
     "set_sakura_chest": {
       "id": "set_sakura_chest",
@@ -36,7 +96,12 @@
       "emoji": "🥋",
       "slot": "chest",
       "zone": "village_sakura",
-      "stats": { "hp": 25, "atk": 3, "def": 5 }
+      "stats": {
+        "hp": 25,
+        "atk": 3,
+        "def": 5
+      },
+      "maxDurability": 80
     },
     "set_sakura_shield": {
       "id": "set_sakura_shield",
@@ -44,7 +109,12 @@
       "emoji": "🛡️",
       "slot": "shield",
       "zone": "village_sakura",
-      "stats": { "hp": 20, "atk": 0, "def": 6 }
+      "stats": {
+        "hp": 20,
+        "atk": 0,
+        "def": 6
+      },
+      "maxDurability": 80
     },
     "set_sakura_boots": {
       "id": "set_sakura_boots",
@@ -52,7 +122,12 @@
       "emoji": "👢",
       "slot": "boots",
       "zone": "village_sakura",
-      "stats": { "hp": 10, "atk": 1, "def": 2 }
+      "stats": {
+        "hp": 10,
+        "atk": 1,
+        "def": 2
+      },
+      "maxDurability": 80
     },
     "set_sakura_weapon": {
       "id": "set_sakura_weapon",
@@ -62,7 +137,12 @@
       "zone": "village_sakura",
       "weaponType": "longsword",
       "className": "Chevalier",
-      "stats": { "hp": 0, "atk": 10, "def": 0 }
+      "stats": {
+        "hp": 0,
+        "atk": 10,
+        "def": 0
+      },
+      "maxDurability": 80
     },
     "set_sakura_guardian_blade": {
       "id": "set_sakura_guardian_blade",
@@ -72,7 +152,12 @@
       "zone": "village_sakura",
       "weaponType": "sword_shield",
       "className": "Paladin",
-      "stats": { "hp": 5, "atk": 8, "def": 2 }
+      "stats": {
+        "hp": 5,
+        "atk": 8,
+        "def": 2
+      },
+      "maxDurability": 80
     },
     "set_sakura_bow": {
       "id": "set_sakura_bow",
@@ -82,7 +167,12 @@
       "zone": "village_sakura",
       "weaponType": "bow",
       "className": "Archer",
-      "stats": { "hp": 0, "atk": 9, "def": 0 }
+      "stats": {
+        "hp": 0,
+        "atk": 9,
+        "def": 0
+      },
+      "maxDurability": 80
     },
     "set_sakura_staff": {
       "id": "set_sakura_staff",
@@ -92,7 +182,12 @@
       "zone": "village_sakura",
       "weaponType": "staff",
       "className": "Miko",
-      "stats": { "hp": 5, "atk": 6, "def": 0 }
+      "stats": {
+        "hp": 5,
+        "atk": 6,
+        "def": 0
+      },
+      "maxDurability": 80
     },
     "set_sakura_dagger": {
       "id": "set_sakura_dagger",
@@ -102,7 +197,12 @@
       "zone": "village_sakura",
       "weaponType": "dagger",
       "className": "Assassin",
-      "stats": { "hp": 0, "atk": 9, "def": 0 }
+      "stats": {
+        "hp": 0,
+        "atk": 9,
+        "def": 0
+      },
+      "maxDurability": 80
     },
     "set_sakura_spear": {
       "id": "set_sakura_spear",
@@ -112,7 +212,12 @@
       "zone": "village_sakura",
       "weaponType": "spear",
       "className": "Lancier",
-      "stats": { "hp": 0, "atk": 9, "def": 1 }
+      "stats": {
+        "hp": 0,
+        "atk": 9,
+        "def": 1
+      },
+      "maxDurability": 80
     },
     "set_sakura_ring": {
       "id": "set_sakura_ring",
@@ -120,7 +225,12 @@
       "emoji": "💍",
       "slot": "ring_left",
       "zone": "village_sakura",
-      "stats": { "hp": 8, "atk": 4, "def": 1 }
+      "stats": {
+        "hp": 8,
+        "atk": 4,
+        "def": 1
+      },
+      "maxDurability": 80
     },
     "set_sakura_ring_right": {
       "id": "set_sakura_ring_right",
@@ -128,7 +238,12 @@
       "emoji": "💎",
       "slot": "ring_right",
       "zone": "village_sakura",
-      "stats": { "hp": 8, "atk": 3, "def": 2 }
+      "stats": {
+        "hp": 8,
+        "atk": 3,
+        "def": 2
+      },
+      "maxDurability": 80
     },
     "set_sakura_belt": {
       "id": "set_sakura_belt",
@@ -136,7 +251,12 @@
       "emoji": "🎗️",
       "slot": "belt",
       "zone": "village_sakura",
-      "stats": { "hp": 14, "atk": 2, "def": 3 }
+      "stats": {
+        "hp": 14,
+        "atk": 2,
+        "def": 3
+      },
+      "maxDurability": 80
     },
     "set_sakura_amulet": {
       "id": "set_sakura_amulet",
@@ -144,7 +264,12 @@
       "emoji": "📿",
       "slot": "amulet",
       "zone": "village_sakura",
-      "stats": { "hp": 12, "atk": 2, "def": 2 }
+      "stats": {
+        "hp": 12,
+        "atk": 2,
+        "def": 2
+      },
+      "maxDurability": 80
     },
     "set_petal_helmet": {
       "id": "set_petal_helmet",
@@ -152,7 +277,11 @@
       "emoji": "🪖",
       "slot": "helmet",
       "zone": "petal_forest",
-      "stats": { "hp": 30, "atk": 5, "def": 6 }
+      "stats": {
+        "hp": 30,
+        "atk": 5,
+        "def": 6
+      }
     },
     "set_petal_cape": {
       "id": "set_petal_cape",
@@ -160,7 +289,11 @@
       "emoji": "🧣",
       "slot": "cape",
       "zone": "petal_forest",
-      "stats": { "hp": 38, "atk": 4, "def": 8 }
+      "stats": {
+        "hp": 38,
+        "atk": 4,
+        "def": 8
+      }
     },
     "set_petal_chest": {
       "id": "set_petal_chest",
@@ -168,7 +301,11 @@
       "emoji": "🥋",
       "slot": "chest",
       "zone": "petal_forest",
-      "stats": { "hp": 45, "atk": 8, "def": 10 }
+      "stats": {
+        "hp": 45,
+        "atk": 8,
+        "def": 10
+      }
     },
     "set_petal_shield": {
       "id": "set_petal_shield",
@@ -176,7 +313,11 @@
       "emoji": "🛡️",
       "slot": "shield",
       "zone": "petal_forest",
-      "stats": { "hp": 42, "atk": 2, "def": 12 }
+      "stats": {
+        "hp": 42,
+        "atk": 2,
+        "def": 12
+      }
     },
     "set_petal_weapon": {
       "id": "set_petal_weapon",
@@ -186,7 +327,11 @@
       "zone": "petal_forest",
       "weaponType": "bow",
       "className": "Archer",
-      "stats": { "hp": 0, "atk": 22, "def": 0 }
+      "stats": {
+        "hp": 0,
+        "atk": 22,
+        "def": 0
+      }
     },
     "set_petal_boots": {
       "id": "set_petal_boots",
@@ -194,7 +339,11 @@
       "emoji": "👢",
       "slot": "boots",
       "zone": "petal_forest",
-      "stats": { "hp": 20, "atk": 2, "def": 4 }
+      "stats": {
+        "hp": 20,
+        "atk": 2,
+        "def": 4
+      }
     },
     "set_petal_ring": {
       "id": "set_petal_ring",
@@ -202,7 +351,11 @@
       "emoji": "💍",
       "slot": "ring_left",
       "zone": "petal_forest",
-      "stats": { "hp": 16, "atk": 6, "def": 2 }
+      "stats": {
+        "hp": 16,
+        "atk": 6,
+        "def": 2
+      }
     },
     "set_petal_ring_right": {
       "id": "set_petal_ring_right",
@@ -210,7 +363,11 @@
       "emoji": "💎",
       "slot": "ring_right",
       "zone": "petal_forest",
-      "stats": { "hp": 16, "atk": 5, "def": 3 }
+      "stats": {
+        "hp": 16,
+        "atk": 5,
+        "def": 3
+      }
     },
     "set_petal_belt": {
       "id": "set_petal_belt",
@@ -218,7 +375,11 @@
       "emoji": "🎗️",
       "slot": "belt",
       "zone": "petal_forest",
-      "stats": { "hp": 28, "atk": 5, "def": 6 }
+      "stats": {
+        "hp": 28,
+        "atk": 5,
+        "def": 6
+      }
     },
     "set_petal_amulet": {
       "id": "set_petal_amulet",
@@ -226,7 +387,11 @@
       "emoji": "📿",
       "slot": "amulet",
       "zone": "petal_forest",
-      "stats": { "hp": 22, "atk": 4, "def": 4 }
+      "stats": {
+        "hp": 22,
+        "atk": 4,
+        "def": 4
+      }
     },
     "set_jade_helmet": {
       "id": "set_jade_helmet",
@@ -234,7 +399,11 @@
       "emoji": "🪖",
       "slot": "helmet",
       "zone": "jade_mountains",
-      "stats": { "hp": 55, "atk": 10, "def": 12 }
+      "stats": {
+        "hp": 55,
+        "atk": 10,
+        "def": 12
+      }
     },
     "set_jade_cape": {
       "id": "set_jade_cape",
@@ -242,7 +411,11 @@
       "emoji": "🧣",
       "slot": "cape",
       "zone": "jade_mountains",
-      "stats": { "hp": 70, "atk": 8, "def": 14 }
+      "stats": {
+        "hp": 70,
+        "atk": 8,
+        "def": 14
+      }
     },
     "set_jade_chest": {
       "id": "set_jade_chest",
@@ -250,7 +423,11 @@
       "emoji": "🥋",
       "slot": "chest",
       "zone": "jade_mountains",
-      "stats": { "hp": 80, "atk": 15, "def": 18 }
+      "stats": {
+        "hp": 80,
+        "atk": 15,
+        "def": 18
+      }
     },
     "set_jade_shield": {
       "id": "set_jade_shield",
@@ -258,7 +435,11 @@
       "emoji": "🛡️",
       "slot": "shield",
       "zone": "jade_mountains",
-      "stats": { "hp": 75, "atk": 4, "def": 20 }
+      "stats": {
+        "hp": 75,
+        "atk": 4,
+        "def": 20
+      }
     },
     "set_jade_weapon": {
       "id": "set_jade_weapon",
@@ -268,7 +449,11 @@
       "zone": "jade_mountains",
       "weaponType": "staff",
       "className": "Miko",
-      "stats": { "hp": 10, "atk": 35, "def": 0 }
+      "stats": {
+        "hp": 10,
+        "atk": 35,
+        "def": 0
+      }
     },
     "set_jade_boots": {
       "id": "set_jade_boots",
@@ -276,7 +461,11 @@
       "emoji": "👢",
       "slot": "boots",
       "zone": "jade_mountains",
-      "stats": { "hp": 35, "atk": 5, "def": 8 }
+      "stats": {
+        "hp": 35,
+        "atk": 5,
+        "def": 8
+      }
     },
     "set_jade_ring": {
       "id": "set_jade_ring",
@@ -284,7 +473,11 @@
       "emoji": "💍",
       "slot": "ring_left",
       "zone": "jade_mountains",
-      "stats": { "hp": 28, "atk": 10, "def": 4 }
+      "stats": {
+        "hp": 28,
+        "atk": 10,
+        "def": 4
+      }
     },
     "set_jade_ring_right": {
       "id": "set_jade_ring_right",
@@ -292,7 +485,11 @@
       "emoji": "💎",
       "slot": "ring_right",
       "zone": "jade_mountains",
-      "stats": { "hp": 28, "atk": 8, "def": 5 }
+      "stats": {
+        "hp": 28,
+        "atk": 8,
+        "def": 5
+      }
     },
     "set_jade_belt": {
       "id": "set_jade_belt",
@@ -300,7 +497,11 @@
       "emoji": "🎗️",
       "slot": "belt",
       "zone": "jade_mountains",
-      "stats": { "hp": 50, "atk": 8, "def": 10 }
+      "stats": {
+        "hp": 50,
+        "atk": 8,
+        "def": 10
+      }
     },
     "set_jade_amulet": {
       "id": "set_jade_amulet",
@@ -308,7 +509,11 @@
       "emoji": "📿",
       "slot": "amulet",
       "zone": "jade_mountains",
-      "stats": { "hp": 40, "atk": 6, "def": 6 }
+      "stats": {
+        "hp": 40,
+        "atk": 6,
+        "def": 6
+      }
     },
     "companion_sakura_armor": {
       "id": "companion_sakura_armor",
@@ -317,7 +522,12 @@
       "slot": "companion_armor",
       "zone": "village_sakura",
       "companionOnly": true,
-      "stats": { "hp": 12, "atk": 0, "def": 4 }
+      "stats": {
+        "hp": 12,
+        "atk": 0,
+        "def": 4
+      },
+      "maxDurability": 80
     },
     "companion_sakura_charm": {
       "id": "companion_sakura_charm",
@@ -326,7 +536,12 @@
       "slot": "companion_charm",
       "zone": "village_sakura",
       "companionOnly": true,
-      "stats": { "hp": 5, "atk": 2, "def": 1 }
+      "stats": {
+        "hp": 5,
+        "atk": 2,
+        "def": 1
+      },
+      "maxDurability": 80
     },
     "companion_petal_armor": {
       "id": "companion_petal_armor",
@@ -335,7 +550,11 @@
       "slot": "companion_armor",
       "zone": "petal_forest",
       "companionOnly": true,
-      "stats": { "hp": 18, "atk": 1, "def": 6 }
+      "stats": {
+        "hp": 18,
+        "atk": 1,
+        "def": 6
+      }
     },
     "companion_petal_charm": {
       "id": "companion_petal_charm",
@@ -344,7 +563,11 @@
       "slot": "companion_charm",
       "zone": "petal_forest",
       "companionOnly": true,
-      "stats": { "hp": 8, "atk": 4, "def": 2 }
+      "stats": {
+        "hp": 8,
+        "atk": 4,
+        "def": 2
+      }
     },
     "companion_jade_armor": {
       "id": "companion_jade_armor",
@@ -353,7 +576,11 @@
       "slot": "companion_armor",
       "zone": "jade_mountains",
       "companionOnly": true,
-      "stats": { "hp": 28, "atk": 2, "def": 9 }
+      "stats": {
+        "hp": 28,
+        "atk": 2,
+        "def": 9
+      }
     },
     "companion_jade_charm": {
       "id": "companion_jade_charm",
@@ -362,7 +589,11 @@
       "slot": "companion_charm",
       "zone": "jade_mountains",
       "companionOnly": true,
-      "stats": { "hp": 12, "atk": 6, "def": 4 }
+      "stats": {
+        "hp": 12,
+        "atk": 6,
+        "def": 4
+      }
     }
   }
 }

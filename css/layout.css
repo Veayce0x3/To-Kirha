@@ -4633,13 +4633,12 @@ body.picker-sheet-open #picker-sheet-portal .picker-sheet-header {
   margin: 0;
 }
 
-/* ── Barre métiers / ferme (bas d'écran) ── */
+/* ── Barre métiers / ferme (bas d'écran, zone contenu uniquement) ── */
 .job-switcher-dock {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 120;
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  z-index: 20;
   background: rgba(255, 253, 249, 0.96);
   border-top: 1px solid rgba(232, 180, 203, 0.45);
   box-shadow: 0 -4px 20px rgba(74, 55, 40, 0.08);
@@ -4780,18 +4779,14 @@ body.picker-sheet-open #picker-sheet-portal .picker-sheet-header {
 }
 
 body.has-job-switcher .view-container {
-  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 1.25rem;
 }
 
 body.has-job-switcher .footer {
   display: none;
 }
 
-@media (min-width: 900px) {
-  .job-switcher-dock {
-    left: 220px;
-  }
-
+@media (min-width: 769px) {
   .job-switcher-chip {
     min-width: 5rem;
     max-width: 6.5rem;

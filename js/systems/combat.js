@@ -54,6 +54,8 @@ export function calcDamage(atk, def, multiplier = 1, ignoreDef = 0) {
   return Math.max(1, Math.floor(atk * multiplier) - effectiveDef);
 }
 
+import { initCombatInstanceDurability, isCombatInstanceBroken } from './combatDurability.js';
+
 export function resolveItemId(state, ref, combatItems) {
   if (!ref) return null;
   if (combatItems[ref]) return ref;
@@ -80,7 +82,9 @@ export function migrateCombatItemInstances(state, combatItems) {
     }
     if (!combatItems[itemId]) return itemId;
     const instanceId = `ci_${itemId}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-    state.combatItemInstances.push({ instanceId, itemId });
+    const instance = { instanceId, itemId };
+    initCombatInstanceDurability(instance, combatItems[itemId]);
+    state.combatItemInstances.push(instance);
     return instanceId;
   };
 
@@ -323,6 +327,7 @@ export function initEncounter(run, foe, enemies, partySize = 1, combatZone = nul
 export function startPlayerTurn(run) {
   if (!run.combat || !run.party) return;
   run.combat.phase = 'player';
+  run.combat.mealUsedInFight = false;
   for (const member of run.party) {
     member.defBonus = 0;
   }
@@ -492,6 +497,28 @@ export function useMemberDefend(run, memberIndex) {
   return { enemyDefeated: false, ...advance };
 }
 
+export function useMemberMeal(run, memberIndex, healAmount, mealLabel, mealId) {
+  if (!run.combat || run.combat.phase !== 'player') return null;
+  if (run.combat.activeMemberIndex !== memberIndex) return null;
+  if (run.combat.mealUsedInFight) return { blocked: true, reason: 'Déjà utilisé ce tour de groupe' };
+
+  const member = run.party[memberIndex];
+  if (!member || member.hp <= 0) return { blocked: true, reason: 'Combattant KO' };
+
+  member.hp = Math.min(member.maxHp, member.hp + healAmount);
+  run.combat.mealUsedInFight = true;
+  run.combat.log.push({
+    type: 'heal',
+    text: `${member.emoji} ${member.name} mange ${mealLabel} : +${healAmount} HP.`,
+    memberId: member.id,
+    amount: healAmount,
+    mealId,
+  });
+
+  const advance = advanceAfterMemberAction(run);
+  return { enemyDefeated: false, ...advance };
+}
+
 function advanceEnemyTurnQueue(run, payload = {}) {
   const queue = run.combat.enemyTurnQueue || [];
   const currentPos = queue.indexOf(run.combat.activeEnemyIndex);
@@ -574,6 +601,7 @@ export function canEquipCombatItem(state, ref, combatItems) {
   if (item.companionOnly) return false;
   if (!COMBAT_SLOT_IDS.includes(item.slot)) return false;
   if (!ownsCombatRef(state, ref)) return false;
+  if (isCombatInstanceBroken(state, ref, combatItems)) return false;
   const owner = findCombatItemOwner(state, ref);
   if (owner && owner !== 'hero') return false;
   return true;
@@ -606,11 +634,14 @@ export function unequipCombatSlot(state, slot) {
   return true;
 }
 
-export function grantCombatItem(state, itemId) {
+export function grantCombatItem(state, itemId, combatItems = {}) {
   if (!state.combatItemInstances) state.combatItemInstances = [];
   if (!state.ownedCombatItems) state.ownedCombatItems = [];
   const instanceId = `ci_${itemId}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-  state.combatItemInstances.push({ instanceId, itemId });
+  const item = combatItems[itemId];
+  const instance = { instanceId, itemId };
+  initCombatInstanceDurability(instance, item);
+  state.combatItemInstances.push(instance);
   state.ownedCombatItems.push(instanceId);
   return instanceId;
 }

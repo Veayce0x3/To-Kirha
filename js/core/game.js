@@ -82,6 +82,7 @@ import {
   canEnterDungeon as checkEnterDungeon,
   useCombatSkill as resolveCombatSkill,
   useCombatDefend as resolveCombatDefend,
+  useCombatMeal as resolveCombatMeal,
   abandonCombat as clearCombatEncounter,
   getActiveEncounter,
   getActiveMemberSkills,
@@ -152,15 +153,8 @@ import {
   wearBreederTool,
 } from '../systems/farm.js';
 import { getFarmToolCheck, getHarvestToolCheck } from '../systems/toolTier.js';
-import {
-  setActiveMeal,
-  clearActiveMeal,
-  consumeActiveMealForRun,
-  clearCombatMealBuff,
-  useMealHealInCombat,
-  listCombatHealMeals,
-  MEAL_EFFECTS,
-} from '../systems/consumables.js';
+import { migrateCombatDurability } from '../systems/combatDurability.js';
+import { clearCombatMealBuff, MEAL_EFFECTS } from '../systems/consumables.js';
 
 const LEGACY_COMBAT_RESOURCES = [
   'spirit_ember', 'petal_gel', 'temple_fragment', 'sakura_core',
@@ -351,6 +345,7 @@ export class Game {
     ensureSlots(merged, this.balance);
     ensureFarmSlots(merged, this.farmData, this.balance);
     migrateCombatItemInstances(merged, this.combatEquipment.items);
+    migrateCombatDurability(merged, this.combatEquipment.items);
     migrateLegacyCombatResources(merged);
     migrateToolDurability(merged, this.recipes);
     repairCraftSave(merged, this.recipes);
@@ -794,23 +789,6 @@ export class Game {
     return check.ok ? null : check.message;
   }
 
-  setActiveMealForRun(mealId) {
-    if (!setActiveMeal(this.state, mealId)) return false;
-    emit('stateChange', this.state);
-    this.scheduleSave();
-    return true;
-  }
-
-  clearActiveMealForRun() {
-    clearActiveMeal(this.state);
-    emit('stateChange', this.state);
-    this.scheduleSave();
-  }
-
-  getActiveMealId() {
-    return this.state.activeMeal || null;
-  }
-
   getOwnedMeals() {
     return Object.keys(MEAL_EFFECTS).filter((id) => (this.state.inventory[id] || 0) > 0);
   }
@@ -845,21 +823,33 @@ export class Game {
   }
 
   useCombatMeal(mealId) {
-    const run = this.state.combatEncounter;
-    if (!run?.combat) return { ok: false, reason: 'Pas en combat' };
-    if (run.combat.mealUsedInFight) return { ok: false, reason: 'Déjà utilisé ce combat' };
-    if (run.combat.phase !== 'player') return { ok: false, reason: 'Pas ton tour' };
-    const heal = useMealHealInCombat(this.state, mealId);
-    if (!heal.ok) return heal;
-    const member = run.party?.[run.combat.activeMemberIndex];
-    if (!member || member.hp <= 0) return { ok: false, reason: 'Combattant KO' };
-    const gain = Math.max(1, Math.floor(member.maxHp * heal.healPct));
-    member.hp = Math.min(member.maxHp, member.hp + gain);
-    run.combat.mealUsedInFight = true;
-    run.combat.log.push({ type: 'heal', memberId: member.id, amount: gain, mealId });
+    const result = resolveCombatMeal(
+      mealId,
+      this.state,
+      this.characterConfig,
+      this.enemies,
+      this.balance,
+      this.combatEquipment.items
+    );
+    if (!result) return { ok: false, reason: 'Pas en combat' };
+    if (result.blocked) return { ok: false, reason: result.reason || 'Impossible' };
+
+    if (result.cleared) {
+      this.onCombatVictoryHooks(result);
+      emit('combatVictory', result);
+      if (result.levelResult) emit('charLevelUp', result.levelResult);
+      this.scheduleSave();
+    } else if (result.victory === false) {
+      clearCombatMealBuff(this.state);
+      emit('combatFail', result);
+      this.scheduleSave();
+    } else {
+      emit('combatTurn', result);
+      if (result.roomAdvanced) this.scheduleSave();
+    }
+
     emit('stateChange', this.state);
-    this.scheduleSave();
-    return { ok: true, healed: gain, member };
+    return { ok: true, ...result };
   }
 
   getFarmBuildingNavStatus(buildingId) {
@@ -1330,8 +1320,6 @@ export class Game {
     const combatZone = this.combatZones[zoneId];
     if (!combatZone) return { ok: false, reason: 'Zone inconnue' };
 
-    consumeActiveMealForRun(this.state);
-
     const result = startZoneDungeonRun(
       combatZone,
       this.state,
@@ -1429,7 +1417,8 @@ export class Game {
       this.characterConfig,
       this.enemies,
       targetId,
-      this.balance
+      this.balance,
+      this.combatEquipment.items
     );
     if (!result) return null;
 
@@ -1452,7 +1441,7 @@ export class Game {
   }
 
   useCombatDefend() {
-    const result = resolveCombatDefend(this.state, this.characterConfig, this.enemies, this.balance);
+    const result = resolveCombatDefend(this.state, this.characterConfig, this.enemies, this.balance, this.combatEquipment.items);
     if (!result) return null;
 
     if (result.victory === false) {
@@ -1474,7 +1463,7 @@ export class Game {
   }
 
   stepCombatEnemyTurn() {
-    const result = resolveCombatEnemyStep(this.state, this.characterConfig, this.enemies, this.balance);
+    const result = resolveCombatEnemyStep(this.state, this.characterConfig, this.enemies, this.balance, this.combatEquipment.items);
     if (!result) return null;
 
     if (result.cleared) {

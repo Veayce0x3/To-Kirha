@@ -2,6 +2,7 @@ import {
   initEncounter,
   useMemberSkill,
   useMemberDefend,
+  useMemberMeal,
   enemyAttackTurn,
   buildParty,
   buildHeroOnlyParty,
@@ -9,8 +10,11 @@ import {
   getLivingEnemies,
   DEFEND_ACTION,
   saveSoloHp,
+  clearSoloHpWear,
 } from './combat.js';
 import { addCharacterXp } from './character.js';
+import { useMealHealInCombat, clearCombatMealBuff } from './consumables.js';
+import { wearEquippedCombatGear } from './combatDurability.js';
 import {
   canSpendDailyCombat,
   getDungeonUnlockReason,
@@ -166,7 +170,11 @@ export function startDungeonRun(
   return { ok: true, encounter: state.combatEncounter, roomCount: rooms.length };
 }
 
-function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance) {
+function wearAfterCombat(state, combatItems) {
+  return wearEquippedCombatGear(state, combatItems);
+}
+
+function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, combatItems) {
   const run = state.combatEncounter;
   const charXp = foe.charXpReward || 0;
   const levelResult = charXp > 0 ? addCharacterXp(state, charXp, characterConfig, balance) : null;
@@ -177,6 +185,8 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance) {
   if (!run?.isDungeonRun) {
     recordDailyCombatUse(state, isBoss ? 'soloBoss' : 'soloMob');
   }
+
+  if (combatItems) wearAfterCombat(state, combatItems);
 
   if (run?.isSoloFight && run.party) {
     saveSoloHp(state, run.party);
@@ -195,11 +205,18 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance) {
   };
 }
 
-function finishDungeonRun(run, state, characterConfig, balance) {
+function finishDungeonRun(run, state, characterConfig, balance, combatItems) {
   const totalXp = run.dungeonCharXp || 0;
   const levelResult = totalXp > 0 ? addCharacterXp(state, totalXp, characterConfig, balance) : null;
   applyDrops(state, run.dungeonDrops || {});
   const roomCount = run.rooms?.length || 0;
+
+  for (const member of run.party || []) {
+    member.hp = member.maxHp;
+  }
+
+  clearSoloHpWear(state);
+  clearCombatMealBuff(state);
 
   state.combatEncounter = null;
 
@@ -213,18 +230,21 @@ function finishDungeonRun(run, state, characterConfig, balance) {
     drops: { ...(run.dungeonDrops || {}) },
     roomCount,
     zoneId: run.zoneId,
+    partyRestored: true,
   };
 }
 
-function advanceDungeonRoom(run, state, characterConfig, enemies, balance) {
+function advanceDungeonRoom(run, state, characterConfig, enemies, balance, combatItems) {
   const drops = rollDrops(run.foe.drops);
   mergeDropTables(run.dungeonDrops, drops);
   run.dungeonCharXp = (run.dungeonCharXp || 0) + (run.foe.charXpReward || 0);
   recordKill(state, run.zoneId, run.foe, run.isBoss);
 
+  if (combatItems) wearAfterCombat(state, combatItems);
+
   run.roomIndex += 1;
   if (run.roomIndex >= run.rooms.length) {
-    return finishDungeonRun(run, state, characterConfig, balance);
+    return finishDungeonRun(run, state, characterConfig, balance, combatItems);
   }
 
   const next = run.rooms[run.roomIndex];
@@ -245,14 +265,14 @@ function advanceDungeonRoom(run, state, characterConfig, enemies, balance) {
   };
 }
 
-function onEnemyDefeated(run, state, characterConfig, enemies, balance) {
+function onEnemyDefeated(run, state, characterConfig, enemies, balance, combatItems) {
   if (run.isDungeonRun) {
-    return advanceDungeonRoom(run, state, characterConfig, enemies, balance);
+    return advanceDungeonRoom(run, state, characterConfig, enemies, balance, combatItems);
   }
-  return completeVictory(run.zoneId, run.foe, run.isBoss, state, characterConfig, balance);
+  return completeVictory(run.zoneId, run.foe, run.isBoss, state, characterConfig, balance, combatItems);
 }
 
-function resolveEnemyPhaseStep(state, characterConfig, enemies, balance) {
+function resolveEnemyPhaseStep(state, characterConfig, enemies, balance, combatItems) {
   const run = state.combatEncounter;
   const enemyResult = enemyAttackTurn(run);
 
@@ -264,7 +284,7 @@ function resolveEnemyPhaseStep(state, characterConfig, enemies, balance) {
   }
 
   if (getLivingEnemies(run.combat).length === 0) {
-    return onEnemyDefeated(run, state, characterConfig, enemies, balance);
+    return onEnemyDefeated(run, state, characterConfig, enemies, balance, combatItems);
   }
 
   return {
@@ -278,13 +298,13 @@ function resolveEnemyPhaseStep(state, characterConfig, enemies, balance) {
   };
 }
 
-export function stepCombatEnemyTurn(state, characterConfig, enemies, balance) {
+export function stepCombatEnemyTurn(state, characterConfig, enemies, balance, combatItems) {
   const run = state.combatEncounter;
   if (!run?.combat || run.combat.phase !== 'enemy') return null;
-  return resolveEnemyPhaseStep(state, characterConfig, enemies, balance);
+  return resolveEnemyPhaseStep(state, characterConfig, enemies, balance, combatItems);
 }
 
-export function useCombatSkill(skillId, state, skills, characterConfig, enemies, targetId = 'enemy', balance) {
+export function useCombatSkill(skillId, state, skills, characterConfig, enemies, targetId = 'enemy', balance, combatItems) {
   const run = state.combatEncounter;
   if (!run?.combat) return null;
 
@@ -296,11 +316,11 @@ export function useCombatSkill(skillId, state, skills, characterConfig, enemies,
   if (!result) return null;
 
   if (result.enemyDefeated) {
-    return onEnemyDefeated(run, state, characterConfig, enemies, balance);
+    return onEnemyDefeated(run, state, characterConfig, enemies, balance, combatItems);
   }
 
   if (!result.nextMember) {
-    return resolveEnemyPhaseStep(state, characterConfig, enemies, balance);
+    return resolveEnemyPhaseStep(state, characterConfig, enemies, balance, combatItems);
   }
 
   return {
@@ -312,7 +332,7 @@ export function useCombatSkill(skillId, state, skills, characterConfig, enemies,
   };
 }
 
-export function useCombatDefend(state, characterConfig, enemies, balance) {
+export function useCombatDefend(state, characterConfig, enemies, balance, combatItems) {
   const run = state.combatEncounter;
   if (!run?.combat) return null;
 
@@ -321,16 +341,48 @@ export function useCombatDefend(state, characterConfig, enemies, balance) {
   if (!result) return null;
 
   if (result.enemyDefeated) {
-    return onEnemyDefeated(run, state, characterConfig, enemies, balance);
+    return onEnemyDefeated(run, state, characterConfig, enemies, balance, combatItems);
   }
 
   if (!result.nextMember) {
-    return resolveEnemyPhaseStep(state, characterConfig, enemies, balance);
+    return resolveEnemyPhaseStep(state, characterConfig, enemies, balance, combatItems);
   }
 
   return {
     continuing: true,
     nextMember: true,
+    activeMemberIndex: run.combat.activeMemberIndex,
+    party: run.party,
+    phase: run.combat.phase,
+  };
+}
+
+export function useCombatMeal(mealId, state, characterConfig, enemies, balance, combatItems) {
+  const run = state.combatEncounter;
+  if (!run?.combat) return null;
+
+  const heal = useMealHealInCombat(state, mealId);
+  if (!heal.ok) return { blocked: true, reason: heal.reason };
+
+  const memberIndex = run.combat.activeMemberIndex;
+  const member = run.party[memberIndex];
+  const gain = Math.max(1, Math.floor(member.maxHp * heal.healPct));
+  const result = useMemberMeal(run, memberIndex, gain, heal.label, mealId);
+  if (!result) return { blocked: true, reason: 'Impossible d\'utiliser ce repas' };
+  if (result.blocked) return result;
+
+  if (result.enemyDefeated) {
+    return onEnemyDefeated(run, state, characterConfig, enemies, balance, combatItems);
+  }
+
+  if (!result.nextMember) {
+    return resolveEnemyPhaseStep(state, characterConfig, enemies, balance, combatItems);
+  }
+
+  return {
+    continuing: true,
+    nextMember: true,
+    healed: gain,
     activeMemberIndex: run.combat.activeMemberIndex,
     party: run.party,
     phase: run.combat.phase,
