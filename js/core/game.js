@@ -449,6 +449,10 @@ export class Game {
     return changed;
   }
 
+  canCraftRecipe(recipeId) {
+    return canCraft(recipeId, this.recipes, this.state, this.balance, this.jobs);
+  }
+
   getCraftFailureMessage(recipeId) {
     const recipe = this.recipes[recipeId];
     if (!recipe) return 'Recette inconnue.';

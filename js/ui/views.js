@@ -1,6 +1,5 @@
 import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy } from '../systems/combat.js';
 import {
-  canCraft,
   getCraftBlockReason,
   getCraftSellBonus,
   getRecipeCraftJob,
@@ -16,7 +15,7 @@ import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourc
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
 import { getQuestStatusText, isQuestCompleted, isQuestAvailable, isQuestReady, QUEST_CHAPTER_LABELS } from '../systems/quests.js';
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderCraftDurabilityInfo, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
-import { hasWorkingTool, isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
+import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
 import { getMealEffect, MEAL_EFFECTS, listCombatHealMeals } from '../systems/consumables.js';
@@ -2026,7 +2025,7 @@ export function renderWorkshop(game, el, craftJobId) {
   for (const [id, recipe] of Object.entries(game.recipes)) {
     if (!recipeBelongsToWorkshopTab(id, recipe, craftJobId, game.equipment)) continue;
     if (recipe.unique && !recipe.repeatable && crafted.includes(id)) {
-      if (isDurabilityTool(recipe) && !hasWorkingTool(game.state, id, recipe)) {
+      if (isDurabilityTool(recipe) && isToolBroken(game.state, id, recipe)) {
         const req = getRecipeRequiredLevel(recipe);
         if (req && recipeJobLevel(recipe) < req) locked.push([id, recipe]);
         else available.push([id, recipe]);
@@ -2069,10 +2068,10 @@ export function renderWorkshop(game, el, craftJobId) {
 function appendCraftTile(game, id, recipe, container, forceLocked = false, isOwned = false) {
   const isBroken = isDurabilityTool(recipe) && isToolBroken(game.state, id, recipe);
   const isWorkingOwned = isOwned && !isBroken;
-  const canDo = !forceLocked && !isWorkingOwned && canCraft(id, game.recipes, game.state, game.balance, game.jobs);
+  const canDo = !forceLocked && !isWorkingOwned && game.canCraftRecipe(id);
   const blockReason = !forceLocked && !isWorkingOwned && !canDo
     ? getCraftBlockReason(id, game.recipes, game.state, game.balance, game.jobs, game.resources)
-    : null;
+    : (isWorkingOwned ? { type: 'owned', message: 'Outil encore utilisable' } : null);
   const ingredients = Object.entries(recipe.ingredients)
     .map(([resId, amt]) => {
       const res = game.resources[resId];
@@ -2121,7 +2120,13 @@ function appendCraftTile(game, id, recipe, container, forceLocked = false, isOwn
     owned: (game.state.crafted || []).includes(id) && !isBroken,
     broken: isBroken,
   });
-  const craftBtnLabel = isBroken ? 'Refabriquer' : (isWorkingOwned ? 'Possédé' : 'Fabriquer');
+  const craftBtnLabel = forceLocked
+    ? 'Verrouillé'
+    : isBroken
+      ? 'Refabriquer'
+      : isWorkingOwned
+        ? 'Possédé'
+        : 'Fabriquer';
   const blockTitle = blockReason?.message || '';
   const isBlocked = forceLocked || isWorkingOwned || !canDo;
 
@@ -2138,19 +2143,24 @@ function appendCraftTile(game, id, recipe, container, forceLocked = false, isOwn
       ${isWorkingOwned ? '<p class="tile-lock">✓ En service</p>' : ''}
     <div class="ingredients">${ingredients}${kirhaHtml ? ` ${kirhaHtml}` : ''}</div>
     ${getRecipeJobXp(recipe) ? `<div class="tile-stats">+${getRecipeJobXp(recipe)} XP ${game.jobs[recipe.craftJob]?.name || ''}</div>` : ''}
-    <button type="button" class="btn btn-craft${canDo ? ' affordable' : ''}${isBlocked ? ' craft-blocked' : ''}" title="${blockTitle}">${craftBtnLabel}</button>
+    <button type="button" class="btn btn-craft${canDo ? ' affordable' : ''}${isBlocked ? ' craft-blocked' : ''}" title="${blockTitle}" ${isBlocked ? 'disabled' : ''}>${craftBtnLabel}</button>
   `;
   const craftBtn = tile.querySelector('.btn-craft');
   craftBtn?.addEventListener('click', () => {
-    if (!canDo || isWorkingOwned) {
-      const message = blockReason?.message || game.getCraftFailureMessage?.(id) || 'Impossible de fabriquer pour le moment.';
-      emit('craftBlocked', { recipeId: id, message });
+    if (forceLocked || isWorkingOwned) {
+      emit('craftBlocked', {
+        recipeId: id,
+        message: blockReason?.message || game.getCraftFailureMessage(id),
+      });
+      return;
+    }
+    if (!game.canCraftRecipe(id)) {
+      emit('craftBlocked', { recipeId: id, message: game.getCraftFailureMessage(id) });
       return;
     }
     const ok = game.doCraft(id);
     if (!ok) {
-      const message = game.getCraftFailureMessage?.(id) || 'Impossible de fabriquer pour le moment.';
-      emit('craftBlocked', { recipeId: id, message });
+      emit('craftBlocked', { recipeId: id, message: game.getCraftFailureMessage(id) });
     }
   });
   if (isWorkingOwned && game.equipment.equipable[id] && !isRecipeEquipped(game.state, id)) {
