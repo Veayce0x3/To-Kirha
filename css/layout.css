@@ -4633,6 +4633,175 @@ body.picker-sheet-open #picker-sheet-portal .picker-sheet-header {
   margin: 0;
 }
 
+/* ── Barre métiers / ferme (bas d'écran) ── */
+.job-switcher-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 120;
+  background: rgba(255, 253, 249, 0.96);
+  border-top: 1px solid rgba(232, 180, 203, 0.45);
+  box-shadow: 0 -4px 20px rgba(74, 55, 40, 0.08);
+  padding: 0.4rem 0.35rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
+  backdrop-filter: blur(8px);
+}
+
+.job-switcher-dock.hidden {
+  display: none;
+}
+
+.job-switcher-scroll {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  padding: 0.1rem 0.25rem;
+  scrollbar-width: none;
+}
+
+.job-switcher-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.job-switcher-chip {
+  flex: 0 0 auto;
+  scroll-snap-align: center;
+  min-width: 4.5rem;
+  max-width: 5.5rem;
+  min-height: 44px;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid rgba(232, 180, 203, 0.35);
+  border-radius: 12px;
+  background: rgba(248, 232, 238, 0.55);
+  color: var(--brun-doux);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.job-switcher-chip:active {
+  transform: scale(0.97);
+}
+
+.job-switcher-chip-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  position: relative;
+  width: 100%;
+}
+
+.job-switcher-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.job-switcher-emoji {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.job-switcher-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.job-switcher-level {
+  font-size: 0.58rem;
+  opacity: 0.7;
+  line-height: 1;
+}
+
+.job-switcher-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #B8A9A0;
+}
+
+.job-switcher-chip.active {
+  background: var(--vert-foret);
+  border-color: var(--vert-foret);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.25);
+}
+
+.job-switcher-chip.active .job-switcher-level {
+  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.job-switcher-chip.active .job-switcher-dot {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+
+.job-switcher-chip.nav-harvest-ready:not(.active) {
+  background: rgba(232, 168, 56, 0.16);
+  border-color: rgba(232, 168, 56, 0.45);
+  color: #8A5A10;
+}
+
+.job-switcher-chip.nav-harvest-ready:not(.active) .job-switcher-dot {
+  background: #E8A838;
+}
+
+.job-switcher-chip.nav-harvest-harvesting:not(.active) {
+  background: rgba(155, 89, 182, 0.14);
+  border-color: rgba(155, 89, 182, 0.4);
+  color: var(--violet-sakura);
+}
+
+.job-switcher-chip.nav-harvest-harvesting:not(.active) .job-switcher-dot {
+  background: var(--violet-sakura);
+}
+
+.job-switcher-chip.nav-harvest-regrowing:not(.active) {
+  background: rgba(74, 140, 63, 0.15);
+  border-color: rgba(74, 140, 63, 0.35);
+  color: var(--vert-foret);
+}
+
+.job-switcher-chip.nav-harvest-regrowing:not(.active) .job-switcher-dot {
+  background: var(--vert-clair);
+}
+
+body.has-job-switcher .view-container {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+body.has-job-switcher .footer {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .job-switcher-dock {
+    left: 220px;
+  }
+
+  .job-switcher-chip {
+    min-width: 5rem;
+    max-width: 6.5rem;
+  }
+
+  .job-switcher-label {
+    font-size: 0.68rem;
+  }
+}
+
 /* ── Stock récolte ── */
 .harvest-inventory-strip h3 {
   margin-bottom: 0.5rem;

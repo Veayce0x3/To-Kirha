@@ -15,6 +15,8 @@ import { isRecipeEquipped } from '../systems/equipment.js';
 import {
   renderView,
   renderMinibar,
+  renderJobSwitcherDock,
+  updateJobSwitcherDockStatus,
   showOfflineModal,
   showDungeonResult,
   initSakuraPetals,
@@ -49,6 +51,7 @@ export function initUI(game, audio) {
     zoneSubtitle: document.getElementById('zone-subtitle'),
     viewContainer: document.getElementById('view-container'),
     skillMinibar: document.getElementById('skill-minibar'),
+    jobSwitcherDock: document.getElementById('job-switcher-dock'),
     sidebar: document.getElementById('sidebar'),
     sidebarNav: document.getElementById('sidebar-nav'),
     sidebarFooter: document.getElementById('sidebar-footer'),
@@ -210,6 +213,7 @@ export function initUI(game, audio) {
         btn.classList.add(`nav-harvest-${status}`);
       }
     });
+    updateJobSwitcherDockStatus(game);
   }
 
   function refreshView() {
@@ -223,6 +227,7 @@ export function initUI(game, audio) {
         els.skillMinibar.classList.toggle('collapsed', minibarCollapsed);
       },
     });
+    renderJobSwitcherDock(game, els.jobSwitcherDock, view);
     updateNavActive();
   }
 

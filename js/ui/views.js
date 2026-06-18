@@ -4,7 +4,7 @@ import { mountCraftWorkshop } from './craftView.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
 import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped } from '../systems/equipment.js';
 import { formatOfflineDuration } from '../systems/offline.js';
-import { navigate, getView, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getAdjacentHarvestView, getHarvestViewForJob, getAdjacentFarmView, getFarmViewForBuilding, isFarmView } from './router.js';
+import { navigate, getView, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getAdjacentHarvestView, getHarvestViewForJob, getAdjacentFarmView, getFarmViewForBuilding, isFarmView, HARVEST_JOB_VIEWS, FARM_BUILDING_VIEWS } from './router.js';
 import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '../systems/harvest.js';
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
@@ -280,6 +280,108 @@ export function renderMinibar(game, el, viewId, opts = {}) {
   `;
 
   el.querySelector('.minibar-toggle')?.addEventListener('click', opts.onToggle);
+}
+
+const JOB_SWITCHER_STATUS_CLASSES = [
+  'nav-harvest-ready',
+  'nav-harvest-harvesting',
+  'nav-harvest-regrowing',
+  'nav-harvest-empty',
+];
+
+function getJobSwitcherGroup(viewId) {
+  if (viewId?.startsWith('job_')) return { type: 'harvest', views: HARVEST_JOB_VIEWS };
+  if (isFarmView(viewId)) return { type: 'farm', views: FARM_BUILDING_VIEWS };
+  return null;
+}
+
+function renderJobSwitcherChip(game, viewId, activeViewId) {
+  const view = VIEWS[viewId];
+  if (!view) return '';
+
+  const isActive = viewId === activeViewId;
+  let level = '';
+  let status = 'empty';
+
+  if (view.job) {
+    level = String(game.getJobLevel(view.job));
+    status = game.getJobHarvestNavStatus(view.job);
+  } else if (view.building) {
+    level = String(game.getJobLevel('breeder'));
+    status = game.getFarmBuildingNavStatus(view.building);
+  }
+
+  const icon = getNavIcon(viewId) || (view.job ? getJobIcon(view.job) : getFarmBuildingIcon(view.building));
+  const iconPart = icon
+    ? iconHtml(icon, 'job-switcher-icon', view.label)
+    : `<span class="job-switcher-emoji">${view.emoji || '·'}</span>`;
+
+  return `
+    <button type="button" class="job-switcher-chip nav-harvest-${status}${isActive ? ' active' : ''}" data-view="${viewId}" aria-label="${view.label}" aria-current="${isActive ? 'true' : 'false'}">
+      <span class="job-switcher-chip-inner">
+        ${iconPart}
+        <span class="job-switcher-label">${view.label}</span>
+        <span class="job-switcher-level">Nv.${level}</span>
+        <span class="job-switcher-dot" aria-hidden="true"></span>
+      </span>
+    </button>
+  `;
+}
+
+export function renderJobSwitcherDock(game, el, viewId) {
+  if (!el) return;
+
+  const group = getJobSwitcherGroup(viewId);
+  if (!group) {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    document.body.classList.remove('has-job-switcher');
+    return;
+  }
+
+  document.body.classList.add('has-job-switcher');
+  el.classList.remove('hidden');
+  el.dataset.switcherType = group.type;
+  el.setAttribute(
+    'aria-label',
+    group.type === 'harvest' ? 'Changer de métier de récolte' : 'Changer de bâtiment de ferme'
+  );
+
+  el.innerHTML = `<div class="job-switcher-scroll" role="list">${group.views.map((vid) => renderJobSwitcherChip(game, vid, viewId)).join('')}</div>`;
+
+  el.querySelectorAll('.job-switcher-chip').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.view;
+      if (target && target !== getView()) navigate(target);
+    });
+  });
+
+  requestAnimationFrame(() => {
+    el.querySelector('.job-switcher-chip.active')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  });
+}
+
+export function updateJobSwitcherDockStatus(game) {
+  const el = document.getElementById('job-switcher-dock');
+  if (!el || el.classList.contains('hidden')) return;
+
+  const view = getView();
+  el.querySelectorAll('.job-switcher-chip').forEach((btn) => {
+    const vid = btn.dataset.view;
+    const viewDef = VIEWS[vid];
+    const isActive = vid === view;
+
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-current', isActive ? 'true' : 'false');
+    btn.classList.remove(...JOB_SWITCHER_STATUS_CLASSES);
+
+    let status = 'empty';
+    if (viewDef?.job) status = game.getJobHarvestNavStatus(viewDef.job);
+    else if (viewDef?.building) status = game.getFarmBuildingNavStatus(viewDef.building);
+
+    btn.classList.add(`nav-harvest-${status}`);
+    btn.dataset.harvestStatus = status;
+  });
 }
 
 /* ── Personnage ── */
