@@ -4,7 +4,6 @@
     "accessory": { "id": "accessory", "name": "Accessoire métier", "emoji": "🧰" }
   },
   "equipable": {
-    "tutorial_starter_axe": { "recipeId": "tutorial_starter_axe", "slot": "weapon", "job": "lumberjack" },
     "sakura_axe": { "recipeId": "sakura_axe", "slot": "weapon", "job": "lumberjack" },
     "sequoia_axe": { "recipeId": "sequoia_axe", "slot": "weapon", "job": "lumberjack" },
     "fishing_rod": { "recipeId": "fishing_rod", "slot": "weapon", "job": "fisher" },

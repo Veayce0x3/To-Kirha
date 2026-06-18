@@ -11,13 +11,10 @@ import { isResourceUnlockedByJob } from '../systems/zones.js';
 import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped, recipeBelongsToWorkshopTab } from '../systems/equipment.js';
 import { formatOfflineDuration } from '../systems/offline.js';
 import { navigate, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getAdjacentHarvestView, getHarvestViewForJob, getAdjacentFarmView, getFarmViewForBuilding, isFarmView } from './router.js';
-import { renderTutorialOverlay, scheduleTutorialOverlayRefresh } from './tutorialUi.js';
 import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '../systems/harvest.js';
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
 import { getQuestStatusText, isQuestCompleted, isQuestAvailable, isQuestReady, QUEST_CHAPTER_LABELS } from '../systems/quests.js';
-import { isTutorialActive, TUTORIAL_ENABLED } from '../systems/tutorial.js';
-import { applyCombatTutorialFocus, clearCombatTutorialFocus } from './tutorialUi.js';
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderCraftDurabilityInfo, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
 import { hasWorkingTool, isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
@@ -36,50 +33,6 @@ function resetCombatUiTurn() {
   combatUi = { step: 'action', menu: 'main', pendingSkill: null, targetMode: null };
 }
 
-function getTutorialDungeonCombatHint(combatUi, { canAct, isPlayerTurn, targetMode }) {
-  if (!isPlayerTurn) {
-    return {
-      step: 0,
-      text: 'Patiente — l\'ennemi attaque, puis ce sera ton tour.',
-      selector: null,
-      finger: null,
-    };
-  }
-  if (combatUi.step === 'target' && targetMode === 'enemy') {
-    return {
-      step: 3,
-      text: '③ Touche l\'ennemi (👻) pour lancer ton attaque.',
-      selector: '.dq-enemies-group .dq-enemy-card.dq-targetable',
-      finger: '👆 VISE L\'ENNEMI',
-    };
-  }
-  if (combatUi.menu === 'attack' && canAct) {
-    return {
-      step: 2,
-      text: '② Choisis une attaque (par ex. Frappe).',
-      selector: '.dq-command-menu [data-skill]',
-      finger: '👆 CHOISIR',
-    };
-  }
-  if (canAct && combatUi.menu === 'main' && combatUi.step === 'action') {
-    return {
-      step: 1,
-      text: '① Ton tour ! Touche « Attaquer ».',
-      selector: '.dq-command-menu [data-menu="attack"]',
-      finger: '👆 ATTAQUER',
-    };
-  }
-  if (combatUi.menu === 'spells' && canAct) {
-    return {
-      step: 1,
-      text: 'Pour l\'instant, utilise « Attaquer ». Touche « Retour ».',
-      selector: '.dq-command-menu [data-menu="main"]',
-      finger: '👆 RETOUR',
-    };
-  }
-  return null;
-}
-
 const SET_LABELS = { sakura: 'Sakura', petal: 'Pétale', jade: 'Jade' };
 
 function navigateObjective(game, objective) {
@@ -92,7 +45,7 @@ function navigateObjective(game, objective) {
 }
 
 function renderObjectiveBanner(game, container, { ready = false } = {}) {
-  if (!container || isTutorialActive(game.state)) return;
+  if (!container) return;
   const objective = game.getCurrentObjective();
   if (!objective) {
     container.innerHTML = '<p class="empty-text">Aucun objectif pour le moment.</p>';
@@ -129,7 +82,7 @@ function renderObjectiveBanner(game, container, { ready = false } = {}) {
 }
 
 function renderPrestigeTeaser(game, container) {
-  if (!container || !game.shouldShowPrestigeTeaser() || isTutorialActive(game.state)) {
+  if (!container || !game.shouldShowPrestigeTeaser()) {
     if (container) container.innerHTML = '';
     return;
   }
@@ -410,7 +363,6 @@ function renderCharacter(game, el) {
   const nickInfo = game.getNicknameRenameInfo();
   const maxLen = game.characterConfig.nicknameMaxLength || 20;
   const statsBreakdown = game.getCharacterStatsBreakdown();
-  const showObjective = !isTutorialActive(s);
 
   let nicknameHtml = '';
   if (!nickInfo.hasNickname) {
@@ -449,8 +401,8 @@ function renderCharacter(game, el) {
   const questReady = nextQuest && !isQuestCompleted(s, nextQuest.id) && isQuestReady(nextQuest, s, game.recipes);
 
   el.innerHTML = `
-    ${showObjective ? '<div class="mission-current panel-inner objective-banner" id="char-objective"></div>' : ''}
-    ${showObjective ? '<div class="panel-inner prestige-teaser" id="char-prestige-teaser"></div>' : ''}
+    <div class="mission-current panel-inner objective-banner" id="char-objective"></div>
+    <div class="panel-inner prestige-teaser" id="char-prestige-teaser"></div>
     <div class="char-hero-card panel-inner">
       <div class="char-hero-row">
         <div class="char-portrait-wrap char-hero-portrait">
@@ -478,10 +430,8 @@ function renderCharacter(game, el) {
     <div class="panel-inner char-tab-panel" id="char-tab-panel"></div>
   `;
 
-  if (showObjective) {
-    renderObjectiveBanner(game, el.querySelector('#char-objective'), { ready: questReady });
-    renderPrestigeTeaser(game, el.querySelector('#char-prestige-teaser'));
-  }
+  renderObjectiveBanner(game, el.querySelector('#char-objective'), { ready: questReady });
+  renderPrestigeTeaser(game, el.querySelector('#char-prestige-teaser'));
 
   el.querySelector('#goto-combat')?.addEventListener('click', () => navigate('combat'));
 
@@ -565,13 +515,11 @@ function appendGatheringToolRow(game, container, entry, { showUnequip = false, s
 
 function renderCharEquipmentTab(game, panel) {
   const s = game.state;
-  const tutorialUi = game.getTutorialUi();
-  const openOwned = !!tutorialUi?.craftEquipPhase && charTab === 'equipment';
   panel.innerHTML = `
     <h3>⚔️ Équipement de combat</h3>
     <p class="view-desc">Ton arme définit ton rôle en combat. Touche un slot pour retirer.</p>
     <div class="combat-slots-grid slots-equipment" id="combat-slots"></div>
-    <details class="char-owned-details"${openOwned ? ' open' : ''}>
+    <details class="char-owned-details">
       <summary>Pièces possédées</summary>
       <div id="combat-owned" class="equip-actions"></div>
     </details>
@@ -634,7 +582,6 @@ function renderCharEquipmentTab(game, panel) {
 
       const btn = document.createElement('button');
       btn.className = 'btn btn-small';
-      btn.dataset.tutorialEquipRef = ref;
       btn.textContent = `Équiper · ${game.getCombatItemLabel(ref)} · Nv.${getItemLevel(item)}`;
       btn.addEventListener('click', () => game.doEquipCombat(ref));
       row.appendChild(btn);
@@ -1652,14 +1599,6 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
   const feedUi = needsFeed ? buildFarmFeedPickerHtml(game, building, slot, active) : { pickerHtml: '', canAffordSelected: true };
   const toolBlock = game.getFarmToolBlockReason(buildingId);
   const sprite = getFarmBuildingSprite(building);
-  const tutorialFarm = game.state.tutorial?.sandbox
-    && game.tutorialData?.steps?.[game.state.tutorial?.stepIndex]?.id === 'farm'
-    && buildingId === 'well'
-    && slotIndex === 0;
-  const tutorialChicken = game.state.tutorial?.sandbox
-    && game.tutorialData?.steps?.[game.state.tutorial?.stepIndex]?.id === 'farm_chicken'
-    && buildingId === 'chicken_coop'
-    && slotIndex === 0;
   const feedBlocked = needsFeed && (!slot?.feedId || !feedUi.canAffordSelected);
 
   const card = document.createElement('div');
@@ -1681,7 +1620,7 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
       ${needsFeed ? feedUi.pickerHtml : ''}
       ${active ? `<div class="xp-bar-container slot-progress"><div class="xp-bar" style="width:${Math.min(99, Math.floor(progress * 100))}%"></div></div>` : ''}
       ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
-      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${!active && !feedBlocked && !toolBlock ? ' affordable' : ''}" id="${tutorialFarm ? 'tutorial-farm-start-well' : tutorialChicken ? 'tutorial-farm-start-chicken' : ''}" ${active || (!tutorialFarm && !tutorialChicken && toolBlock) || feedBlocked ? 'disabled' : ''}>
+      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${!active && !feedBlocked && !toolBlock ? ' affordable' : ''}" ${active || toolBlock || feedBlocked ? 'disabled' : ''}>
         ${getFarmBtnLabel(progress)}
       </button>
     </div>
@@ -1697,7 +1636,6 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
     card.querySelector('.btn-start')?.addEventListener('click', () => {
       const result = game.startFarmSlot(buildingId, slotIndex);
       if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
-      else if (game.isTutorialActive()) scheduleTutorialOverlayRefresh(game, 2);
     });
   }
 
@@ -1803,7 +1741,6 @@ export function updateFarmSlotProgresses(game) {
 }
 
 function renderFarmBuilding(game, el, buildingId) {
-  game.prepareTutorialSandboxForStep?.();
   const building = getBuildingDef(game.farmData, buildingId);
   if (!building) return;
 
@@ -1894,9 +1831,6 @@ function renderWorkshopHub(game, el) {
     btn.addEventListener('click', () => {
       workshopTab = craft.id;
       renderWorkshopHub(game, el);
-      if (game.isTutorialActive()) {
-        scheduleTutorialOverlayRefresh(game, 2);
-      }
     });
     tabsEl.appendChild(btn);
   }
@@ -1917,7 +1851,6 @@ function renderCuisine(game, el) {
 }
 
 export function renderWorkshop(game, el, craftJobId) {
-  game.prepareTutorialCraftIfNeeded?.();
   const job = game.jobs[craftJobId];
   const prog = game.getJobProgress(craftJobId);
   const pct = (prog.xp / prog.needed) * 100;
@@ -1958,13 +1891,7 @@ export function renderWorkshop(game, el, craftJobId) {
 
   for (const [id, recipe] of Object.entries(game.recipes)) {
     if (!recipeBelongsToWorkshopTab(id, recipe, craftJobId, game.equipment)) continue;
-    if (recipe.tutorialOnly && !game.state.tutorial?.sandbox) continue;
-    if (!game.isTutorialCraftRecipe(id)) continue;
     if (recipe.unique && !recipe.repeatable && crafted.includes(id)) {
-      if (game.isTutorialForcedCraft?.(id)) {
-        available.push([id, recipe]);
-        continue;
-      }
       if (isDurabilityTool(recipe) && !hasWorkingTool(game.state, id, recipe)) {
         const req = getRecipeRequiredLevel(recipe);
         if (req && recipeJobLevel(recipe) < req) locked.push([id, recipe]);
@@ -2006,26 +1933,21 @@ export function renderWorkshop(game, el, craftJobId) {
 }
 
 function appendCraftTile(game, id, recipe, container, forceLocked = false, isOwned = false) {
-  const forcedTutorialCraft = game.isTutorialForcedCraft?.(id);
   const isBroken = isDurabilityTool(recipe) && isToolBroken(game.state, id, recipe);
-  const isWorkingOwned = isOwned && !isBroken && !forcedTutorialCraft;
-  if (forcedTutorialCraft) game.prepareTutorialSandboxForStep?.();
-  const canDo = forcedTutorialCraft
-    || (!forceLocked && !isWorkingOwned && canCraft(id, game.recipes, game.state, game.balance, game.jobs));
-  const blockReason = !forceLocked && !isWorkingOwned && !forcedTutorialCraft && !canDo
+  const isWorkingOwned = isOwned && !isBroken;
+  const canDo = !forceLocked && !isWorkingOwned && canCraft(id, game.recipes, game.state, game.balance, game.jobs);
+  const blockReason = !forceLocked && !isWorkingOwned && !canDo
     ? getCraftBlockReason(id, game.recipes, game.state, game.balance, game.jobs, game.resources)
     : null;
-  const ingredients = forcedTutorialCraft
-    ? '<span class="ing-ok">🎁 Offert pour la formation</span>'
-    : Object.entries(recipe.ingredients)
-      .map(([resId, amt]) => {
-        const res = game.resources[resId];
-        const have = game.state.inventory[resId] || 0;
-        const combatCls = res?.combatOnly ? ' ing-combat' : '';
-        return `<span class="${have >= amt ? 'ing-ok' : 'ing-missing'}${combatCls}">${renderResourceIcon(res, 'ing-icon') || (res ? '' : '?')} ${have}/${amt}</span>`;
-      }).join('');
+  const ingredients = Object.entries(recipe.ingredients)
+    .map(([resId, amt]) => {
+      const res = game.resources[resId];
+      const have = game.state.inventory[resId] || 0;
+      const combatCls = res?.combatOnly ? ' ing-combat' : '';
+      return `<span class="${have >= amt ? 'ing-ok' : 'ing-missing'}${combatCls}">${renderResourceIcon(res, 'ing-icon') || (res ? '' : '?')} ${have}/${amt}</span>`;
+    }).join('');
   const kirhaCost = recipe.kirhaCost || 0;
-  const kirhaHtml = !forcedTutorialCraft && kirhaCost > 0
+  const kirhaHtml = kirhaCost > 0
     ? `<span class="${game.state.kirha >= kirhaCost ? 'ing-ok' : 'ing-missing'}">💰 ${game.state.kirha}/${kirhaCost}</span>`
     : '';
 
@@ -2065,13 +1987,13 @@ function appendCraftTile(game, id, recipe, container, forceLocked = false, isOwn
     owned: (game.state.crafted || []).includes(id) && !isBroken,
     broken: isBroken,
   });
-  const craftBtnLabel = forcedTutorialCraft ? 'Fabriquer' : (isBroken ? 'Refabriquer' : (isWorkingOwned ? 'Possédé' : 'Fabriquer'));
+  const craftBtnLabel = isBroken ? 'Refabriquer' : (isWorkingOwned ? 'Possédé' : 'Fabriquer');
   const blockTitle = blockReason?.message || '';
+  const isBlocked = forceLocked || isWorkingOwned || !canDo;
 
   const tile = document.createElement('div');
   tile.className = `craft-tile${canDo ? ' affordable' : ''}${forceLocked ? ' locked-res' : ''}${isWorkingOwned ? ' craft-owned' : ''}${isBroken ? ' craft-broken' : ''}`;
   tile.dataset.recipeId = id;
-  const craftBtnId = forcedTutorialCraft ? `tutorial-craft-${id}` : '';
   tile.innerHTML = `
     <div class="tile-name">${recipe.emoji} ${recipe.name}${recipe.repeatable ? ' ♻️' : ''}</div>
     <p class="tile-stats">${recipe.description || ''}</p>
@@ -2079,19 +2001,18 @@ function appendCraftTile(game, id, recipe, container, forceLocked = false, isOwn
     ${combatPreviewHtml}
     ${blockHtml}
     ${isBroken ? '<p class="tile-lock tile-lock-broken">🔧 Outil usé — refabriquer pour réparer</p>' : ''}
-      ${isWorkingOwned && !forcedTutorialCraft ? '<p class="tile-lock">✓ En service</p>' : ''}
+      ${isWorkingOwned ? '<p class="tile-lock">✓ En service</p>' : ''}
     <div class="ingredients">${ingredients}${kirhaHtml ? ` ${kirhaHtml}` : ''}</div>
     ${getRecipeJobXp(recipe) ? `<div class="tile-stats">+${getRecipeJobXp(recipe)} XP ${game.jobs[recipe.craftJob]?.name || ''}</div>` : ''}
-    <button type="button" class="btn btn-craft${canDo || forcedTutorialCraft ? ' affordable' : ''}" id="${craftBtnId}" ${canDo || forcedTutorialCraft ? '' : 'disabled'} title="${blockTitle}">${craftBtnLabel}</button>
+    <button type="button" class="btn btn-craft${canDo ? ' affordable' : ''}${isBlocked ? ' craft-blocked' : ''}" title="${blockTitle}">${craftBtnLabel}</button>
   `;
   const craftBtn = tile.querySelector('.btn-craft');
   craftBtn?.addEventListener('click', () => {
-    if (!canDo && !forcedTutorialCraft) {
+    if (!canDo || isWorkingOwned) {
       const message = blockReason?.message || game.getCraftFailureMessage?.(id) || 'Impossible de fabriquer pour le moment.';
       emit('craftBlocked', { recipeId: id, message });
       return;
     }
-    game.prepareTutorialSandboxForStep?.();
     const ok = game.doCraft(id);
     if (!ok) {
       const message = game.getCraftFailureMessage?.(id) || 'Impossible de fabriquer pour le moment.';
@@ -2111,13 +2032,9 @@ function appendCraftTile(game, id, recipe, container, forceLocked = false, isOwn
 
 /* ── Hôtel des Ventes ── */
 export function renderAuctionHouse(game, el) {
-  game.prepareTutorialSandboxForStep?.();
   const merchant = game.merchant;
   const scrollRes = game.resources.ancient_scroll;
   const owned = game.getScrollCount();
-  const tutoScrollStep = game.state.tutorial?.sandbox
-    && game.tutorialData?.steps?.[game.state.tutorial?.stepIndex]?.id === 'scrolls';
-  const bulkQty = tutoScrollStep ? [1] : null;
 
   el.innerHTML = `
     <div class="view-header">
@@ -2163,7 +2080,7 @@ export function renderAuctionHouse(game, el) {
       `;
 
       const row = card.querySelector('.auction-buy-row');
-      for (const qty of bulkQty || offer.bulkQuantities || [1]) {
+      for (const qty of offer.bulkQuantities || [1]) {
         const total = offer.unitPrice * qty;
         const canAfford = game.state.kirha >= total;
         const btn = document.createElement('button');
@@ -2185,7 +2102,6 @@ export function renderAuctionHouse(game, el) {
 
 /* ── Inventaire (banque) ── */
 export function renderInventory(game, el) {
-  game.prepareTutorialSandboxForStep?.();
   el.innerHTML = `
     <div class="view-header"><h2>${iconHtml(getNavIcon('inventory'), 'view-header-icon', 'Banque')} Banque</h2><p class="view-desc">Clique un objet pour vendre ou équiper</p></div>
     <div class="panel-inner">
@@ -2325,9 +2241,6 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
 
   modal.classList.add('active');
   modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
-  if (game.isTutorialActive()) {
-    scheduleTutorialOverlayRefresh(game);
-  }
 }
 
 /* ── Options ── */
@@ -2367,15 +2280,6 @@ export function renderOptions(game, el) {
       </div>
       <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
     </div>
-    ${TUTORIAL_ENABLED ? `
-    <div class="panel-inner">
-      <h3>📖 Formation du village</h3>
-      <p class="view-desc">${game.hasTutorialRewardsClaimed()
-    ? 'Rejoue le tutoriel guidé pour réviser les étapes — les récompenses (matériaux, Kirha, parchemins…) ne sont données qu\'une seule fois.'
-    : 'Rejoue le tutoriel guidé : récolte, arme, craft, donjon et parchemins (~5 min).'}</p>
-      <button type="button" class="btn btn-muted" id="reset-tutorial">Revoir la formation</button>
-    </div>
-    ` : ''}
     <div class="panel-inner save-panel">
       <h3>${iconHtml(UI.save, 'panel-title-icon', 'Sauvegarde')} Sauvegarde</h3>
       <p class="save-info">Ta partie est <strong>sauvegardée automatiquement</strong> sur cet appareil. L'export ci-dessous sert de copie de secours.</p>
@@ -2405,13 +2309,6 @@ export function renderOptions(game, el) {
     window.location.reload();
   });
   el.querySelector('#prestige-btn')?.addEventListener('click', () => emitPrestigeModal());
-
-  el.querySelector('#reset-tutorial')?.addEventListener('click', () => {
-    game.resetTutorialForOptions();
-    hint(game.hasTutorialRewardsClaimed()
-      ? 'Formation relancée (mode révision, sans récompenses).'
-      : 'Formation relancée — l\'introduction va s\'afficher.');
-  });
 
   const hint = (msg) => { el.querySelector('#save-hint').textContent = msg; };
 
@@ -2496,8 +2393,6 @@ function renderCombat(game, el) {
   const weaponLabel = weapon
     ? `${weapon.emoji} ${weapon.name}${weapon.className ? ` (${weapon.className})` : ''}`
     : 'Sans arme';
-  const tutorialUi = game.getTutorialUi();
-  const showTutorialDungeon = !!tutorialUi?.isDungeonStep;
   const daily = game.getCombatDailyStatus();
   const dungeonCfg = game.getDungeonUnlockConfig();
   const activeMeal = game.getActiveMealId();
@@ -2534,16 +2429,6 @@ function renderCombat(game, el) {
         ${activeMeal ? `<button type="button" class="btn btn-muted btn-small" id="clear-meal">Retirer le repas sélectionné</button>` : ''}
       </div>
     ` : ''}
-    ${showTutorialDungeon ? `
-      <div class="panel-inner tutorial-dungeon-panel">
-        <h3>🚪 Donjon de formation</h3>
-        <p class="view-desc">Un donjon court (1 salle) pour tester ton arme en situation réelle. Équipe ton arme sur Personnage avant de commencer.</p>
-        <button type="button" class="btn-tutorial btn-tutorial-dungeon" id="btn-tutorial-dungeon">
-          Entrer dans le donjon
-        </button>
-        <p class="nickname-hint" id="tutorial-dungeon-hint"></p>
-      </div>
-    ` : ''}
     <div id="combat-zone-list"></div>
   `;
 
@@ -2555,20 +2440,6 @@ function renderCombat(game, el) {
       }
     });
   });
-
-  if (showTutorialDungeon) {
-    const weaponRef = game.state.combatEquipment?.weapon;
-    const btn = el.querySelector('#btn-tutorial-dungeon');
-    const hint = el.querySelector('#tutorial-dungeon-hint');
-    if (!weaponRef) {
-      btn.disabled = true;
-      hint.textContent = 'Équipe ton arme sur Personnage avant le donjon.';
-    }
-    btn?.addEventListener('click', () => {
-      const result = game.startTutorialDungeonRun();
-      if (!result?.ok && result?.reason) showCombatResult(game, result);
-    });
-  }
 
   const list = el.querySelector('#combat-zone-list');
 
@@ -2779,10 +2650,7 @@ function renderDungeonCombatBody(game) {
 
   const { encounter: run, zone: combatZone } = active;
   const combat = run.combat;
-  const isTutorialFight = !!run.isTutorialFight;
-  const isTutorialDungeon = !!run.isTutorialDungeon && isTutorialActive(game.state);
-  const isSoloFight = !!run.isSoloFight || (!run.isDungeonRun && !isTutorialFight);
-  const tutorialHint = isTutorialFight ? game.getTutorialCombatHint() : null;
+  const isSoloFight = !!run.isSoloFight || !run.isDungeonRun;
   const allEnemies = combat?.enemies || [];
   const livingEnemies = getLivingEnemies(combat);
   const isPlayerTurn = combat?.phase === 'player';
@@ -2792,21 +2660,13 @@ function renderDungeonCombatBody(game) {
   const isBoss = !!run.isBoss;
   const skills = game.getPlayerCombatSkills();
   const { attacks, spells } = splitSkillsByDqMenu(skills);
-  const roomLabel = isTutorialFight
-    ? '🎯 Entraînement · Mannequin'
-    : isTutorialDungeon
-      ? '🏰 Formation · Esprit novice (solo)'
-      : run.isDungeonRun
-      ? `Salle ${(run.roomIndex ?? 0) + 1}/${run.rooms?.length || '?'}${isBoss ? ' · 👑 Boss' : ''}`
-      : `${isBoss ? '👑 Boss' : 'Entraînement'} · Équipe ${party.length} · ${livingEnemies.length} ennemi${livingEnemies.length !== 1 ? 's' : ''}`;
+  const roomLabel = run.isDungeonRun
+    ? `Salle ${(run.roomIndex ?? 0) + 1}/${run.rooms?.length || '?'}${isBoss ? ' · 👑 Boss' : ''}`
+    : `${isBoss ? '👑 Boss' : 'Entraînement'} · Équipe ${party.length} · ${livingEnemies.length} ennemi${livingEnemies.length !== 1 ? 's' : ''}`;
 
   const pendingSkillDef = combatUi.pendingSkill ? skills.find((s) => s.id === combatUi.pendingSkill) : null;
   const targetMode = combatUi.step === 'target' ? (combatUi.targetMode || getSkillTargetMode(pendingSkillDef)) : null;
   const canAct = isPlayerTurn && combatUi.step === 'action';
-
-  const dungeonCombatHint = isTutorialDungeon
-    ? getTutorialDungeonCombatHint(combatUi, { canAct, isPlayerTurn, targetMode })
-    : null;
 
   const partyHtml = party.map((member, index) => {
     const hpPct = Math.max(0, (member.hp / member.maxHp) * 100);
@@ -2863,10 +2723,6 @@ function renderDungeonCombatBody(game) {
     dialogue = spells.length
       ? `${activeMember?.emoji || '✨'} ${activeMember?.name || 'Héros'} — quel sort ?`
       : 'Aucun sort disponible.';
-  } else if (isTutorialDungeon && dungeonCombatHint?.text) {
-    dialogue = dungeonCombatHint.text;
-  } else if (isTutorialFight && tutorialHint?.signatureSkill && canAct) {
-    dialogue = `${tutorialHint.roleLabel} : ton coup signature est ${tutorialHint.signatureSkill.emoji} ${tutorialHint.signatureSkill.name}. ${tutorialHint.signatureHint}`;
   } else if (isPlayerTurn && activeMember) {
     dialogue = `${activeMember.emoji} ${activeMember.name} se prépare au combat.`;
   } else {
@@ -2874,26 +2730,7 @@ function renderDungeonCombatBody(game) {
   }
 
   let commandHtml = '';
-  if (isTutorialFight && canAct && combatUi.step === 'action') {
-    const basic = attacks[0];
-    const signature = spells.find((s) => s.id === tutorialHint?.signatureSkill?.id)
-      || skills.find((s) => s.id === tutorialHint?.signatureSkill?.id);
-    commandHtml = `
-      ${basic ? `
-        <button type="button" class="dq-cmd-btn dq-cmd-main" data-skill="${basic.id}">
-          <span class="dq-cmd-icon">${basic.emoji}</span>
-          <span class="dq-cmd-label">${basic.name}</span>
-        </button>
-      ` : ''}
-      ${signature ? `
-        <button type="button" class="dq-cmd-btn dq-cmd-main dq-cmd-signature" data-skill="${signature.id}">
-          <span class="dq-cmd-icon">${signature.emoji}</span>
-          <span class="dq-cmd-label">★ ${signature.name}</span>
-        </button>
-      ` : ''}
-      <p class="dq-cmd-empty">Le mannequin n'attaque pas — teste ton coup signature !</p>
-    `;
-  } else if (combatUi.step === 'target') {
+  if (combatUi.step === 'target') {
     commandHtml = `
       <button type="button" class="dq-cmd-btn dq-cmd-wide dq-target-cancel">◀ Annuler</button>
     `;
@@ -2928,7 +2765,7 @@ function renderDungeonCombatBody(game) {
       <button type="button" class="dq-cmd-btn dq-cmd-main btn-combat-defend" ${canAct ? '' : 'disabled'}>
         <span class="dq-cmd-icon">🛡️</span><span class="dq-cmd-label">Défense</span>
       </button>
-      <button type="button" class="dq-cmd-btn dq-cmd-main btn-combat-flee" ${isTutorialFight || isTutorialDungeon ? 'disabled title="Pas de fuite pendant la formation"' : ''}>
+      <button type="button" class="dq-cmd-btn dq-cmd-main btn-combat-flee">
         <span class="dq-cmd-icon">🏃</span><span class="dq-cmd-label">Fuir</span>
       </button>
     `;
@@ -2937,25 +2774,12 @@ function renderDungeonCombatBody(game) {
   const phaseLabel = isPlayerTurn ? 'Ton tour' : 'Tour ennemi';
 
   body.innerHTML = `
-    <div class="dq-combat${isTutorialFight ? ' dq-tutorial-fight' : ''}${isTutorialDungeon ? ' dq-tutorial-dungeon' : ''}${isSoloFight ? ' dq-solo-fight' : ''}">
+    <div class="dq-combat${isSoloFight ? ' dq-solo-fight' : ''}">
       <div class="dq-header">
-        <span class="dq-zone-name">${isTutorialFight ? '🎯' : (combatZone?.emoji || '⚔️')} ${isTutorialFight ? 'Entraînement' : (combatZone?.name || 'Combat')}</span>
+        <span class="dq-zone-name">${combatZone?.emoji || '⚔️'} ${combatZone?.name || 'Combat'}</span>
         <span class="dq-phase-badge">${phaseLabel}</span>
         <span class="dq-room">${roomLabel}</span>
       </div>
-      ${isTutorialFight && tutorialHint ? `
-        <div class="dq-tutorial-tip">
-          <strong>${tutorialHint.roleLabel}</strong> · ${tutorialHint.roleShort}
-          · Signature : ${tutorialHint.signatureSkill?.emoji || '⚔️'} ${tutorialHint.signatureSkill?.name || '—'}
-        </div>
-      ` : ''}
-      ${isTutorialDungeon && dungeonCombatHint ? `
-        <div class="dq-tutorial-combat-banner">
-          <span class="dq-tutorial-combat-step">${dungeonCombatHint.step ? `Étape ${dungeonCombatHint.step}/3 · ` : ''}</span>
-          <strong>Formation combat</strong>
-          <span class="dq-tutorial-combat-text">${dungeonCombatHint.text}</span>
-        </div>
-      ` : ''}
 
       ${isEnemyTurn ? '<div class="dq-enemy-turn-banner" aria-live="polite">⚔️ Tour de l\'ennemi…</div>' : ''}
 
@@ -3006,21 +2830,13 @@ function renderDungeonCombatBody(game) {
   });
 
   body.querySelector('.btn-combat-flee')?.addEventListener('click', () => {
-    if (isTutorialFight || isTutorialDungeon) return;
     resetCombatUiTurn();
     game.abandonCombat();
     closeDungeonCombatModal();
   });
-
-  if (isTutorialDungeon && dungeonCombatHint?.selector) {
-    applyCombatTutorialFocus(body, dungeonCombatHint.selector);
-  } else if (isTutorialDungeon) {
-    clearCombatTutorialFocus();
-  }
 }
 
 export function closeDungeonCombatModal() {
-  clearCombatTutorialFocus();
   document.getElementById('dungeon-combat-modal')?.classList.remove('active');
 }
 
@@ -3043,16 +2859,6 @@ export function showCombatResult(game, result) {
   if (!modal || !body) return;
 
   if (result.cleared) {
-    if (result.isTutorialFight) {
-      body.innerHTML = `
-        <h2>🎯 Entraînement réussi !</h2>
-        <p class="modal-desc">Tu as testé ton coup signature. Passe aux vrais combats au Temple du Cerisier.</p>
-        <div class="modal-gains">
-          <div class="offline-gain-row">+${result.charXp || 0} XP personnage</div>
-        </div>
-        <button class="btn btn-modal-close" id="dungeon-close">Continuer</button>
-      `;
-    } else {
     let lootHtml = '';
     for (const [resId, amount] of Object.entries(result.drops || {})) {
       const res = game.resources[resId];
@@ -3070,7 +2876,6 @@ export function showCombatResult(game, result) {
       ${result.levelResult ? `<p>🧘 Personnage Nv.${result.levelResult.level} !</p>` : ''}
       <button class="btn btn-modal-close" id="dungeon-close">Continuer</button>
     `;
-    }
   } else if (result.victory === false) {
     const failTitle = result.isDungeon ? '💀 Défaite dans le donjon' : '💀 Défaite';
     body.innerHTML = `
@@ -3088,9 +2893,6 @@ export function showCombatResult(game, result) {
 
   body.querySelector('#dungeon-close')?.addEventListener('click', () => {
     modal.classList.remove('active');
-    if (game.isTutorialActive()) {
-      requestAnimationFrame(() => renderTutorialOverlay(game));
-    }
   });
   modal.classList.add('active');
 }

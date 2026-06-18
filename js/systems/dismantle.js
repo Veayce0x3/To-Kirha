@@ -5,9 +5,7 @@ export function findSalvageRecipe(itemId, recipes) {
     (r) => r.combatItem === itemId && r.ingredients
   );
   if (!matches.length) return null;
-  const nonTutorial = matches.filter((r) => !r.tutorialOnly);
-  const pool = nonTutorial.length ? nonTutorial : matches;
-  return pool.sort(
+  return matches.sort(
     (a, b) => Object.keys(b.ingredients).length - Object.keys(a.ingredients).length
   )[0];
 }

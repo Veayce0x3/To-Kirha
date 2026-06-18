@@ -7,8 +7,6 @@ import {
   buildHeroOnlyParty,
   getMemberSkillIds,
   getLivingEnemies,
-  getEquippedWeapon,
-  WEAPON_TYPE_SKILLS,
   DEFEND_ACTION,
   saveSoloHp,
 } from './combat.js';
@@ -18,8 +16,6 @@ import {
   getDungeonUnlockReason,
   recordDailyCombatUse,
 } from './combatDaily.js';
-import { isTutorialActive } from './tutorial.js';
-import { canClaimTutorialReward, claimTutorialReward } from './tutorialSandbox.js';
 
 function isZoneUnlocked(zoneId, state, balance) {
   if (balance.zones[zoneId]?.unlocked) return true;
@@ -43,10 +39,8 @@ export function canFight(combatZone, state, balance, characterConfig, isBoss = f
   if (state.combatEncounter) return { ok: false, reason: 'Combat en cours' };
 
   const dailyKind = isBoss ? 'soloBoss' : 'soloMob';
-  if (!isTutorialActive(state)) {
-    const dailyCheck = canSpendDailyCombat(state, balance, dailyKind);
-    if (!dailyCheck.ok) return dailyCheck;
-  }
+  const dailyCheck = canSpendDailyCombat(state, balance, dailyKind);
+  if (!dailyCheck.ok) return dailyCheck;
 
   return { ok: true };
 }
@@ -137,95 +131,6 @@ export function startFight(
   return { ok: true, encounter: state.combatEncounter };
 }
 
-export function startTutorialFight(
-  combatZone,
-  state,
-  balance,
-  characterConfig,
-  combatItems,
-  enemies,
-  weaponRoles
-) {
-  const check = canFight(combatZone, state, balance, characterConfig, false);
-  if (!check.ok) return check;
-
-  const weapon = getEquippedWeapon(state, combatItems);
-  if (!weapon?.weaponType) {
-    return { ok: false, reason: 'Équipe une arme sur Personnage avant l\'entraînement' };
-  }
-
-  const trainingFoe = {
-    enemyId: 'training_dummy',
-    name: 'Mannequin d\'entraînement',
-    emoji: '🎯',
-    drops: {},
-    charXpReward: 8,
-  };
-
-  state.combatEncounter = {
-    zoneId: combatZone.id,
-    combatZone,
-    foe: trainingFoe,
-    isBoss: false,
-    isDungeonRun: false,
-    isTutorialFight: true,
-    weaponRoles: weaponRoles || {},
-    party: buildHeroOnlyParty(state, characterConfig, combatItems, balance),
-    killStats: state.combatKillStats || {},
-  };
-
-  initEncounter(state.combatEncounter, trainingFoe, enemies, 1, null);
-
-  const enemy = state.combatEncounter.combat?.enemies?.[0];
-  if (enemy) {
-    enemy.hp = 10;
-    enemy.maxHp = 10;
-    enemy.atk = 0;
-    enemy.def = 0;
-    enemy.name = 'Mannequin d\'entraînement';
-    enemy.emoji = '🎯';
-  }
-
-  state.combatEncounter.combat.log.push({
-    type: 'system',
-    text: `Entraînement : teste le coup signature de ton arme (${weapon.name}).`,
-  });
-
-  return { ok: true, encounter: state.combatEncounter };
-}
-
-export function getTutorialFightSkills(state, combatItems, combatSkills, weaponRoles) {
-  const run = state.combatEncounter;
-  if (!run?.isTutorialFight) return null;
-
-  const weapon = getEquippedWeapon(state, combatItems);
-  if (!weapon?.weaponType) return [];
-
-  const role = weaponRoles?.[weapon.weaponType];
-  const signatureId = role?.signatureSkill;
-  const basicId = WEAPON_TYPE_SKILLS[weapon.weaponType]?.[0];
-  const ids = [...new Set([basicId, signatureId].filter(Boolean))];
-
-  return ids.map((id) => combatSkills[id]).filter(Boolean);
-}
-
-export function getTutorialFightHint(state, combatItems, combatSkills, weaponRoles) {
-  const weapon = getEquippedWeapon(state, combatItems);
-  if (!weapon?.weaponType) return null;
-
-  const role = weaponRoles?.[weapon.weaponType];
-  const sigId = role?.signatureSkill;
-  const sig = sigId ? combatSkills[sigId] : null;
-
-  return {
-    weapon,
-    roleLabel: role?.label || weapon.className,
-    roleShort: role?.role || '',
-    signatureSkill: sig,
-    signatureHint: role?.signatureHint || (sig ? `Utilise ${sig.name}.` : ''),
-  };
-}
-
 export function startDungeonRun(
   combatZone,
   state,
@@ -261,89 +166,16 @@ export function startDungeonRun(
   return { ok: true, encounter: state.combatEncounter, roomCount: rooms.length };
 }
 
-export function startTutorialDungeon(
-  combatZone,
-  state,
-  balance,
-  characterConfig,
-  combatItems,
-  enemies,
-  companionDefs
-) {
-  const weapon = getEquippedWeapon(state, combatItems);
-  if (!weapon?.weaponType) {
-    return { ok: false, reason: 'Équipe ton arme sur Personnage avant le donjon.' };
-  }
-  if (state.combatEncounter) return { ok: false, reason: 'Combat en cours' };
-
-  const tutorialFoe = {
-    enemyId: 'spirit_lantern',
-    name: 'Esprit novice',
-    emoji: '👻',
-    drops: { gold_nugget: { min: 1, max: 2, chance: 1 } },
-    charXpReward: 12,
-  };
-
-  const party = buildHeroOnlyParty(state, characterConfig, combatItems, balance);
-
-  state.combatEncounter = {
-    zoneId: combatZone.id,
-    combatZone,
-    isDungeonRun: true,
-    isTutorialDungeon: true,
-    roomIndex: 0,
-    rooms: [{ foe: tutorialFoe, isBoss: false }],
-    dungeonDrops: {},
-    dungeonCharXp: 0,
-    foe: tutorialFoe,
-    isBoss: false,
-    party,
-  };
-
-  initEncounter(state.combatEncounter, tutorialFoe, enemies, party.length, combatZone);
-
-  const enemy = state.combatEncounter.combat?.enemies?.[0];
-  if (enemy) {
-    enemy.hp = 20;
-    enemy.maxHp = 20;
-    enemy.atk = 3;
-    enemy.def = 1;
-    enemy.name = 'Esprit novice';
-    enemy.emoji = '👻';
-  }
-
-  state.combatEncounter.combat.log.push({
-    type: 'system',
-    text: 'Donjon de formation — tu affrontes l\'esprit seul, sans compagnons.',
-  });
-
-  return { ok: true, encounter: state.combatEncounter, roomCount: 1 };
-}
-
 function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance) {
   const run = state.combatEncounter;
-  const isTutorial = !!run?.isTutorialFight;
-  const isTutorialDungeon = !!run?.isTutorialDungeon;
-
-  const isTraining = isTutorial || isTutorialDungeon;
-  const charXp = isTraining ? (foe.charXpReward || 5) : (foe.charXpReward || 0);
+  const charXp = foe.charXpReward || 0;
   const levelResult = charXp > 0 ? addCharacterXp(state, charXp, characterConfig, balance) : null;
+  const drops = rollDrops(foe.drops);
+  applyDrops(state, drops);
+  recordKill(state, zoneId, foe, isBoss);
 
-  const drops = isTraining ? (isTutorialDungeon ? rollDrops(foe.drops) : {}) : rollDrops(foe.drops);
-  if (!isTutorial && !isTutorialDungeon) {
-    applyDrops(state, drops);
-  } else if (isTutorialDungeon) {
-    claimTutorialReward(state, 'dungeonDrops', () => applyDrops(state, drops));
-  }
-  if (!isTraining) recordKill(state, zoneId, foe, isBoss);
-
-  if (!isTraining && !run?.isDungeonRun) {
+  if (!run?.isDungeonRun) {
     recordDailyCombatUse(state, isBoss ? 'soloBoss' : 'soloMob');
-  }
-
-  if (isTutorial) {
-    if (!state.tutorial) state.tutorial = { stepIndex: 0, completed: false, dismissed: false, trainingFightWon: false };
-    state.tutorial.trainingFightWon = true;
   }
 
   if (run?.isSoloFight && run.party) {
@@ -360,20 +192,13 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance) {
     drops,
     isBoss,
     zoneId,
-    isTutorialFight: isTutorial,
-    isTutorialDungeon,
   };
 }
 
 function finishDungeonRun(run, state, characterConfig, balance) {
   const totalXp = run.dungeonCharXp || 0;
   const levelResult = totalXp > 0 ? addCharacterXp(state, totalXp, characterConfig, balance) : null;
-  if (run.isTutorialDungeon) {
-    const loot = { ...(run.dungeonDrops || {}) };
-    claimTutorialReward(state, 'dungeonDrops', () => applyDrops(state, loot));
-  } else {
-    applyDrops(state, run.dungeonDrops || {});
-  }
+  applyDrops(state, run.dungeonDrops || {});
   const roomCount = run.rooms?.length || 0;
 
   state.combatEncounter = null;
@@ -383,7 +208,6 @@ function finishDungeonRun(run, state, characterConfig, balance) {
     cleared: true,
     isDungeon: true,
     isBoss: true,
-    isTutorialDungeon: !!run.isTutorialDungeon,
     charXp: totalXp,
     levelResult,
     drops: { ...(run.dungeonDrops || {}) },
@@ -393,10 +217,8 @@ function finishDungeonRun(run, state, characterConfig, balance) {
 }
 
 function advanceDungeonRoom(run, state, characterConfig, enemies, balance) {
-  if (!run.isTutorialDungeon || canClaimTutorialReward(state, 'dungeonDrops')) {
-    const drops = rollDrops(run.foe.drops);
-    mergeDropTables(run.dungeonDrops, drops);
-  }
+  const drops = rollDrops(run.foe.drops);
+  mergeDropTables(run.dungeonDrops, drops);
   run.dungeonCharXp = (run.dungeonCharXp || 0) + (run.foe.charXpReward || 0);
   recordKill(state, run.zoneId, run.foe, run.isBoss);
 
@@ -531,10 +353,6 @@ export function getActiveMemberSkills(state, combatItems, combatSkills, weaponRo
 
   const member = run.party[run.combat.activeMemberIndex];
   if (!member || member.hp <= 0) return [];
-
-  if (run.isTutorialFight) {
-    return getTutorialFightSkills(state, combatItems, combatSkills, weaponRoles || run.weaponRoles) || [];
-  }
 
   const ids = getMemberSkillIds(member, state, combatItems);
   return ids.map((id) => combatSkills[id]).filter(Boolean);

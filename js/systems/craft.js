@@ -32,8 +32,6 @@ export function canCraft(recipeId, recipes, state, balance, jobs) {
   const recipe = recipes[recipeId];
   if (!recipe) return false;
 
-  if (recipe.tutorialOnly && !state.tutorial?.sandbox) return false;
-
   if (isDurabilityTool(recipe)) {
     if (hasWorkingTool(state, recipeId, recipe)) return false;
   } else if (recipe.unique && !recipe.repeatable && (state.crafted || []).includes(recipeId)) {
@@ -74,10 +72,6 @@ export function formatMissingIngredients(missing, resources = {}) {
 export function getCraftBlockReason(recipeId, recipes, state, balance, jobs, resources = {}) {
   const recipe = recipes[recipeId];
   if (!recipe) return null;
-
-  if (recipe.tutorialOnly && !state.tutorial?.sandbox) {
-    return { type: 'tutorial', message: 'Réservé à la formation' };
-  }
 
   if (isDurabilityTool(recipe)) {
     if (hasWorkingTool(state, recipeId, recipe)) {
@@ -139,39 +133,6 @@ function applyCraftResult(recipeId, recipe, state) {
   }
 }
 
-/** Formation : applique un craft garanti (matériaux fournis si besoin). */
-export function tutorialCompleteCraft(recipeId, recipes, state) {
-  const recipe = recipes[recipeId];
-  if (!recipe) return false;
-
-  for (const [resId, amount] of Object.entries(recipe.ingredients || {})) {
-    if ((state.inventory[resId] || 0) < amount) {
-      state.inventory[resId] = amount;
-    }
-  }
-  const kirhaCost = recipe.kirhaCost || 0;
-  if (kirhaCost > 0 && (state.kirha || 0) < kirhaCost) {
-    state.kirha = kirhaCost;
-  }
-
-  for (const [resId, amount] of Object.entries(recipe.ingredients || {})) {
-    state.inventory[resId] = (state.inventory[resId] || 0) - amount;
-  }
-  if (kirhaCost > 0) state.kirha -= kirhaCost;
-
-  if (recipe.output) {
-    const outAmt = recipe.outputAmount || 1;
-    state.inventory[recipe.output] = (state.inventory[recipe.output] || 0) + outAmt;
-  }
-
-  if (recipe.combatItem) {
-    grantCombatItem(state, recipe.combatItem);
-  }
-
-  applyCraftResult(recipeId, recipe, state);
-  return recipe;
-}
-
 export function craft(recipeId, recipes, state, balance, resources = {}, jobs = {}) {
   if (!canCraft(recipeId, recipes, state, balance, jobs)) return false;
 
@@ -179,32 +140,6 @@ export function craft(recipeId, recipes, state, balance, resources = {}, jobs = 
   if (recipe.output && resources[recipe.output]?.merchantOnly) return false;
   for (const [resId, amount] of Object.entries(recipe.ingredients)) {
     state.inventory[resId] -= amount;
-  }
-
-  const kirhaCost = recipe.kirhaCost || 0;
-  if (kirhaCost > 0) state.kirha -= kirhaCost;
-
-  if (recipe.output) {
-    const amount = recipe.outputAmount || 1;
-    state.inventory[recipe.output] = (state.inventory[recipe.output] || 0) + amount;
-  }
-
-  if (recipe.combatItem) {
-    grantCombatItem(state, recipe.combatItem);
-  }
-
-  applyCraftResult(recipeId, recipe, state);
-  return recipe;
-}
-
-/** Formation sandbox : craft sans garde-fous (ressources déjà garanties). */
-export function craftForced(recipeId, recipes, state, balance, resources = {}) {
-  const recipe = recipes[recipeId];
-  if (!recipe) return false;
-  if (recipe.output && resources[recipe.output]?.merchantOnly) return false;
-
-  for (const [resId, amount] of Object.entries(recipe.ingredients)) {
-    state.inventory[resId] = (state.inventory[resId] || 0) - amount;
   }
 
   const kirhaCost = recipe.kirhaCost || 0;

@@ -17,62 +17,9 @@ import {
   getResourcesForJob,
   getJobLevel,
 } from '../systems/zones.js';
-import { canCraft, craft, craftForced, getCraftBlockReason, tutorialCompleteCraft } from '../systems/craft.js';
-import { hasWorkingTool } from '../systems/toolDurability.js';
+import { canCraft, craft, getCraftBlockReason } from '../systems/craft.js';
+import { migrateToolDurability, wearToolsForHarvest } from '../systems/toolDurability.js';
 import { getVendorOffer, canBuyOffer, buyOffer } from '../systems/merchant.js';
-import {
-  advanceTutorialManual,
-  dismissTutorial as completeTutorialSkip,
-  getTutorialUi as buildTutorialUi,
-  migrateTutorial,
-  resetTutorial,
-  syncTutorialProgress,
-  buildDefaultTutorialState,
-  isTutorialActive,
-  completeTutorialNicknameStep,
-  shouldShowTutorialIntro,
-  beginTutorialSandbox,
-  getTutorialStepIndex,
-  getTutorialStep,
-  hasTutorialRewardsClaimed,
-  disableTutorial,
-  TUTORIAL_ENABLED,
-} from '../systems/tutorial.js';
-import {
-  bootstrapTutorialStep,
-  checkTutorialWeaponEquipped,
-  chooseTutorialWeapon,
-  acceptTutorialStarterWeapon,
-  TUTORIAL_RECIPE_ID,
-  TUTORIAL_WEAPON_TYPE,
-  getChosenTutorialRecipeId,
-  getCraftJobForRecipe,
-  getTutorialHarvestDurationMs,
-  graduateTutorial as applyTutorialGraduation,
-  isTutorialHarvestStep,
-  markTutorialDungeonWon,
-  markTutorialHarvestDone,
-  markTutorialScrollBought,
-  markTutorialWeaponCrafted,
-  markTutorialWeaponEquipped,
-  ensureTutorialCraftSupplies,
-  reconcileTutorialWeaponProgress,
-  findTutorialWeaponOwnedRef,
-  ownsTutorialChosenWeapon,
-  markTutorialManualHarvestDone,
-  markTutorialWoodSold,
-  markTutorialStarterAxeEquipped,
-  markTutorialAxeCrafted,
-  markTutorialFarmStarted,
-  markTutorialFarmChickenStarted,
-  isTutorialFarmStep,
-  isTutorialFarmChickenStep,
-  getTutorialFarmDurationMs,
-  reconcileTutorialAxeProgress,
-  grantTutorialStarterAxe,
-  grantTutorialSakuraAxe,
-  grantTutorialSkipRewards,
-} from '../systems/tutorialSandbox.js';
 import { getAideCost } from '../systems/passive.js';
 import { applyOfflineProgress } from '../systems/offline.js';
 import {
@@ -87,7 +34,6 @@ import {
   shouldShowPrestigeTeaser,
   getDefaultSettings,
 } from '../systems/prestige.js';
-import { migrateToolDurability, wearToolsForHarvest } from '../systems/toolDurability.js';
 import {
   ensureSlots,
   getMaxSlots,
@@ -134,9 +80,6 @@ import {
   abandonCombat as clearCombatEncounter,
   getActiveEncounter,
   getActiveMemberSkills,
-  getTutorialFightHint,
-  startTutorialFight as startZoneTutorialFight,
-  startTutorialDungeon as startZoneTutorialDungeon,
   getActiveCombatMember,
   stepCombatEnemyTurn as resolveCombatEnemyStep,
   DEFEND_ACTION,
@@ -187,7 +130,7 @@ import {
   applyCompanionNickname,
   getCompanionDisplayName,
 } from '../systems/companions.js';
-import { equip, unequip, unequipGathering, canEquip, migrateEquipment, getDefaultEquipment, equipForced } from '../systems/equipment.js';
+import { equip, unequip, unequipGathering, canEquip, migrateEquipment, getDefaultEquipment } from '../systems/equipment.js';
 import {
   ensureFarmSlots,
   startFarmProduction,
@@ -241,7 +184,7 @@ function migrateLegacyCombatResources(state) {
 }
 
 export class Game {
-  constructor(resources, jobs, balance, recipes, aides, equipment, farmData, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, quests, tutorialData, weaponRoles) {
+  constructor(resources, jobs, balance, recipes, aides, equipment, farmData, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, quests, weaponRoles) {
     this.resources = resources;
     this.jobs = jobs;
     this.balance = balance;
@@ -258,7 +201,6 @@ export class Game {
     this.combatSkills = combatSkills;
     this.companions = companions;
     this.quests = quests || {};
-    this.tutorialData = tutorialData || { steps: [] };
     this.weaponRoles = weaponRoles || {};
     this.state = null;
     this.harvestTimers = {};
@@ -310,7 +252,6 @@ export class Game {
       zone: 'village_sakura',
       season: 1,
       prestige: { kirhaBonus: 0, xpBonus: 0 },
-      tutorial: buildDefaultTutorialState(),
       lifetimeStats: { totalEarned: 0, totalHarvests: 0, seasonsCompleted: 0 },
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
@@ -387,7 +328,6 @@ export class Game {
         kirhaBonus: saved.prestige?.kirhaBonus || 0,
         xpBonus: saved.prestige?.xpBonus || 0,
       },
-      tutorial: migrateTutorial(saved.tutorial),
       lifetimeStats: { ...defaults.lifetimeStats, ...(saved.lifetimeStats || {}) },
       settings: mergeSettings(saved.settings),
       stats: { ...defaults.stats, ...(saved.stats || {}) },
@@ -412,7 +352,6 @@ export class Game {
     const saved = await SaveProvider.load();
     this.state = saved ? this.mergeState(saved) : this.getDefaultState();
     if (this.balance.betaMode) applyBetaUnlocks(this.state, this.companions);
-    if (!TUTORIAL_ENABLED) disableTutorial(this.state);
 
     const offlineResult = applyOfflineProgress(this.state, this.aides, this.balance);
     this.state.lastOnline = Date.now();
@@ -421,10 +360,6 @@ export class Game {
     this.restoreFarmTimers();
     syncExpiredFarmSlots(this.state, (buildingId, slotIndex) => {
       this.completeFarmSlot(buildingId, slotIndex);
-    });
-    syncTutorialProgress(this.state, this.tutorialData, this.quests, {
-      recipes: this.recipes,
-      combatItems: this.combatEquipment.items,
     });
     this.processQuests();
     emit('stateChange', this.state);
@@ -499,7 +434,6 @@ export class Game {
   }
 
   processQuests() {
-    if (this.state.tutorial?.sandbox) return false;
     let changed = false;
     for (const quest of Object.values(this.quests)) {
       if (isQuestCompleted(this.state, quest.id)) continue;
@@ -509,240 +443,7 @@ export class Game {
       emit('questComplete', { questId: quest.id, quest });
       changed = true;
     }
-    if (changed) {
-      syncTutorialProgress(this.state, this.tutorialData, this.quests);
-    }
     return changed;
-  }
-
-  isTutorialActive() {
-    return isTutorialActive(this.state);
-  }
-
-  hasTutorialRewardsClaimed() {
-    return hasTutorialRewardsClaimed(this.state);
-  }
-
-  shouldShowTutorialIntro() {
-    return shouldShowTutorialIntro(this.state, this.tutorialData);
-  }
-
-  completeTutorialNicknameStep() {
-    if (!completeTutorialNicknameStep(this.state, this.tutorialData)) return false;
-    syncTutorialProgress(this.state, this.tutorialData, this.quests);
-    emit('stateChange', this.state);
-    this.scheduleSave();
-    return true;
-  }
-
-  getTutorialSyncExtras() {
-    return {
-      recipes: this.recipes,
-      combatItems: this.combatEquipment.items,
-      craftJobHint: getChosenTutorialRecipeId(this.state)
-        ? getCraftJobForRecipe(this.recipes, getChosenTutorialRecipeId(this.state))
-        : null,
-    };
-  }
-
-  syncTutorialInventory() {
-    const extras = this.getTutorialSyncExtras();
-    reconcileTutorialWeaponProgress(
-      this.state,
-      this.recipes,
-      this.combatEquipment.items
-    );
-    this.prepareTutorialCraftIfNeeded();
-    if (
-      checkTutorialWeaponEquipped(this.state, this.recipes, this.combatEquipment.items)
-      && this.state.tutorial?.sandbox
-      && !this.state.tutorial.flags?.weaponEquipped
-    ) {
-      markTutorialWeaponEquipped(this.state);
-    }
-    const changed = syncTutorialProgress(this.state, this.tutorialData, this.quests, extras);
-    if (changed) this.scheduleSave();
-    return changed;
-  }
-
-  getTutorialUi() {
-    const syncExtras = this.getTutorialSyncExtras();
-    reconcileTutorialWeaponProgress(
-      this.state,
-      this.recipes,
-      this.combatEquipment.items
-    );
-    this.prepareTutorialSandboxForStep();
-    return buildTutorialUi(this.state, this.tutorialData, this.quests, syncExtras);
-  }
-
-  beginTutorial() {
-    beginTutorialSandbox(this.state, this.tutorialData);
-    bootstrapTutorialStep(
-      this.state,
-      this.balance,
-      this.recipes,
-      'harvest',
-      this.equipment,
-      this.farmData
-    );
-    syncTutorialProgress(this.state, this.tutorialData, this.quests);
-    emit('tutorialBegin', {});
-    emit('stateChange', this.state);
-    this.scheduleSave();
-    return true;
-  }
-
-  chooseTutorialWeaponType(weaponType) {
-    if (this.state.tutorial?.sandbox) {
-      return this.acceptTutorialStarterWeapon();
-    }
-    if (!chooseTutorialWeapon(
-      this.state,
-      weaponType,
-      this.recipes,
-      this.combatEquipment.items
-    )) return false;
-    return this._afterTutorialWeaponChosen();
-  }
-
-  acceptTutorialStarterWeapon() {
-    if (!acceptTutorialStarterWeapon(
-      this.state,
-      this.recipes,
-      this.combatEquipment.items
-    )) return false;
-    return this._afterTutorialWeaponChosen();
-  }
-
-  acceptTutorialAxe() {
-    if (!this.state.tutorial || this.state.tutorial.completed || this.state.tutorial.dismissed) {
-      return false;
-    }
-
-    this.ensureTutorialSandboxMode();
-    const axeStepIdx = getTutorialStepIndex(this.tutorialData, 'craft_axe');
-    if (axeStepIdx < 0) return false;
-
-    if ((this.state.tutorial.stepIndex || 0) < axeStepIdx) {
-      this.state.tutorial.stepIndex = axeStepIdx;
-    }
-
-    const recipe = this.recipes.sakura_axe;
-    if (!recipe) return false;
-
-    grantTutorialSakuraAxe(this.state, this.recipes, this.equipment);
-    equipForced('sakura_axe', this.state, this.equipment);
-    markTutorialAxeCrafted(this.state);
-
-    const jobXp = getRecipeJobXp(recipe);
-    const craftJob = getRecipeCraftJob(recipe);
-    let levelResult = null;
-    if (jobXp) {
-      levelResult = addJobXp(this.state, craftJob, jobXp, this.jobs, this.balance);
-    }
-
-    syncTutorialProgress(this.state, this.tutorialData, this.quests);
-    emit('craft', { recipeId: 'sakura_axe', recipe, levelResult, tutorialFakeCraft: true });
-    emit('tutorialAxeReceived', {});
-    emit('stateChange', this.state);
-    this.scheduleSave();
-    return true;
-  }
-
-  _afterTutorialWeaponChosen() {
-    syncTutorialProgress(this.state, this.tutorialData, this.quests, {
-      recipes: this.recipes,
-      combatItems: this.combatEquipment.items,
-    });
-    const craftIdx = getTutorialStepIndex(this.tutorialData, 'craft');
-    if (craftIdx >= 0) bootstrapTutorialStep(this.state, this.balance, this.recipes, 'craft');
-    emit('tutorialWeaponChosen', {});
-    emit('stateChange', this.state);
-    this.scheduleSave();
-    return true;
-  }
-
-  graduateTutorial() {
-    applyTutorialGraduation(this.state);
-    syncTutorialProgress(this.state, this.tutorialData, this.quests);
-    emit('stateChange', this.state);
-    this.scheduleSave();
-  }
-
-  getTutorialStarterWeaponOffer() {
-    const type = TUTORIAL_WEAPON_TYPE;
-    const recipe = this.recipes[TUTORIAL_RECIPE_ID];
-    return {
-      type,
-      role: this.weaponRoles[type],
-      recipeId: TUTORIAL_RECIPE_ID,
-      recipe,
-    };
-  }
-
-  prepareTutorialCraftIfNeeded() {
-    this.prepareTutorialSandboxForStep();
-  }
-
-  ensureTutorialSandboxMode() {
-    if (!isTutorialActive(this.state)) return;
-    if (!this.state.tutorial.sandbox) {
-      this.state.tutorial.sandbox = true;
-    }
-  }
-
-  /** Garantit ressources / slots pour l'étape sandbox en cours (avant rendu UI). */
-  prepareTutorialSandboxForStep() {
-    if (!isTutorialActive(this.state)) return;
-    this.ensureTutorialSandboxMode();
-    const step = getTutorialStep(this.state, this.tutorialData);
-    if (!step) return;
-
-    const bootstrapSteps = new Set(['harvest', 'craft_axe', 'farm', 'farm_chicken', 'craft', 'scrolls']);
-    if (bootstrapSteps.has(step.id)) {
-      bootstrapTutorialStep(
-        this.state,
-        this.balance,
-        this.recipes,
-        step.id,
-        this.equipment,
-        this.farmData
-      );
-    }
-    if (step.id !== 'craft_axe') {
-      reconcileTutorialAxeProgress(this.state, this.recipes, this.tutorialData);
-    } else if (this.state.tutorial.flags?.axeCrafted) {
-      const axeRecipe = this.recipes.sakura_axe;
-      if (axeRecipe && !hasWorkingTool(this.state, 'sakura_axe', axeRecipe)) {
-        this.state.tutorial.flags.axeCrafted = false;
-      }
-    }
-    if (step.id === 'craft' || this.state.tutorial.flags?.weaponChosen) {
-      ensureTutorialCraftSupplies(this.state, this.recipes);
-    }
-    if (step.id === 'craft_axe' && this.state.tutorial.flags?.axeCrafted) {
-      syncTutorialProgress(this.state, this.tutorialData, this.quests);
-    }
-  }
-
-  isTutorialForcedCraft(recipeId) {
-    if (!isTutorialActive(this.state)) return false;
-    this.ensureTutorialSandboxMode();
-    const step = getTutorialStep(this.state, this.tutorialData);
-    if (recipeId === 'sakura_axe') {
-      return step?.id === 'craft_axe' && !this.state.tutorial.flags?.axeCrafted;
-    }
-    const chosen = getChosenTutorialRecipeId(this.state);
-    if (
-      chosen
-      && recipeId === chosen
-      && this.state.tutorial.flags?.weaponChosen
-      && !this.state.tutorial.flags?.weaponCrafted
-    ) {
-      return true;
-    }
-    return false;
   }
 
   getCraftFailureMessage(recipeId) {
@@ -757,57 +458,6 @@ export class Game {
       this.resources
     );
     return block?.message || 'Impossible de fabriquer pour le moment.';
-  }
-
-  isTutorialCraftRecipe(recipeId) {
-    this.prepareTutorialCraftIfNeeded();
-    if (!isTutorialActive(this.state)) return true;
-    const recipe = this.recipes[recipeId];
-    const step = this.tutorialData?.steps?.[this.state.tutorial.stepIndex];
-    const chosen = getChosenTutorialRecipeId(this.state);
-
-    if (recipe?.tutorialOnly && !this.state.tutorial?.sandbox) return false;
-
-    if (!this.state.tutorial.flags?.axeCrafted) {
-      return recipeId === 'sakura_axe' || recipeId === 'tutorial_starter_axe';
-    }
-    if (step?.id === 'craft_axe') {
-      return recipeId === 'sakura_axe' || recipeId === 'tutorial_starter_axe';
-    }
-    if (step?.id === 'craft' && chosen) return recipeId === chosen;
-    if (this.state.tutorial.flags?.weaponChosen && !this.state.tutorial.flags?.weaponEquipped && chosen) {
-      return recipeId === chosen;
-    }
-    return true;
-  }
-
-  advanceTutorialStep() {
-    if (!advanceTutorialManual(this.state, this.tutorialData)) return false;
-    syncTutorialProgress(this.state, this.tutorialData, this.quests);
-    emit('stateChange', this.state);
-    this.scheduleSave();
-    return true;
-  }
-
-  dismissTutorial() {
-    completeTutorialSkip(this.state);
-    grantTutorialSkipRewards(
-      this.state,
-      this.recipes,
-      this.equipment,
-      this.balance,
-      this.farmData
-    );
-    emit('tutorialDismissed');
-    emit('stateChange', this.state);
-    this.scheduleSave();
-  }
-
-  resetTutorialForOptions() {
-    resetTutorial(this.state);
-    emit('tutorialReplay', {});
-    emit('stateChange', this.state);
-    this.scheduleSave();
   }
 
   getActiveQuests() {
@@ -858,17 +508,6 @@ export class Game {
   }
 
   onCombatVictoryHooks(result) {
-    if (result?.isTutorialFight) {
-      syncTutorialProgress(this.state, this.tutorialData, this.quests);
-    }
-    if (result?.isTutorialDungeon) {
-      markTutorialDungeonWon(this.state);
-      syncTutorialProgress(this.state, this.tutorialData, this.quests);
-      const step = getTutorialStep(this.state, this.tutorialData);
-      if (step?.id === 'scrolls') {
-        bootstrapTutorialStep(this.state, this.balance, this.recipes, 'scrolls');
-      }
-    }
     const zoneId = result?.zoneId;
     if (result?.isBoss && zoneId) {
       const unlocked = tryAutoUnlockFromBoss(zoneId, this.state, this.balance);
@@ -1033,35 +672,15 @@ export class Game {
       }
     }
 
-    const tutorialFarm = isTutorialFarmStep(this.state, this.tutorialData)
-      || isTutorialFarmChickenStep(this.state, this.tutorialData);
-    if (tutorialFarm) {
-      this.prepareTutorialSandboxForStep();
-    }
-
     const toolCheck = getFarmToolCheck(this.state, this.recipes, this.equipment);
-    if (!toolCheck.ok && !tutorialFarm) {
+    if (!toolCheck.ok) {
       return { ok: false, reason: toolCheck.message };
     }
 
     const result = startFarmProduction(this.state, this.farmData, buildingId, slotIndex);
     if (!result.ok) return result;
 
-    let duration = result.duration;
-    if (tutorialFarm) {
-      const slot = this.state.farmSlots?.[buildingId]?.[slotIndex];
-      if (slot?.active) {
-        duration = getTutorialFarmDurationMs(slot.active.duration || duration);
-        slot.active.duration = duration;
-      }
-      if (isTutorialFarmStep(this.state, this.tutorialData)) {
-        markTutorialFarmStarted(this.state);
-      }
-      if (isTutorialFarmChickenStep(this.state, this.tutorialData)) {
-        markTutorialFarmChickenStarted(this.state);
-      }
-      syncTutorialProgress(this.state, this.tutorialData, this.quests);
-    }
+    const duration = result.duration;
 
     this.scheduleFarmTimer(buildingId, slotIndex, duration);
     emit('farmStart', { buildingId, slotIndex, duration });
@@ -1126,7 +745,6 @@ export class Game {
       resource,
       this.recipes,
       this.equipment,
-      this.tutorialData,
       this.resources
     );
     return check.ok ? null : check.message;
@@ -1141,7 +759,6 @@ export class Game {
       resource,
       this.recipes,
       this.equipment,
-      this.tutorialData,
       this.resources
     );
     if (check.starterHarvest) return 'Sans outil — récolte plus lente';
@@ -1211,7 +828,6 @@ export class Game {
       resource,
       this.recipes,
       this.equipment,
-      this.tutorialData,
       this.resources
     );
     if (!toolCheck.ok) {
@@ -1221,9 +837,7 @@ export class Game {
 
     const baseTime = getHarvestTime(resource, this.state, this.jobs, this.balance);
     let duration = baseTime;
-    if (isTutorialHarvestStep(this.state, this.tutorialData)) {
-      duration = getTutorialHarvestDurationMs(baseTime);
-    } else if (toolCheck.starterHarvest) {
+    if (toolCheck.starterHarvest) {
       duration = getStarterHarvestDurationMs(baseTime);
     }
     slot.active = { phase: 'harvesting', start: Date.now(), duration, resourceId: resource.id };
@@ -1259,16 +873,6 @@ export class Game {
           const recipe = this.recipes[recipeId];
           emit('toolBroken', { recipeId, name: recipe?.name || recipeId });
         }
-      }
-      if (isTutorialHarvestStep(this.state, this.tutorialData)) {
-        markTutorialHarvestDone(this.state);
-        markTutorialManualHarvestDone(this.state);
-        slot.active = null;
-        syncTutorialProgress(this.state, this.tutorialData, this.quests);
-        emit('harvestComplete', { resourceId, jobId, slotIndex, yield: yield_, xp, levelResult });
-        emit('stateChange', this.state);
-        this.scheduleSave();
-        return;
       }
 
       const regrowthDuration = getRegrowthTime(resource, this.state, this.jobs, this.balance);
@@ -1336,14 +940,6 @@ export class Game {
     if (earnings > 0) {
       this.state.kirha += earnings;
       this.trackEarnings(earnings);
-      if (
-        this.state.tutorial?.sandbox
-        && resourceId === 'frene'
-        && getTutorialStep(this.state, this.tutorialData)?.id === 'sell_wood'
-      ) {
-        markTutorialWoodSold(this.state);
-        syncTutorialProgress(this.state, this.tutorialData, this.quests);
-      }
       emit('sell', { resourceId, amount: sellAmount, earnings });
       emit('stateChange', this.state);
       this.scheduleSave();
@@ -1354,12 +950,10 @@ export class Game {
   sellEverything() {
     let rawTotal = 0;
     const artisanBonus = getCraftSellBonus(this.state, this.jobs);
-    let soldFrene = false;
 
     for (const [id, amount] of Object.entries({ ...this.state.inventory })) {
       if (amount <= 0 || !this.resources[id]) continue;
       if (this.resources[id].notSellable || this.resources[id].merchantOnly) continue;
-      if (id === 'frene') soldFrene = true;
       const mult = this.resources[id].craftOnly ? artisanBonus : 1;
       rawTotal += this.resources[id].sellPrice * amount * mult;
       this.state.inventory[id] = 0;
@@ -1369,14 +963,6 @@ export class Game {
     if (earnings > 0) {
       this.state.kirha += earnings;
       this.trackEarnings(earnings);
-      if (
-        this.state.tutorial?.sandbox
-        && soldFrene
-        && getTutorialStep(this.state, this.tutorialData)?.id === 'sell_wood'
-      ) {
-        markTutorialWoodSold(this.state);
-        syncTutorialProgress(this.state, this.tutorialData, this.quests);
-      }
       emit('sell', { all: true, earnings });
       emit('stateChange', this.state);
       this.scheduleSave();
@@ -1388,13 +974,11 @@ export class Game {
     const exclude = new Set(excludeIds);
     let rawTotal = 0;
     const artisanBonus = getCraftSellBonus(this.state, this.jobs);
-    let soldFrene = false;
 
     for (const [id, amount] of Object.entries({ ...this.state.inventory })) {
       if (amount <= 0 || !this.resources[id]) continue;
       if (exclude.has(id)) continue;
       if (this.resources[id].notSellable || this.resources[id].merchantOnly) continue;
-      if (id === 'frene') soldFrene = true;
       const mult = this.resources[id].craftOnly ? artisanBonus : 1;
       rawTotal += this.resources[id].sellPrice * amount * mult;
       this.state.inventory[id] = 0;
@@ -1404,14 +988,6 @@ export class Game {
     if (earnings > 0) {
       this.state.kirha += earnings;
       this.trackEarnings(earnings);
-      if (
-        this.state.tutorial?.sandbox
-        && soldFrene
-        && getTutorialStep(this.state, this.tutorialData)?.id === 'sell_wood'
-      ) {
-        markTutorialWoodSold(this.state);
-        syncTutorialProgress(this.state, this.tutorialData, this.quests);
-      }
       emit('sell', { all: true, earnings, except: [...exclude] });
       emit('stateChange', this.state);
       this.scheduleSave();
@@ -1461,105 +1037,22 @@ export class Game {
   }
 
   buyMerchant(vendorId, offerId, quantity) {
-    let qty = quantity;
-    if (
-      this.state.tutorial?.sandbox
-      && offerId === 'ancient_scroll'
-      && getTutorialStep(this.state, this.tutorialData)?.id === 'scrolls'
-    ) {
-      qty = 1;
-    }
     const offer = getVendorOffer(this.merchant, vendorId, offerId);
-    const result = buyOffer(offer, qty, this.state, this.resources);
+    const result = buyOffer(offer, quantity, this.state, this.resources);
     if (!result) return false;
-    if (this.state.tutorial?.sandbox && offer?.resourceId === 'ancient_scroll') {
-      markTutorialScrollBought(this.state);
-      syncTutorialProgress(this.state, this.tutorialData, this.quests);
-    }
     emit('merchantBuy', { vendorId, offerId, ...result });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
   }
 
-  doTutorialForcedCraft(recipeId) {
-    this.prepareTutorialSandboxForStep();
-    const recipe = this.recipes[recipeId];
-    if (!recipe) return false;
-
-    if (recipeId === 'sakura_axe') {
-      grantTutorialSakuraAxe(this.state, this.recipes, this.equipment);
-      equip(recipeId, this.state, this.equipment, this.recipes);
-      markTutorialAxeCrafted(this.state);
-      syncTutorialProgress(this.state, this.tutorialData, this.quests);
-
-      let levelResult = null;
-      const jobXp = getRecipeJobXp(recipe);
-      const craftJob = getRecipeCraftJob(recipe);
-      if (jobXp) {
-        levelResult = addJobXp(this.state, craftJob, jobXp, this.jobs, this.balance);
-      }
-
-      emit('craft', { recipeId, recipe, levelResult, tutorialFakeCraft: true });
-      emit('stateChange', this.state);
-      this.scheduleSave();
-      return true;
-    }
-
-    if (hasWorkingTool(this.state, recipeId, recipe)) {
-      emit('craft', { recipeId, recipe, levelResult: null, tutorialAlreadyOwned: true });
-      emit('stateChange', this.state);
-      this.scheduleSave();
-      return true;
-    }
-
-    const crafted = tutorialCompleteCraft(recipeId, this.recipes, this.state);
-    if (!crafted) return false;
-    if (recipeId === TUTORIAL_RECIPE_ID && recipe.combatItem) {
-      markTutorialWeaponCrafted(this.state);
-      reconcileTutorialWeaponProgress(this.state, this.recipes, this.combatEquipment.items);
-    }
-
-    let levelResult = null;
-    const jobXp = getRecipeJobXp(recipe);
-    const craftJob = getRecipeCraftJob(recipe);
-    if (jobXp) {
-      levelResult = addJobXp(this.state, craftJob, jobXp, this.jobs, this.balance);
-    }
-
-    emit('craft', { recipeId, recipe, levelResult });
-    this.processQuests();
-    emit('stateChange', this.state);
-    this.scheduleSave();
-    return true;
-  }
-
   doCraft(recipeId) {
-    if (this.isTutorialForcedCraft(recipeId)) {
-      return this.doTutorialForcedCraft(recipeId);
-    }
-
-    this.prepareTutorialSandboxForStep();
     if (!canCraft(recipeId, this.recipes, this.state, this.balance, this.jobs)) return false;
 
     const recipe = craft(recipeId, this.recipes, this.state, this.balance, this.resources, this.jobs);
     if (!recipe) return false;
-    if (this.state.tutorial?.sandbox && recipeId === 'sakura_axe') {
-      markTutorialAxeCrafted(this.state);
-      syncTutorialProgress(this.state, this.tutorialData, this.quests);
+    if (this.equipment.equipable?.[recipeId]) {
       equip(recipeId, this.state, this.equipment, this.recipes);
-    }
-    if (
-      this.state.tutorial?.sandbox
-      && recipeId === TUTORIAL_RECIPE_ID
-      && recipe.combatItem
-    ) {
-      markTutorialWeaponCrafted(this.state);
-      reconcileTutorialWeaponProgress(
-        this.state,
-        this.recipes,
-        this.combatEquipment.items
-      );
     }
     let levelResult = null;
     const jobXp = getRecipeJobXp(recipe);
@@ -1577,10 +1070,6 @@ export class Game {
 
   doEquip(recipeId) {
     if (!equip(recipeId, this.state, this.equipment, this.recipes)) return false;
-    if (this.state.tutorial?.sandbox && recipeId === 'tutorial_starter_axe') {
-      markTutorialStarterAxeEquipped(this.state);
-      syncTutorialProgress(this.state, this.tutorialData, this.quests);
-    }
     emit('equip', { recipeId });
     emit('stateChange', this.state);
     this.scheduleSave();
@@ -1602,18 +1091,6 @@ export class Game {
 
   doEquipCombat(ref) {
     if (!equipCombatItem(this.state, ref, this.combatEquipment.items)) return false;
-    reconcileTutorialWeaponProgress(
-      this.state,
-      this.recipes,
-      this.combatEquipment.items
-    );
-    if (this.state.tutorial?.sandbox && checkTutorialWeaponEquipped(this.state, this.recipes, this.combatEquipment.items)) {
-      markTutorialWeaponEquipped(this.state);
-      syncTutorialProgress(this.state, this.tutorialData, this.quests, {
-        recipes: this.recipes,
-        combatItems: this.combatEquipment.items,
-      });
-    }
     emit('equipCombat', { ref });
     this.processQuests();
     emit('stateChange', this.state);
@@ -1769,71 +1246,6 @@ export class Game {
     emit('combatStart', { zoneId, isBoss, foe });
     emit('stateChange', this.state);
     return { ok: true, zoneId, foe, isBoss };
-  }
-
-  startTutorialCombatFight(zoneId = 'village_sakura') {
-    const combatZone = this.combatZones[zoneId];
-    if (!combatZone) return { ok: false, reason: 'Zone inconnue' };
-
-    const result = startZoneTutorialFight(
-      combatZone,
-      this.state,
-      this.balance,
-      this.characterConfig,
-      this.combatEquipment.items,
-      this.enemies,
-      this.weaponRoles
-    );
-
-    if (!result.ok) return result;
-
-    emit('combatStart', { zoneId, isTutorialFight: true });
-    emit('stateChange', this.state);
-    return { ok: true, zoneId, isTutorialFight: true };
-  }
-
-  startTutorialDungeonRun(zoneId = 'village_sakura') {
-    const combatZone = this.combatZones[zoneId];
-    if (!combatZone) return { ok: false, reason: 'Zone inconnue' };
-
-    const result = startZoneTutorialDungeon(
-      combatZone,
-      this.state,
-      this.balance,
-      this.characterConfig,
-      this.combatEquipment.items,
-      this.enemies,
-      this.companions
-    );
-
-    if (!result.ok) return result;
-
-    emit('combatStart', { zoneId, isTutorialDungeon: true, roomCount: result.roomCount });
-    emit('stateChange', this.state);
-    return { ok: true, zoneId, isTutorialDungeon: true, roomCount: result.roomCount };
-  }
-
-  getTutorialCombatHint() {
-    return getTutorialFightHint(
-      this.state,
-      this.combatEquipment.items,
-      this.combatSkills,
-      this.weaponRoles
-    );
-  }
-
-  canStartTutorialFight() {
-    const weapon = this.state.combatEquipment?.weapon;
-    if (!weapon) return { ok: false, reason: 'Équipe une arme sur Personnage' };
-    const item = resolveItem(this.state, weapon, this.combatEquipment.items);
-    if (!item?.weaponType) return { ok: false, reason: 'Équipe une arme de combat' };
-    return canFight(
-      this.combatZones.village_sakura,
-      this.state,
-      this.balance,
-      this.characterConfig,
-      false
-    );
   }
 
   canEnterDungeonZone(zoneId) {

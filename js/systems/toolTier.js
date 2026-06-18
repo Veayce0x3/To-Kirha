@@ -32,22 +32,7 @@ export function getGatheringToolRecipe(state, jobId, recipes) {
   return recipe;
 }
 
-export function canTutorialHarvestWithoutTool(state, tutorialData) {
-  if (!state.tutorial?.sandbox && !isTutorialActiveHarvest(state, tutorialData)) return false;
-  return !state.tutorial?.flags?.tutorialManualHarvestDone;
-}
-
-function isTutorialActiveHarvest(state, tutorialData) {
-  if (!state.tutorial || state.tutorial.completed || state.tutorial.dismissed) return false;
-  const step = tutorialData?.steps?.[state.tutorial.stepIndex];
-  return step?.id === 'harvest' || step?.id === 'sell_wood' || step?.id === 'craft_axe';
-}
-
-export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentData, tutorialData, resources = null) {
-  if (canTutorialHarvestWithoutTool(state, tutorialData)) {
-    return { ok: true, tutorialFree: true };
-  }
-
+export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentData, resources = null) {
   const recipe = getGatheringToolRecipe(state, jobId, recipes);
   if (!recipe) {
     const isStarter = resources && isStarterHarvestResource(resource, resources);

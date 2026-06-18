@@ -1,6 +1,6 @@
 {
   "upgradeCostMultiplier": 1.15,
-  "startingKirha": 0,
+  "startingKirha": 25,
   "saveVersion": 24,
   "betaMode": false,
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",

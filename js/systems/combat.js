@@ -505,18 +505,6 @@ function advanceEnemyTurnQueue(run, payload = {}) {
 export function enemyAttackTurn(run) {
   if (!run.combat || run.combat.phase !== 'enemy') return null;
 
-  if (run.isTutorialFight) {
-    const enemy = run.combat.enemies[run.combat.activeEnemyIndex];
-    if (enemy?.hp > 0) {
-      run.combat.log.push({
-        type: 'system',
-        text: `${enemy.emoji} ${enemy.name} attend sagement — continue ton entraînement !`,
-        enemyId: enemy.id,
-      });
-    }
-    return advanceEnemyTurnQueue(run, { skipped: true, tutorial: true });
-  }
-
   const enemy = run.combat.enemies[run.combat.activeEnemyIndex];
   if (!enemy || enemy.hp <= 0) {
     return advanceEnemyTurnQueue(run, { skipped: true });

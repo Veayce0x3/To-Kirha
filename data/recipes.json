@@ -1,20 +1,4 @@
 {
-  "tutorial_starter_axe": {
-    "id": "tutorial_starter_axe",
-    "name": "Hache du débutant",
-    "emoji": "🪓",
-    "description": "Outil de formation — palier 1",
-    "kirhaCost": 0,
-    "maxUses": 10,
-    "toolTier": 1,
-    "ingredients": {},
-    "effect": { "type": "speed", "job": "lumberjack", "bonus": 0.05 },
-    "unique": true,
-    "tutorialOnly": true,
-    "craftJob": "toolmaker",
-    "requiredJobLevel": 1,
-    "jobXp": 0
-  },
   "sakura_axe": {
     "id": "sakura_axe",
     "name": "Hache de Frêne",
@@ -212,21 +196,6 @@
     "craftJob": "toolmaker",
     "requiredJobLevel": 30,
     "jobXp": 45
-  },
-  "tutorial_sakura_blade": {
-    "id": "tutorial_sakura_blade",
-    "name": "Lame du débutant",
-    "emoji": "⚔️",
-    "description": "Formation — Katana léger pour apprendre l'atelier (Chevalier).",
-    "ingredients": {
-      "frene": 5,
-      "ble": 3
-    },
-    "combatItem": "set_sakura_weapon",
-    "unique": true,
-    "tutorialOnly": true,
-    "craftJob": "blacksmith",
-    "jobXp": 12
   },
   "set_sakura_helmet": {
     "id": "set_sakura_helmet",
