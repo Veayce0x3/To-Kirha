@@ -22,7 +22,9 @@ import {
   updateHarvestSlotProgresses,
   updateFarmSlotProgresses,
   patchFarmSlot,
+  patchFarmBuildingSlots,
   syncStaleFarmSlots,
+  refreshCharToolsIfVisible,
   patchHarvestSlot,
   closeAllResourcePickers,
   isResourcePickerOpen,
@@ -458,11 +460,12 @@ export function initUI(game, audio) {
   on('farmBlocked', ({ message }) => {
     showToast(els, message || 'Impossible de produire', 'sell');
   });
-  on('farmComplete', ({ buildingId, slotIndex }) => {
-    if (buildingId != null && slotIndex != null) {
-      patchFarmSlot(game, buildingId, slotIndex);
+  on('farmComplete', ({ buildingId }) => {
+    if (buildingId != null) {
+      patchFarmBuildingSlots(game, buildingId);
     }
     syncStaleFarmSlots(game);
+    refreshCharToolsIfVisible(game);
     const view = getView();
     if (isFarmView(view)) {
       const building = VIEWS[view]?.building;

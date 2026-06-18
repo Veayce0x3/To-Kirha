@@ -1636,9 +1636,29 @@ function renderJob(game, el, jobId) {
 
 function getFarmBtnLabel(progress) {
   if (progress <= 0) return 'Produire';
-  if (progress >= 1) return 'Production terminée…';
-  const pct = Math.min(99, Math.floor(progress * 100));
-  return `Production ${pct}%`;
+  if (progress >= 1) return 'Collecter';
+  return `Production ${getFarmProgressPct(progress)}%`;
+}
+
+/** Pourcentage affiché (1–99 en cours, 100 à la fin). */
+function getFarmProgressPct(progress) {
+  if (progress >= 1) return 100;
+  return Math.max(1, Math.min(99, Math.floor(progress * 100)));
+}
+
+function updateFarmSlotCardProgress(card, progress) {
+  const pct = getFarmProgressPct(progress);
+  const bar = card.querySelector('.slot-progress .xp-bar');
+  if (bar) bar.style.width = `${pct}%`;
+  const btn = card.querySelector('.btn-start');
+  if (btn) {
+    btn.textContent = getFarmBtnLabel(progress);
+    btn.classList.add('harvesting-btn');
+    btn.disabled = progress < 1;
+    btn.classList.toggle('affordable', progress >= 1);
+  }
+  const visual = card.querySelector('.slot-visual');
+  if (visual) visual.dataset.state = progress >= 1 ? 'ready' : 'harvesting';
 }
 
 function getFarmBuildingSprite(building) {
@@ -1705,9 +1725,9 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
     <div class="slot-footer">
       ${animalHtml}
       ${needsFeed ? feedUi.pickerHtml : ''}
-      ${active ? `<div class="xp-bar-container slot-progress"><div class="xp-bar" style="width:${Math.min(99, Math.floor(progress * 100))}%"></div></div>` : ''}
+      ${active ? `<div class="xp-bar-container slot-progress"><div class="xp-bar" style="width:${getFarmProgressPct(progress)}%"></div></div>` : ''}
       ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
-      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${!active && !produceBlocked ? ' affordable' : ''}" ${active || produceBlocked ? 'disabled' : ''}>
+      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${!active && !produceBlocked ? ' affordable' : ''}${active && progress >= 1 ? ' affordable' : ''}" ${active && progress < 1 || (!active && produceBlocked) ? 'disabled' : ''}>
         ${getFarmBtnLabel(progress)}
       </button>
     </div>
@@ -1728,6 +1748,11 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
     card.querySelector('.btn-start')?.addEventListener('click', () => {
       const result = game.startFarmSlot(buildingId, slotIndex);
       if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
+    });
+  } else if (progress >= 1) {
+    card.querySelector('.btn-start')?.addEventListener('click', () => {
+      game.completeFarmSlot(buildingId, slotIndex);
+      patchFarmSlot(game, buildingId, slotIndex);
     });
   }
 
@@ -1779,6 +1804,26 @@ function renderLockedFarmSlot(game, buildingId, slotIndex, container, showBuy) {
   container.appendChild(card);
 }
 
+/** Re-rendu léger de tous les emplacements du bâtiment ferme affiché. */
+export function patchFarmBuildingSlots(game, buildingId) {
+  const view = getView();
+  if (!isFarmView(view) || getFarmViewForBuilding(buildingId) !== view) return;
+  const building = getBuildingDef(game.farmData, buildingId);
+  const container = document.querySelector('#farm-slots');
+  if (!building || !container) return;
+  const max = game.getMaxFarmSlots(buildingId);
+  for (let i = 0; i < max; i++) {
+    patchFarmSlot(game, buildingId, i);
+  }
+}
+
+/** Rafraîchit l'onglet Outils du Perso si ouvert (durabilité après production). */
+export function refreshCharToolsIfVisible(game) {
+  if (getView() !== 'character' || charTab !== 'tools') return;
+  const panel = document.querySelector('#char-tab-panel');
+  if (panel) renderCharToolsTab(game, panel);
+}
+
 /** Re-rendu léger d'un emplacement ferme (après collecte ou désync UI). */
 export function patchFarmSlot(game, buildingId, slotIndex) {
   const building = getBuildingDef(game.farmData, buildingId);
@@ -1827,6 +1872,7 @@ export function refreshFarmViewLight(game, buildingId) {
     const strip = document.querySelector('.harvest-inventory-strip');
     if (building && strip) strip.outerHTML = buildFarmProductStrip(game, building);
   }
+  syncStaleFarmSlots(game);
   updateFarmSlotProgresses(game);
 }
 
@@ -1851,21 +1897,15 @@ export function updateFarmSlotProgresses(game) {
         return;
       }
 
-      const elapsed = Date.now() - slot.active.start;
-      if (elapsed >= slot.active.duration) {
+      const progress = game.getFarmSlotProgress(buildingId, slotIndex);
+
+      if (progress >= 1) {
         game.completeFarmSlot(buildingId, slotIndex);
         patchFarmSlot(game, buildingId, slotIndex);
         return;
       }
 
-      if (!card) return;
-      const progress = game.getFarmSlotProgress(buildingId, slotIndex);
-      const btn = card.querySelector('.btn-start');
-      if (btn) {
-        btn.textContent = getFarmBtnLabel(progress);
-        btn.classList.add('harvesting-btn');
-        btn.disabled = true;
-      }
+      if (card) updateFarmSlotCardProgress(card, progress);
     });
   }
   syncStaleFarmSlots(game);
