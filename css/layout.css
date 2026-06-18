@@ -4721,6 +4721,96 @@ body.picker-sheet-open #picker-sheet-portal .picker-sheet-header {
   margin-bottom: 0.35rem;
 }
 
+.farm-animal-purchase {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: rgba(155, 89, 182, 0.06);
+  border: 1px solid rgba(155, 89, 182, 0.15);
+}
+
+.farm-animal-head {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--brun, #4A3728);
+}
+
+.farm-animal-cost {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 0.5rem;
+  font-size: 0.78rem;
+}
+
+.btn-buy-animal {
+  width: 100%;
+  min-height: 44px;
+}
+
+.farm-feed-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.35rem;
+  width: 100%;
+}
+
+.farm-feed-label-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--brun, #4A3728);
+  opacity: 0.85;
+}
+
+.farm-feed-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(74, 55, 40, 0.25);
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--brun, #4A3728);
+  cursor: pointer;
+}
+
+.farm-feed-select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.auction-sell-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(74, 55, 40, 0.15);
+}
+
+.auction-sell-price {
+  opacity: 0.85;
+  font-size: 0.85rem;
+}
+
+.btn-sell-scroll {
+  min-height: 44px;
+  flex: 1;
+  min-width: 120px;
+  border-color: rgba(74, 55, 40, 0.25);
+}
+
+.btn-sell-scroll.affordable {
+  border-color: var(--vert-clair);
+}
+
 .farm-feed-btn {
   min-height: 44px;
   padding: 0.35rem 0.5rem;

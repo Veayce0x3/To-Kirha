@@ -1454,16 +1454,45 @@ function buildFarmFeedCostHtml(game, building, feedId) {
   return `<div class="farm-feed-cost"><span class="farm-feed-cost-label">Coût par production :</span> ${parts}</div>`;
 }
 
+function buildFarmAnimalPurchaseHtml(game, animalCost) {
+  const canAfford = Object.entries(animalCost).every(([resId, amt]) => {
+    if (resId === 'kirha') return (game.state.kirha || 0) >= amt;
+    return (game.state.inventory[resId] || 0) >= amt;
+  });
+  const costParts = [];
+  if (animalCost.kirha) {
+    const ok = (game.state.kirha || 0) >= animalCost.kirha;
+    costParts.push(`<span class="${ok ? 'ing-ok' : 'ing-missing'}">${animalCost.kirha} 💰</span>`);
+  }
+  for (const [resId, amt] of Object.entries(animalCost)) {
+    if (resId === 'kirha') continue;
+    const res = game.resources[resId];
+    const have = game.state.inventory[resId] || 0;
+    const cls = have >= amt ? 'ing-ok' : 'ing-missing';
+    costParts.push(`<span class="${cls}">${renderResourceIcon(res, 'ing-icon') || ''} ${have}/${amt}</span>`);
+  }
+  return `
+    <div class="farm-animal-purchase">
+      <div class="farm-animal-head">🐔 Poule requise</div>
+      <div class="farm-animal-cost">${costParts.join(' ')}</div>
+      <button type="button" class="btn btn-small btn-buy-animal${canAfford ? ' affordable' : ''}">Acheter une poule</button>
+    </div>`;
+}
+
 function buildFarmFeedPickerHtml(game, building, slot, active) {
   const allFeeds = listFeedOptions(building);
   if (!allFeeds.length) return { pickerHtml: '', canAffordSelected: true };
 
-  const feedOptions = allFeeds.map((feedId) => {
+  const selected = slot?.feedId || '';
+  const options = allFeeds.map((feedId) => {
     const res = game.resources[feedId];
     const affordable = canAffordFeed(building, feedId, game.state);
-    const selected = slot?.feedId === feedId ? ' selected' : '';
-    const unaffordable = affordable ? '' : ' farm-feed-unaffordable';
-    return `<button type="button" class="farm-feed-btn${selected}${unaffordable}" data-feed="${feedId}" ${active ? 'disabled' : ''}>${renderResourceIcon(res, 'pick-icon') || ''} ${res?.name || feedId}</button>`;
+    const eff = building.feedEfficiency?.[feedId];
+    const effNote = eff && eff < 1 ? ` · ${Math.round(eff * 100)}% eff.` : '';
+    const stockNote = affordable ? '' : ' · stock insuffisant';
+    const label = `${res?.name || feedId}${effNote}${stockNote}`;
+    const disabled = !affordable && feedId !== selected ? ' disabled' : '';
+    return `<option value="${feedId}"${feedId === selected ? ' selected' : ''}${disabled}>${label}</option>`;
   }).join('');
 
   const costHtml = slot?.feedId
@@ -1471,7 +1500,15 @@ function buildFarmFeedPickerHtml(game, building, slot, active) {
     : '<p class="farm-feed-hint empty-text">Choisis une ration pour voir le coût</p>';
 
   return {
-    pickerHtml: `<div class="farm-feed-picker">${feedOptions}</div>${costHtml}`,
+    pickerHtml: `
+      <label class="farm-feed-label">
+        <span class="farm-feed-label-text">Ration</span>
+        <select class="farm-feed-select"${active ? ' disabled' : ''}>
+          <option value=""${!selected ? ' selected' : ''}>— Choisir —</option>
+          ${options}
+        </select>
+      </label>
+      ${costHtml}`,
     canAffordSelected: !slot?.feedId || canAffordFeed(building, slot.feedId, game.state),
   };
 }
@@ -1659,14 +1696,7 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
   const animalCost = building.animalPurchase;
   let animalHtml = '';
   if (needsAnimal && animalCost && !active) {
-    const parts = [];
-    if (animalCost.kirha) parts.push(`${animalCost.kirha} 💰`);
-    for (const [resId, amt] of Object.entries(animalCost)) {
-      if (resId === 'kirha') continue;
-      const res = game.resources[resId];
-      parts.push(`${amt}× ${res?.name || resId}`);
-    }
-    animalHtml = `<button type="button" class="btn btn-small btn-craft affordable btn-buy-animal" data-building="${buildingId}" data-slot="${slotIndex}">🐔 Acheter une poule · ${parts.join(' · ')}</button>`;
+    animalHtml = buildFarmAnimalPurchaseHtml(game, animalCost);
   }
 
   const produceBlocked = needsAnimal || feedBlocked || toolBlock;
@@ -1692,11 +1722,11 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
       if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
       else renderFarmSlot(game, buildingId, slotIndex, building, container);
     });
-    card.querySelectorAll('.farm-feed-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        game.setFarmFeed(buildingId, slotIndex, btn.dataset.feed);
-        renderFarmSlot(game, buildingId, slotIndex, building, container);
-      });
+    card.querySelector('.farm-feed-select')?.addEventListener('change', (e) => {
+      const feedId = e.target.value;
+      if (!feedId) return;
+      game.setFarmFeed(buildingId, slotIndex, feedId);
+      renderFarmSlot(game, buildingId, slotIndex, building, container);
     });
     card.querySelector('.btn-start')?.addEventListener('click', () => {
       const result = game.startFarmSlot(buildingId, slotIndex);
@@ -2172,15 +2202,18 @@ export function renderAuctionHouse(game, el) {
 
       const card = document.createElement('div');
       card.className = 'auction-offer-card';
+      const sellUnit = offer.sellable ? Math.floor(offer.unitPrice / 2) : 0;
       card.innerHTML = `
         <div class="auction-offer-head">
           <span class="auction-offer-icon">${renderResourceIcon(resource, 'auction-offer-icon')}</span>
           <div>
             <div class="auction-offer-name">${resource.name}</div>
-            <div class="auction-offer-price">${formatNumber(offer.unitPrice)} 💰 / unité</div>
+            <div class="auction-offer-price">Achat : ${formatNumber(offer.unitPrice)} 💰 / unité</div>
+            ${offer.sellable ? `<div class="auction-offer-price auction-sell-price">Revente : ${formatNumber(sellUnit)} 💰 / unité</div>` : ''}
           </div>
         </div>
         <div class="auction-buy-row" data-vendor="${vendorId}" data-offer="${offerId}"></div>
+        ${offer.sellable ? `<div class="auction-sell-row" data-vendor="${vendorId}" data-offer="${offerId}"></div>` : ''}
       `;
 
       const row = card.querySelector('.auction-buy-row');
@@ -2191,9 +2224,25 @@ export function renderAuctionHouse(game, el) {
         btn.type = 'button';
         btn.className = `btn btn-buy-scroll${canAfford ? ' affordable' : ''}`;
         btn.disabled = !canAfford;
-        btn.textContent = `×${qty} — ${formatNumber(total)} 💰`;
+        btn.textContent = `Acheter ×${qty} — ${formatNumber(total)} 💰`;
         btn.addEventListener('click', () => game.buyMerchant(vendorId, offerId, qty));
         row.appendChild(btn);
+      }
+
+      if (offer.sellable) {
+        const sellRow = card.querySelector('.auction-sell-row');
+        const ownedScrolls = game.getScrollCount();
+        for (const qty of offer.bulkQuantities || [1]) {
+          const total = sellUnit * qty;
+          const canSell = ownedScrolls >= qty;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `btn btn-sell-scroll${canSell ? ' affordable' : ''}`;
+          btn.disabled = !canSell;
+          btn.textContent = `Vendre ×${qty} — ${formatNumber(total)} 💰`;
+          btn.addEventListener('click', () => game.sellMerchant(vendorId, offerId, qty));
+          sellRow.appendChild(btn);
+        }
       }
 
       offersGrid.appendChild(card);

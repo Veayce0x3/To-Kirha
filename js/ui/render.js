@@ -335,6 +335,9 @@ export function initUI(game, audio) {
     patchFarmSlot(game, buildingId, slotIndex);
   });
 
+  on('harvestSlotAssign', ({ jobId, slotIndex }) => {
+    patchHarvestSlot(game, jobId, slotIndex);
+  });
   on('harvestStart', ({ jobId, slotIndex }) => {
     patchHarvestSlot(game, jobId, slotIndex);
     tickHarvestUI();
@@ -409,6 +412,11 @@ export function initUI(game, audio) {
     const res = game.resources[resourceId];
     showToast(els, `+${quantity} ${renderResourceIcon(res, 'toast-icon') || res?.name || ''} — ${formatNumber(price)} Kirha`, 'upgrade');
     audio.playSfx('craft');
+  });
+  on('merchantSell', ({ resourceId, quantity, price }) => {
+    const res = game.resources[resourceId];
+    showToast(els, `−${quantity} ${renderResourceIcon(res, 'toast-icon') || res?.name || ''} → +${formatNumber(price)} Kirha`, 'sell');
+    audio.playSfx('sell');
   });
   on('upgrade', ({ upgradeId, level }) => {
     showToast(els, `${game.balance.upgrades[upgradeId].name} → Nv.${level}`, 'upgrade');

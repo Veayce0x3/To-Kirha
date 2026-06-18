@@ -13,6 +13,7 @@
         "ancient_scroll": {
           "resourceId": "ancient_scroll",
           "unitPrice": 25,
+          "sellable": true,
           "bulkQuantities": [1, 5, 10, 25]
         }
       }

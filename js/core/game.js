@@ -19,7 +19,7 @@ import {
 } from '../systems/zones.js';
 import { canCraft, craft, getCraftBlockReason } from '../systems/craft.js';
 import { migrateToolDurability, wearToolsForHarvest } from '../systems/toolDurability.js';
-import { getVendorOffer, canBuyOffer, buyOffer } from '../systems/merchant.js';
+import { getVendorOffer, canBuyOffer, buyOffer, canSellOffer, sellOffer } from '../systems/merchant.js';
 import { getAideCost } from '../systems/passive.js';
 import { applyOfflineProgress } from '../systems/offline.js';
 import {
@@ -584,6 +584,7 @@ export class Game {
     if (!resource || !isResourceHarvestable(resource, this.state, this.balance)) return false;
     if (resource.job !== jobId) return false;
     if (!assignSlotResource(this.state, jobId, slotIndex, resourceId)) return false;
+    emit('harvestSlotAssign', { jobId, slotIndex });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
@@ -591,6 +592,7 @@ export class Game {
 
   clearSlot(jobId, slotIndex) {
     if (!clearSlotAssignment(this.state, jobId, slotIndex)) return false;
+    emit('harvestSlotAssign', { jobId, slotIndex });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
@@ -1080,6 +1082,21 @@ export class Game {
     const result = buyOffer(offer, quantity, this.state, this.resources);
     if (!result) return false;
     emit('merchantBuy', { vendorId, offerId, ...result });
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return true;
+  }
+
+  canSellMerchant(vendorId, offerId, quantity) {
+    const offer = getVendorOffer(this.merchant, vendorId, offerId);
+    return canSellOffer(offer, quantity, this.state);
+  }
+
+  sellMerchant(vendorId, offerId, quantity) {
+    const offer = getVendorOffer(this.merchant, vendorId, offerId);
+    const result = sellOffer(offer, quantity, this.state);
+    if (!result) return false;
+    emit('merchantSell', { vendorId, offerId, ...result });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
