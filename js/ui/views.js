@@ -1,20 +1,15 @@
 import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy } from '../systems/combat.js';
-import {
-  getCraftBlockReason,
-  getCraftSellBonus,
-  getRecipeCraftJob,
-  getRecipeRequiredLevel,
-  getRecipeJobXp,
-} from '../systems/craft.js';
+import { getCraftSellBonus, getRecipeRequiredLevel } from '../systems/crafting.js';
+import { mountCraftWorkshop } from './craftView.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
-import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped, recipeBelongsToWorkshopTab } from '../systems/equipment.js';
+import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped } from '../systems/equipment.js';
 import { formatOfflineDuration } from '../systems/offline.js';
 import { navigate, getView, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getAdjacentHarvestView, getHarvestViewForJob, getAdjacentFarmView, getFarmViewForBuilding, isFarmView } from './router.js';
 import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '../systems/harvest.js';
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
 import { getQuestStatusText, isQuestCompleted, isQuestAvailable, isQuestReady, QUEST_CHAPTER_LABELS } from '../systems/quests.js';
-import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderCraftDurabilityInfo, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
+import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
 import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
@@ -1971,7 +1966,7 @@ function renderWorkshopHub(game, el) {
     tabsEl.appendChild(btn);
   }
 
-  renderWorkshop(game, el.querySelector('#workshop-content'), workshopTab);
+  mountCraftWorkshop(game, el.querySelector('#workshop-content'), workshopTab);
 }
 
 function renderCuisine(game, el) {
@@ -1983,198 +1978,7 @@ function renderCuisine(game, el) {
     </div>
     <div id="cuisine-content"></div>
   `;
-  renderWorkshop(game, el.querySelector('#cuisine-content'), 'cook');
-}
-
-export function renderWorkshop(game, el, craftJobId) {
-  const job = game.jobs[craftJobId];
-  const prog = game.getJobProgress(craftJobId);
-  const pct = (prog.xp / prog.needed) * 100;
-  const isTools = craftJobId === 'toolmaker';
-  const isCook = craftJobId === 'cook';
-
-  el.innerHTML = `
-    <div class="skill-header">
-      <div class="skill-header-title">${job?.emoji || '🔨'} ${job?.name || 'Atelier'}</div>
-      <div class="skill-header-meta">Niveau ${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}${prog.atSeasonCap ? ' · plafond saison' : ''}</div>
-      <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
-      <p class="xp-text">${prog.xp} / ${prog.needed} XP</p>
-    </div>
-    ${isTools || isCook ? '' : `
-    <div class="merchant-hint panel-inner">
-      <span>📜 Les fabrications avancées requièrent des <strong>Parchemins des Anciens</strong>.</span>
-      <button type="button" class="btn btn-muted btn-sm" id="goto-auction">🏛️ Hôtel des Ventes</button>
-    </div>`}
-    ${isCook ? `
-    <div class="merchant-hint panel-inner cuisine-hint">
-      <span>🍲 Les plats consommables donnent des bonus en donjon. Équipe ton tablier sur Perso si tu en as un.</span>
-    </div>` : ''}
-    <div class="panel-inner" id="craft-panels"></div>
-  `;
-
-  el.querySelector('#goto-auction')?.addEventListener('click', () => navigate('auction_house'));
-
-  const panels = el.querySelector('#craft-panels');
-  const crafted = game.state.crafted || [];
-  const available = [];
-  const owned = [];
-  const locked = [];
-
-  const recipeJobLevel = (recipe) => {
-    const craftJob = getRecipeCraftJob(recipe);
-    return game.getJobProgress(craftJob).level;
-  };
-
-  for (const [id, recipe] of Object.entries(game.recipes)) {
-    if (!recipeBelongsToWorkshopTab(id, recipe, craftJobId, game.equipment)) continue;
-    if (recipe.unique && !recipe.repeatable && crafted.includes(id)) {
-      if (isDurabilityTool(recipe) && isToolBroken(game.state, id, recipe)) {
-        const req = getRecipeRequiredLevel(recipe);
-        if (req && recipeJobLevel(recipe) < req) locked.push([id, recipe]);
-        else available.push([id, recipe]);
-        continue;
-      }
-      owned.push([id, recipe]);
-      continue;
-    }
-    const req = getRecipeRequiredLevel(recipe);
-    const lockedByLevel = req && recipeJobLevel(recipe) < req;
-    if (lockedByLevel) locked.push([id, recipe]);
-    else available.push([id, recipe]);
-  }
-
-  if (available.length > 0) {
-    panels.innerHTML += '<div class="craft-section-title">✅ Disponibles</div><div class="craft-grid" id="craft-available"></div>';
-    const grid = panels.querySelector('#craft-available');
-    for (const [id, recipe] of available) {
-      appendCraftTile(game, id, recipe, grid);
-    }
-  }
-
-  if (owned.length > 0) {
-    panels.innerHTML += '<div class="craft-section-title">📦 Possédé</div><div class="craft-grid" id="craft-owned"></div>';
-    const grid = panels.querySelector('#craft-owned');
-    for (const [id, recipe] of owned) {
-      appendCraftTile(game, id, recipe, grid, false, true);
-    }
-  }
-
-  if (locked.length > 0) {
-    panels.innerHTML += '<div class="craft-section-title">🔒 Verrouillées</div><div class="craft-grid" id="craft-locked"></div>';
-    const grid = panels.querySelector('#craft-locked');
-    for (const [id, recipe] of locked) {
-      appendCraftTile(game, id, recipe, grid, true);
-    }
-  }
-}
-
-function appendCraftTile(game, id, recipe, container, forceLocked = false, isOwned = false) {
-  const isBroken = isDurabilityTool(recipe) && isToolBroken(game.state, id, recipe);
-  const isWorkingOwned = isOwned && !isBroken;
-  const canDo = !forceLocked && !isWorkingOwned && game.canCraftRecipe(id);
-  const blockReason = !forceLocked && !isWorkingOwned && !canDo
-    ? getCraftBlockReason(id, game.recipes, game.state, game.balance, game.jobs, game.resources)
-    : (isWorkingOwned ? { type: 'owned', message: 'Outil encore utilisable' } : null);
-  const ingredients = Object.entries(recipe.ingredients)
-    .map(([resId, amt]) => {
-      const res = game.resources[resId];
-      const have = game.state.inventory[resId] || 0;
-      const combatCls = res?.combatOnly ? ' ing-combat' : '';
-      return `<span class="${have >= amt ? 'ing-ok' : 'ing-missing'}${combatCls}">${renderResourceIcon(res, 'ing-icon') || (res ? '' : '?')} ${have}/${amt}</span>`;
-    }).join('');
-  const kirhaCost = recipe.kirhaCost || 0;
-  const kirhaHtml = kirhaCost > 0
-    ? `<span class="${game.state.kirha >= kirhaCost ? 'ing-ok' : 'ing-missing'}">💰 ${game.state.kirha}/${kirhaCost}</span>`
-    : '';
-
-  let blockHtml = '';
-  if (forceLocked) {
-    blockHtml = `<p class="tile-lock">🔒 Niveau métier : ${game.jobs[recipe.craftJob]?.name || 'Métier'} Nv.${getRecipeRequiredLevel(recipe)}</p>`;
-  } else if (blockReason?.type === 'level') {
-    blockHtml = `<p class="tile-lock">🔒 ${blockReason.message}</p>`;
-  } else if (blockReason?.type === 'ingredients') {
-    blockHtml = `<p class="tile-lock tile-lock-ing">📦 ${blockReason.message}</p>`;
-  } else if (blockReason?.type === 'owned') {
-    blockHtml = `<p class="tile-lock">✓ ${blockReason.message}</p>`;
-  } else if (blockReason?.type === 'kirha') {
-    blockHtml = `<p class="tile-lock tile-lock-ing">💰 ${blockReason.message}</p>`;
-  } else if (blockReason?.type === 'zone') {
-    blockHtml = `<p class="tile-lock">🗺️ ${blockReason.message}</p>`;
-  }
-
-  let combatPreviewHtml = '';
-  if (recipe.combatItem) {
-    const preview = getCombatItemPreview(recipe.combatItem, game.combatEquipment.items, game.weaponRoles);
-    if (preview) {
-      const roleBadge = preview.roleLabel && preview.roleShort
-        ? `<div class="craft-role-badge">${preview.roleLabel} · ${preview.roleShort}</div>`
-        : '';
-      combatPreviewHtml = `
-        <div class="craft-combat-preview">
-          <div class="tile-stats">Nv.${preview.level} · ${preview.statsLine}</div>
-          ${roleBadge}
-          <div class="tile-stats craft-equipped-preview">Si équipé : ${preview.statsLine}</div>
-        </div>
-      `;
-    }
-  }
-
-  const durabilityHtml = renderCraftDurabilityInfo(game.state, id, recipe, {
-    owned: (game.state.crafted || []).includes(id) && !isBroken,
-    broken: isBroken,
-  });
-  const craftBtnLabel = forceLocked
-    ? 'Verrouillé'
-    : isBroken
-      ? 'Refabriquer'
-      : isWorkingOwned
-        ? 'Possédé'
-        : 'Fabriquer';
-  const blockTitle = blockReason?.message || '';
-  const isBlocked = forceLocked || isWorkingOwned || !canDo;
-
-  const tile = document.createElement('div');
-  tile.className = `craft-tile${canDo ? ' affordable' : ''}${forceLocked ? ' locked-res' : ''}${isWorkingOwned ? ' craft-owned' : ''}${isBroken ? ' craft-broken' : ''}`;
-  tile.dataset.recipeId = id;
-  tile.innerHTML = `
-    <div class="tile-name">${recipe.emoji} ${recipe.name}${recipe.repeatable ? ' ♻️' : ''}</div>
-    <p class="tile-stats">${recipe.description || ''}</p>
-    ${durabilityHtml}
-    ${combatPreviewHtml}
-    ${blockHtml}
-    ${isBroken ? '<p class="tile-lock tile-lock-broken">🔧 Outil usé — refabriquer pour réparer</p>' : ''}
-      ${isWorkingOwned ? '<p class="tile-lock">✓ En service</p>' : ''}
-    <div class="ingredients">${ingredients}${kirhaHtml ? ` ${kirhaHtml}` : ''}</div>
-    ${getRecipeJobXp(recipe) ? `<div class="tile-stats">+${getRecipeJobXp(recipe)} XP ${game.jobs[recipe.craftJob]?.name || ''}</div>` : ''}
-    <button type="button" class="btn btn-craft${canDo ? ' affordable' : ''}${isBlocked ? ' craft-blocked' : ''}" title="${blockTitle}" ${isBlocked ? 'disabled' : ''}>${craftBtnLabel}</button>
-  `;
-  const craftBtn = tile.querySelector('.btn-craft');
-  craftBtn?.addEventListener('click', () => {
-    if (forceLocked || isWorkingOwned) {
-      emit('craftBlocked', {
-        recipeId: id,
-        message: blockReason?.message || game.getCraftFailureMessage(id),
-      });
-      return;
-    }
-    if (!game.canCraftRecipe(id)) {
-      emit('craftBlocked', { recipeId: id, message: game.getCraftFailureMessage(id) });
-      return;
-    }
-    const ok = game.doCraft(id);
-    if (!ok) {
-      emit('craftBlocked', { recipeId: id, message: game.getCraftFailureMessage(id) });
-    }
-  });
-  if (isWorkingOwned && game.equipment.equipable[id] && !isRecipeEquipped(game.state, id)) {
-    const equipBtn = document.createElement('button');
-    equipBtn.type = 'button';
-    equipBtn.className = 'btn btn-small btn-muted';
-    equipBtn.textContent = 'Équiper';
-    equipBtn.addEventListener('click', () => game.doEquip(id));
-    tile.appendChild(equipBtn);
-  }
-  container.appendChild(tile);
+  mountCraftWorkshop(game, el.querySelector('#cuisine-content'), 'cook');
 }
 
 /* ── Hôtel des Ventes ── */

@@ -1,7 +1,14 @@
 import { SaveProvider, mergeSettings } from './save.js';
 import { emit } from './events.js';
 import { sellResource } from '../systems/economy.js';
-import { getCraftSellBonus, getRecipeCraftJob, getRecipeJobXp } from '../systems/craft.js';
+import {
+  getCraftSellBonus,
+  performCraft,
+  autoEquipIfEmpty,
+  makeCraftContext,
+  whyCannotCraft,
+  repairCraftSave,
+} from '../systems/crafting.js';
 import {
   getHarvestTime,
   getRegrowthTime,
@@ -16,7 +23,6 @@ import {
   getResourcesForJob,
   getJobLevel,
 } from '../systems/zones.js';
-import { canCraft, craft, getCraftBlockReason } from '../systems/craft.js';
 import { migrateToolDurability, wearToolsForHarvest } from '../systems/toolDurability.js';
 import { getVendorOffer, canBuyOffer, buyOffer, canSellOffer, sellOffer } from '../systems/merchant.js';
 import { getAideCost } from '../systems/passive.js';
@@ -346,6 +352,7 @@ export class Game {
     migrateCombatItemInstances(merged, this.combatEquipment.items);
     migrateLegacyCombatResources(merged);
     migrateToolDurability(merged, this.recipes);
+    repairCraftSave(merged, this.recipes);
     if (this.balance.betaMode) applyBetaUnlocks(merged, this.companions);
     return merged;
   }
@@ -448,22 +455,36 @@ export class Game {
     return changed;
   }
 
+  getCraftContext() {
+    return makeCraftContext(this);
+  }
+
   canCraftRecipe(recipeId) {
-    return canCraft(recipeId, this.recipes, this.state, this.balance, this.jobs);
+    return !whyCannotCraft(recipeId, this.getCraftContext());
+  }
+
+  craftItem(recipeId) {
+    const ctx = this.getCraftContext();
+    const result = performCraft(recipeId, ctx);
+    if (!result.ok) {
+      return { ok: false, error: result.error };
+    }
+
+    autoEquipIfEmpty(recipeId, ctx);
+
+    emit('craft', {
+      recipeId,
+      recipe: result.recipe,
+      levelResult: result.levelResult,
+    });
+    this.processQuests();
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return { ok: true, recipe: result.recipe, levelResult: result.levelResult };
   }
 
   getCraftFailureMessage(recipeId) {
-    const recipe = this.recipes[recipeId];
-    if (!recipe) return 'Recette inconnue.';
-    const block = getCraftBlockReason(
-      recipeId,
-      this.recipes,
-      this.state,
-      this.balance,
-      this.jobs,
-      this.resources
-    );
-    return block?.message || 'Impossible de fabriquer pour le moment.';
+    return whyCannotCraft(recipeId, this.getCraftContext()) || 'Impossible de fabriquer pour le moment.';
   }
 
   getActiveQuests() {
@@ -1101,25 +1122,7 @@ export class Game {
   }
 
   doCraft(recipeId) {
-    if (!canCraft(recipeId, this.recipes, this.state, this.balance, this.jobs)) return false;
-
-    const recipe = craft(recipeId, this.recipes, this.state, this.balance, this.resources, this.jobs);
-    if (!recipe) return false;
-    if (this.equipment.equipable?.[recipeId]) {
-      equip(recipeId, this.state, this.equipment, this.recipes);
-    }
-    let levelResult = null;
-    const jobXp = getRecipeJobXp(recipe);
-    const craftJob = getRecipeCraftJob(recipe);
-    if (jobXp) {
-      levelResult = addJobXp(this.state, craftJob, jobXp, this.jobs, this.balance);
-    }
-
-    emit('craft', { recipeId, recipe, levelResult });
-    this.processQuests();
-    emit('stateChange', this.state);
-    this.scheduleSave();
-    return true;
+    return this.craftItem(recipeId).ok;
   }
 
   doEquip(recipeId) {
@@ -1137,7 +1140,7 @@ export class Game {
         ? unequipGathering(this.state, slotOrJob, slotKind)
         : unequip(slotOrJob, this.state);
     if (!ok) return false;
-    emit('unequip', { slot });
+    emit('unequip', { slot: slotOrJob, slotKind });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
