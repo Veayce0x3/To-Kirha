@@ -228,8 +228,10 @@ export function renderMinibar(game, el, viewId, opts = {}) {
   const craftJobId = viewId === 'cuisine' ? 'cook' : getCraftJobFromView(viewId);
   const farmBuildingId = isFarmView(viewId) ? viewId.slice(5) : null;
 
-  if (!jobId && !craftJobId && !farmBuildingId) {
+  // Pas de panneau latéral sur récolte / ferme (doublon avec la vue principale).
+  if (jobId || farmBuildingId || (!craftJobId && viewId !== 'workshop' && !viewId.startsWith('workshop_'))) {
     el.classList.add('hidden');
+    el.innerHTML = '';
     return;
   }
 
@@ -237,42 +239,17 @@ export function renderMinibar(game, el, viewId, opts = {}) {
   if (opts.collapsed) el.classList.add('collapsed');
   else el.classList.remove('collapsed');
 
-  const activeJobId = jobId || craftJobId || 'breeder';
+  const activeJobId = craftJobId || 'toolmaker';
   const job = game.jobs[activeJobId];
   const prog = game.getJobProgress(activeJobId);
 
   let equipHtml = '';
-  if (jobId) {
-    const toolId = game.state.equipment?.jobs?.[jobId];
-    const accId = game.state.equipment?.accessories?.[jobId];
-    equipHtml += renderMinibarEquipBlock('🛠️', toolId, game.state, game.recipes);
-    if (accId) equipHtml += renderMinibarEquipBlock('🧰', accId, game.state, game.recipes);
-  } else if (farmBuildingId) {
-    const toolId = game.state.equipment?.jobs?.breeder;
-    equipHtml += renderMinibarEquipBlock('🪣', toolId, game.state, game.recipes);
-  } else {
-    const globalTool = game.state.equipment?.global;
-    if (globalTool) equipHtml += renderMinibarEquipBlock('🧰', globalTool, game.state, game.recipes);
-    if (!equipHtml) equipHtml = '<div class="minibar-equip">—</div>';
-  }
+  const globalTool = game.state.equipment?.global;
+  if (globalTool) equipHtml += renderMinibarEquipBlock('🧰', globalTool, game.state, game.recipes);
+  if (!equipHtml) equipHtml = '<div class="minibar-equip">—</div>';
 
   let milestonesHtml = '';
-  if (jobId) {
-    const allJobRes = Object.values(game.resources)
-      .filter((r) => r.job === jobId && !r.craftOnly && !r.combatOnly)
-      .sort((a, b) => (a.requiredJobLevel || 1) - (b.requiredJobLevel || 1));
-
-    for (const res of allJobRes) {
-      const done = prog.level >= (res.requiredJobLevel || 1);
-      const zone = game.balance.zones[res.zone];
-      milestonesHtml += `
-        <div class="minibar-milestone${done ? ' done' : ''}">
-          ${done ? '✓' : '○'} ${renderResourceIcon(res, 'minibar-res-icon')}${res.name} — Nv.${res.requiredJobLevel}
-          ${zone ? `<br><small>${zone.name}</small>` : ''}
-        </div>
-      `;
-    }
-  } else if (craftJobId) {
+  if (craftJobId) {
     for (const [, recipe] of Object.entries(game.recipes)) {
       if (recipe.craftJob !== craftJobId) continue;
       const req = getRecipeRequiredLevel(recipe);

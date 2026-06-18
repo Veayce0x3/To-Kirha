@@ -149,6 +149,7 @@ import {
   getMaxFarmSlots as getMaxFarmSlotsForBuilding,
   getFarmBuildingNavStatus,
   syncExpiredFarmSlots,
+  wearBreederTool,
 } from '../systems/farm.js';
 import { getFarmToolCheck, getHarvestToolCheck } from '../systems/toolTier.js';
 import {
