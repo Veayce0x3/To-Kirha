@@ -27,7 +27,7 @@ export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentDa
   const recipe = getGatheringToolRecipe(state, jobId, recipes);
   if (!recipe) {
     if (resources && isStarterHarvestResource(resource, resources)) {
-      return { ok: true, starterHarvest: true };
+      return { ok: true };
     }
     const resourceTier = getResourceHarvestTier(resource);
     return {

@@ -7,7 +7,6 @@ import {
   getRegrowthTime,
   getHarvestYield,
   getHarvestXp,
-  getStarterHarvestDurationMs,
   addJobXp,
   getXpForLevel,
 } from '../systems/harvest.js';
@@ -770,7 +769,6 @@ export class Game {
       this.equipment,
       this.resources
     );
-    if (check.starterHarvest) return 'Sans outil — récolte plus lente';
     return check.ok ? null : check.message;
   }
 
@@ -870,11 +868,7 @@ export class Game {
       return false;
     }
 
-    const baseTime = getHarvestTime(resource, this.state, this.jobs, this.balance);
-    let duration = baseTime;
-    if (toolCheck.starterHarvest) {
-      duration = getStarterHarvestDurationMs(baseTime);
-    }
+    const duration = getHarvestTime(resource, this.state, this.jobs, this.balance);
     slot.active = { phase: 'harvesting', start: Date.now(), duration, resourceId: resource.id };
     this.scheduleHarvestTimer(jobId, slotIndex, duration);
 

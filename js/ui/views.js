@@ -9,7 +9,7 @@ import {
 import { isResourceUnlockedByJob } from '../systems/zones.js';
 import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped, recipeBelongsToWorkshopTab } from '../systems/equipment.js';
 import { formatOfflineDuration } from '../systems/offline.js';
-import { navigate, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getAdjacentHarvestView, getHarvestViewForJob, getAdjacentFarmView, getFarmViewForBuilding, isFarmView } from './router.js';
+import { navigate, getView, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getAdjacentHarvestView, getHarvestViewForJob, getAdjacentFarmView, getFarmViewForBuilding, isFarmView } from './router.js';
 import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '../systems/harvest.js';
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
@@ -1292,7 +1292,7 @@ function renderHarvestSlot(game, jobId, slotIndex, container) {
 
 export function patchHarvestSlot(game, jobId, slotIndex) {
   const container = document.getElementById('harvest-slots');
-  if (!container) return;
+  if (!container || VIEWS[getView()]?.job !== jobId) return;
   const card = createHarvestSlotCard(game, jobId, slotIndex);
   mountSlotCard(
     container,
@@ -1303,13 +1303,17 @@ export function patchHarvestSlot(game, jobId, slotIndex) {
 }
 
 export function updateHarvestSlotProgresses(game) {
-  for (const [jobId, slots] of Object.entries(game.state.harvestSlots || {})) {
-    slots.forEach((slot, slotIndex) => {
+  const viewJobId = VIEWS[getView()]?.job;
+  if (!viewJobId) return;
+  const slots = game.state.harvestSlots?.[viewJobId] || [];
+  slots.forEach((slot, slotIndex) => {
       if (!slot?.active) return;
-      const card = document.querySelector(`.harvest-slot[data-job="${jobId}"][data-slot="${slotIndex}"]`);
+      const card = document.querySelector(
+        `.harvest-slot[data-job="${viewJobId}"][data-slot="${slotIndex}"]`
+      );
       if (!card) return;
 
-      const progress = game.getSlotHarvestProgress(jobId, slotIndex);
+      const progress = game.getSlotHarvestProgress(viewJobId, slotIndex);
       const resource = slot.resourceId ? game.resources[slot.resourceId] : null;
       const display = getSlotVisualDisplay(resource, slot, progress);
 
@@ -1345,7 +1349,7 @@ export function updateHarvestSlotProgresses(game) {
 
       const picker = card.querySelector('.resource-picker.picker-slot');
       if (picker) {
-        const assignable = game.getAssignableResources(jobId).filter((r) =>
+        const assignable = game.getAssignableResources(viewJobId).filter((r) =>
           isResourceUnlockedByJob(r, game.state)
         );
         syncPickerToggle(picker, slot.resourceId, assignable, slot, progress);
@@ -1362,8 +1366,7 @@ export function updateHarvestSlotProgresses(game) {
           }
         }
       }
-    });
-  }
+  });
 }
 
 function renderLockedHarvestSlot(game, jobId, slotIndex, container, showBuy) {
