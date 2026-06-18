@@ -1213,7 +1213,7 @@ function getHarvestBtnLabel(phase, progress = 0) {
   return 'Récolter';
 }
 
-function renderHarvestSlot(game, jobId, slotIndex, container) {
+function createHarvestSlotCard(game, jobId, slotIndex) {
   const slot = game.state.harvestSlots?.[jobId]?.[slotIndex];
   const assignable = game.getAssignableResources(jobId).filter((r) =>
     isResourceUnlockedByJob(r, game.state)
@@ -1266,15 +1266,41 @@ function renderHarvestSlot(game, jobId, slotIndex, container) {
     if (!active && selectedId) game.startSlotHarvest(jobId, slotIndex);
   });
 
-  container.appendChild(card);
+  return card;
+}
+
+function mountSlotCard(container, card, slotIndex, slotSelector) {
+  const existing = container.querySelector(slotSelector);
+  if (existing) {
+    existing.replaceWith(card);
+    return;
+  }
+  const next = container.querySelector(`.harvest-slot[data-slot="${slotIndex + 1}"]`)
+    || container.querySelector('.slot-locked');
+  if (next) container.insertBefore(card, next);
+  else container.appendChild(card);
+}
+
+function renderHarvestSlot(game, jobId, slotIndex, container) {
+  const card = createHarvestSlotCard(game, jobId, slotIndex);
+  mountSlotCard(
+    container,
+    card,
+    slotIndex,
+    `.harvest-slot[data-job="${jobId}"][data-slot="${slotIndex}"]`
+  );
 }
 
 export function patchHarvestSlot(game, jobId, slotIndex) {
   const container = document.getElementById('harvest-slots');
   if (!container) return;
-  const old = container.querySelector(`.harvest-slot[data-job="${jobId}"][data-slot="${slotIndex}"]`);
-  if (old) old.remove();
-  renderHarvestSlot(game, jobId, slotIndex, container);
+  const card = createHarvestSlotCard(game, jobId, slotIndex);
+  mountSlotCard(
+    container,
+    card,
+    slotIndex,
+    `.harvest-slot[data-job="${jobId}"][data-slot="${slotIndex}"]`
+  );
 }
 
 export function updateHarvestSlotProgresses(game) {
@@ -1625,8 +1651,6 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
   card.dataset.building = buildingId;
   card.dataset.slot = String(slotIndex);
 
-  container.querySelector(`.farm-slot[data-slot="${slotIndex}"]`)?.remove();
-
   const spriteHtml = sprite
     ? `<img class="slot-visual-sprite" src="${sprite}" alt="" />`
     : `<span class="slot-visual-emoji" aria-hidden="true">${building.emoji || '🏠'}</span>`;
@@ -1680,7 +1704,15 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
     });
   }
 
-  container.appendChild(card);
+  const existing = container.querySelector(`.farm-slot[data-building="${buildingId}"][data-slot="${slotIndex}"]`);
+  if (existing) {
+    existing.replaceWith(card);
+  } else {
+    const next = container.querySelector(`.farm-slot[data-slot="${slotIndex + 1}"]`)
+      || container.querySelector('.farm-slot-locked');
+    if (next) container.insertBefore(card, next);
+    else container.appendChild(card);
+  }
 }
 
 function renderLockedFarmSlot(game, buildingId, slotIndex, container, showBuy) {
