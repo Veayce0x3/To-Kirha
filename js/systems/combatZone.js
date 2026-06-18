@@ -10,6 +10,7 @@ import {
   getEquippedWeapon,
   WEAPON_TYPE_SKILLS,
   DEFEND_ACTION,
+  saveSoloHp,
 } from './combat.js';
 import { addCharacterXp } from './character.js';
 import {
@@ -345,6 +346,10 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance) {
     state.tutorial.trainingFightWon = true;
   }
 
+  if (run?.isSoloFight && run.party) {
+    saveSoloHp(state, run.party);
+  }
+
   state.combatEncounter = null;
 
   return {
@@ -430,6 +435,7 @@ function resolveEnemyPhaseStep(state, characterConfig, enemies, balance) {
   const enemyResult = enemyAttackTurn(run);
 
   if (enemyResult?.playerDefeated) {
+    if (run?.isSoloFight && run.party) saveSoloHp(state, run.party);
     const fail = { victory: false, cleared: false, isDungeon: !!run.isDungeonRun };
     state.combatEncounter = null;
     return fail;

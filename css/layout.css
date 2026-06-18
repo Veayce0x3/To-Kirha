@@ -2841,6 +2841,30 @@
 
 .dq-battlefield.dq-enemy-turn {
   box-shadow: inset 0 0 0 4px rgba(192, 57, 43, 0.15);
+  animation: dqEnemyShake 0.35s ease;
+}
+
+.dq-enemy-turn-banner {
+  text-align: center;
+  padding: 0.45rem 0.75rem;
+  margin-bottom: 0.35rem;
+  border-radius: 8px;
+  background: rgba(192, 57, 43, 0.15);
+  color: #c0392b;
+  font-weight: 700;
+  font-size: 0.85rem;
+  animation: dqEnemyPulse 0.7s ease infinite alternate;
+}
+
+@keyframes dqEnemyPulse {
+  from { opacity: 0.65; }
+  to { opacity: 1; }
+}
+
+@keyframes dqEnemyShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
 }
 
 .dq-enemies-group {
@@ -4522,6 +4546,73 @@ body.picker-sheet-open #picker-sheet-portal .picker-sheet-header {
 
 .job-nav-hint:last-child {
   text-align: right;
+}
+
+.job-nav-mobile {
+  display: none;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.btn-nav-mobile {
+  flex: 1;
+  min-height: 44px;
+  font-size: 0.78rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.slot-xp-hint {
+  font-size: 0.72rem;
+  color: var(--vert-foret);
+  opacity: 0.85;
+  margin: 0.15rem 0 0;
+  text-align: center;
+}
+
+.bank-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.bank-pin-cell {
+  width: 2.5rem;
+  text-align: center;
+}
+
+.bank-pin {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  cursor: pointer;
+  opacity: 0.45;
+  padding: 0;
+}
+
+.bank-pin.pinned {
+  opacity: 1;
+}
+
+.bank-row-protected {
+  background: rgba(155, 89, 182, 0.06);
+}
+
+@media (max-width: 640px) {
+  .job-nav-mobile {
+    display: flex;
+  }
+
+  .job-nav-header .btn-job-nav,
+  .job-nav-hints {
+    display: none;
+  }
+
+  .job-nav-header {
+    grid-template-columns: 1fr;
+  }
 }
 
 .panel-head-row {

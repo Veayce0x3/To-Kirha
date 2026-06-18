@@ -36,6 +36,67 @@
       "fisher": "goujon",
       "alchemist": "ortie"
     },
+    "unlockResourcesByJob": {
+      "lumberjack": [
+        null,
+        null,
+        { "frene": 10 },
+        { "sequoia": 10 },
+        { "cedre": 10 },
+        { "santal": 10 },
+        { "amandier": 10 },
+        { "noyer": 10 },
+        { "erable": 10 }
+      ],
+      "fisher": [
+        null,
+        null,
+        { "goujon": 10 },
+        { "carpe": 10 },
+        { "brochet": 10 },
+        { "saumon": 10 },
+        { "thon": 10 },
+        { "raie": 10 },
+        { "requin": 10 },
+        { "kraken": 10 }
+      ],
+      "miner": [
+        null,
+        null,
+        { "fer": 10 },
+        { "cuivre": 10 },
+        { "argent": 10 },
+        { "or": 10 },
+        { "jade": 10 },
+        { "obsidienne": 10 },
+        { "cristal": 10 },
+        { "adamantium": 10 }
+      ],
+      "farmer": [
+        null,
+        null,
+        { "ble": 10 },
+        { "orge": 10 },
+        { "houblon": 10 },
+        { "avoine": 10 },
+        { "lin": 10 },
+        { "chanvre": 10 },
+        { "riz": 10 },
+        { "mais": 10 }
+      ],
+      "alchemist": [
+        null,
+        null,
+        { "ortie": 10 },
+        { "sauge": 10 },
+        { "menthe": 10 },
+        { "lavande": 10 },
+        { "camomille": 10 },
+        { "girofle": 10 },
+        { "muscade": 10 },
+        { "safran": 10 }
+      ]
+    },
     "unlockResourceAmountPerSlot": 10
   },
   "farmSlots": {

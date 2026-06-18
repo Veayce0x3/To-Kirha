@@ -69,6 +69,7 @@ import {
   reconcileTutorialAxeProgress,
   grantTutorialStarterAxe,
   grantTutorialSakuraAxe,
+  grantTutorialSkipRewards,
 } from '../systems/tutorialSandbox.js';
 import { getAideCost } from '../systems/passive.js';
 import { applyOfflineProgress } from '../systems/offline.js';
@@ -196,6 +197,7 @@ import {
   getFarmSlotUnlockRequirements,
   getMaxFarmSlots as getMaxFarmSlotsForBuilding,
   getFarmBuildingNavStatus,
+  syncExpiredFarmSlots,
 } from '../systems/farm.js';
 import { getFarmToolCheck, getHarvestToolCheck } from '../systems/toolTier.js';
 import {
@@ -316,6 +318,7 @@ export class Game {
       purchasedFarmSlots: {},
       activeMeal: null,
       combatMealBuff: null,
+      bankProtected: [],
     };
     ensureSlots(state, this.balance);
     ensureFarmSlots(state, this.farmData, this.balance);
@@ -392,6 +395,7 @@ export class Game {
       activeMeal: saved.activeMeal || null,
       combatMealBuff: null,
       quests: migrateQuests(saved.quests),
+      bankProtected: saved.bankProtected || defaults.bankProtected,
     };
     ensureSlots(merged, this.balance);
     ensureFarmSlots(merged, this.farmData, this.balance);
@@ -412,6 +416,9 @@ export class Game {
 
     this.restoreHarvestTimers();
     this.restoreFarmTimers();
+    syncExpiredFarmSlots(this.state, (buildingId, slotIndex) => {
+      this.completeFarmSlot(buildingId, slotIndex);
+    });
     syncTutorialProgress(this.state, this.tutorialData, this.quests, {
       recipes: this.recipes,
       combatItems: this.combatEquipment.items,
@@ -752,16 +759,20 @@ export class Game {
   isTutorialCraftRecipe(recipeId) {
     this.prepareTutorialCraftIfNeeded();
     if (!isTutorialActive(this.state)) return true;
-    if (!this.state.tutorial.flags?.axeCrafted) {
-      return recipeId === 'sakura_axe';
-    }
     const recipe = this.recipes[recipeId];
     const step = this.tutorialData?.steps?.[this.state.tutorial.stepIndex];
     const chosen = getChosenTutorialRecipeId(this.state);
-    if (step?.id === 'craft') return recipeId === chosen;
-    if (recipe && getRecipeCraftJob(recipe) === 'toolmaker') return true;
-    if (!chosen) return false;
-    if (this.state.tutorial.flags?.weaponChosen && !this.state.tutorial.flags?.weaponEquipped) {
+
+    if (recipe?.tutorialOnly && !this.state.tutorial?.sandbox) return false;
+
+    if (!this.state.tutorial.flags?.axeCrafted) {
+      return recipeId === 'sakura_axe' || recipeId === 'tutorial_starter_axe';
+    }
+    if (step?.id === 'craft_axe') {
+      return recipeId === 'sakura_axe' || recipeId === 'tutorial_starter_axe';
+    }
+    if (step?.id === 'craft' && chosen) return recipeId === chosen;
+    if (this.state.tutorial.flags?.weaponChosen && !this.state.tutorial.flags?.weaponEquipped && chosen) {
       return recipeId === chosen;
     }
     return true;
@@ -777,6 +788,14 @@ export class Game {
 
   dismissTutorial() {
     completeTutorialSkip(this.state);
+    grantTutorialSkipRewards(
+      this.state,
+      this.recipes,
+      this.equipment,
+      this.balance,
+      this.farmData
+    );
+    emit('tutorialDismissed');
     emit('stateChange', this.state);
     this.scheduleSave();
   }
@@ -999,6 +1018,17 @@ export class Game {
   startFarmSlot(buildingId, slotIndex) {
     const building = this.farmData.buildings?.[buildingId];
     if (!building) return { ok: false, reason: 'Bâtiment inconnu' };
+
+    const slot = this.state.farmSlots?.[buildingId]?.[slotIndex];
+    if (slot?.active) {
+      const progress = this.getFarmSlotProgress(buildingId, slotIndex);
+      if (progress >= 1) {
+        this.completeFarmSlot(buildingId, slotIndex);
+      } else {
+        const pct = Math.min(99, Math.floor(progress * 100));
+        return { ok: false, reason: `Production en cours (${pct} %)` };
+      }
+    }
 
     const tutorialFarm = isTutorialFarmStep(this.state, this.tutorialData)
       || isTutorialFarmChickenStep(this.state, this.tutorialData);
@@ -1349,6 +1379,52 @@ export class Game {
       this.scheduleSave();
     }
     return earnings;
+  }
+
+  sellEverythingExcept(excludeIds = []) {
+    const exclude = new Set(excludeIds);
+    let rawTotal = 0;
+    const artisanBonus = getCraftSellBonus(this.state, this.jobs);
+    let soldFrene = false;
+
+    for (const [id, amount] of Object.entries({ ...this.state.inventory })) {
+      if (amount <= 0 || !this.resources[id]) continue;
+      if (exclude.has(id)) continue;
+      if (this.resources[id].notSellable || this.resources[id].merchantOnly) continue;
+      if (id === 'frene') soldFrene = true;
+      const mult = this.resources[id].craftOnly ? artisanBonus : 1;
+      rawTotal += this.resources[id].sellPrice * amount * mult;
+      this.state.inventory[id] = 0;
+    }
+
+    const earnings = this.applyKirhaBonus(rawTotal);
+    if (earnings > 0) {
+      this.state.kirha += earnings;
+      this.trackEarnings(earnings);
+      if (
+        this.state.tutorial?.sandbox
+        && soldFrene
+        && getTutorialStep(this.state, this.tutorialData)?.id === 'sell_wood'
+      ) {
+        markTutorialWoodSold(this.state);
+        syncTutorialProgress(this.state, this.tutorialData, this.quests);
+      }
+      emit('sell', { all: true, earnings, except: [...exclude] });
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
+    return earnings;
+  }
+
+  toggleBankProtected(resourceId) {
+    if (!this.resources[resourceId]) return false;
+    const list = this.state.bankProtected || (this.state.bankProtected = []);
+    const idx = list.indexOf(resourceId);
+    if (idx >= 0) list.splice(idx, 1);
+    else list.push(resourceId);
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return idx < 0;
   }
 
   buyUpgrade() {

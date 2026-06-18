@@ -2,6 +2,15 @@ import { getJobEquippedTool } from './equipment.js';
 import { isDurabilityTool, isToolEffectActive } from './toolDurability.js';
 import { isStarterHarvestResource } from './zones.js';
 
+export function jobEverHadGatheringTool(state, jobId, equipmentData) {
+  const equipable = equipmentData?.equipable || {};
+  return (state.crafted || []).some((recipeId) => {
+    const meta = equipable[recipeId];
+    if (!meta || meta.job !== jobId || meta.slot === 'accessory') return false;
+    return true;
+  });
+}
+
 export function getResourceHarvestTier(resource) {
   return Math.floor(((resource?.requiredJobLevel || 1) - 1) / 20) + 1;
 }
@@ -41,13 +50,17 @@ export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentDa
 
   const recipe = getGatheringToolRecipe(state, jobId, recipes);
   if (!recipe) {
-    if (resources && isStarterHarvestResource(resource, resources)) {
+    const isStarter = resources && isStarterHarvestResource(resource, resources);
+    const everHadTool = jobEverHadGatheringTool(state, jobId, equipmentData);
+    if (isStarter && !everHadTool) {
       return { ok: true, starterHarvest: true };
     }
     return {
       ok: false,
       reason: 'no_tool',
-      message: 'Équipe un outil sur Perso → Outils.',
+      message: everHadTool
+        ? 'Outil usé ou manquant — refabrique-le à l\'Atelier Outilleur.'
+        : 'Équipe un outil sur Perso → Outils.',
     };
   }
 

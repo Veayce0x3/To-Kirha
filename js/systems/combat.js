@@ -167,7 +167,7 @@ export function buildHeroOnlyParty(state, characterConfig, combatItems, balance)
     combatItems,
     balance
   );
-  return [{
+  const party = [{
     id: 'hero',
     role: 'hero',
     name: getCharacterDisplayName(state, characterConfig),
@@ -177,6 +177,27 @@ export function buildHeroOnlyParty(state, characterConfig, combatItems, balance)
     stats: heroStats,
     defBonus: 0,
   }];
+  applySavedSoloHp(state, party);
+  return party;
+}
+
+export function applySavedSoloHp(state, party) {
+  const wear = state.combatWear?.solo;
+  if (!wear) return;
+  for (const m of party) {
+    if (wear[m.id] != null) {
+      m.hp = Math.max(0, Math.min(m.maxHp, wear[m.id]));
+    }
+  }
+}
+
+export function saveSoloHp(state, party) {
+  if (!state.combatWear) state.combatWear = {};
+  state.combatWear.solo = Object.fromEntries(party.map((m) => [m.id, m.hp]));
+}
+
+export function clearSoloHpWear(state) {
+  if (state.combatWear) delete state.combatWear.solo;
 }
 
 export function buildParty(state, characterConfig, combatItems, companionDefs, balance) {
@@ -292,6 +313,7 @@ export function initEncounter(run, foe, enemies, partySize = 1, combatZone = nul
     enemyTurnQueue: [],
     activeEnemyIndex: 0,
     log: [],
+    desperateUses: 0,
   };
   startPlayerTurn(run);
   return run.combat;
@@ -418,6 +440,15 @@ export function useMemberSkill(run, skill, memberIndex, targetId = 'enemy') {
 
   const member = run.party[memberIndex];
   if (!member || member.hp <= 0) return null;
+
+  if (skill.id === 'desperate_blow') {
+    const used = run.combat.desperateUses || 0;
+    if (used >= 2) {
+      run.combat.log.push({ type: 'system', text: 'Coup désespéré limité à 2× par combat.' });
+      return { blocked: true };
+    }
+    run.combat.desperateUses = used + 1;
+  }
 
   let targetMember = member;
   let targetEnemyId = targetId;

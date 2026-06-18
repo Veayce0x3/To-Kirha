@@ -262,5 +262,5 @@ function getFreshProgress(balance) {
 }
 
 export function getDefaultSettings() {
-  return { sfx: true, sfxVolume: 0.35 };
+  return { sfx: true, sfxVolume: 0.35, darkMode: false };
 }

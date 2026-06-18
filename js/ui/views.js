@@ -12,7 +12,7 @@ import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped, recipeB
 import { formatOfflineDuration } from '../systems/offline.js';
 import { navigate, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getAdjacentHarvestView, getHarvestViewForJob, getAdjacentFarmView, getFarmViewForBuilding, isFarmView } from './router.js';
 import { renderTutorialOverlay, scheduleTutorialOverlayRefresh } from './tutorialUi.js';
-import { getHarvestTime, getRegrowthTime, getHarvestYield } from '../systems/harvest.js';
+import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '../systems/harvest.js';
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
 import { getQuestStatusText, isQuestCompleted, isQuestAvailable, isQuestReady, QUEST_CHAPTER_LABELS } from '../systems/quests.js';
@@ -606,6 +606,13 @@ function renderCharEquipmentTab(game, panel) {
       unequipBtn.textContent = 'Retirer';
       unequipBtn.addEventListener('click', () => game.doUnequipCombat(slot.id));
       card.appendChild(unequipBtn);
+    } else if (slot.id === 'weapon') {
+      const forgeBtn = document.createElement('button');
+      forgeBtn.type = 'button';
+      forgeBtn.className = 'btn btn-small btn-craft affordable';
+      forgeBtn.textContent = '🔨 Forger une arme';
+      forgeBtn.addEventListener('click', () => navigate('workshop_blacksmith'));
+      card.appendChild(forgeBtn);
     }
     combatSlotsEl.appendChild(card);
   }
@@ -1265,6 +1272,7 @@ function renderHarvestSlot(game, jobId, slotIndex, container) {
   const harvestHint = !active && selectedId
     ? (game.getHarvestSlotHint?.(jobId, selectedId) || toolBlock)
     : null;
+  const harvestXp = selected && !active ? getHarvestXp(selected, game.state, game.balance) : 0;
 
   const spriteHtml = display.sprite
     ? `<img class="slot-visual-sprite" src="${display.sprite}" alt="" />`
@@ -1277,7 +1285,8 @@ function renderHarvestSlot(game, jobId, slotIndex, container) {
     <div class="slot-footer">
       <div class="slot-picker-mount"></div>
       ${harvestHint ? `<p class="slot-tool-hint">${harvestHint}</p>` : ''}
-      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}" ${active || !selectedId || toolBlock ? 'disabled' : ''} title="${harvestHint || 'Récolter'}">
+      ${harvestXp > 0 && !active ? `<p class="slot-xp-hint">+${harvestXp} XP ${game.jobs[jobId]?.name || ''}</p>` : ''}
+      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${!active && selectedId && !toolBlock ? ' affordable' : ''}" ${active || !selectedId || toolBlock ? 'disabled' : ''} title="${harvestHint || 'Récolter'}">
         ${btnLabel}
       </button>
     </div>
@@ -1541,6 +1550,10 @@ function renderJob(game, el, jobId) {
         ${prevJob ? `<span class="job-nav-hint">${game.jobs[prevJob]?.name || ''}</span>` : '<span></span>'}
         ${nextJob ? `<span class="job-nav-hint">${game.jobs[nextJob]?.name || ''}</span>` : '<span></span>'}
       </div>
+      <div class="job-nav-mobile">
+        <button type="button" class="btn btn-muted btn-nav-mobile" id="job-prev-mobile" ${prevView ? '' : 'disabled'}>‹ ${prevJob ? game.jobs[prevJob]?.name : 'Préc.'}</button>
+        <button type="button" class="btn btn-muted btn-nav-mobile" id="job-next-mobile" ${nextView ? '' : 'disabled'}>${nextJob ? game.jobs[nextJob]?.name : 'Suiv.'} ›</button>
+      </div>
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
       <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1} — passe à la suivante` : `${prog.xp} / ${prog.needed} XP`}</p>
     </div>
@@ -1564,6 +1577,8 @@ function renderJob(game, el, jobId) {
   el.querySelector('#goto-world')?.addEventListener('click', () => navigate('world'));
   el.querySelector('#job-prev')?.addEventListener('click', () => { if (prevView) navigate(prevView); });
   el.querySelector('#job-next')?.addEventListener('click', () => { if (nextView) navigate(nextView); });
+  el.querySelector('#job-prev-mobile')?.addEventListener('click', () => { if (prevView) navigate(prevView); });
+  el.querySelector('#job-next-mobile')?.addEventListener('click', () => { if (nextView) navigate(nextView); });
 
   const slotsEl = el.querySelector('#harvest-slots');
   for (let i = 0; i < maxSlots; i++) {
@@ -1664,8 +1679,9 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
     </div>
     <div class="slot-footer">
       ${needsFeed ? feedUi.pickerHtml : ''}
+      ${active ? `<div class="xp-bar-container slot-progress"><div class="xp-bar" style="width:${Math.min(99, Math.floor(progress * 100))}%"></div></div>` : ''}
       ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
-      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}" id="${tutorialFarm ? 'tutorial-farm-start-well' : tutorialChicken ? 'tutorial-farm-start-chicken' : ''}" ${active || (!tutorialFarm && !tutorialChicken && toolBlock) || feedBlocked ? 'disabled' : ''}>
+      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${!active && !feedBlocked && !toolBlock ? ' affordable' : ''}" id="${tutorialFarm ? 'tutorial-farm-start-well' : tutorialChicken ? 'tutorial-farm-start-chicken' : ''}" ${active || (!tutorialFarm && !tutorialChicken && toolBlock) || feedBlocked ? 'disabled' : ''}>
         ${getFarmBtnLabel(progress)}
       </button>
     </div>
@@ -1821,6 +1837,10 @@ function renderFarmBuilding(game, el, buildingId) {
         ${prevBuilding ? `<span class="job-nav-hint">${prevBuilding}</span>` : '<span></span>'}
         ${nextBuilding ? `<span class="job-nav-hint">${nextBuilding}</span>` : '<span></span>'}
       </div>
+      <div class="job-nav-mobile">
+        <button type="button" class="btn btn-muted btn-nav-mobile" id="farm-prev-mobile" ${prevView ? '' : 'disabled'}>‹ ${prevBuilding || 'Préc.'}</button>
+        <button type="button" class="btn btn-muted btn-nav-mobile" id="farm-next-mobile" ${nextView ? '' : 'disabled'}>${nextBuilding || 'Suiv.'} ›</button>
+      </div>
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
       <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${prog.xp} / ${prog.needed} XP Éleveur`}</p>
       ${toolBlock ? `<p class="slot-tool-hint farm-tool-banner">⚠️ ${toolBlock}</p>` : ''}
@@ -1837,6 +1857,8 @@ function renderFarmBuilding(game, el, buildingId) {
 
   el.querySelector('#farm-prev')?.addEventListener('click', () => { if (prevView) navigate(prevView); });
   el.querySelector('#farm-next')?.addEventListener('click', () => { if (nextView) navigate(nextView); });
+  el.querySelector('#farm-prev-mobile')?.addEventListener('click', () => { if (prevView) navigate(prevView); });
+  el.querySelector('#farm-next-mobile')?.addEventListener('click', () => { if (nextView) navigate(nextView); });
 
   const slotsEl = el.querySelector('#farm-slots');
   for (let i = 0; i < maxSlots; i++) {
@@ -2044,15 +2066,15 @@ function appendCraftTile(game, id, recipe, container, forceLocked = false, isOwn
     broken: isBroken,
   });
   const craftBtnLabel = forcedTutorialCraft ? 'Fabriquer' : (isBroken ? 'Refabriquer' : (isWorkingOwned ? 'Possédé' : 'Fabriquer'));
+  const blockTitle = blockReason?.message || '';
 
   const tile = document.createElement('div');
   tile.className = `craft-tile${canDo ? ' affordable' : ''}${forceLocked ? ' locked-res' : ''}${isWorkingOwned ? ' craft-owned' : ''}${isBroken ? ' craft-broken' : ''}`;
   tile.dataset.recipeId = id;
   const craftBtnId = forcedTutorialCraft ? `tutorial-craft-${id}` : '';
-  const craftBtnAttrs = canDo || forcedTutorialCraft ? '' : 'disabled';
   tile.innerHTML = `
     <div class="tile-name">${recipe.emoji} ${recipe.name}${recipe.repeatable ? ' ♻️' : ''}</div>
-    <p class="tile-stats">${recipe.description}</p>
+    <p class="tile-stats">${recipe.description || ''}</p>
     ${durabilityHtml}
     ${combatPreviewHtml}
     ${blockHtml}
@@ -2060,20 +2082,23 @@ function appendCraftTile(game, id, recipe, container, forceLocked = false, isOwn
       ${isWorkingOwned && !forcedTutorialCraft ? '<p class="tile-lock">✓ En service</p>' : ''}
     <div class="ingredients">${ingredients}${kirhaHtml ? ` ${kirhaHtml}` : ''}</div>
     ${getRecipeJobXp(recipe) ? `<div class="tile-stats">+${getRecipeJobXp(recipe)} XP ${game.jobs[recipe.craftJob]?.name || ''}</div>` : ''}
-    <button type="button" class="btn btn-craft" id="${craftBtnId}" ${craftBtnAttrs}>${craftBtnLabel}</button>
+    <button type="button" class="btn btn-craft${canDo || forcedTutorialCraft ? ' affordable' : ''}" id="${craftBtnId}" ${canDo || forcedTutorialCraft ? '' : 'disabled'} title="${blockTitle}">${craftBtnLabel}</button>
   `;
   const craftBtn = tile.querySelector('.btn-craft');
-  if (canDo || forcedTutorialCraft) {
-    if (forcedTutorialCraft && craftBtn?.disabled) craftBtn.removeAttribute('disabled');
-    craftBtn?.addEventListener('click', () => {
-      game.prepareTutorialSandboxForStep?.();
-      const ok = game.doCraft(id);
-      if (!ok) {
-        const message = game.getCraftFailureMessage?.(id) || 'Impossible de fabriquer pour le moment.';
-        emit('craftBlocked', { recipeId: id, message });
-      }
-    });
-  } else if (isWorkingOwned && game.equipment.equipable[id] && !isRecipeEquipped(game.state, id)) {
+  craftBtn?.addEventListener('click', () => {
+    if (!canDo && !forcedTutorialCraft) {
+      const message = blockReason?.message || game.getCraftFailureMessage?.(id) || 'Impossible de fabriquer pour le moment.';
+      emit('craftBlocked', { recipeId: id, message });
+      return;
+    }
+    game.prepareTutorialSandboxForStep?.();
+    const ok = game.doCraft(id);
+    if (!ok) {
+      const message = game.getCraftFailureMessage?.(id) || 'Impossible de fabriquer pour le moment.';
+      emit('craftBlocked', { recipeId: id, message });
+    }
+  });
+  if (isWorkingOwned && game.equipment.equipable[id] && !isRecipeEquipped(game.state, id)) {
     const equipBtn = document.createElement('button');
     equipBtn.type = 'button';
     equipBtn.className = 'btn btn-small btn-muted';
@@ -2166,11 +2191,14 @@ export function renderInventory(game, el) {
     <div class="panel-inner">
       <div class="bank-toolbar">
         <span class="bank-total" id="bank-total">Valeur totale : 0 💰</span>
-        <button class="btn btn-sell-all" id="sell-all">Tout vendre</button>
+        <div class="bank-toolbar-actions">
+          <button class="btn btn-muted btn-small" id="sell-all-except" title="Vend tout sauf les objets épinglés">Tout vendre (sauf épinglés)</button>
+          <button class="btn btn-sell-all" id="sell-all">Tout vendre</button>
+        </div>
       </div>
       <table class="bank-table bank-resource-list">
         <thead>
-          <tr><th>Objet</th><th>Qté</th><th>Prix/u</th><th>Valeur</th></tr>
+          <tr><th></th><th>Objet</th><th>Qté</th><th>Prix/u</th><th>Valeur</th></tr>
         </thead>
         <tbody id="bank-body"></tbody>
       </table>
@@ -2178,10 +2206,14 @@ export function renderInventory(game, el) {
   `;
 
   el.querySelector('#sell-all').addEventListener('click', () => game.sellEverything());
+  el.querySelector('#sell-all-except')?.addEventListener('click', () => {
+    game.sellEverythingExcept(game.state.bankProtected || []);
+  });
 
   const tbody = el.querySelector('#bank-body');
   let totalValue = 0;
   let hasItems = false;
+  const protectedIds = new Set(game.state.bankProtected || []);
 
   for (const [id, amount] of Object.entries(game.state.inventory)) {
     if (amount <= 0) continue;
@@ -2189,27 +2221,36 @@ export function renderInventory(game, el) {
     if (!resource) continue;
     hasItems = true;
     const notSellable = resource.notSellable || resource.merchantOnly;
+    const isProtected = protectedIds.has(id);
     const bonus = resource.craftOnly && !notSellable ? getCraftSellBonus(game.state, game.jobs) : 1;
     const unitPrice = notSellable ? 0 : Math.floor(resource.sellPrice * bonus);
     const value = unitPrice * amount;
-    if (!notSellable) totalValue += value;
+    if (!notSellable && !isProtected) totalValue += value;
 
     const tr = document.createElement('tr');
-    tr.className = `bank-row${notSellable ? ' bank-row-special' : ''}`;
+    tr.className = `bank-row${notSellable ? ' bank-row-special' : ''}${isProtected ? ' bank-row-protected' : ''}`;
     tr.dataset.resourceId = id;
     tr.innerHTML = `
+      <td class="bank-pin-cell">
+        ${notSellable ? '' : `<button type="button" class="bank-pin${isProtected ? ' pinned' : ''}" data-pin="${id}" aria-label="${isProtected ? 'Retirer la protection' : 'Protéger à la vente'}" title="${isProtected ? 'Protégé' : 'Épingler'}">${isProtected ? '📌' : '📍'}</button>`}
+      </td>
       <td class="bank-item-cell">${renderResourceIcon(resource)} ${resource.name}</td>
       <td>×${amount}</td>
       <td>${notSellable ? '—' : `${formatNumber(unitPrice)} 💰`}</td>
       <td>${notSellable ? '—' : `${formatNumber(value)} 💰`}</td>
     `;
+    tr.querySelector('.bank-pin')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      game.toggleBankProtected(id);
+      renderInventory(game, el);
+    });
     tr.addEventListener('click', () => openItemModal(game, id, resource, amount, unitPrice, notSellable));
     tbody.appendChild(tr);
   }
 
   el.querySelector('#bank-total').textContent = `Valeur totale : ${formatNumber(totalValue)} 💰`;
   if (!hasItems) {
-    tbody.innerHTML = '<tr><td colspan="4" class="empty-text">Inventaire vide</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-text">Inventaire vide</td></tr>';
   }
 }
 
@@ -2240,6 +2281,9 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
     ? `<button class="btn btn-craft" id="modal-goto-auction">${iconHtml(getNavIcon('auction_house'), 'btn-inline-icon', 'HDV')} Hôtel des Ventes</button>`
     : `
       <button class="btn btn-sell" id="modal-sell-1">Vendre 1</button>
+      ${amount >= 5 ? '<button class="btn btn-sell" id="modal-sell-5">×5</button>' : ''}
+      ${amount >= 10 ? '<button class="btn btn-sell" id="modal-sell-10">×10</button>' : ''}
+      ${amount >= 100 ? '<button class="btn btn-sell" id="modal-sell-100">×100</button>' : ''}
       <button class="btn btn-sell-all" id="modal-sell-all">Vendre tout (×${amount})</button>
     `;
 
@@ -2259,6 +2303,12 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
     game.sell(resourceId, 1);
     modal.classList.remove('active');
   });
+  for (const qty of [5, 10, 100]) {
+    body.querySelector(`#modal-sell-${qty}`)?.addEventListener('click', () => {
+      game.sell(resourceId, Math.min(qty, amount));
+      modal.classList.remove('active');
+    });
+  }
   body.querySelector('#modal-sell-all')?.addEventListener('click', () => {
     game.sell(resourceId);
     modal.classList.remove('active');
@@ -2297,6 +2347,11 @@ export function renderOptions(game, el) {
   el.innerHTML = `
     <div class="view-header"><h2>${iconHtml(getNavIcon('options'), 'view-header-icon', 'Options')} Options</h2></div>
     <div class="panel-inner"><div id="settings-grid" class="settings-grid"></div></div>
+    <div class="panel-inner">
+      <h3>🔄 Application</h3>
+      <p class="view-desc">Recharge la page si l'interface semble bloquée (utile en mode épinglé sur l'écran d'accueil).</p>
+      <button type="button" class="btn btn-muted" id="reload-app">Recharger le jeu</button>
+    </div>
     <div class="panel-inner panel-prestige">
       <h3>🌸 Nouvelle Saison</h3>
       <div id="prestige-info">
@@ -2343,6 +2398,10 @@ export function renderOptions(game, el) {
   `;
 
   renderSettingsIn(game, el.querySelector('#settings-grid'));
+  el.querySelector('#reload-app')?.addEventListener('click', () => {
+    game.scheduleSave?.();
+    window.location.reload();
+  });
   el.querySelector('#prestige-btn')?.addEventListener('click', () => emitPrestigeModal());
 
   el.querySelector('#reset-tutorial')?.addEventListener('click', () => {
@@ -2403,12 +2462,18 @@ export function renderOptions(game, el) {
 
 export function renderSettingsIn(game, container) {
   const s = game.state.settings;
+  const dark = s.darkMode ? 'checked' : '';
   container.innerHTML = `
     <label class="setting-row"><span>🔔 Effets sonores</span><input type="checkbox" id="set-sfx" ${s.sfx ? 'checked' : ''}></label>
     <label class="setting-row"><span>Volume SFX</span><input type="range" id="set-sv" min="0" max="100" value="${Math.round((s.sfxVolume ?? 0.35) * 100)}"></label>
+    <label class="setting-row"><span>🌙 Mode sombre</span><input type="checkbox" id="set-dark" ${dark}></label>
   `;
   container.querySelector('#set-sfx').addEventListener('change', (e) => game.updateSettings({ sfx: e.target.checked }));
   container.querySelector('#set-sv').addEventListener('input', (e) => game.updateSettings({ sfxVolume: e.target.value / 100 }));
+  container.querySelector('#set-dark')?.addEventListener('change', (e) => {
+    game.updateSettings({ darkMode: e.target.checked });
+    document.documentElement.dataset.theme = e.target.checked ? 'dark' : '';
+  });
 }
 
 /* ── Zones de combat ── */
@@ -2441,6 +2506,7 @@ function renderCombat(game, el) {
       <h2>${iconHtml(getNavIcon('combat'), 'view-header-icon', 'Combat')} Combat</h2>
       <p class="view-desc">${game.getCharacterDisplayName()} · Nv.${charProg.level} · ❤️ ${stats.hp} · ⚔️ ${stats.atk} · 🛡️ ${stats.def}</p>
       <p class="view-desc">Arme : ${weaponLabel} · Équipe : ${1 + game.getActiveCompanionCount()}/3</p>
+      ${game.state.combatWear?.solo?.hero != null ? `<p class="view-desc">HP entraînement conservés : ❤️ ${game.state.combatWear.solo.hero}</p>` : ''}
       <p class="combat-daily-banner">
         📅 Aujourd'hui — Combats rapides : <strong>${daily.remaining.soloMob}</strong>/${daily.limits.soloMob}
         · Boss rapides : <strong>${daily.remaining.soloBoss}</strong>/${daily.limits.soloBoss}
@@ -2888,6 +2954,8 @@ function renderDungeonCombatBody(game) {
           <span class="dq-tutorial-combat-text">${dungeonCombatHint.text}</span>
         </div>
       ` : ''}
+
+      ${isEnemyTurn ? '<div class="dq-enemy-turn-banner" aria-live="polite">⚔️ Tour de l\'ennemi…</div>' : ''}
 
       <div class="dq-battlefield${isBoss ? ' dq-boss-room' : ''}${targetMode === 'enemy' ? ' dq-pick-enemy' : ''}${isEnemyTurn ? ' dq-enemy-turn' : ''}">
         <div class="dq-sky"></div>

@@ -46,6 +46,7 @@ async function loadJSON(path) {
   );
   await game.init();
 
+  document.documentElement.dataset.theme = game.state.settings?.darkMode ? 'dark' : '';
   audio.updateSettings(game.state.settings);
   initUI(game, audio);
 

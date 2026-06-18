@@ -395,6 +395,27 @@ export function graduateTutorial(state) {
   state.tutorial.completed = true;
   state.tutorial.replay = false;
   claimTutorialReward(state, 'graduateKirha', () => {
-    if ((state.kirha || 0) < 10) state.kirha = 10;
+    if ((state.kirha || 0) < 50) state.kirha = 50;
+    state.inventory.ancient_scroll = (state.inventory.ancient_scroll || 0) + 1;
+  });
+}
+
+/** Récompenses minimales si le joueur passe la formation sans la finir. */
+export function grantTutorialSkipRewards(state, recipes, equipmentData, balance, farmData) {
+  if (hasTutorialRewardsClaimed(state)) return;
+  claimTutorialReward(state, 'skipRewards', () => {
+    grantTutorialStarterAxe(state, recipes, equipmentData, true);
+    if ((state.kirha || 0) < 30) state.kirha = 30;
+    state.inventory.ble = (state.inventory.ble || 0) + 5;
+    state.inventory.eau = (state.inventory.eau || 0) + 3;
+    state.inventory.ancient_scroll = (state.inventory.ancient_scroll || 0) + 1;
+    const bucketId = 'breeder_bucket';
+    if (recipes[bucketId] && !(state.crafted || []).includes(bucketId)) {
+      state.crafted.push(bucketId);
+      if (!state.toolDurability) state.toolDurability = {};
+      state.toolDurability[bucketId] = recipes[bucketId].maxUses || 30;
+      if (equipmentData) equip(bucketId, state, equipmentData, recipes);
+    }
+    if (farmData) ensureFarmSlots(state, farmData, balance);
   });
 }

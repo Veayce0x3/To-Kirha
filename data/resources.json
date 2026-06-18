@@ -1312,6 +1312,14 @@
     "craftOnly": true,
     "consumable": true
   },
+  "meal_poisson": {
+    "id": "meal_poisson",
+    "name": "Poisson grillé",
+    "emoji": "🐟",
+    "sellPrice": 16,
+    "craftOnly": true,
+    "consumable": true
+  },
   "meal_oeufs": {
     "id": "meal_oeufs",
     "name": "Œufs brouillés",

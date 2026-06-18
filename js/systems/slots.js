@@ -28,6 +28,8 @@ export function getSlotUnlockCost(slotIndex, balance) {
 }
 
 export function getSlotResourceCost(jobId, slotIndex, balance) {
+  const perSlot = balance.harvestSlots?.unlockResourcesByJob?.[jobId];
+  if (perSlot && perSlot[slotIndex]) return { ...perSlot[slotIndex] };
   const resId = balance.harvestSlots.unlockResourceByJob?.[jobId];
   const amount = balance.harvestSlots.unlockResourceAmountPerSlot ?? 0;
   if (!resId || amount <= 0 || slotIndex < 2) return null;

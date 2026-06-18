@@ -1032,6 +1032,19 @@
     "requiredJobLevel": 1,
     "jobXp": 12
   },
+  "recipe_poisson": {
+    "id": "recipe_poisson",
+    "name": "Poisson grillé",
+    "emoji": "🐟",
+    "description": "Repas — +8 % HP (1 donjon)",
+    "ingredients": { "goujon": 2, "eau": 1 },
+    "output": "meal_poisson",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 1,
+    "jobXp": 10
+  },
   "recipe_oeufs": {
     "id": "recipe_oeufs",
     "name": "Œufs brouillés",

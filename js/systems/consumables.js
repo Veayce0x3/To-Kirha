@@ -2,6 +2,7 @@
 
 export const MEAL_EFFECTS = {
   meal_onigiri: { hpPct: 0.05, label: '+5 % HP max' },
+  meal_poisson: { hpPct: 0.08, label: '+8 % HP max' },
   meal_oeufs: { defPct: 0.03, label: '+3 % DEF' },
   meal_soupe: { regenBetweenRooms: 8, label: 'Regain entre salles' },
   meal_brochette: { atkPct: 0.05, label: '+5 % ATK' },

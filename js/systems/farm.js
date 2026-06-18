@@ -250,6 +250,19 @@ export function isAnyFarmActive(state) {
   return false;
 }
 
+/** Termine les productions expirées (ex. après rechargement). */
+export function syncExpiredFarmSlots(state, onComplete) {
+  if (!onComplete) return;
+  for (const buildingId of FARM_BUILDING_IDS) {
+    const slots = state.farmSlots?.[buildingId] || [];
+    slots.forEach((slot, slotIndex) => {
+      if (!slot?.active) return;
+      const elapsed = Date.now() - slot.active.start;
+      if (elapsed >= slot.active.duration) onComplete(buildingId, slotIndex);
+    });
+  }
+}
+
 export function wearBreederTool(state, recipes, equipment) {
   return wearToolsForHarvest(state, recipes, equipment, 'breeder');
 }

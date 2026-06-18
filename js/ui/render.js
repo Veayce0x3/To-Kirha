@@ -507,7 +507,14 @@ export function initUI(game, audio) {
   });
   on('offlineProgress', (r) => showOfflineModal(game, els, r));
   on('prestige', ({ season }) => showToast(els, `🌸 Saison ${season} !`, 'prestige'));
-  on('settingsChange', (s) => audio.updateSettings(s));
+  on('settingsChange', (s) => {
+    audio.updateSettings(s);
+    document.documentElement.dataset.theme = s.darkMode ? 'dark' : '';
+  });
+
+  on('tutorialDismissed', () => {
+    teardownTutorialOverlay();
+  });
 
   on('tutorialAxeReceived', () => {
     showTutorialVictoryToast(els, '✅ Hache de Frêne reçue ! On continue…');
