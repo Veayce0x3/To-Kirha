@@ -28,7 +28,18 @@
   "harvestSlots": {
     "startingSlots": 2,
     "maxSlots": 10,
-    "unlockCosts": [0, 0, 400, 1200, 3500, 8000, 20000, 50000, 120000, 300000],
+    "unlockCosts": [
+      0,
+      0,
+      400,
+      1200,
+      3500,
+      8000,
+      20000,
+      50000,
+      120000,
+      300000
+    ],
     "unlockResourceByJob": {
       "lumberjack": "frene",
       "farmer": "ble",
@@ -40,68 +51,154 @@
       "lumberjack": [
         null,
         null,
-        { "frene": 10 },
-        { "sequoia": 10 },
-        { "cedre": 10 },
-        { "santal": 10 },
-        { "amandier": 10 },
-        { "noyer": 10 },
-        { "erable": 10 }
+        {
+          "frene": 10
+        },
+        {
+          "noyer": 10
+        },
+        {
+          "brume_saule": 10
+        },
+        {
+          "bambou": 10
+        },
+        {
+          "merisier": 10
+        },
+        {
+          "charme": 10
+        },
+        {
+          "orme": 10
+        },
+        {
+          "orme": 10
+        }
       ],
       "fisher": [
         null,
         null,
-        { "goujon": 10 },
-        { "carpe": 10 },
-        { "brochet": 10 },
-        { "saumon": 10 },
-        { "thon": 10 },
-        { "raie": 10 },
-        { "requin": 10 },
-        { "kraken": 10 }
+        {
+          "goujon": 10
+        },
+        {
+          "truite": 10
+        },
+        {
+          "brume_truite": 10
+        },
+        {
+          "bar": 10
+        },
+        {
+          "dorade": 10
+        },
+        {
+          "perche": 10
+        },
+        {
+          "kralamoure": 10
+        },
+        {
+          "kralamoure": 10
+        }
       ],
       "miner": [
         null,
         null,
-        { "fer": 10 },
-        { "cuivre": 10 },
-        { "argent": 10 },
-        { "or": 10 },
-        { "jade": 10 },
-        { "obsidienne": 10 },
-        { "cristal": 10 },
-        { "adamantium": 10 }
+        {
+          "fer": 10
+        },
+        {
+          "bronze": 10
+        },
+        {
+          "brume_quartz": 10
+        },
+        {
+          "argent": 10
+        },
+        {
+          "bauxite": 10
+        },
+        {
+          "or_minerai": 10
+        },
+        {
+          "cendrepierre": 10
+        },
+        {
+          "cendrepierre": 10
+        }
       ],
       "farmer": [
         null,
         null,
-        { "ble": 10 },
-        { "orge": 10 },
-        { "houblon": 10 },
-        { "avoine": 10 },
-        { "lin": 10 },
-        { "chanvre": 10 },
-        { "riz": 10 },
-        { "mais": 10 }
+        {
+          "ble": 10
+        },
+        {
+          "avoine": 10
+        },
+        {
+          "brume_ble": 10
+        },
+        {
+          "chanvre": 10
+        },
+        {
+          "mais": 10
+        },
+        {
+          "millet": 10
+        },
+        {
+          "frostiz": 10
+        },
+        {
+          "frostiz": 10
+        }
       ],
       "alchemist": [
         null,
         null,
-        { "ortie": 10 },
-        { "sauge": 10 },
-        { "menthe": 10 },
-        { "lavande": 10 },
-        { "camomille": 10 },
-        { "girofle": 10 },
-        { "muscade": 10 },
-        { "safran": 10 }
+        {
+          "ortie": 10
+        },
+        {
+          "trefle": 10
+        },
+        {
+          "brume_lotus_herb": 10
+        },
+        {
+          "belladone": 10
+        },
+        {
+          "mandragore": 10
+        },
+        {
+          "perce_neige": 10
+        },
+        {
+          "salikronia": 10
+        },
+        {
+          "salikronia": 10
+        }
       ]
     },
     "unlockResourceAmountPerSlot": 10
   },
   "farmSlots": {
     "maxPerBuilding": 4,
-    "unlockCosts": [0, 600, 2000, 6000],
+    "unlockCosts": [
+      0,
+      600,
+      2000,
+      6000
+    ],
     "unlockResourceByBuilding": {
       "well": "eau",
       "chicken_coop": "oeuf",
@@ -114,28 +211,58 @@
   },
   "prestige": {
     "minTotalEarned": 100000,
-    "requiredZones": ["lotus_sanctuary"],
-    "minBossKills": { "lotus_sanctuary": 1 },
+    "requiredZones": [
+      "lotus_sanctuary"
+    ],
+    "minBossKills": {
+      "lotus_sanctuary": 1
+    },
     "requireQuestsChapter": "lotus_sanctuary",
     "bonusesPerSeason": {
       "kirhaMultiplier": 0.05,
       "xpMultiplier": 0.05
     },
     "levelCaps": {
-      "character": { "firstSeasonCap": 55, "perSeason": 11, "absoluteMax": 200 },
-      "jobs": { "firstSeasonCap": 95, "perSeason": 12, "absoluteMax": 200 }
+      "character": {
+        "firstSeasonCap": 55,
+        "perSeason": 11,
+        "absoluteMax": 200
+      },
+      "jobs": {
+        "firstSeasonCap": 95,
+        "perSeason": 12,
+        "absoluteMax": 200
+      }
     }
   },
   "upgrades": {},
   "zoneBossUnlocks": {
-    "petal_forest": { "bossCombatZone": "village_sakura" },
-    "mist_river": { "bossCombatZone": "petal_forest" },
-    "jade_mountains": { "bossCombatZone": "mist_river" },
-    "lotus_sanctuary": { "bossCombatZone": "jade_mountains" }
+    "petal_forest": {
+      "bossCombatZone": "village_sakura"
+    },
+    "mist_river": {
+      "bossCombatZone": "petal_forest"
+    },
+    "jade_mountains": {
+      "bossCombatZone": "mist_river"
+    },
+    "lotus_sanctuary": {
+      "bossCombatZone": "jade_mountains"
+    }
   },
   "combatSetBonuses": {
-    "tier4": { "minPieces": 4, "hp": 12, "atk": 4, "def": 3 },
-    "tier8": { "minPieces": 8, "hp": 25, "atk": 8, "def": 6 }
+    "tier4": {
+      "minPieces": 4,
+      "hp": 12,
+      "atk": 4,
+      "def": 3
+    },
+    "tier8": {
+      "minPieces": 8,
+      "hp": 25,
+      "atk": 8,
+      "def": 6
+    }
   },
   "zoneBossUnlocksAfter": {
     "village_sakura": "petal_forest",

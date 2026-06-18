@@ -314,6 +314,7 @@ export function initEncounter(run, foe, enemies, partySize = 1, combatZone = nul
     activeEnemyIndex: 0,
     log: [],
     desperateUses: 0,
+    mealUsedInFight: false,
   };
   startPlayerTurn(run);
   return run.combat;

@@ -190,10 +190,35 @@ export function getAvailableFeeds(building, state) {
   return listFeedOptions(building).filter((feedId) => canAffordFeed(building, feedId, state));
 }
 
+export function buyFarmAnimal(state, farmData, buildingId, slotIndex) {
+  const building = getBuildingDef(farmData, buildingId);
+  const slot = state.farmSlots?.[buildingId]?.[slotIndex];
+  if (!building?.requiresAnimal || !slot || slot.hasAnimal) return { ok: false, reason: 'Indisponible' };
+  const cost = building.animalPurchase || {};
+  if ((state.kirha || 0) < (cost.kirha || 0)) return { ok: false, reason: 'Pas assez de Kirha' };
+  for (const [resId, amount] of Object.entries(cost)) {
+    if (resId === 'kirha') continue;
+    if ((state.inventory[resId] || 0) < amount) {
+      return { ok: false, reason: 'Ressources insuffisantes' };
+    }
+  }
+  if (cost.kirha) state.kirha -= cost.kirha;
+  for (const [resId, amount] of Object.entries(cost)) {
+    if (resId === 'kirha') continue;
+    state.inventory[resId] -= amount;
+  }
+  slot.hasAnimal = true;
+  return { ok: true };
+}
+
 export function startFarmProduction(state, farmData, buildingId, slotIndex) {
   const building = getBuildingDef(farmData, buildingId);
   const slot = state.farmSlots?.[buildingId]?.[slotIndex];
   if (!building || !slot || slot.active) return { ok: false, reason: 'Occupé' };
+
+  if (building.requiresAnimal && !slot.hasAnimal) {
+    return { ok: false, reason: 'Achète une poule pour cet emplacement' };
+  }
 
   const needsFeed = Object.keys(building.feed || {}).length > 0;
   if (needsFeed) {

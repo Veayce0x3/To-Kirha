@@ -24,12 +24,12 @@
     "id": "fishing_rod",
     "name": "Canne en bambou",
     "emoji": "🎣",
-    "description": "+8% vitesse pêcheur",
+    "description": "Palier 1 — pêcheur",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
     "ingredients": {
-      "frene": 10
+      "goujon": 8
     },
     "effect": {
       "type": "speed",
@@ -45,13 +45,12 @@
     "id": "farm_sickle",
     "name": "Faucille du Paysan",
     "emoji": "🌾",
-    "description": "+8% vitesse paysan",
+    "description": "Palier 1 — paysan",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
     "ingredients": {
-      "ble": 5,
-      "frene": 2
+      "ble": 8
     },
     "effect": {
       "type": "speed",
@@ -67,13 +66,12 @@
     "id": "miner_pickaxe",
     "name": "Pioche du Village",
     "emoji": "⛏️",
-    "description": "+8% vitesse mineur",
+    "description": "Palier 1 — mineur",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
     "ingredients": {
-      "fer": 5,
-      "frene": 2
+      "fer": 8
     },
     "effect": {
       "type": "speed",
@@ -89,7 +87,7 @@
     "id": "herb_gloves",
     "name": "Gants d'alchimiste",
     "emoji": "🧤",
-    "description": "+8% vitesse alchimiste",
+    "description": "Palier 1 — alchimiste",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
@@ -149,29 +147,6 @@
     "craftJob": "toolmaker",
     "requiredJobLevel": 5,
     "jobXp": 20
-  },
-  "jade_pickaxe": {
-    "id": "jade_pickaxe",
-    "name": "Pioche de Pierre",
-    "emoji": "⛏️",
-    "description": "+12% vitesse mineur",
-    "kirhaCost": 650,
-    "maxUses": 150,
-    "ingredients": {
-      "fer": 6,
-      "frene": 12,
-      "goujon": 5,
-      "ancient_scroll": 2
-    },
-    "effect": {
-      "type": "speed",
-      "job": "miner",
-      "bonus": 0.12
-    },
-    "unique": true,
-    "craftJob": "toolmaker",
-    "requiredJobLevel": 20,
-    "jobXp": 30
   },
   "master_toolkit": {
     "id": "master_toolkit",
@@ -951,8 +926,15 @@
     "kirhaCost": 5,
     "maxUses": 30,
     "toolTier": 1,
-    "ingredients": { "frene": 4, "fer": 2 },
-    "effect": { "type": "speed", "job": "breeder", "bonus": 0.05 },
+    "ingredients": {
+      "frene": 4,
+      "fer": 2
+    },
+    "effect": {
+      "type": "speed",
+      "job": "breeder",
+      "bonus": 0.05
+    },
     "unique": true,
     "craftJob": "toolmaker",
     "requiredJobLevel": 1,
@@ -966,8 +948,15 @@
     "kirhaCost": 80,
     "maxUses": 55,
     "toolTier": 2,
-    "ingredients": { "fer": 8, "frene": 4 },
-    "effect": { "type": "speed", "job": "breeder", "bonus": 0.1 },
+    "ingredients": {
+      "fer": 8,
+      "frene": 4
+    },
+    "effect": {
+      "type": "speed",
+      "job": "breeder",
+      "bonus": 0.1
+    },
     "unique": true,
     "craftJob": "toolmaker",
     "requiredJobLevel": 8,
@@ -981,19 +970,29 @@
     "kirhaCost": 120,
     "maxUses": 50,
     "toolTier": 2,
-    "ingredients": { "chataignier": 6, "frene": 8 },
-    "effect": { "type": "speed", "job": "lumberjack", "bonus": 0.1 },
+    "ingredients": {
+      "chataignier": 6
+    },
+    "effect": {
+      "type": "speed",
+      "job": "lumberjack",
+      "bonus": 0.1
+    },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 8,
-    "jobXp": 25
+    "requiredJobLevel": 20,
+    "jobXp": 18
   },
   "recipe_onigiri": {
     "id": "recipe_onigiri",
     "name": "Onigiri",
     "emoji": "🍙",
     "description": "Repas — +5 % HP (1 donjon)",
-    "ingredients": { "ble": 3, "eau": 1 },
+    "ingredients": {
+      "goujon": 2,
+      "eau": 1,
+      "ble": 2
+    },
     "output": "meal_onigiri",
     "outputAmount": 1,
     "repeatable": true,
@@ -1006,7 +1005,11 @@
     "name": "Poisson grillé",
     "emoji": "🐟",
     "description": "Repas — +8 % HP (1 donjon)",
-    "ingredients": { "goujon": 2, "eau": 1 },
+    "ingredients": {
+      "goujon": 3,
+      "eau": 1,
+      "ble": 1
+    },
     "output": "meal_poisson",
     "outputAmount": 1,
     "repeatable": true,
@@ -1018,7 +1021,10 @@
     "id": "recipe_oeufs",
     "name": "Œufs brouillés",
     "emoji": "🍳",
-    "ingredients": { "oeuf": 2, "eau": 1 },
+    "ingredients": {
+      "oeuf": 2,
+      "eau": 1
+    },
     "output": "meal_oeufs",
     "outputAmount": 1,
     "repeatable": true,
@@ -1030,7 +1036,11 @@
     "id": "recipe_soupe",
     "name": "Soupe au lait",
     "emoji": "🥣",
-    "ingredients": { "lait": 2, "eau": 1, "ble": 1 },
+    "ingredients": {
+      "lait": 2,
+      "eau": 1,
+      "ble": 1
+    },
     "output": "meal_soupe",
     "outputAmount": 1,
     "repeatable": true,
@@ -1042,7 +1052,11 @@
     "id": "recipe_brochette",
     "name": "Brochette",
     "emoji": "🍢",
-    "ingredients": { "jambon": 1, "bacon": 1, "eau": 1 },
+    "ingredients": {
+      "jambon": 1,
+      "bacon": 1,
+      "eau": 1
+    },
     "output": "meal_brochette",
     "outputAmount": 1,
     "repeatable": true,
@@ -1054,7 +1068,11 @@
     "id": "recipe_gateau",
     "name": "Gâteau au miel",
     "emoji": "🍰",
-    "ingredients": { "miel": 2, "ble": 3, "gelee_royale": 1 },
+    "ingredients": {
+      "miel": 2,
+      "ble": 3,
+      "gelee_royale": 1
+    },
     "output": "meal_gateau",
     "outputAmount": 1,
     "repeatable": true,
@@ -1091,8 +1109,15 @@
     "description": "+6 % vitesse cuisinier",
     "kirhaCost": 25,
     "maxUses": 50,
-    "ingredients": { "laine": 4, "cuir": 2 },
-    "effect": { "type": "speed", "job": "cook", "bonus": 0.06 },
+    "ingredients": {
+      "laine": 4,
+      "cuir": 2
+    },
+    "effect": {
+      "type": "speed",
+      "job": "cook",
+      "bonus": 0.06
+    },
     "unique": true,
     "craftJob": "tailor",
     "requiredJobLevel": 5,
@@ -1106,8 +1131,15 @@
     "kirhaCost": 30,
     "maxUses": 40,
     "toolTier": 1,
-    "ingredients": { "cuir": 6, "frene": 4 },
-    "effect": { "type": "speed", "job": "breeder", "bonus": 0.06 },
+    "ingredients": {
+      "cuir": 6,
+      "frene": 4
+    },
+    "effect": {
+      "type": "speed",
+      "job": "breeder",
+      "bonus": 0.06
+    },
     "unique": true,
     "craftJob": "shoemaker",
     "requiredJobLevel": 5,
@@ -1117,7 +1149,12 @@
     "id": "recipe_tonique_miel",
     "name": "Tonique au miel",
     "emoji": "🧪",
-    "ingredients": { "miel": 2, "gelee_royale": 1, "eau": 2, "ortie": 3 },
+    "ingredients": {
+      "miel": 2,
+      "gelee_royale": 1,
+      "eau": 2,
+      "ortie": 3
+    },
     "output": "sacred_incense",
     "outputAmount": 2,
     "repeatable": true,
@@ -1129,7 +1166,11 @@
     "id": "recipe_amulette_gelee",
     "name": "Amulette royale",
     "emoji": "📿",
-    "ingredients": { "gelee_royale": 2, "miel": 3, "fer": 2 },
+    "ingredients": {
+      "gelee_royale": 2,
+      "miel": 3,
+      "fer": 2
+    },
     "output": "jade_amulet",
     "outputAmount": 1,
     "repeatable": true,
@@ -1143,7 +1184,10 @@
     "emoji": "🍲",
     "description": "Débloque plats avancés",
     "kirhaCost": 40,
-    "ingredients": { "fer": 6, "frene": 4 },
+    "ingredients": {
+      "fer": 6,
+      "frene": 4
+    },
     "unique": true,
     "craftJob": "blacksmith",
     "requiredJobLevel": 4,
@@ -1153,11 +1197,732 @@
     "id": "recipe_ruche_amelioree",
     "name": "Ruche améliorée",
     "emoji": "🐝",
-    "ingredients": { "frene": 10, "miel": 2 },
-    "effect": { "type": "yield", "job": "breeder", "bonus": 1 },
+    "ingredients": {
+      "frene": 10,
+      "miel": 2
+    },
+    "effect": {
+      "type": "yield",
+      "job": "breeder",
+      "bonus": 1
+    },
     "unique": true,
     "craftJob": "carver",
     "requiredJobLevel": 6,
     "jobXp": 20
+  },
+  "coal_pickaxe": {
+    "id": "coal_pickaxe",
+    "name": "Pioche du Charbon",
+    "emoji": "⛏️",
+    "description": "Palier 2 — mineur",
+    "kirhaCost": 120,
+    "maxUses": 50,
+    "toolTier": 2,
+    "ingredients": {
+      "cuivre": 6
+    },
+    "effect": {
+      "type": "speed",
+      "job": "miner",
+      "bonus": 0.1
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 20,
+    "jobXp": 18
+  },
+  "oak_axe": {
+    "id": "oak_axe",
+    "name": "Hache de Chêne",
+    "emoji": "🪓",
+    "description": "Palier 3 — lumberjack",
+    "kirhaCost": 350,
+    "maxUses": 75,
+    "toolTier": 3,
+    "ingredients": {
+      "noyer": 8
+    },
+    "effect": {
+      "type": "speed",
+      "job": "lumberjack",
+      "bonus": 0.12
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 40,
+    "jobXp": 21
+  },
+  "birch_axe": {
+    "id": "birch_axe",
+    "name": "Hache de Bouleau",
+    "emoji": "🪓",
+    "description": "Palier 4 — lumberjack",
+    "kirhaCost": 800,
+    "maxUses": 100,
+    "toolTier": 4,
+    "ingredients": {
+      "chene": 10
+    },
+    "effect": {
+      "type": "speed",
+      "job": "lumberjack",
+      "bonus": 0.14
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 60,
+    "jobXp": 24
+  },
+  "maple_axe": {
+    "id": "maple_axe",
+    "name": "Hache d'Érable",
+    "emoji": "🪓",
+    "description": "Palier 5 — lumberjack",
+    "kirhaCost": 1500,
+    "maxUses": 125,
+    "toolTier": 5,
+    "ingredients": {
+      "bombu": 12
+    },
+    "effect": {
+      "type": "speed",
+      "job": "lumberjack",
+      "bonus": 0.16
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 80,
+    "jobXp": 27
+  },
+  "bamboo_axe": {
+    "id": "bamboo_axe",
+    "name": "Hache de Bambou",
+    "emoji": "🪓",
+    "description": "Palier 6 — lumberjack",
+    "kirhaCost": 2800,
+    "maxUses": 150,
+    "toolTier": 6,
+    "ingredients": {
+      "erable": 14
+    },
+    "effect": {
+      "type": "speed",
+      "job": "lumberjack",
+      "bonus": 0.18
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 100,
+    "jobXp": 30
+  },
+  "sakura_wood_axe": {
+    "id": "sakura_wood_axe",
+    "name": "Hache de Sakura",
+    "emoji": "🪓",
+    "description": "Palier 7 — lumberjack",
+    "kirhaCost": 5000,
+    "maxUses": 175,
+    "toolTier": 7,
+    "ingredients": {
+      "charme": 16
+    },
+    "effect": {
+      "type": "speed",
+      "job": "lumberjack",
+      "bonus": 0.2
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 120,
+    "jobXp": 33
+  },
+  "millennium_axe": {
+    "id": "millennium_axe",
+    "name": "Hache Millénaire",
+    "emoji": "🪓",
+    "description": "Palier 10 — lumberjack",
+    "kirhaCost": 15000,
+    "maxUses": 250,
+    "toolTier": 10,
+    "ingredients": {
+      "orme": 20
+    },
+    "effect": {
+      "type": "speed",
+      "job": "lumberjack",
+      "bonus": 0.26
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 200,
+    "jobXp": 42
+  },
+  "carpe_rod": {
+    "id": "carpe_rod",
+    "name": "Canne du Crabe",
+    "emoji": "🎣",
+    "description": "Palier 2 — fisher",
+    "kirhaCost": 120,
+    "maxUses": 50,
+    "toolTier": 2,
+    "ingredients": {
+      "greuvette": 6
+    },
+    "effect": {
+      "type": "speed",
+      "job": "fisher",
+      "bonus": 0.1
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 20,
+    "jobXp": 18
+  },
+  "salmon_rod": {
+    "id": "salmon_rod",
+    "name": "Canne du Saumon",
+    "emoji": "🎣",
+    "description": "Palier 3 — fisher",
+    "kirhaCost": 350,
+    "maxUses": 75,
+    "toolTier": 3,
+    "ingredients": {
+      "truite": 8
+    },
+    "effect": {
+      "type": "speed",
+      "job": "fisher",
+      "bonus": 0.12
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 40,
+    "jobXp": 21
+  },
+  "lobster_rod": {
+    "id": "lobster_rod",
+    "name": "Canne du Homard",
+    "emoji": "🎣",
+    "description": "Palier 4 — fisher",
+    "kirhaCost": 800,
+    "maxUses": 100,
+    "toolTier": 4,
+    "ingredients": {
+      "brochet": 10
+    },
+    "effect": {
+      "type": "speed",
+      "job": "fisher",
+      "bonus": 0.14
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 60,
+    "jobXp": 24
+  },
+  "naso_rod": {
+    "id": "naso_rod",
+    "name": "Canne du Naso",
+    "emoji": "🎣",
+    "description": "Palier 5 — fisher",
+    "kirhaCost": 1500,
+    "maxUses": 125,
+    "toolTier": 5,
+    "ingredients": {
+      "carpe": 12
+    },
+    "effect": {
+      "type": "speed",
+      "job": "fisher",
+      "bonus": 0.16
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 80,
+    "jobXp": 27
+  },
+  "octopus_rod": {
+    "id": "octopus_rod",
+    "name": "Canne de la Pieuvre",
+    "emoji": "🎣",
+    "description": "Palier 6 — fisher",
+    "kirhaCost": 2800,
+    "maxUses": 150,
+    "toolTier": 6,
+    "ingredients": {
+      "raie": 14
+    },
+    "effect": {
+      "type": "speed",
+      "job": "fisher",
+      "bonus": 0.18
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 100,
+    "jobXp": 30
+  },
+  "koi_rod": {
+    "id": "koi_rod",
+    "name": "Canne Koï",
+    "emoji": "🎣",
+    "description": "Palier 7 — fisher",
+    "kirhaCost": 5000,
+    "maxUses": 175,
+    "toolTier": 7,
+    "ingredients": {
+      "perche": 16
+    },
+    "effect": {
+      "type": "speed",
+      "job": "fisher",
+      "bonus": 0.2
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 120,
+    "jobXp": 33
+  },
+  "dragon_rod": {
+    "id": "dragon_rod",
+    "name": "Canne du Dragon",
+    "emoji": "🎣",
+    "description": "Palier 10 — fisher",
+    "kirhaCost": 15000,
+    "maxUses": 250,
+    "toolTier": 10,
+    "ingredients": {
+      "kralamoure": 20
+    },
+    "effect": {
+      "type": "speed",
+      "job": "fisher",
+      "bonus": 0.26
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 200,
+    "jobXp": 42
+  },
+  "copper_pickaxe": {
+    "id": "copper_pickaxe",
+    "name": "Pioche du Cuivre",
+    "emoji": "⛏️",
+    "description": "Palier 3 — miner",
+    "kirhaCost": 350,
+    "maxUses": 75,
+    "toolTier": 3,
+    "ingredients": {
+      "bronze": 8
+    },
+    "effect": {
+      "type": "speed",
+      "job": "miner",
+      "bonus": 0.12
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 40,
+    "jobXp": 21
+  },
+  "iron_depth_pickaxe": {
+    "id": "iron_depth_pickaxe",
+    "name": "Pioche profonde",
+    "emoji": "⛏️",
+    "description": "Palier 4 — miner",
+    "kirhaCost": 800,
+    "maxUses": 100,
+    "toolTier": 4,
+    "ingredients": {
+      "kobalte": 10
+    },
+    "effect": {
+      "type": "speed",
+      "job": "miner",
+      "bonus": 0.14
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 60,
+    "jobXp": 24
+  },
+  "diamond_pickaxe": {
+    "id": "diamond_pickaxe",
+    "name": "Pioche du Diamant",
+    "emoji": "⛏️",
+    "description": "Palier 5 — miner",
+    "kirhaCost": 1500,
+    "maxUses": 125,
+    "toolTier": 5,
+    "ingredients": {
+      "argent": 12
+    },
+    "effect": {
+      "type": "speed",
+      "job": "miner",
+      "bonus": 0.16
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 80,
+    "jobXp": 27
+  },
+  "emerald_pickaxe": {
+    "id": "emerald_pickaxe",
+    "name": "Pioche de l'Émeraude",
+    "emoji": "⛏️",
+    "description": "Palier 6 — miner",
+    "kirhaCost": 2800,
+    "maxUses": 150,
+    "toolTier": 6,
+    "ingredients": {
+      "etain": 14
+    },
+    "effect": {
+      "type": "speed",
+      "job": "miner",
+      "bonus": 0.18
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 100,
+    "jobXp": 30
+  },
+  "koi_crystal_pickaxe": {
+    "id": "koi_crystal_pickaxe",
+    "name": "Pioche Cristal Koï",
+    "emoji": "⛏️",
+    "description": "Palier 7 — miner",
+    "kirhaCost": 5000,
+    "maxUses": 175,
+    "toolTier": 7,
+    "ingredients": {
+      "or_minerai": 16
+    },
+    "effect": {
+      "type": "speed",
+      "job": "miner",
+      "bonus": 0.2
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 120,
+    "jobXp": 33
+  },
+  "temple_pickaxe": {
+    "id": "temple_pickaxe",
+    "name": "Pioche du Temple",
+    "emoji": "⛏️",
+    "description": "Palier 10 — miner",
+    "kirhaCost": 15000,
+    "maxUses": 250,
+    "toolTier": 10,
+    "ingredients": {
+      "cendrepierre": 20
+    },
+    "effect": {
+      "type": "speed",
+      "job": "miner",
+      "bonus": 0.26
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 200,
+    "jobXp": 42
+  },
+  "orge_sickle": {
+    "id": "orge_sickle",
+    "name": "Faucille d'Orge",
+    "emoji": "🌾",
+    "description": "Palier 2 — farmer",
+    "kirhaCost": 120,
+    "maxUses": 50,
+    "toolTier": 2,
+    "ingredients": {
+      "orge": 6
+    },
+    "effect": {
+      "type": "speed",
+      "job": "farmer",
+      "bonus": 0.1
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 20,
+    "jobXp": 18
+  },
+  "seigle_sickle": {
+    "id": "seigle_sickle",
+    "name": "Faucille de Seigle",
+    "emoji": "🌾",
+    "description": "Palier 3 — farmer",
+    "kirhaCost": 350,
+    "maxUses": 75,
+    "toolTier": 3,
+    "ingredients": {
+      "avoine": 8
+    },
+    "effect": {
+      "type": "speed",
+      "job": "farmer",
+      "bonus": 0.12
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 40,
+    "jobXp": 21
+  },
+  "avoine_sickle": {
+    "id": "avoine_sickle",
+    "name": "Faucille d'Avoine",
+    "emoji": "🌾",
+    "description": "Palier 4 — farmer",
+    "kirhaCost": 800,
+    "maxUses": 100,
+    "toolTier": 4,
+    "ingredients": {
+      "houblon": 10
+    },
+    "effect": {
+      "type": "speed",
+      "job": "farmer",
+      "bonus": 0.14
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 60,
+    "jobXp": 24
+  },
+  "mais_sickle": {
+    "id": "mais_sickle",
+    "name": "Faucille de Maïs",
+    "emoji": "🌾",
+    "description": "Palier 5 — farmer",
+    "kirhaCost": 1500,
+    "maxUses": 125,
+    "toolTier": 5,
+    "ingredients": {
+      "lin": 12
+    },
+    "effect": {
+      "type": "speed",
+      "job": "farmer",
+      "bonus": 0.16
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 80,
+    "jobXp": 27
+  },
+  "riz_sickle": {
+    "id": "riz_sickle",
+    "name": "Faucille de Riz",
+    "emoji": "🌾",
+    "description": "Palier 6 — farmer",
+    "kirhaCost": 2800,
+    "maxUses": 150,
+    "toolTier": 6,
+    "ingredients": {
+      "seigle": 14
+    },
+    "effect": {
+      "type": "speed",
+      "job": "farmer",
+      "bonus": 0.18
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 100,
+    "jobXp": 30
+  },
+  "lotus_sickle": {
+    "id": "lotus_sickle",
+    "name": "Faucille de Lotus",
+    "emoji": "🌾",
+    "description": "Palier 7 — farmer",
+    "kirhaCost": 5000,
+    "maxUses": 175,
+    "toolTier": 7,
+    "ingredients": {
+      "millet": 16
+    },
+    "effect": {
+      "type": "speed",
+      "job": "farmer",
+      "bonus": 0.2
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 120,
+    "jobXp": 33
+  },
+  "eternal_sickle": {
+    "id": "eternal_sickle",
+    "name": "Faucille Éternelle",
+    "emoji": "🌾",
+    "description": "Palier 10 — farmer",
+    "kirhaCost": 15000,
+    "maxUses": 250,
+    "toolTier": 10,
+    "ingredients": {
+      "frostiz": 20
+    },
+    "effect": {
+      "type": "speed",
+      "job": "farmer",
+      "bonus": 0.26
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 200,
+    "jobXp": 42
+  },
+  "mint_gloves": {
+    "id": "mint_gloves",
+    "name": "Gants de Menthe",
+    "emoji": "🧤",
+    "description": "Palier 2 — alchemist",
+    "kirhaCost": 120,
+    "maxUses": 50,
+    "toolTier": 2,
+    "ingredients": {
+      "sauge": 6
+    },
+    "effect": {
+      "type": "speed",
+      "job": "alchemist",
+      "bonus": 0.1
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 20,
+    "jobXp": 18
+  },
+  "nettle_gloves": {
+    "id": "nettle_gloves",
+    "name": "Gants d'Ortie",
+    "emoji": "🧤",
+    "description": "Palier 3 — alchemist",
+    "kirhaCost": 350,
+    "maxUses": 75,
+    "toolTier": 3,
+    "ingredients": {
+      "trefle": 8
+    },
+    "effect": {
+      "type": "speed",
+      "job": "alchemist",
+      "bonus": 0.12
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 40,
+    "jobXp": 21
+  },
+  "lavender_gloves": {
+    "id": "lavender_gloves",
+    "name": "Gants de Lavande",
+    "emoji": "🧤",
+    "description": "Palier 4 — alchemist",
+    "kirhaCost": 800,
+    "maxUses": 100,
+    "toolTier": 4,
+    "ingredients": {
+      "menthe": 10
+    },
+    "effect": {
+      "type": "speed",
+      "job": "alchemist",
+      "bonus": 0.14
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 60,
+    "jobXp": 24
+  },
+  "peony_gloves": {
+    "id": "peony_gloves",
+    "name": "Gants de Pivoine",
+    "emoji": "🧤",
+    "description": "Palier 5 — alchemist",
+    "kirhaCost": 1500,
+    "maxUses": 125,
+    "toolTier": 5,
+    "ingredients": {
+      "orchidee": 12
+    },
+    "effect": {
+      "type": "speed",
+      "job": "alchemist",
+      "bonus": 0.16
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 80,
+    "jobXp": 27
+  },
+  "wisteria_gloves": {
+    "id": "wisteria_gloves",
+    "name": "Gants Wisteria",
+    "emoji": "🧤",
+    "description": "Palier 6 — alchemist",
+    "kirhaCost": 2800,
+    "maxUses": 150,
+    "toolTier": 6,
+    "ingredients": {
+      "edelweiss": 14
+    },
+    "effect": {
+      "type": "speed",
+      "job": "alchemist",
+      "bonus": 0.18
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 100,
+    "jobXp": 30
+  },
+  "koi_herb_gloves": {
+    "id": "koi_herb_gloves",
+    "name": "Gants Herbe Koï",
+    "emoji": "🧤",
+    "description": "Palier 7 — alchemist",
+    "kirhaCost": 5000,
+    "maxUses": 175,
+    "toolTier": 7,
+    "ingredients": {
+      "perce_neige": 16
+    },
+    "effect": {
+      "type": "speed",
+      "job": "alchemist",
+      "bonus": 0.2
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 120,
+    "jobXp": 33
+  },
+  "essence_gloves": {
+    "id": "essence_gloves",
+    "name": "Gants d'Essence",
+    "emoji": "🧤",
+    "description": "Palier 10 — alchemist",
+    "kirhaCost": 15000,
+    "maxUses": 250,
+    "toolTier": 10,
+    "ingredients": {
+      "salikronia": 20
+    },
+    "effect": {
+      "type": "speed",
+      "job": "alchemist",
+      "bonus": 0.26
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 200,
+    "jobXp": 42
   }
 }

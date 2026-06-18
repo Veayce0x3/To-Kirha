@@ -19,10 +19,10 @@ import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabil
 import { hasWorkingTool, isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
-import { getMealEffect, MEAL_EFFECTS } from '../systems/consumables.js';
+import { getMealEffect, MEAL_EFFECTS, listCombatHealMeals } from '../systems/consumables.js';
 
 let workshopTab = 'toolmaker';
-let charTab = 'equipment';
+let charTab = 'bag';
 let combatUi = { step: 'action', menu: 'main', pendingSkill: null, targetMode: null };
 
 export function resetCombatUi() {
@@ -400,15 +400,19 @@ function renderCharacter(game, el) {
   const nextQuest = game.getNextQuest();
   const questReady = nextQuest && !isQuestCompleted(s, nextQuest.id) && isQuestReady(nextQuest, s, game.recipes);
 
+  const statsDetail = statsBreakdown.sets.length
+    ? `<div class="stat-row stat-sets">${statsBreakdown.sets.map((setInfo) => {
+      const label = SET_LABELS[setInfo.setId] || setInfo.setId;
+      return `✨ Set ${label} (${setInfo.count})`;
+    }).join(' · ')}</div>`
+    : '';
+
   el.innerHTML = `
     <div class="mission-current panel-inner objective-banner" id="char-objective"></div>
     <div class="panel-inner prestige-teaser" id="char-prestige-teaser"></div>
-    <div class="char-hero-card panel-inner">
-      <div class="char-hero-row">
-        <div class="char-portrait-wrap char-hero-portrait">
-          <div class="char-portrait">${iconHtml(getNavIcon('character'), 'char-portrait-icon', 'Personnage')}</div>
-        </div>
-        <div class="char-hero-main">
+    <div class="char-dofus-hero panel-inner">
+      <div class="char-dofus-top">
+        <div class="char-dofus-identity">
           <h3 class="char-display-name">${displayName}</h3>
           ${nicknameHtml}
           <p class="view-desc">Saison ${s.season || 1} · ${zone?.emoji || ''} ${zone?.name || ''}</p>
@@ -416,19 +420,34 @@ function renderCharacter(game, el) {
           <div class="xp-bar-container"><div class="xp-bar" style="width:${charPct}%"></div></div>
           <p class="xp-text">${charProg.atSeasonCap ? `Plafond Saison ${s.season || 1} — passe à la suivante` : `${charProg.xp} / ${charProg.needed} XP`}</p>
           ${renderDQStatsBlock(statsBreakdown, charProg, { compact: true })}
+          <details class="char-stats-details">
+            <summary>Détail des stats</summary>
+            <p class="dq-stats-detail">Base Nv.${charProg.level} : ${statsBreakdown.base.hp} / ${statsBreakdown.base.atk} / ${statsBreakdown.base.def} · Équip. : +${statsBreakdown.equipment.hp} / +${statsBreakdown.equipment.atk} / +${statsBreakdown.equipment.def}</p>
+            ${statsDetail}
+          </details>
           <div class="stat-row">Bonus saison : +${Math.round((p.kirhaBonus || 0) * 100)}% 💰 · +${Math.round((p.xpBonus || 0) * 100)}% XP</div>
           <button class="btn btn-muted btn-small" id="goto-combat" type="button">⚔️ Zones de combat</button>
         </div>
+        <div class="char-dofus-equip-wrap">
+          <div class="char-dofus-equip-grid" id="char-dofus-equip"></div>
+        </div>
       </div>
+      <details class="char-owned-details">
+        <summary>Pièces de combat en réserve</summary>
+        <div id="combat-owned-reserve" class="equip-actions"></div>
+      </details>
     </div>
     <div class="char-tabs" role="tablist">
-      <button type="button" class="char-tab-btn${charTab === 'equipment' ? ' active' : ''}" data-tab="equipment" role="tab">Équipement</button>
-      <button type="button" class="char-tab-btn${charTab === 'stats' ? ' active' : ''}" data-tab="stats" role="tab">Stats</button>
+      <button type="button" class="char-tab-btn${charTab === 'bag' ? ' active' : ''}" data-tab="bag" role="tab">Sac</button>
+      <button type="button" class="char-tab-btn${charTab === 'tools' ? ' active' : ''}" data-tab="tools" role="tab">Outils</button>
       <button type="button" class="char-tab-btn${charTab === 'jobs' ? ' active' : ''}" data-tab="jobs" role="tab">Métiers</button>
       <button type="button" class="char-tab-btn${charTab === 'team' ? ' active' : ''}" data-tab="team" role="tab">Équipe</button>
     </div>
     <div class="panel-inner char-tab-panel" id="char-tab-panel"></div>
   `;
+
+  renderCharDofusEquipGrid(game, el.querySelector('#char-dofus-equip'));
+  renderCombatOwnedReserve(game, el.querySelector('#combat-owned-reserve'));
 
   renderObjectiveBanner(game, el.querySelector('#char-objective'), { ready: questReady });
   renderPrestigeTeaser(game, el.querySelector('#char-prestige-teaser'));
@@ -462,10 +481,157 @@ function renderCharTabPanel(game, el) {
   const panel = el.querySelector('#char-tab-panel');
   if (!panel) return;
   panel.innerHTML = '';
-  if (charTab === 'equipment') renderCharEquipmentTab(game, panel);
-  else if (charTab === 'stats') renderCharStatsTab(game, panel);
+  if (charTab === 'bag') renderCharBagTab(game, panel);
+  else if (charTab === 'tools') renderCharToolsTab(game, panel);
   else if (charTab === 'jobs') renderCharJobsTab(game, panel);
   else if (charTab === 'team') renderCharTeamTab(game, panel);
+}
+
+const DOFUS_SLOT_LAYOUT = [
+  { id: 'helmet', area: 'helmet' },
+  { id: 'cape', area: 'cape' },
+  { id: 'portrait', area: 'portrait', isPortrait: true },
+  { id: 'amulet', area: 'amulet' },
+  { id: 'weapon', area: 'weapon' },
+  { id: 'shield', area: 'shield' },
+  { id: 'chest', area: 'chest' },
+  { id: 'boots', area: 'boots' },
+  { id: 'ring_left', area: 'ringl' },
+  { id: 'belt', area: 'belt' },
+  { id: 'ring_right', area: 'ringr' },
+];
+
+function renderCharDofusEquipGrid(game, container) {
+  if (!container) return;
+  const s = game.state;
+  container.innerHTML = '';
+  for (const entry of DOFUS_SLOT_LAYOUT) {
+    const cell = document.createElement('div');
+    cell.className = `char-equip-slot char-equip-${entry.area}`;
+    if (entry.isPortrait) {
+      cell.innerHTML = `<div class="char-portrait char-dofus-portrait">${iconHtml(getNavIcon('character'), 'char-portrait-icon', 'Personnage')}</div>`;
+      container.appendChild(cell);
+      continue;
+    }
+    const slot = game.combatEquipment.slots[entry.id];
+    if (!slot || slot.companionOnly) continue;
+    const ref = s.combatEquipment?.[entry.id];
+    const item = ref ? resolveItem(s, ref, game.combatEquipment.items) : null;
+    cell.innerHTML = `
+      <span class="char-equip-slot-label">${slot.emoji}</span>
+      ${item
+        ? `<span class="char-equip-item" title="${item.name}">${item.emoji}</span>`
+        : '<span class="char-equip-empty">—</span>'}
+    `;
+    if (item) {
+      cell.title = `${item.name} · +${item.stats?.hp || 0} HP · +${item.stats?.atk || 0} ATQ · +${item.stats?.def || 0} DEF`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'char-equip-slot-btn';
+      btn.setAttribute('aria-label', `Retirer ${item.name}`);
+      btn.addEventListener('click', () => game.doUnequipCombat(entry.id));
+      cell.appendChild(btn);
+    } else if (entry.id === 'weapon') {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-small btn-craft affordable char-equip-forge';
+      btn.textContent = '🔨';
+      btn.title = 'Forger une arme';
+      btn.addEventListener('click', () => navigate('workshop_blacksmith'));
+      cell.appendChild(btn);
+    }
+    container.appendChild(cell);
+  }
+}
+
+function renderCombatOwnedReserve(game, container) {
+  if (!container) return;
+  const s = game.state;
+  const owned = game.getOwnedCombatItems();
+  container.innerHTML = '';
+  if (!owned.length) {
+    container.innerHTML = '<p class="empty-text">Aucun équipement en réserve.</p>';
+    return;
+  }
+  for (const ref of owned) {
+    const item = resolveItem(s, ref, game.combatEquipment.items);
+    if (!item) continue;
+    if (s.combatEquipment?.[item.slot] === ref) continue;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-small';
+    btn.textContent = `Équiper ${item.emoji} ${item.name}`;
+    btn.addEventListener('click', () => game.doEquipCombat(ref));
+    container.appendChild(btn);
+  }
+  if (!container.children.length) {
+    container.innerHTML = '<p class="empty-text">Tout ton équipement est porté.</p>';
+  }
+}
+
+let bagFilter = 'all';
+
+function renderCharBagTab(game, panel) {
+  panel.innerHTML = `
+    <div class="bag-toolbar">
+      <div class="bag-filters" role="tablist">
+        <button type="button" class="bag-filter-btn${bagFilter === 'all' ? ' active' : ''}" data-filter="all">Tout</button>
+        <button type="button" class="bag-filter-btn${bagFilter === 'resource' ? ' active' : ''}" data-filter="resource">Ressources</button>
+        <button type="button" class="bag-filter-btn${bagFilter === 'craft' ? ' active' : ''}" data-filter="craft">Équipement</button>
+        <button type="button" class="bag-filter-btn${bagFilter === 'combat' ? ' active' : ''}" data-filter="combat">Combat</button>
+      </div>
+      <span class="bank-total" id="char-bag-total"></span>
+    </div>
+    <div class="inventory-grid" id="char-bag-grid"></div>
+    <p class="view-desc bag-hint">Même contenu que la Banque — clique un objet pour vendre ou équiper.</p>
+  `;
+  panel.querySelectorAll('.bag-filter-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      bagFilter = btn.dataset.filter;
+      renderCharBagTab(game, panel);
+    });
+  });
+  const totalEl = panel.querySelector('#char-bag-total');
+  renderInventoryGrid(game, panel.querySelector('#char-bag-grid'), {
+    filter: bagFilter,
+    onTotal: (v) => { if (totalEl) totalEl.textContent = `Valeur : ${formatNumber(v)} 💰`; },
+  });
+}
+
+function renderCharToolsTab(game, panel) {
+  panel.innerHTML = `
+    <h3 class="char-subsection-title">🛠️ Outils de métier</h3>
+    <p class="view-desc char-tools-desc">Équipe ou retire tes outils de récolte.</p>
+    <div id="char-gather-equip"></div>
+  `;
+  const gatherEl = panel.querySelector('#char-gather-equip');
+  const tools = getOwnedGatheringEquipment(game.state, game.equipment, game.recipes, game.jobs);
+  const equipped = tools.filter((t) => t.equipped);
+  const reserve = tools.filter((t) => !t.equipped);
+  if (!equipped.length && !reserve.length) {
+    gatherEl.innerHTML = '<p class="empty-text">Aucun outil — fabrique-les à l\'Atelier Outilleur.</p>';
+    return;
+  }
+  if (equipped.length) {
+    const title = document.createElement('div');
+    title.className = 'char-tools-subtitle';
+    title.textContent = 'Équipés';
+    gatherEl.appendChild(title);
+    const wrap = document.createElement('div');
+    wrap.className = 'char-tools-group';
+    for (const entry of equipped) appendGatheringToolRow(game, wrap, entry, { showUnequip: true });
+    gatherEl.appendChild(wrap);
+  }
+  if (reserve.length) {
+    const title = document.createElement('div');
+    title.className = 'char-tools-subtitle';
+    title.textContent = 'Réserve';
+    gatherEl.appendChild(title);
+    const wrap = document.createElement('div');
+    wrap.className = 'char-tools-group';
+    for (const entry of reserve) appendGatheringToolRow(game, wrap, entry, { showEquip: true });
+    gatherEl.appendChild(wrap);
+  }
 }
 
 function appendGatheringToolRow(game, container, entry, { showUnequip = false, showEquip = false } = {}) {
@@ -511,153 +677,6 @@ function appendGatheringToolRow(game, container, entry, { showUnequip = false, s
   }
   if (actions.children.length) row.appendChild(actions);
   container.appendChild(row);
-}
-
-function renderCharEquipmentTab(game, panel) {
-  const s = game.state;
-  panel.innerHTML = `
-    <h3>⚔️ Équipement de combat</h3>
-    <p class="view-desc">Ton arme définit ton rôle en combat. Touche un slot pour retirer.</p>
-    <div class="combat-slots-grid slots-equipment" id="combat-slots"></div>
-    <details class="char-owned-details">
-      <summary>Pièces possédées</summary>
-      <div id="combat-owned" class="equip-actions"></div>
-    </details>
-    <h3 class="char-subsection-title">🛠️ Outils</h3>
-    <p class="view-desc char-tools-desc">Tous tes outils de métier au même endroit.</p>
-    <div id="char-gather-equip"></div>
-  `;
-
-  const combatSlotsEl = panel.querySelector('#combat-slots');
-  for (const slot of Object.values(game.combatEquipment.slots)) {
-    if (slot.companionOnly) continue;
-    const ref = s.combatEquipment?.[slot.id];
-    const item = ref ? resolveItem(s, ref, game.combatEquipment.items) : null;
-    const role = item?.weaponType ? getWeaponRolePreview(item, game.weaponRoles) : null;
-    const roleLine = role ? `<div class="weapon-role-line">${role.label} · ${role.role}</div>` : '';
-    const levelTag = item ? `<span class="item-level-tag">Nv.${getItemLevel(item)}</span>` : '';
-    const weaponHighlight = item?.slot === 'weapon' ? ' combat-slot-weapon' : '';
-    const card = document.createElement('div');
-    card.className = `combat-slot-card${item ? ' filled' : ''}${weaponHighlight}`;
-    card.dataset.combatSlot = slot.id;
-    card.innerHTML = `
-      <div>${slot.emoji} ${slot.name} ${levelTag}</div>
-      ${item
-        ? `<div><strong>${item.emoji} ${item.name}</strong></div>
-           ${roleLine}
-           <small>+${item.stats?.hp || 0} HP · +${item.stats?.atk || 0} ATK · +${item.stats?.def || 0} DEF</small>`
-        : '<div class="empty-text" style="padding:0">Vide</div>'}
-    `;
-    if (item) {
-      const unequipBtn = document.createElement('button');
-      unequipBtn.className = 'btn btn-small';
-      unequipBtn.textContent = 'Retirer';
-      unequipBtn.addEventListener('click', () => game.doUnequipCombat(slot.id));
-      card.appendChild(unequipBtn);
-    } else if (slot.id === 'weapon') {
-      const forgeBtn = document.createElement('button');
-      forgeBtn.type = 'button';
-      forgeBtn.className = 'btn btn-small btn-craft affordable';
-      forgeBtn.textContent = '🔨 Forger une arme';
-      forgeBtn.addEventListener('click', () => navigate('workshop_blacksmith'));
-      card.appendChild(forgeBtn);
-    }
-    combatSlotsEl.appendChild(card);
-  }
-
-  const ownedEl = panel.querySelector('#combat-owned');
-  const owned = game.getOwnedCombatItems();
-  if (owned.length === 0) {
-    ownedEl.innerHTML = '<p class="empty-text">Aucun équipement en réserve. Craft à l\'atelier.</p>';
-  } else {
-    for (const ref of owned) {
-      const item = resolveItem(s, ref, game.combatEquipment.items);
-      if (!item) continue;
-      const slotDef = game.combatEquipment.slots[item.slot];
-      const isEquipped = s.combatEquipment?.[item.slot] === ref;
-      if (isEquipped) continue;
-
-      const row = document.createElement('div');
-      row.className = 'combat-owned-row';
-
-      const btn = document.createElement('button');
-      btn.className = 'btn btn-small';
-      btn.textContent = `Équiper · ${game.getCombatItemLabel(ref)} · Nv.${getItemLevel(item)}`;
-      btn.addEventListener('click', () => game.doEquipCombat(ref));
-      row.appendChild(btn);
-
-      const dismantleCheck = game.canDismantleCombat(ref);
-      if (dismantleCheck.ok) {
-        const dismantleBtn = document.createElement('button');
-        dismantleBtn.type = 'button';
-        dismantleBtn.className = 'btn btn-small btn-muted';
-        const rate = Math.round((game.balance.dismantle?.recoveryRate ?? 0.45) * 100);
-        dismantleBtn.textContent = `Démanteler (~${rate}%)`;
-        dismantleBtn.addEventListener('click', () => {
-          const preview = game.getDismantlePreview(ref);
-          if (!preview?.ok) return;
-          const parts = Object.entries(preview.recovered)
-            .map(([id, n]) => `${n}× ${game.resources[id]?.name || id}`)
-            .join(', ');
-          const msg = `Démanteler ${item.name} ?\nRécupération : ${parts || '—'}`;
-          if (!window.confirm(msg)) return;
-          const result = game.doDismantleCombat(ref);
-          if (!result?.ok && result?.reason) window.alert(result.reason);
-        });
-        row.appendChild(dismantleBtn);
-      }
-
-      ownedEl.appendChild(row);
-    }
-    if (!ownedEl.children.length) {
-      ownedEl.innerHTML = '<p class="empty-text">Tout ton équipement est déjà porté.</p>';
-    }
-  }
-
-  const gatherEl = panel.querySelector('#char-gather-equip');
-  const tools = getOwnedGatheringEquipment(s, game.equipment, game.recipes, game.jobs);
-  const equipped = tools.filter((t) => t.equipped);
-  const reserve = tools.filter((t) => !t.equipped);
-
-  if (equipped.length === 0 && reserve.length === 0) {
-    gatherEl.innerHTML = '<p class="empty-text">Aucun outil — fabrique-les à l\'Atelier Outilleur.</p>';
-  } else {
-    if (equipped.length > 0) {
-      const title = document.createElement('div');
-      title.className = 'char-tools-subtitle';
-      title.textContent = 'Équipés';
-      gatherEl.appendChild(title);
-      const wrap = document.createElement('div');
-      wrap.className = 'char-tools-group';
-      for (const entry of equipped) appendGatheringToolRow(game, wrap, entry, { showUnequip: true });
-      gatherEl.appendChild(wrap);
-    }
-    if (reserve.length > 0) {
-      const title = document.createElement('div');
-      title.className = 'char-tools-subtitle';
-      title.textContent = 'En réserve';
-      gatherEl.appendChild(title);
-      const wrap = document.createElement('div');
-      wrap.className = 'char-tools-group';
-      for (const entry of reserve) appendGatheringToolRow(game, wrap, entry, { showEquip: true });
-      gatherEl.appendChild(wrap);
-    }
-  }
-}
-
-function renderCharStatsTab(game, panel) {
-  const charProg = game.getCharacterProgress();
-  const statsBreakdown = game.getCharacterStatsBreakdown();
-
-  panel.innerHTML = `
-    <h3>📊 Stats de combat</h3>
-    ${renderDQStatsBlock(statsBreakdown, charProg)}
-    ${statsBreakdown.sets.length ? `<div class="stat-row stat-sets">${statsBreakdown.sets.map((setInfo) => {
-      const label = SET_LABELS[setInfo.setId] || setInfo.setId;
-      return `✨ Set ${label} (${setInfo.count} pièces)`;
-    }).join(' · ')}</div>` : ''}
-    <p class="view-desc">Les bonus de set s'activent à 4 et 8 pièces du même set.</p>
-  `;
 }
 
 function renderCharJobsTab(game, panel) {
@@ -1612,21 +1631,43 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
     ? `<img class="slot-visual-sprite" src="${sprite}" alt="" />`
     : `<span class="slot-visual-emoji" aria-hidden="true">${building.emoji || '🏠'}</span>`;
 
+  const needsAnimal = building.requiresAnimal && !slot?.hasAnimal;
+  const animalCost = building.animalPurchase;
+  let animalHtml = '';
+  if (needsAnimal && animalCost && !active) {
+    const parts = [];
+    if (animalCost.kirha) parts.push(`${animalCost.kirha} 💰`);
+    for (const [resId, amt] of Object.entries(animalCost)) {
+      if (resId === 'kirha') continue;
+      const res = game.resources[resId];
+      parts.push(`${amt}× ${res?.name || resId}`);
+    }
+    animalHtml = `<button type="button" class="btn btn-small btn-craft affordable btn-buy-animal" data-building="${buildingId}" data-slot="${slotIndex}">🐔 Acheter une poule · ${parts.join(' · ')}</button>`;
+  }
+
+  const produceBlocked = needsAnimal || feedBlocked || toolBlock;
+
   card.innerHTML = `
     <div class="slot-visual" data-state="${active ? 'harvesting' : 'available'}">
       ${spriteHtml}
     </div>
     <div class="slot-footer">
+      ${animalHtml}
       ${needsFeed ? feedUi.pickerHtml : ''}
       ${active ? `<div class="xp-bar-container slot-progress"><div class="xp-bar" style="width:${Math.min(99, Math.floor(progress * 100))}%"></div></div>` : ''}
       ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
-      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${!active && !feedBlocked && !toolBlock ? ' affordable' : ''}" ${active || toolBlock || feedBlocked ? 'disabled' : ''}>
+      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${!active && !produceBlocked ? ' affordable' : ''}" ${active || produceBlocked ? 'disabled' : ''}>
         ${getFarmBtnLabel(progress)}
       </button>
     </div>
   `;
 
   if (!active) {
+    card.querySelector('.btn-buy-animal')?.addEventListener('click', () => {
+      const result = game.buyFarmAnimal(buildingId, slotIndex);
+      if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
+      else renderFarmSlot(game, buildingId, slotIndex, building, container);
+    });
     card.querySelectorAll('.farm-feed-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         game.setFarmFeed(buildingId, slotIndex, btn.dataset.feed);
@@ -1705,6 +1746,37 @@ export function syncStaleFarmSlots(game) {
       }
     });
   }
+}
+
+export function refreshFarmViewLight(game, buildingId) {
+  const prog = game.getJobProgress('breeder');
+  const bar = document.querySelector('.skill-header .xp-bar');
+  const text = document.querySelector('.skill-header .xp-text');
+  const meta = document.querySelector('.skill-header-meta');
+  if (bar) bar.style.width = `${(prog.xp / prog.needed) * 100}%`;
+  if (text) {
+    text.textContent = prog.atSeasonCap
+      ? `Plafond Saison ${game.state.season || 1} — passe à la suivante`
+      : `${prog.xp} / ${prog.needed} XP`;
+  }
+  if (meta) {
+    const zone = game.getCurrentZone();
+    meta.textContent = `Niveau ${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''} · ${zone?.name || ''}`;
+  }
+  if (buildingId) {
+    const building = getBuildingDef(game.farmData, buildingId);
+    const strip = document.querySelector('.harvest-inventory-strip');
+    if (building && strip) strip.outerHTML = buildFarmProductStrip(game, building);
+  }
+  updateFarmSlotProgresses(game);
+}
+
+export function shouldPartialRefreshOnStateChange(view, game) {
+  const jobId = VIEWS[view]?.job;
+  const buildingId = VIEWS[view]?.building;
+  if (jobId && (game.isJobHarvesting(jobId) || game.isHarvesting())) return { kind: 'job', jobId };
+  if (buildingId && isFarmView(view) && game.isFarmActive()) return { kind: 'farm', buildingId };
+  return null;
 }
 
 export function updateFarmSlotProgresses(game) {
@@ -2101,32 +2173,9 @@ export function renderAuctionHouse(game, el) {
 }
 
 /* ── Inventaire (banque) ── */
-export function renderInventory(game, el) {
-  el.innerHTML = `
-    <div class="view-header"><h2>${iconHtml(getNavIcon('inventory'), 'view-header-icon', 'Banque')} Banque</h2><p class="view-desc">Clique un objet pour vendre ou équiper</p></div>
-    <div class="panel-inner">
-      <div class="bank-toolbar">
-        <span class="bank-total" id="bank-total">Valeur totale : 0 💰</span>
-        <div class="bank-toolbar-actions">
-          <button class="btn btn-muted btn-small" id="sell-all-except" title="Vend tout sauf les objets épinglés">Tout vendre (sauf épinglés)</button>
-          <button class="btn btn-sell-all" id="sell-all">Tout vendre</button>
-        </div>
-      </div>
-      <table class="bank-table bank-resource-list">
-        <thead>
-          <tr><th></th><th>Objet</th><th>Qté</th><th>Prix/u</th><th>Valeur</th></tr>
-        </thead>
-        <tbody id="bank-body"></tbody>
-      </table>
-    </div>
-  `;
-
-  el.querySelector('#sell-all').addEventListener('click', () => game.sellEverything());
-  el.querySelector('#sell-all-except')?.addEventListener('click', () => {
-    game.sellEverythingExcept(game.state.bankProtected || []);
-  });
-
-  const tbody = el.querySelector('#bank-body');
+export function renderInventoryGrid(game, container, { filter = 'all', onTotal = null } = {}) {
+  if (!container) return;
+  container.innerHTML = '';
   let totalValue = 0;
   let hasItems = false;
   const protectedIds = new Set(game.state.bankProtected || []);
@@ -2135,6 +2184,12 @@ export function renderInventory(game, el) {
     if (amount <= 0) continue;
     const resource = game.resources[id];
     if (!resource) continue;
+    const isCraft = !!game.equipment.equipable[id];
+    const isCombat = !!resource.combatOnly;
+    if (filter === 'resource' && (isCraft || isCombat || resource.craftOnly)) continue;
+    if (filter === 'craft' && !isCraft) continue;
+    if (filter === 'combat' && !isCombat) continue;
+
     hasItems = true;
     const notSellable = resource.notSellable || resource.merchantOnly;
     const isProtected = protectedIds.has(id);
@@ -2143,31 +2198,68 @@ export function renderInventory(game, el) {
     const value = unitPrice * amount;
     if (!notSellable && !isProtected) totalValue += value;
 
-    const tr = document.createElement('tr');
-    tr.className = `bank-row${notSellable ? ' bank-row-special' : ''}${isProtected ? ' bank-row-protected' : ''}`;
-    tr.dataset.resourceId = id;
-    tr.innerHTML = `
-      <td class="bank-pin-cell">
-        ${notSellable ? '' : `<button type="button" class="bank-pin${isProtected ? ' pinned' : ''}" data-pin="${id}" aria-label="${isProtected ? 'Retirer la protection' : 'Protéger à la vente'}" title="${isProtected ? 'Protégé' : 'Épingler'}">${isProtected ? '📌' : '📍'}</button>`}
-      </td>
-      <td class="bank-item-cell">${renderResourceIcon(resource)} ${resource.name}</td>
-      <td>×${amount}</td>
-      <td>${notSellable ? '—' : `${formatNumber(unitPrice)} 💰`}</td>
-      <td>${notSellable ? '—' : `${formatNumber(value)} 💰`}</td>
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = `inventory-grid-cell${isProtected ? ' pinned' : ''}${notSellable ? ' special' : ''}`;
+    cell.title = resource.name;
+    cell.innerHTML = `
+      ${renderResourceIcon(resource, 'inventory-grid-icon') || `<span class="inventory-grid-emoji">${resource.emoji || '?'}</span>`}
+      <span class="inventory-grid-qty">×${amount}</span>
+      ${!notSellable ? `<button type="button" class="inventory-grid-pin${isProtected ? ' pinned' : ''}" data-pin="${id}" aria-label="Épingler">${isProtected ? '📌' : '📍'}</button>` : ''}
     `;
-    tr.querySelector('.bank-pin')?.addEventListener('click', (e) => {
+    cell.addEventListener('click', (e) => {
+      if (e.target.closest('.inventory-grid-pin')) return;
+      openItemModal(game, id, resource, amount, unitPrice, notSellable);
+    });
+    cell.querySelector('.inventory-grid-pin')?.addEventListener('click', (e) => {
       e.stopPropagation();
       game.toggleBankProtected(id);
-      renderInventory(game, el);
+      const panel = container.closest('#char-tab-panel');
+      const bankEl = document.getElementById('view-container');
+      if (panel) renderCharBagTab(game, panel);
+      else if (bankEl && getView() === 'inventory') renderInventory(game, bankEl);
     });
-    tr.addEventListener('click', () => openItemModal(game, id, resource, amount, unitPrice, notSellable));
-    tbody.appendChild(tr);
+    container.appendChild(cell);
   }
 
-  el.querySelector('#bank-total').textContent = `Valeur totale : ${formatNumber(totalValue)} 💰`;
   if (!hasItems) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-text">Inventaire vide</td></tr>';
+    container.innerHTML = '<p class="empty-text">Aucun objet dans cette catégorie.</p>';
   }
+  if (onTotal) onTotal(totalValue);
+  return totalValue;
+}
+
+export function renderInventory(game, el) {
+  el.innerHTML = `
+    <div class="view-header"><h2>${iconHtml(getNavIcon('inventory'), 'view-header-icon', 'Banque')} Banque</h2><p class="view-desc">Clique un objet pour vendre ou équiper · <button type="button" class="link-btn" id="goto-char-bag">Voir sur Perso</button></p></div>
+    <div class="panel-inner">
+      <div class="bank-toolbar">
+        <span class="bank-total" id="bank-total">Valeur totale : 0 💰</span>
+        <div class="bank-toolbar-actions">
+          <button class="btn btn-muted btn-small" id="sell-all-except" title="Vend tout sauf les objets épinglés">Tout vendre (sauf épinglés)</button>
+          <button class="btn btn-sell-all" id="sell-all">Tout vendre</button>
+        </div>
+      </div>
+      <div class="inventory-grid" id="bank-grid"></div>
+    </div>
+  `;
+
+  el.querySelector('#goto-char-bag')?.addEventListener('click', () => {
+    charTab = 'bag';
+    navigate('character');
+  });
+
+  el.querySelector('#sell-all')?.addEventListener('click', () => {
+    if (!window.confirm('Vendre tout l\'inventaire ?')) return;
+    game.sellEverything();
+  });
+  el.querySelector('#sell-all-except')?.addEventListener('click', () => {
+    if (!window.confirm('Vendre tout sauf les objets épinglés ?')) return;
+    game.sellEverythingExcept(game.state.bankProtected || []);
+  });
+
+  const total = renderInventoryGrid(game, el.querySelector('#bank-grid'), { filter: 'all' });
+  el.querySelector('#bank-total').textContent = `Valeur totale : ${formatNumber(total)} 💰`;
 }
 
 function openItemModal(game, resourceId, resource, amount, unitPrice, notSellable = false) {
@@ -2221,11 +2313,13 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   });
   for (const qty of [5, 10, 100]) {
     body.querySelector(`#modal-sell-${qty}`)?.addEventListener('click', () => {
+      if (qty >= 10 && !window.confirm(`Vendre ×${Math.min(qty, amount)} ${resource.name} ?`)) return;
       game.sell(resourceId, Math.min(qty, amount));
       modal.classList.remove('active');
     });
   }
   body.querySelector('#modal-sell-all')?.addEventListener('click', () => {
+    if (!window.confirm(`Vendre tout (×${amount}) ${resource.name} ?`)) return;
     game.sell(resourceId);
     modal.classList.remove('active');
   });
@@ -2466,7 +2560,7 @@ function renderCombat(game, el) {
         ${!zoneUnlocked ? '<p class="tile-lock">🔒 Zone verrouillée</p>' : ''}
       </div>
       <div class="combat-dungeon-entry">
-        <p class="view-desc">Donjon DQ : ${roomCount} salles à la suite, équipe à 3, HP conservés. Débloqué après entraînement rapide.</p>
+        <p class="view-desc">Donjon multi-salles (équipe à 3) — distinct de l'entraînement rapide ci-dessous. Les petits monstres restent combattables à volonté (limite journalière).</p>
         ${dungeonUnlock && !dungeonUnlock.ready ? `
           <ul class="combat-unlock-list">
             ${dungeonUnlock.monsterProgress.map((m) => `
@@ -2668,6 +2762,12 @@ function renderDungeonCombatBody(game) {
   const targetMode = combatUi.step === 'target' ? (combatUi.targetMode || getSkillTargetMode(pendingSkillDef)) : null;
   const canAct = isPlayerTurn && combatUi.step === 'action';
 
+  const desperateUses = combat?.desperateUses || 0;
+  const desperateLeft = Math.max(0, 2 - desperateUses);
+  const soloHpNote = isSoloFight && game.state.combatWear?.solo?.hero != null
+    ? ` · HP entraînement : ${game.state.combatWear.solo.hero}`
+    : '';
+
   const partyHtml = party.map((member, index) => {
     const hpPct = Math.max(0, (member.hp / member.maxHp) * 100);
     const isActive = isPlayerTurn && combat.activeMemberIndex === index && member.hp > 0;
@@ -2737,12 +2837,16 @@ function renderDungeonCombatBody(game) {
   } else if (combatUi.menu === 'attack' && canAct) {
     commandHtml = `
       <button type="button" class="dq-cmd-btn dq-cmd-back" data-menu="main">◀ Retour</button>
-      ${attacks.map((skill) => `
-        <button type="button" class="dq-cmd-btn" data-skill="${skill.id}">
+      ${attacks.map((skill) => {
+        const desperateHint = skill.id === 'desperate_blow' && desperateLeft <= 0 ? ' (épuisé)' : '';
+        const desperateCount = skill.id === 'desperate_blow' ? ` [${desperateLeft}/2]` : '';
+        const disabled = skill.id === 'desperate_blow' && desperateLeft <= 0;
+        return `
+        <button type="button" class="dq-cmd-btn${disabled ? '' : ' affordable'}" data-skill="${skill.id}" ${disabled ? 'disabled' : ''}>
           <span class="dq-cmd-icon">${skill.emoji}</span>
-          <span class="dq-cmd-label">${skill.name}</span>
-        </button>
-      `).join('')}
+          <span class="dq-cmd-label">${skill.name}${desperateCount}${desperateHint}</span>
+        </button>`;
+      }).join('')}
     `;
   } else if (combatUi.menu === 'spells' && canAct) {
     commandHtml = `
@@ -2755,8 +2859,19 @@ function renderDungeonCombatBody(game) {
       `).join('') : '<p class="dq-cmd-empty">Aucun sort pour l\'instant.</p>'}
     `;
   } else {
+    const healMeals = listCombatHealMeals(game.state);
+    const mealUsed = combat?.mealUsedInFight;
+    const mealBtns = healMeals.length && !mealUsed
+      ? healMeals.map((m) => {
+        const res = game.resources[m.id];
+        return `<button type="button" class="dq-cmd-btn dq-cmd-meal affordable" data-meal="${m.id}" ${canAct ? '' : 'disabled'}>
+          <span class="dq-cmd-icon">${res?.emoji || '🍙'}</span>
+          <span class="dq-cmd-label">Manger ${res?.name || m.id} (${m.effect.label})</span>
+        </button>`;
+      }).join('')
+      : '';
     commandHtml = `
-      <button type="button" class="dq-cmd-btn dq-cmd-main" data-menu="attack" ${canAct ? '' : 'disabled'}>
+      <button type="button" class="dq-cmd-btn dq-cmd-main affordable" data-menu="attack" ${canAct ? '' : 'disabled'}>
         <span class="dq-cmd-icon">⚔️</span><span class="dq-cmd-label">Attaquer</span>
       </button>
       <button type="button" class="dq-cmd-btn dq-cmd-main" data-menu="spells" ${canAct && spells.length ? '' : 'disabled'}>
@@ -2765,6 +2880,7 @@ function renderDungeonCombatBody(game) {
       <button type="button" class="dq-cmd-btn dq-cmd-main btn-combat-defend" ${canAct ? '' : 'disabled'}>
         <span class="dq-cmd-icon">🛡️</span><span class="dq-cmd-label">Défense</span>
       </button>
+      ${mealBtns}
       <button type="button" class="dq-cmd-btn dq-cmd-main btn-combat-flee">
         <span class="dq-cmd-icon">🏃</span><span class="dq-cmd-label">Fuir</span>
       </button>
@@ -2778,7 +2894,7 @@ function renderDungeonCombatBody(game) {
       <div class="dq-header">
         <span class="dq-zone-name">${combatZone?.emoji || '⚔️'} ${combatZone?.name || 'Combat'}</span>
         <span class="dq-phase-badge">${phaseLabel}</span>
-        <span class="dq-room">${roomLabel}</span>
+        <span class="dq-room">${roomLabel}${soloHpNote}</span>
       </div>
 
       ${isEnemyTurn ? '<div class="dq-enemy-turn-banner" aria-live="polite">⚔️ Tour de l\'ennemi…</div>' : ''}
@@ -2823,6 +2939,14 @@ function renderDungeonCombatBody(game) {
   body.querySelector('.dq-target-cancel')?.addEventListener('click', () => {
     resetCombatUiTurn();
     renderDungeonCombatBody(game);
+  });
+
+  body.querySelectorAll('[data-meal]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const result = game.useCombatMeal(btn.dataset.meal);
+      if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
+      else renderDungeonCombatBody(game);
+    });
   });
 
   body.querySelector('.btn-combat-defend')?.addEventListener('click', () => {

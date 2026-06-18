@@ -18,6 +18,8 @@
       "emoji": "🐔",
       "toolJob": "breeder",
       "toolTier": 1,
+      "requiresAnimal": true,
+      "animalPurchase": { "kirha": 40, "ble": 5 },
       "cycleMs": 9000,
       "products": { "oeuf": 1, "plume": 1 },
       "feed": { "ble": 2, "eau": 1 },

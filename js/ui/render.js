@@ -27,6 +27,8 @@ import {
   closeAllResourcePickers,
   isResourcePickerOpen,
   refreshJobViewLight,
+  refreshFarmViewLight,
+  shouldPartialRefreshOnStateChange,
   openDungeonCombatModal,
   refreshDungeonCombatModal,
   closeDungeonCombatModal,
@@ -313,8 +315,24 @@ export function initUI(game, audio) {
       if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
       return;
     }
+    const partial = shouldPartialRefreshOnStateChange(view, game);
+    if (partial?.kind === 'job') {
+      refreshJobViewLight(game, partial.jobId);
+      updateNavActive();
+      if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
+      return;
+    }
+    if (partial?.kind === 'farm') {
+      refreshFarmViewLight(game, partial.buildingId);
+      updateNavActive();
+      if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
+      return;
+    }
     refreshView();
     if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
+  });
+  on('farmFeedChange', ({ buildingId, slotIndex }) => {
+    patchFarmSlot(game, buildingId, slotIndex);
   });
 
   on('harvestStart', ({ jobId, slotIndex }) => {
@@ -322,7 +340,7 @@ export function initUI(game, audio) {
     tickHarvestUI();
     audio.playSfx('click');
   });
-  on('harvestComplete', ({ resourceId, jobId, slotIndex, yield: y, xp, levelResult }) => {
+  on('harvestComplete', ({ resourceId, jobId, slotIndex, yield: y, xp, levelResult, dailyBonus }) => {
     patchHarvestSlot(game, jobId, slotIndex);
     const resource = game.resources[resourceId];
     if (levelResult) {
@@ -332,6 +350,8 @@ export function initUI(game, audio) {
       setTimeout(() => els.levelFlash.classList.remove('active'), 600);
       audio.playSfx('levelup');
     } else {
+      const bonusNote = dailyBonus ? ' · Bonus du jour ×2 !' : '';
+      showToast(els, `+${y} ${resource?.name || ''}${bonusNote}`, 'harvest');
       audio.playSfx('harvest');
     }
     tickHarvestUI();
@@ -435,8 +455,14 @@ export function initUI(game, audio) {
       patchFarmSlot(game, buildingId, slotIndex);
     }
     syncStaleFarmSlots(game);
-    if (isFarmView(getView())) {
-      refreshView();
+    const view = getView();
+    if (isFarmView(view)) {
+      const building = VIEWS[view]?.building;
+      if (game.isFarmActive() && building) {
+        refreshFarmViewLight(game, building);
+      } else {
+        refreshView();
+      }
     }
     if (game.isFarmActive() && !animFrame) tickHarvestUI();
   });

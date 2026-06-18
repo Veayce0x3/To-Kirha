@@ -138,6 +138,7 @@ import {
   getFarmSlotProgress,
   isAnyFarmActive,
   buyFarmSlot as purchaseFarmSlot,
+  buyFarmAnimal as purchaseFarmAnimal,
   canBuyFarmSlot as checkCanBuyFarmSlot,
   getFarmSlotUnlockRequirements,
   getMaxFarmSlots as getMaxFarmSlotsForBuilding,
@@ -150,6 +151,8 @@ import {
   clearActiveMeal,
   consumeActiveMealForRun,
   clearCombatMealBuff,
+  useMealHealInCombat,
+  listCombatHealMeals,
   MEAL_EFFECTS,
 } from '../systems/consumables.js';
 
@@ -652,7 +655,7 @@ export class Game {
     const slot = this.state.farmSlots?.[buildingId]?.[slotIndex];
     if (!slot || slot.active) return false;
     slot.feedId = feedId || null;
-    emit('stateChange', this.state);
+    emit('farmFeedChange', { buildingId, slotIndex });
     this.scheduleSave();
     return true;
   }
@@ -807,6 +810,32 @@ export class Game {
     return true;
   }
 
+  buyFarmAnimal(buildingId, slotIndex) {
+    const result = purchaseFarmAnimal(this.state, this.farmData, buildingId, slotIndex);
+    if (!result.ok) return result;
+    emit('farmFeedChange', { buildingId, slotIndex });
+    this.scheduleSave();
+    return result;
+  }
+
+  useCombatMeal(mealId) {
+    const run = this.state.combatEncounter;
+    if (!run?.combat) return { ok: false, reason: 'Pas en combat' };
+    if (run.combat.mealUsedInFight) return { ok: false, reason: 'Déjà utilisé ce combat' };
+    if (run.combat.phase !== 'player') return { ok: false, reason: 'Pas ton tour' };
+    const heal = useMealHealInCombat(this.state, mealId);
+    if (!heal.ok) return heal;
+    const member = run.party?.[run.combat.activeMemberIndex];
+    if (!member || member.hp <= 0) return { ok: false, reason: 'Combattant KO' };
+    const gain = Math.max(1, Math.floor(member.maxHp * heal.healPct));
+    member.hp = Math.min(member.maxHp, member.hp + gain);
+    run.combat.mealUsedInFight = true;
+    run.combat.log.push({ type: 'heal', memberId: member.id, amount: gain, mealId });
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return { ok: true, healed: gain, member };
+  }
+
   getFarmBuildingNavStatus(buildingId) {
     return getFarmBuildingNavStatus(this.state, buildingId);
   }
@@ -860,7 +889,17 @@ export class Game {
     const phase = slot.active.phase || 'harvesting';
 
     if (phase === 'harvesting') {
-      const yield_ = getHarvestYield(resource, this.state, this.jobs, this.balance);
+      const today = new Date().toISOString().slice(0, 10);
+      if (!this.state.dailyHarvest || this.state.dailyHarvest.date !== today) {
+        this.state.dailyHarvest = { date: today, bonusUsed: false };
+      }
+      let yield_ = getHarvestYield(resource, this.state, this.jobs, this.balance);
+      let dailyBonus = false;
+      if (!this.state.dailyHarvest.bonusUsed) {
+        this.state.dailyHarvest.bonusUsed = true;
+        yield_ *= 2;
+        dailyBonus = true;
+      }
       const xp = getHarvestXp(resource, this.state, this.balance);
 
       this.state.inventory[resourceId] = (this.state.inventory[resourceId] || 0) + yield_;
@@ -884,7 +923,7 @@ export class Game {
       };
       this.scheduleHarvestTimer(jobId, slotIndex, regrowthDuration);
 
-      emit('harvestComplete', { resourceId, jobId, slotIndex, yield: yield_, xp, levelResult });
+      emit('harvestComplete', { resourceId, jobId, slotIndex, yield: yield_, xp, levelResult, dailyBonus });
       emit('regrowthStart', { resourceId, jobId, slotIndex, duration: regrowthDuration });
       emit('stateChange', this.state);
       this.scheduleSave();

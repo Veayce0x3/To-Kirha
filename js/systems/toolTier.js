@@ -2,15 +2,6 @@ import { getJobEquippedTool } from './equipment.js';
 import { isDurabilityTool, isToolEffectActive } from './toolDurability.js';
 import { isStarterHarvestResource } from './zones.js';
 
-export function jobEverHadGatheringTool(state, jobId, equipmentData) {
-  const equipable = equipmentData?.equipable || {};
-  return (state.crafted || []).some((recipeId) => {
-    const meta = equipable[recipeId];
-    if (!meta || meta.job !== jobId || meta.slot === 'accessory') return false;
-    return true;
-  });
-}
-
 export function getResourceHarvestTier(resource) {
   return Math.floor(((resource?.requiredJobLevel || 1) - 1) / 20) + 1;
 }
@@ -35,17 +26,16 @@ export function getGatheringToolRecipe(state, jobId, recipes) {
 export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentData, resources = null) {
   const recipe = getGatheringToolRecipe(state, jobId, recipes);
   if (!recipe) {
-    const isStarter = resources && isStarterHarvestResource(resource, resources);
-    const everHadTool = jobEverHadGatheringTool(state, jobId, equipmentData);
-    if (isStarter && !everHadTool) {
+    if (resources && isStarterHarvestResource(resource, resources)) {
       return { ok: true, starterHarvest: true };
     }
+    const resourceTier = getResourceHarvestTier(resource);
     return {
       ok: false,
       reason: 'no_tool',
-      message: everHadTool
-        ? 'Outil usé ou manquant — refabrique-le à l\'Atelier Outilleur.'
-        : 'Équipe un outil sur Perso → Outils.',
+      message: resourceTier <= 1
+        ? 'Équipe un outil sur Perso → Outils, ou fabrique-le à l\'Atelier Outilleur.'
+        : `Outil palier ${resourceTier} requis — fabrique-le à l'Atelier Outilleur.`,
     };
   }
 
@@ -68,7 +58,7 @@ export function getFarmToolCheck(state, recipes, equipmentData) {
     return {
       ok: false,
       reason: 'no_tool',
-      message: 'Équipe un outil d\'éleveur (seau, panier…) sur Perso.',
+      message: 'Équipe un outil d\'éleveur sur Perso → Outils (seau, panier…).',
     };
   }
   return { ok: true, recipe };

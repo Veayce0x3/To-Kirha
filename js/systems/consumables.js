@@ -55,3 +55,19 @@ export function applyMealBuffToStats(baseStats, buff) {
   const def = Math.floor(baseStats.def * (1 + (buff.defPct || 0)));
   return { ...baseStats, hp, atk, def, maxHp: hp };
 }
+
+/** Repas consommé en combat (1× par combat, soin % HP max). */
+export function useMealHealInCombat(state, mealId) {
+  const effect = MEAL_EFFECTS[mealId];
+  if (!effect?.hpPct) return { ok: false, reason: 'Ce repas ne soigne pas en combat' };
+  if ((state.inventory[mealId] || 0) < 1) return { ok: false, reason: 'Plus de ce repas' };
+  state.inventory[mealId] -= 1;
+  return { ok: true, healPct: effect.hpPct, label: effect.label };
+}
+
+export function listCombatHealMeals(state) {
+  return Object.entries(MEAL_EFFECTS)
+    .filter(([, eff]) => eff.hpPct > 0)
+    .map(([id, eff]) => ({ id, effect: eff, qty: state.inventory?.[id] || 0 }))
+    .filter((m) => m.qty > 0);
+}

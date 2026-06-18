@@ -1,22 +1,251 @@
 {
   "slots": {
-    "weapon": { "id": "weapon", "name": "Outil principal", "emoji": "🛠️" },
-    "accessory": { "id": "accessory", "name": "Accessoire métier", "emoji": "🧰" }
+    "weapon": {
+      "id": "weapon",
+      "name": "Outil principal",
+      "emoji": "🛠️"
+    },
+    "accessory": {
+      "id": "accessory",
+      "name": "Accessoire métier",
+      "emoji": "🧰"
+    }
   },
   "equipable": {
-    "sakura_axe": { "recipeId": "sakura_axe", "slot": "weapon", "job": "lumberjack" },
-    "sequoia_axe": { "recipeId": "sequoia_axe", "slot": "weapon", "job": "lumberjack" },
-    "fishing_rod": { "recipeId": "fishing_rod", "slot": "weapon", "job": "fisher" },
-    "miner_pickaxe": { "recipeId": "miner_pickaxe", "slot": "weapon", "job": "miner" },
-    "jade_pickaxe": { "recipeId": "jade_pickaxe", "slot": "weapon", "job": "miner" },
-    "farm_sickle": { "recipeId": "farm_sickle", "slot": "weapon", "job": "farmer" },
-    "herb_gloves": { "recipeId": "herb_gloves", "slot": "weapon", "job": "alchemist" },
-    "breeder_bucket": { "recipeId": "breeder_bucket", "slot": "weapon", "job": "breeder" },
-    "breeder_bucket_iron": { "recipeId": "breeder_bucket_iron", "slot": "weapon", "job": "breeder" },
-    "recipe_bottes_cuir": { "recipeId": "recipe_bottes_cuir", "slot": "accessory", "job": "breeder" },
-    "recipe_tablier": { "recipeId": "recipe_tablier", "slot": "accessory", "job": "cook" },
-    "herb_basket": { "recipeId": "herb_basket", "slot": "accessory", "job": "lumberjack" },
-    "fish_trap": { "recipeId": "fish_trap", "slot": "accessory", "job": "fisher" },
-    "master_toolkit": { "recipeId": "master_toolkit", "slot": "accessory", "job": null }
+    "sakura_axe": {
+      "recipeId": "sakura_axe",
+      "slot": "weapon",
+      "job": "lumberjack"
+    },
+    "sequoia_axe": {
+      "recipeId": "sequoia_axe",
+      "slot": "weapon",
+      "job": "lumberjack"
+    },
+    "fishing_rod": {
+      "recipeId": "fishing_rod",
+      "slot": "weapon",
+      "job": "fisher"
+    },
+    "miner_pickaxe": {
+      "recipeId": "miner_pickaxe",
+      "slot": "weapon",
+      "job": "miner"
+    },
+    "farm_sickle": {
+      "recipeId": "farm_sickle",
+      "slot": "weapon",
+      "job": "farmer"
+    },
+    "herb_gloves": {
+      "recipeId": "herb_gloves",
+      "slot": "weapon",
+      "job": "alchemist"
+    },
+    "breeder_bucket": {
+      "recipeId": "breeder_bucket",
+      "slot": "weapon",
+      "job": "breeder"
+    },
+    "breeder_bucket_iron": {
+      "recipeId": "breeder_bucket_iron",
+      "slot": "weapon",
+      "job": "breeder"
+    },
+    "recipe_bottes_cuir": {
+      "recipeId": "recipe_bottes_cuir",
+      "slot": "accessory",
+      "job": "breeder"
+    },
+    "recipe_tablier": {
+      "recipeId": "recipe_tablier",
+      "slot": "accessory",
+      "job": "cook"
+    },
+    "herb_basket": {
+      "recipeId": "herb_basket",
+      "slot": "accessory",
+      "job": "lumberjack"
+    },
+    "fish_trap": {
+      "recipeId": "fish_trap",
+      "slot": "accessory",
+      "job": "fisher"
+    },
+    "master_toolkit": {
+      "recipeId": "master_toolkit",
+      "slot": "accessory",
+      "job": null
+    },
+    "coal_pickaxe": {
+      "recipeId": "coal_pickaxe",
+      "slot": "weapon",
+      "job": "miner"
+    },
+    "oak_axe": {
+      "recipeId": "oak_axe",
+      "slot": "weapon",
+      "job": "lumberjack"
+    },
+    "birch_axe": {
+      "recipeId": "birch_axe",
+      "slot": "weapon",
+      "job": "lumberjack"
+    },
+    "maple_axe": {
+      "recipeId": "maple_axe",
+      "slot": "weapon",
+      "job": "lumberjack"
+    },
+    "bamboo_axe": {
+      "recipeId": "bamboo_axe",
+      "slot": "weapon",
+      "job": "lumberjack"
+    },
+    "sakura_wood_axe": {
+      "recipeId": "sakura_wood_axe",
+      "slot": "weapon",
+      "job": "lumberjack"
+    },
+    "millennium_axe": {
+      "recipeId": "millennium_axe",
+      "slot": "weapon",
+      "job": "lumberjack"
+    },
+    "carpe_rod": {
+      "recipeId": "carpe_rod",
+      "slot": "weapon",
+      "job": "fisher"
+    },
+    "salmon_rod": {
+      "recipeId": "salmon_rod",
+      "slot": "weapon",
+      "job": "fisher"
+    },
+    "lobster_rod": {
+      "recipeId": "lobster_rod",
+      "slot": "weapon",
+      "job": "fisher"
+    },
+    "naso_rod": {
+      "recipeId": "naso_rod",
+      "slot": "weapon",
+      "job": "fisher"
+    },
+    "octopus_rod": {
+      "recipeId": "octopus_rod",
+      "slot": "weapon",
+      "job": "fisher"
+    },
+    "koi_rod": {
+      "recipeId": "koi_rod",
+      "slot": "weapon",
+      "job": "fisher"
+    },
+    "dragon_rod": {
+      "recipeId": "dragon_rod",
+      "slot": "weapon",
+      "job": "fisher"
+    },
+    "copper_pickaxe": {
+      "recipeId": "copper_pickaxe",
+      "slot": "weapon",
+      "job": "miner"
+    },
+    "iron_depth_pickaxe": {
+      "recipeId": "iron_depth_pickaxe",
+      "slot": "weapon",
+      "job": "miner"
+    },
+    "diamond_pickaxe": {
+      "recipeId": "diamond_pickaxe",
+      "slot": "weapon",
+      "job": "miner"
+    },
+    "emerald_pickaxe": {
+      "recipeId": "emerald_pickaxe",
+      "slot": "weapon",
+      "job": "miner"
+    },
+    "koi_crystal_pickaxe": {
+      "recipeId": "koi_crystal_pickaxe",
+      "slot": "weapon",
+      "job": "miner"
+    },
+    "temple_pickaxe": {
+      "recipeId": "temple_pickaxe",
+      "slot": "weapon",
+      "job": "miner"
+    },
+    "orge_sickle": {
+      "recipeId": "orge_sickle",
+      "slot": "weapon",
+      "job": "farmer"
+    },
+    "seigle_sickle": {
+      "recipeId": "seigle_sickle",
+      "slot": "weapon",
+      "job": "farmer"
+    },
+    "avoine_sickle": {
+      "recipeId": "avoine_sickle",
+      "slot": "weapon",
+      "job": "farmer"
+    },
+    "mais_sickle": {
+      "recipeId": "mais_sickle",
+      "slot": "weapon",
+      "job": "farmer"
+    },
+    "riz_sickle": {
+      "recipeId": "riz_sickle",
+      "slot": "weapon",
+      "job": "farmer"
+    },
+    "lotus_sickle": {
+      "recipeId": "lotus_sickle",
+      "slot": "weapon",
+      "job": "farmer"
+    },
+    "eternal_sickle": {
+      "recipeId": "eternal_sickle",
+      "slot": "weapon",
+      "job": "farmer"
+    },
+    "mint_gloves": {
+      "recipeId": "mint_gloves",
+      "slot": "weapon",
+      "job": "alchemist"
+    },
+    "nettle_gloves": {
+      "recipeId": "nettle_gloves",
+      "slot": "weapon",
+      "job": "alchemist"
+    },
+    "lavender_gloves": {
+      "recipeId": "lavender_gloves",
+      "slot": "weapon",
+      "job": "alchemist"
+    },
+    "peony_gloves": {
+      "recipeId": "peony_gloves",
+      "slot": "weapon",
+      "job": "alchemist"
+    },
+    "wisteria_gloves": {
+      "recipeId": "wisteria_gloves",
+      "slot": "weapon",
+      "job": "alchemist"
+    },
+    "koi_herb_gloves": {
+      "recipeId": "koi_herb_gloves",
+      "slot": "weapon",
+      "job": "alchemist"
+    },
+    "essence_gloves": {
+      "recipeId": "essence_gloves",
+      "slot": "weapon",
+      "job": "alchemist"
+    }
   }
 }

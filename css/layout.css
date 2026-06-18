@@ -4820,3 +4820,235 @@ body.picker-sheet-open #picker-sheet-portal .picker-sheet-header {
     width: 100%;
   }
 }
+
+/* ── Perso style Dofus ── */
+.char-dofus-hero {
+  margin-bottom: 0.75rem;
+}
+
+.char-dofus-top {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 720px) {
+  .char-dofus-top {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .char-dofus-identity {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .char-dofus-equip-wrap {
+    flex: 0 0 auto;
+  }
+}
+
+.char-dofus-equip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(52px, 64px));
+  grid-template-areas:
+    ". helmet ."
+    "cape portrait amulet"
+    ". weapon ."
+    "shield chest boots"
+    "ringl belt ringr";
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.char-equip-slot {
+  position: relative;
+  min-height: 52px;
+  min-width: 52px;
+  border: 2px solid var(--brun, #4A3728);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem;
+}
+
+.char-equip-helmet { grid-area: helmet; }
+.char-equip-cape { grid-area: cape; }
+.char-equip-portrait { grid-area: portrait; border: none; background: transparent; min-height: 72px; }
+.char-equip-amulet { grid-area: amulet; }
+.char-equip-weapon { grid-area: weapon; }
+.char-equip-shield { grid-area: shield; }
+.char-equip-chest { grid-area: chest; }
+.char-equip-boots { grid-area: boots; }
+.char-equip-ringl { grid-area: ringl; }
+.char-equip-belt { grid-area: belt; }
+.char-equip-ringr { grid-area: ringr; }
+
+.char-dofus-portrait {
+  width: 64px;
+  height: 64px;
+}
+
+.char-equip-slot-label {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  line-height: 1;
+}
+
+.char-equip-item {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.char-equip-empty {
+  opacity: 0.35;
+  font-size: 0.85rem;
+}
+
+.char-equip-slot-btn {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+.char-equip-forge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+}
+
+.char-stats-details {
+  margin: 0.35rem 0;
+  font-size: 0.85rem;
+}
+
+.char-stats-details summary {
+  cursor: pointer;
+  color: var(--vert-fonce, #2D5A27);
+}
+
+/* ── Sac / inventaire grille ── */
+.bag-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.bag-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.bag-filter-btn {
+  min-height: 44px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--brun, #4A3728);
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+}
+
+.bag-filter-btn.active {
+  background: var(--vert-fonce, #2D5A27);
+  color: #fff;
+}
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 0.5rem;
+}
+
+.inventory-grid-cell {
+  position: relative;
+  min-height: 72px;
+  border: 2px solid var(--brun, #4A3728);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.inventory-grid-cell.pinned {
+  border-color: var(--violet, #9B59B6);
+}
+
+.inventory-grid-icon,
+.inventory-grid-emoji {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.inventory-grid-qty {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+.inventory-grid-pin {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  min-width: 32px;
+  min-height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.farm-tool-banner {
+  background: rgba(155, 89, 182, 0.12);
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  margin-top: 0.35rem;
+}
+
+.btn.affordable,
+.btn-harvest-compact.affordable,
+.dq-cmd-btn.affordable {
+  background: var(--vert-fonce, #2D5A27);
+  color: #fff;
+  border-color: var(--vert-fonce, #2D5A27);
+}
+
+.btn-craft.affordable:not(.craft-blocked) {
+  background: var(--vert-fonce, #2D5A27);
+  color: #fff;
+}
+
+[data-theme="dark"] .char-equip-slot,
+[data-theme="dark"] .inventory-grid-cell {
+  background: rgba(40, 30, 35, 0.85);
+}
+
+[data-theme="dark"] .bag-filter-btn {
+  background: rgba(40, 30, 35, 0.7);
+  color: inherit;
+}
+
+[data-theme="dark"] .bag-filter-btn.active {
+  background: var(--vert-fonce, #2D5A27);
+  color: #fff;
+}
