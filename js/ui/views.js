@@ -16,7 +16,7 @@ import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
 import { getQuestStatusText, isQuestCompleted, isQuestAvailable, isQuestReady, QUEST_CHAPTER_LABELS } from '../systems/quests.js';
-import { isTutorialActive } from '../systems/tutorial.js';
+import { isTutorialActive, TUTORIAL_ENABLED } from '../systems/tutorial.js';
 import { applyCombatTutorialFocus, clearCombatTutorialFocus } from './tutorialUi.js';
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderCraftDurabilityInfo, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
 import { hasWorkingTool, isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
@@ -2367,6 +2367,7 @@ export function renderOptions(game, el) {
       </div>
       <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
     </div>
+    ${TUTORIAL_ENABLED ? `
     <div class="panel-inner">
       <h3>📖 Formation du village</h3>
       <p class="view-desc">${game.hasTutorialRewardsClaimed()
@@ -2374,6 +2375,7 @@ export function renderOptions(game, el) {
     : 'Rejoue le tutoriel guidé : récolte, arme, craft, donjon et parchemins (~5 min).'}</p>
       <button type="button" class="btn btn-muted" id="reset-tutorial">Revoir la formation</button>
     </div>
+    ` : ''}
     <div class="panel-inner save-panel">
       <h3>${iconHtml(UI.save, 'panel-title-icon', 'Sauvegarde')} Sauvegarde</h3>
       <p class="save-info">Ta partie est <strong>sauvegardée automatiquement</strong> sur cet appareil. L'export ci-dessous sert de copie de secours.</p>

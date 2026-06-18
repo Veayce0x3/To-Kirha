@@ -12,6 +12,7 @@ import {
   isFarmView,
 } from './router.js';
 import { renderTutorialOverlay, showTutorialIntroModal, teardownTutorialOverlay, bindTutorialSidebarListeners, bindTutorialModalListeners, showTutorialDungeonVictory, scheduleTutorialOverlayRefresh } from './tutorialUi.js';
+import { TUTORIAL_ENABLED } from '../systems/tutorial.js';
 import { syncTutorialProgress } from '../systems/tutorial.js';
 import { reconcileTutorialAxeProgress } from '../systems/tutorialSandbox.js';
 import { isRecipeEquipped } from '../systems/equipment.js';
@@ -537,10 +538,14 @@ export function initUI(game, audio) {
   refreshHeader(game.state);
   refreshView();
   if (game.isHarvesting() || game.isFarmActive()) tickHarvestUI();
-  if (game.shouldShowTutorialIntro()) {
-    showTutorialIntroModal(game);
+  if (TUTORIAL_ENABLED) {
+    if (game.shouldShowTutorialIntro()) {
+      showTutorialIntroModal(game);
+    } else {
+      requestAnimationFrame(() => renderTutorialOverlay(game));
+    }
   } else {
-    requestAnimationFrame(() => renderTutorialOverlay(game));
+    teardownTutorialOverlay();
   }
 }
 

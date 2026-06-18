@@ -9,6 +9,17 @@ import {
   hasTutorialRewardsClaimed,
 } from './tutorialSandbox.js';
 
+/** Désactivé temporairement — remettre à true pour réactiver la formation guidée. */
+export const TUTORIAL_ENABLED = false;
+
+export function disableTutorial(state) {
+  if (!state.tutorial) state.tutorial = buildDefaultTutorialState();
+  state.tutorial.completed = true;
+  state.tutorial.dismissed = true;
+  state.tutorial.sandbox = false;
+  state.tutorial.replay = false;
+}
+
 export {
   normalizeRewardsClaimed,
   hasTutorialRewardsClaimed,
@@ -74,11 +85,13 @@ export function migrateTutorial(saved) {
 }
 
 export function isTutorialActive(state) {
+  if (!TUTORIAL_ENABLED) return false;
   const t = state.tutorial;
   return t && !t.completed && !t.dismissed;
 }
 
 export function shouldShowTutorialIntro(state, tutorialData) {
+  if (!TUTORIAL_ENABLED) return false;
   const t = state.tutorial;
   if (!t || t.completed || t.dismissed || t.sandbox) return false;
 
@@ -146,6 +159,7 @@ function isFlagComplete(step, state) {
 }
 
 export function syncTutorialProgress(state, tutorialData, quests, extras = {}) {
+  if (!TUTORIAL_ENABLED) return false;
   if (!isTutorialActive(state)) return false;
 
   if (extras.recipes && extras.combatItems) {

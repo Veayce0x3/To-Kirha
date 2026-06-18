@@ -35,6 +35,8 @@ import {
   getTutorialStepIndex,
   getTutorialStep,
   hasTutorialRewardsClaimed,
+  disableTutorial,
+  TUTORIAL_ENABLED,
 } from '../systems/tutorial.js';
 import {
   bootstrapTutorialStep,
@@ -410,6 +412,7 @@ export class Game {
     const saved = await SaveProvider.load();
     this.state = saved ? this.mergeState(saved) : this.getDefaultState();
     if (this.balance.betaMode) applyBetaUnlocks(this.state, this.companions);
+    if (!TUTORIAL_ENABLED) disableTutorial(this.state);
 
     const offlineResult = applyOfflineProgress(this.state, this.aides, this.balance);
     this.state.lastOnline = Date.now();
