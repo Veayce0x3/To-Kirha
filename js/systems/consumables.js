@@ -1,14 +1,17 @@
-/** Repas consommables — soin HP en combat (menu Objets). */
+/** Repas consommables — soin HP fixe en combat (menu Objets). */
 
 export const MEAL_EFFECTS = {
-  meal_onigiri: { healPct: 0.15, label: '+15 % PV' },
-  meal_poisson: { healPct: 0.2, label: '+20 % PV' },
-  meal_oeufs: { healPct: 0.12, label: '+12 % PV' },
-  meal_soupe: { healPct: 0.25, label: '+25 % PV' },
-  meal_brochette: { healPct: 0.1, label: '+10 % PV' },
-  meal_gateau: { healPct: 0.3, label: '+30 % PV' },
-  meal_festin: { healPct: 0.5, label: '+50 % PV' },
+  meal_onigiri: { healAmount: 25, label: '+25 PV' },
+  meal_poisson: { healAmount: 35, label: '+35 PV' },
+  meal_oeufs: { healAmount: 20, label: '+20 PV' },
+  meal_soupe: { healAmount: 45, label: '+45 PV' },
+  meal_brochette: { healAmount: 15, label: '+15 PV' },
+  meal_gateau: { healAmount: 55, label: '+55 PV' },
+  meal_festin: { healAmount: 80, label: '+80 PV' },
 };
+
+/** Soin fixe entre deux salles de donjon (toute l'équipe vivante). */
+export const DUNGEON_ROOM_HEAL = 30;
 
 export function getMealEffect(mealId) {
   return MEAL_EFFECTS[mealId] || null;
@@ -31,6 +34,10 @@ export function listOwnedMeals(state) {
     .filter((m) => m.qty > 0);
 }
 
+export function countOwnedMeals(state) {
+  return listOwnedMeals(state).reduce((sum, m) => sum + m.qty, 0);
+}
+
 /** @deprecated */
 export function listCombatHealMeals(state) {
   return listOwnedMeals(state);
@@ -38,9 +45,9 @@ export function listCombatHealMeals(state) {
 
 export function useMealHealInCombat(state, mealId) {
   const effect = MEAL_EFFECTS[mealId];
-  if (!effect?.healPct) return { ok: false, reason: 'Repas inconnu' };
+  if (!effect?.healAmount) return { ok: false, reason: 'Repas inconnu' };
   if ((state.inventory[mealId] || 0) < 1) return { ok: false, reason: 'Plus de ce repas' };
   state.inventory[mealId] -= 1;
   if (state.inventory[mealId] <= 0) delete state.inventory[mealId];
-  return { ok: true, healPct: effect.healPct, label: effect.label };
+  return { ok: true, healAmount: effect.healAmount, label: effect.label };
 }

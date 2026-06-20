@@ -961,7 +961,7 @@
     "id": "recipe_onigiri",
     "name": "Onigiri",
     "emoji": "🍙",
-    "description": "Soin en combat : +15 % PV max",
+    "description": "Soin en combat : +25 PV",
     "ingredients": {
       "goujon": 2,
       "eau": 1,
@@ -978,7 +978,7 @@
     "id": "recipe_poisson",
     "name": "Poisson grillé",
     "emoji": "🐟",
-    "description": "Soin en combat : +20 % PV max",
+    "description": "Soin en combat : +35 PV",
     "ingredients": {
       "goujon": 3,
       "eau": 1,
@@ -1005,7 +1005,7 @@
     "craftJob": "cook",
     "requiredJobLevel": 2,
     "jobXp": 14,
-    "description": "Soin en combat : +12 % PV max"
+    "description": "Soin en combat : +20 PV"
   },
   "recipe_soupe": {
     "id": "recipe_soupe",
@@ -1022,7 +1022,7 @@
     "craftJob": "cook",
     "requiredJobLevel": 4,
     "jobXp": 16,
-    "description": "Soin en combat : +25 % PV max"
+    "description": "Soin en combat : +45 PV"
   },
   "recipe_brochette": {
     "id": "recipe_brochette",
@@ -1039,7 +1039,7 @@
     "craftJob": "cook",
     "requiredJobLevel": 6,
     "jobXp": 20,
-    "description": "Soin en combat : +10 % PV max"
+    "description": "Soin en combat : +15 PV"
   },
   "recipe_gateau": {
     "id": "recipe_gateau",
@@ -1056,13 +1056,13 @@
     "craftJob": "cook",
     "requiredJobLevel": 10,
     "jobXp": 28,
-    "description": "Soin en combat : +30 % PV max"
+    "description": "Soin en combat : +55 PV"
   },
   "recipe_festin": {
     "id": "recipe_festin",
     "name": "Festin du Temple",
     "emoji": "🍱",
-    "description": "Soin en combat : +50 % PV max",
+    "description": "Soin en combat : +80 PV",
     "ingredients": {
       "jambon": 2,
       "lait": 2,

@@ -13,7 +13,7 @@ import {
   clearSoloHpWear,
 } from './combat.js';
 import { addCharacterXp } from './character.js';
-import { useMealHealInCombat, clearCombatMealBuff } from './consumables.js';
+import { useMealHealInCombat, clearCombatMealBuff, DUNGEON_ROOM_HEAL } from './consumables.js';
 import { wearEquippedCombatGear } from './combatDurability.js';
 import {
   canSpendDailyCombat,
@@ -247,10 +247,25 @@ function advanceDungeonRoom(run, state, characterConfig, enemies, balance, comba
     return finishDungeonRun(run, state, characterConfig, balance, combatItems);
   }
 
+  let roomHealTotal = 0;
+  for (const member of run.party || []) {
+    if (member.hp <= 0) continue;
+    const before = member.hp;
+    member.hp = Math.min(member.maxHp, member.hp + DUNGEON_ROOM_HEAL);
+    roomHealTotal += member.hp - before;
+  }
+
   const next = run.rooms[run.roomIndex];
   run.foe = next.foe;
   run.isBoss = next.isBoss;
   initEncounter(run, { ...next.foe, boss: next.isBoss }, enemies, run.party.length, run.combatZone);
+
+  if (roomHealTotal > 0 && run.combat?.log) {
+    run.combat.log.push({
+      type: 'heal',
+      text: `🌸 Pause entre les salles : +${DUNGEON_ROOM_HEAL} PV par allié.`,
+    });
+  }
 
   return {
     continuing: true,
@@ -262,6 +277,7 @@ function advanceDungeonRoom(run, state, characterConfig, enemies, balance, comba
     party: run.party,
     phase: run.combat.phase,
     activeMemberIndex: run.combat.activeMemberIndex,
+    roomHeal: DUNGEON_ROOM_HEAL,
   };
 }
 
@@ -365,8 +381,7 @@ export function useCombatMeal(mealId, state, characterConfig, enemies, balance, 
   if (!heal.ok) return { blocked: true, reason: heal.reason };
 
   const memberIndex = run.combat.activeMemberIndex;
-  const member = run.party[memberIndex];
-  const gain = Math.max(1, Math.floor(member.maxHp * heal.healPct));
+  const gain = heal.healAmount;
   const result = useMemberMeal(run, memberIndex, gain, heal.label, mealId);
   if (!result) return { blocked: true, reason: 'Impossible d\'utiliser ce repas' };
   if (result.blocked) return result;

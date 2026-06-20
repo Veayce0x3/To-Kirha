@@ -382,7 +382,8 @@ export function initUI(game, audio) {
   on('combatTurn', (r) => {
     refreshDungeonCombatModal(game);
     if (r?.roomAdvanced) {
-      showToast(els, `Salle ${(r.roomIndex ?? 0) + 1}/${r.roomCount || '?'} — ${r.foe?.emoji || '👾'} ${r.foe?.name || ''}`, 'upgrade');
+      const healNote = r.roomHeal ? ` · +${r.roomHeal} PV équipe` : '';
+      showToast(els, `Salle ${(r.roomIndex ?? 0) + 1}/${r.roomCount || '?'} — ${r.foe?.emoji || '👾'} ${r.foe?.name || ''}${healNote}`, 'upgrade');
     }
   });
   on('combatVictory', (r) => {

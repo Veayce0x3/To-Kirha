@@ -318,7 +318,6 @@ export function initEncounter(run, foe, enemies, partySize = 1, combatZone = nul
     activeEnemyIndex: 0,
     log: [],
     desperateUses: 0,
-    mealUsedInFight: false,
   };
   startPlayerTurn(run);
   return run.combat;
@@ -327,9 +326,9 @@ export function initEncounter(run, foe, enemies, partySize = 1, combatZone = nul
 export function startPlayerTurn(run) {
   if (!run.combat || !run.party) return;
   run.combat.phase = 'player';
-  run.combat.mealUsedInFight = false;
   for (const member of run.party) {
     member.defBonus = 0;
+    member.mealUsedThisRound = false;
   }
   run.combat.turnQueue = run.party
     .map((member, index) => ({ member, index }))
@@ -500,13 +499,12 @@ export function useMemberDefend(run, memberIndex) {
 export function useMemberMeal(run, memberIndex, healAmount, mealLabel, mealId) {
   if (!run.combat || run.combat.phase !== 'player') return null;
   if (run.combat.activeMemberIndex !== memberIndex) return null;
-  if (run.combat.mealUsedInFight) return { blocked: true, reason: 'Déjà utilisé ce tour de groupe' };
-
   const member = run.party[memberIndex];
   if (!member || member.hp <= 0) return { blocked: true, reason: 'Combattant KO' };
+  if (member.mealUsedThisRound) return { blocked: true, reason: 'Déjà mangé ce tour' };
 
   member.hp = Math.min(member.maxHp, member.hp + healAmount);
-  run.combat.mealUsedInFight = true;
+  member.mealUsedThisRound = true;
   run.combat.log.push({
     type: 'heal',
     text: `${member.emoji} ${member.name} mange ${mealLabel} : +${healAmount} HP.`,

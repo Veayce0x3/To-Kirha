@@ -154,7 +154,7 @@ function paintCraftPanel(game, craftJobId, panelEl, headerEl) {
   } else if (isCook) {
     hints = `
       <div class="merchant-hint panel-inner cuisine-hint">
-        <span>🍲 Les plats soignent en combat via le menu <strong>Objets</strong> (1 repas par tour de groupe).</span>
+        <span>🍲 Les plats soignent en combat via <strong>Objets</strong> (+PV fixes, 1 repas par combattant et par tour).</span>
       </div>
     `;
   }

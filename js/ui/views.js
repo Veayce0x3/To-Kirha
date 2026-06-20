@@ -13,7 +13,7 @@ import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabil
 import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
-import { listOwnedMeals } from '../systems/consumables.js';
+import { listOwnedMeals, countOwnedMeals } from '../systems/consumables.js';
 import { renderCombatDurabilityBar, hasCombatDurability } from '../systems/combatDurability.js';
 
 let workshopTab = 'toolmaker';
@@ -2456,7 +2456,7 @@ function renderCombat(game, el) {
         · Donjons : <strong>∞</strong>
       </p>
       ${ownedMeals.length > 0 ? `
-        <p class="view-desc meal-combat-hint">🍱 ${ownedMeals.length} type(s) de repas en stock — utilise le menu <strong>Objets</strong> pendant le combat pour soigner l'équipe.</p>
+        <p class="view-desc meal-combat-hint">🍱 ${ownedMeals.length} type(s) de repas en stock — en combat, ouvre <strong>Objets</strong> pour soigner (+PV fixes).</p>
       ` : ''}
     </div>
     <div id="combat-zone-list"></div>
@@ -2752,7 +2752,7 @@ function renderDungeonCombatBody(game) {
       ? `${activeMember?.emoji || '✨'} ${activeMember?.name || 'Héros'} — quel sort ?`
       : 'Aucun sort disponible.';
   } else if (combatUi.menu === 'items' && canAct) {
-    dialogue = `${activeMember?.emoji || '🎒'} ${activeMember?.name || 'Héros'} — quel repas utiliser ? (1 par tour de groupe)`;
+    dialogue = `${activeMember?.emoji || '🎒'} ${activeMember?.name || 'Héros'} — quel repas utiliser ? (1 par combattant et par tour)`;
   } else if (isPlayerTurn && activeMember) {
     dialogue = `${activeMember.emoji} ${activeMember.name} se prépare au combat.`;
   } else {
@@ -2790,21 +2790,24 @@ function renderDungeonCombatBody(game) {
     `;
   } else if (combatUi.menu === 'items' && canAct) {
     const ownedMeals = listOwnedMeals(game.state);
-    const mealUsed = combat?.mealUsedInFight;
+    const memberAte = !!activeMember?.mealUsedThisRound;
     commandHtml = `
       <button type="button" class="dq-cmd-btn dq-cmd-back" data-menu="main">◀ Retour</button>
-      ${!mealUsed && ownedMeals.length ? ownedMeals.map((m) => {
+      ${memberAte ? '<p class="dq-cmd-empty">Ce combattant a déjà mangé ce tour.</p>' : ''}
+      ${!memberAte && ownedMeals.length ? ownedMeals.map((m) => {
         const res = game.resources[m.id];
         return `<button type="button" class="dq-cmd-btn dq-cmd-meal affordable" data-meal="${m.id}">
           <span class="dq-cmd-icon">${res?.emoji || '🍙'}</span>
-          <span class="dq-cmd-label">${res?.name || m.id} (${m.effect.label}) ×${m.qty}</span>
+          <span class="dq-cmd-label">${res?.name || m.id} ${m.effect.label} · ×${m.qty}</span>
         </button>`;
-      }).join('') : '<p class="dq-cmd-empty">Aucun repas utilisable.</p>'}
+      }).join('') : ''}
+      ${!memberAte && !ownedMeals.length ? '<p class="dq-cmd-empty">Aucun repas en stock — fabrique-en à la Cuisine.</p>' : ''}
     `;
   } else {
     const ownedMeals = listOwnedMeals(game.state);
-    const hasMeals = ownedMeals.length > 0;
-    const mealUsed = combat?.mealUsedInFight;
+    const mealCount = countOwnedMeals(game.state);
+    const memberAte = !!activeMember?.mealUsedThisRound;
+    const canUseMeal = canAct && mealCount > 0 && !memberAte;
     commandHtml = `
       <button type="button" class="dq-cmd-btn dq-cmd-main affordable" data-menu="attack" ${canAct ? '' : 'disabled'}>
         <span class="dq-cmd-icon">⚔️</span><span class="dq-cmd-label">Attaquer</span>
@@ -2812,8 +2815,8 @@ function renderDungeonCombatBody(game) {
       <button type="button" class="dq-cmd-btn dq-cmd-main" data-menu="spells" ${canAct && spells.length ? '' : 'disabled'}>
         <span class="dq-cmd-icon">✨</span><span class="dq-cmd-label">Sorts</span>
       </button>
-      <button type="button" class="dq-cmd-btn dq-cmd-main" data-menu="items" ${canAct && hasMeals && !mealUsed ? '' : 'disabled'}>
-        <span class="dq-cmd-icon">🎒</span><span class="dq-cmd-label">Objets</span>
+      <button type="button" class="dq-cmd-btn dq-cmd-main dq-cmd-items${canUseMeal ? ' affordable' : ''}" data-menu="items" ${canAct ? '' : 'disabled'}>
+        <span class="dq-cmd-icon">🎒</span><span class="dq-cmd-label">Objets${mealCount > 0 ? ` (${mealCount})` : ''}</span>
       </button>
       <button type="button" class="dq-cmd-btn dq-cmd-main btn-combat-defend" ${canAct ? '' : 'disabled'}>
         <span class="dq-cmd-icon">🛡️</span><span class="dq-cmd-label">Défense</span>
@@ -2825,6 +2828,17 @@ function renderDungeonCombatBody(game) {
   }
 
   const phaseLabel = isPlayerTurn ? 'Ton tour' : 'Tour ennemi';
+  const ownedMealsStrip = listOwnedMeals(game.state);
+  const mealsStripHtml = ownedMealsStrip.length
+    ? `<div class="dq-meals-strip" aria-label="Repas en stock">
+        ${ownedMealsStrip.map((m) => {
+          const res = game.resources[m.id];
+          return `<span class="dq-meal-chip" title="${res?.name || m.id} ${m.effect.label}">${
+            res?.emoji || '🍙'
+          }×${m.qty}</span>`;
+        }).join('')}
+      </div>`
+    : '';
 
   body.innerHTML = `
     <div class="dq-combat${isSoloFight ? ' dq-solo-fight' : ''}">
@@ -2833,6 +2847,7 @@ function renderDungeonCombatBody(game) {
         <span class="dq-phase-badge">${phaseLabel}</span>
         <span class="dq-room">${roomLabel}${soloHpNote}</span>
       </div>
+      ${mealsStripHtml}
 
       ${isEnemyTurn ? '<div class="dq-enemy-turn-banner" aria-live="polite">⚔️ Tour de l\'ennemi…</div>' : ''}
 
