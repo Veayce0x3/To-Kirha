@@ -1,18 +1,29 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 24,
+  "saveVersion": 25,
   "betaMode": false,
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
   "combat": {
-    "dailyLimits": {
-      "soloMob": 20,
-      "soloBoss": 5,
-      "dungeonRun": 2
+    "keyDrops": {
+      "mobChance": 0.04,
+      "bossChance": 0.08
     },
-    "dungeonUnlock": {
-      "killsPerMonster": 3,
-      "requireBossSoloKill": true
+    "equipmentDrops": {
+      "mobChance": 0.05,
+      "bossChance": 0.12
+    },
+    "fusionCosts": {
+      "common": 50,
+      "rare": 150,
+      "epic": 400,
+      "mystic": 1200
+    },
+    "soloXpMultiplier": 0.25,
+    "legendaryEquipCap": {
+      "base": 2,
+      "perPrestige": 1,
+      "max": 8
     }
   },
   "dismantle": {
@@ -352,5 +363,10 @@
         }
       }
     }
+  },
+  "meals": {
+    "healPctBase": 30,
+    "healPctStep": 5,
+    "healPctMax": 60
   }
 }

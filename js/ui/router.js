@@ -1,5 +1,6 @@
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, FARM_BUILDING_LABELS } from '../systems/farm.js';
+import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
 
 let currentView = 'character';
 
@@ -7,12 +8,6 @@ const categoryCollapsed = {};
 
 export const CRAFT_NAV = [
   { id: 'toolmaker', emoji: '🛠️', label: 'Outilleur', category: 'outillage' },
-  { id: 'blacksmith', emoji: '🔨', label: 'Forgeron', category: 'artisanat' },
-  { id: 'carver', emoji: '🪵', label: 'Sculpteur', category: 'artisanat' },
-  { id: 'armorer', emoji: '🥋', label: 'Armurier', category: 'artisanat' },
-  { id: 'tailor', emoji: '🧵', label: 'Tailleur', category: 'artisanat' },
-  { id: 'shoemaker', emoji: '👢', label: 'Cordonnier', category: 'artisanat' },
-  { id: 'jeweler', emoji: '💍', label: 'Bijoutier', category: 'artisanat' },
 ];
 
 function craftViewId(jobId) {
@@ -197,8 +192,15 @@ export function getViewTitle(viewId = currentView) {
   return VIEWS[viewId]?.title || 'To-Kirha';
 }
 
-export function getNavCategories() {
-  return NAV_CATEGORIES;
+export function getNavCategories(state = null) {
+  if (!state?.careerChoice?.confirmed) return NAV_CATEGORIES;
+  const harvestItems = getVisibleHarvestViews(state);
+  const farmItems = getVisibleFarmViews(state);
+  return NAV_CATEGORIES.map((cat) => {
+    if (cat.id === 'recolte') return { ...cat, items: harvestItems };
+    if (cat.id === 'ferme') return { ...cat, items: farmItems };
+    return cat;
+  });
 }
 
 export function isCategoryCollapsed(catId) {

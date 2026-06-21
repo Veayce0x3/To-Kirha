@@ -10,21 +10,21 @@
         "enemyId": "spirit_lantern",
         "name": "Esprit Lanterne",
         "emoji": "👻",
-        "drops": { "gold_nugget": { "min": 1, "max": 3, "chance": 1 } },
+        "drops": {},
         "charXpReward": 12
       },
       {
         "enemyId": "petal_slime",
         "name": "Slime Pétale",
         "emoji": "🌸",
-        "drops": { "gold_nugget": { "min": 1, "max": 3, "chance": 1 } },
+        "drops": {},
         "charXpReward": 15
       },
       {
         "enemyId": "temple_guard",
         "name": "Garde du Temple",
         "emoji": "⛩️",
-        "drops": { "gold_nugget": { "min": 2, "max": 4, "chance": 1 } },
+        "drops": {},
         "charXpReward": 20
       }
     ],
@@ -32,7 +32,7 @@
       "enemyId": "sakura_boss",
       "name": "Gardien du Cerisier",
       "emoji": "🌺",
-      "drops": { "gold_nugget": { "min": 8, "max": 12, "chance": 1 } },
+      "drops": {},
       "charXpReward": 150
     }
   },
@@ -47,21 +47,21 @@
         "enemyId": "wild_fox",
         "name": "Renard des Bois",
         "emoji": "🦊",
-        "drops": { "gold_nugget": { "min": 2, "max": 4, "chance": 1 } },
+        "drops": {},
         "charXpReward": 30
       },
       {
         "enemyId": "thorn_beast",
         "name": "Bête Épine",
         "emoji": "🌹",
-        "drops": { "gold_nugget": { "min": 2, "max": 5, "chance": 1 } },
+        "drops": {},
         "charXpReward": 35
       },
       {
         "enemyId": "root_golem",
         "name": "Golem Racine",
         "emoji": "🌳",
-        "drops": { "gold_nugget": { "min": 3, "max": 5, "chance": 1 } },
+        "drops": {},
         "charXpReward": 42
       }
     ],
@@ -69,7 +69,7 @@
       "enemyId": "petal_boss",
       "name": "Esprit de la Forêt",
       "emoji": "🌺",
-      "drops": { "gold_nugget": { "min": 12, "max": 18, "chance": 1 } },
+      "drops": {},
       "charXpReward": 400
     }
   },
@@ -84,21 +84,21 @@
         "enemyId": "cave_bat",
         "name": "Chauve-souris des Cavernes",
         "emoji": "🦇",
-        "drops": { "gold_nugget": { "min": 3, "max": 6, "chance": 1 } },
+        "drops": {},
         "charXpReward": 50
       },
       {
         "enemyId": "crystal_sprite",
         "name": "Sprite de Cristal",
         "emoji": "💎",
-        "drops": { "gold_nugget": { "min": 4, "max": 6, "chance": 1 } },
+        "drops": {},
         "charXpReward": 58
       },
       {
         "enemyId": "stone_warden",
         "name": "Gardien de Pierre",
         "emoji": "🗿",
-        "drops": { "gold_nugget": { "min": 4, "max": 7, "chance": 1 } },
+        "drops": {},
         "charXpReward": 70
       }
     ],
@@ -106,7 +106,7 @@
       "enemyId": "jade_boss",
       "name": "Golem de Jade",
       "emoji": "🌙",
-      "drops": { "gold_nugget": { "min": 18, "max": 25, "chance": 1 } },
+      "drops": {},
       "charXpReward": 900
     }
   },
@@ -121,21 +121,21 @@
         "enemyId": "mist_koi",
         "name": "Koï de Brume",
         "emoji": "🐟",
-        "drops": { "gold_nugget": { "min": 3, "max": 6, "chance": 1 } },
+        "drops": {},
         "charXpReward": 45
       },
       {
         "enemyId": "mist_wisp",
         "name": "Feu follet",
         "emoji": "✨",
-        "drops": { "gold_nugget": { "min": 4, "max": 7, "chance": 1 } },
+        "drops": {},
         "charXpReward": 52
       },
       {
         "enemyId": "mist_serpent",
         "name": "Serpent brumeux",
         "emoji": "🐍",
-        "drops": { "gold_nugget": { "min": 5, "max": 8, "chance": 1 } },
+        "drops": {},
         "charXpReward": 60
       }
     ],
@@ -143,7 +143,7 @@
       "enemyId": "mist_boss",
       "name": "Seigneur de la Brume",
       "emoji": "🌫️",
-      "drops": { "gold_nugget": { "min": 14, "max": 20, "chance": 1 } },
+      "drops": {},
       "charXpReward": 650
     }
   },
@@ -158,21 +158,21 @@
         "enemyId": "lotus_guard",
         "name": "Gardien du Lotus",
         "emoji": "🪷",
-        "drops": { "gold_nugget": { "min": 5, "max": 9, "chance": 1 } },
+        "drops": {},
         "charXpReward": 75
       },
       {
         "enemyId": "lotus_spirit",
         "name": "Esprit pétale",
         "emoji": "🌸",
-        "drops": { "gold_nugget": { "min": 6, "max": 10, "chance": 1 } },
+        "drops": {},
         "charXpReward": 85
       },
       {
         "enemyId": "lotus_monk",
         "name": "Moine du sanctuaire",
         "emoji": "🧘",
-        "drops": { "gold_nugget": { "min": 7, "max": 11, "chance": 1 } },
+        "drops": {},
         "charXpReward": 95
       }
     ],
@@ -180,7 +180,7 @@
       "enemyId": "lotus_boss",
       "name": "Floraison Éternelle",
       "emoji": "🪷",
-      "drops": { "gold_nugget": { "min": 25, "max": 35, "chance": 1 } },
+      "drops": {},
       "charXpReward": 1200
     }
   }

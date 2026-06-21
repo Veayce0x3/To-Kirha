@@ -55,6 +55,7 @@ export function calcDamage(atk, def, multiplier = 1, ignoreDef = 0) {
 }
 
 import { initCombatInstanceDurability, isCombatInstanceBroken } from './combatDurability.js';
+import { normalizeRarity, scaleItemStats, getInstanceRarity } from './equipmentRarity.js';
 
 export function resolveItemId(state, ref, combatItems) {
   if (!ref) return null;
@@ -82,7 +83,7 @@ export function migrateCombatItemInstances(state, combatItems) {
     }
     if (!combatItems[itemId]) return itemId;
     const instanceId = `ci_${itemId}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-    const instance = { instanceId, itemId };
+    const instance = { instanceId, itemId, rarity: 'common' };
     initCombatInstanceDurability(instance, combatItems[itemId]);
     state.combatItemInstances.push(instance);
     return instanceId;
@@ -92,6 +93,9 @@ export function migrateCombatItemInstances(state, combatItems) {
     (ref) => ref && combatItems[ref]
   );
   if (!needsMigration && (state.ownedCombatItems || []).every((ref) => ref?.startsWith?.('ci_'))) {
+    for (const inst of state.combatItemInstances) {
+      if (!inst.rarity) inst.rarity = 'common';
+    }
     return;
   }
 
@@ -116,6 +120,10 @@ export function migrateCombatItemInstances(state, combatItems) {
         comp.equipment[slot] = toInstance(ref);
       }
     }
+  }
+
+  for (const inst of state.combatItemInstances) {
+    if (!inst.rarity) inst.rarity = 'common';
   }
 }
 
@@ -671,12 +679,20 @@ export function unequipCombatSlot(state, slot) {
   return true;
 }
 
-export function grantCombatItem(state, itemId, combatItems = {}) {
+export function getInstanceEffectiveStats(state, ref, combatItems) {
+  const itemId = resolveItemId(state, ref, combatItems);
+  const item = itemId ? combatItems[itemId] : null;
+  if (!item?.stats) return { hp: 0, atk: 0, def: 0 };
+  const inst = state.combatItemInstances?.find((i) => i.instanceId === ref);
+  return scaleItemStats(item.stats, getInstanceRarity(inst));
+}
+
+export function grantCombatItem(state, itemId, combatItems = {}, rarity = 'common') {
   if (!state.combatItemInstances) state.combatItemInstances = [];
   if (!state.ownedCombatItems) state.ownedCombatItems = [];
   const instanceId = `ci_${itemId}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
   const item = combatItems[itemId];
-  const instance = { instanceId, itemId };
+  const instance = { instanceId, itemId, rarity: normalizeRarity(rarity) };
   initCombatInstanceDurability(instance, item);
   state.combatItemInstances.push(instance);
   state.ownedCombatItems.push(instanceId);

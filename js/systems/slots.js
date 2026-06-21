@@ -1,3 +1,5 @@
+import { isGatheringJobUnlocked } from './careerChoice.js';
+
 const GATHERING_JOBS = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist'];
 
 export function normalizePurchasedSlots(saved, balance) {
@@ -44,6 +46,7 @@ export function getSlotUnlockRequirements(jobId, slotIndex, balance) {
 }
 
 export function canBuySlot(state, balance, jobId) {
+  if (!isGatheringJobUnlocked(jobId, state)) return false;
   const current = getMaxSlots(state, balance, jobId);
   if (current >= balance.harvestSlots.maxSlots) return false;
   const { kirha, resources } = getSlotUnlockRequirements(jobId, current, balance);
@@ -84,10 +87,11 @@ export function buySlot(state, balance, jobId) {
 }
 
 export function ensureSlots(state, balance) {
+  const activeJobs = GATHERING_JOBS.filter((j) => isGatheringJobUnlocked(j, state));
   if (!state.harvestSlots) state.harvestSlots = {};
   state.purchasedSlots = normalizePurchasedSlots(state.purchasedSlots, balance);
 
-  for (const jobId of GATHERING_JOBS) {
+  for (const jobId of activeJobs) {
     if (!state.jobs?.[jobId]) continue;
     const max = getMaxSlots(state, balance, jobId);
     if (!state.harvestSlots[jobId]) state.harvestSlots[jobId] = [];

@@ -6,5 +6,50 @@
     "notSellable": true,
     "sellPrice": 0,
     "rarity": "common"
+  },
+  "key_sakura": {
+    "id": "key_sakura",
+    "name": "Clé du Temple",
+    "emoji": "🗝️",
+    "combatOnly": true,
+    "sellPrice": 15,
+    "rarity": "uncommon",
+    "description": "Ouvre le donjon du Temple du Cerisier."
+  },
+  "key_petal": {
+    "id": "key_petal",
+    "name": "Clé des Pétales",
+    "emoji": "🗝️",
+    "combatOnly": true,
+    "sellPrice": 35,
+    "rarity": "uncommon",
+    "description": "Ouvre le donjon de la Tanière des Pétales."
+  },
+  "key_jade": {
+    "id": "key_jade",
+    "name": "Clé de Jade",
+    "emoji": "🗝️",
+    "combatOnly": true,
+    "sellPrice": 80,
+    "rarity": "rare",
+    "description": "Ouvre le donjon de la Grotte de Jade."
+  },
+  "key_mist": {
+    "id": "key_mist",
+    "name": "Clé de Brume",
+    "emoji": "🗝️",
+    "combatOnly": true,
+    "sellPrice": 60,
+    "rarity": "rare",
+    "description": "Ouvre le donjon du Sanctuaire de Brume."
+  },
+  "key_lotus": {
+    "id": "key_lotus",
+    "name": "Clé du Lotus",
+    "emoji": "🗝️",
+    "combatOnly": true,
+    "sellPrice": 120,
+    "rarity": "epic",
+    "description": "Ouvre le donjon du Hall du Lotus."
   }
 }

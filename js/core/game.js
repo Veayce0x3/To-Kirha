@@ -74,6 +74,7 @@ import {
   migrateCombatItemInstances,
   getWeaponClassLabel,
   COMBAT_SLOT_IDS,
+  grantCombatItem,
 } from '../systems/combat.js';
 import {
   canFight,
@@ -154,7 +155,10 @@ import {
 } from '../systems/farm.js';
 import { getFarmToolCheck, getHarvestToolCheck } from '../systems/toolTier.js';
 import { migrateCombatDurability } from '../systems/combatDurability.js';
-import { clearCombatMealBuff, MEAL_EFFECTS } from '../systems/consumables.js';
+import { clearCombatMealBuff, listOwnedMeals } from '../systems/consumables.js';
+import { applyCareerChoice, needsCareerChoice as checkNeedsCareerChoice } from '../systems/careerChoice.js';
+import { getFusionableGroups, fuseEquipmentGroup } from '../systems/equipmentFusion.js';
+import { getDungeonKeyId, getKeyCount as countDungeonKeys } from '../systems/dungeonKeys.js';
 
 const LEGACY_COMBAT_RESOURCES = [
   'spirit_ember', 'petal_gel', 'temple_fragment', 'sakura_core',
@@ -265,6 +269,7 @@ export class Game {
       activeMeal: null,
       combatMealBuff: null,
       bankProtected: [],
+      careerChoice: null,
     };
     ensureSlots(state, this.balance);
     ensureFarmSlots(state, this.farmData, this.balance);
@@ -341,6 +346,7 @@ export class Game {
       combatMealBuff: null,
       quests: migrateQuests(saved.quests),
       bankProtected: saved.bankProtected || defaults.bankProtected,
+      careerChoice: saved.careerChoice || null,
     };
     ensureSlots(merged, this.balance);
     ensureFarmSlots(merged, this.farmData, this.balance);
@@ -790,7 +796,50 @@ export class Game {
   }
 
   getOwnedMeals() {
-    return Object.keys(MEAL_EFFECTS).filter((id) => (this.state.inventory[id] || 0) > 0);
+    return listOwnedMeals(this.state, this.resources, this.balance).map((m) => m.id);
+  }
+
+  needsCareerChoice() {
+    return checkNeedsCareerChoice(this.state);
+  }
+
+  doApplyCareerChoice(gatheringJobs, farmBuildings) {
+    const result = applyCareerChoice(this.state, gatheringJobs, farmBuildings);
+    if (!result.ok) return result;
+    ensureSlots(this.state, this.balance);
+    ensureFarmSlots(this.state, this.farmData, this.balance);
+    emit('careerChoiceApplied', result);
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return result;
+  }
+
+  getFusionGroups() {
+    return getFusionableGroups(this.state, this.combatEquipment.items);
+  }
+
+  doFuseEquipment(groupKey) {
+    const groups = getFusionableGroups(this.state, this.combatEquipment.items);
+    const group = groups.find((g) => `${g.itemId}::${g.rarity}` === groupKey);
+    if (!group) return { ok: false, reason: 'Groupe introuvable' };
+    const result = fuseEquipmentGroup(
+      this.state,
+      group,
+      this.balance,
+      this.combatEquipment.items,
+      grantCombatItem
+    );
+    if (result.ok) {
+      emit('equipmentFused', result);
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
+    return result;
+  }
+
+  getDungeonKeyCount(combatZoneId) {
+    const keyId = getDungeonKeyId(combatZoneId);
+    return countDungeonKeys(this.state, keyId);
   }
 
   getMaxFarmSlots(buildingId) {
@@ -827,9 +876,10 @@ export class Game {
       mealId,
       this.state,
       this.characterConfig,
-      this.enemies,
+      this.resources,
       this.balance,
-      this.combatEquipment.items
+      this.combatEquipment.items,
+      this.enemies
     );
     if (!result) return { ok: false, reason: 'Pas en combat' };
     if (result.blocked) return { ok: false, reason: result.reason || 'Impossible' };

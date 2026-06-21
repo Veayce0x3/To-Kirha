@@ -9,6 +9,7 @@ import {
   buildHeroOnlyParty,
   getMemberSkillIds,
   getLivingEnemies,
+  grantCombatItem,
   DEFEND_ACTION,
   saveSoloHp,
   clearSoloHpWear,
@@ -18,13 +19,26 @@ import {
   clearDungeonPartySnapshot,
 } from './combat.js';
 import { addCharacterXp } from './character.js';
-import { peekMealHeal, consumeMealFromInventory, clearCombatMealBuff, DUNGEON_ROOM_HEAL } from './consumables.js';
+import {
+  peekMealHeal,
+  consumeMealFromInventory,
+  clearCombatMealBuff,
+  DUNGEON_ROOM_HEAL,
+  calcMealHealAmount,
+} from './consumables.js';
 import { wearEquippedCombatGear } from './combatDurability.js';
 import {
-  canSpendDailyCombat,
-  getDungeonUnlockReason,
-  recordDailyCombatUse,
-} from './combatDaily.js';
+  hasDungeonKey,
+  consumeDungeonKey,
+  grantDungeonKey,
+  rollKeyDrop,
+  getDungeonKeyId,
+} from './dungeonKeys.js';
+import {
+  rollDungeonEquipmentDrop,
+  pickRandomDropItem,
+  RARITY_LABELS,
+} from './equipmentRarity.js';
 
 function isZoneUnlocked(zoneId, state, balance) {
   if (balance.zones[zoneId]?.unlocked) return true;
@@ -46,11 +60,6 @@ export function canFight(combatZone, state, balance, characterConfig, isBoss = f
     return { ok: false, reason: `Perso Nv.${combatZone.requiredCharLevel} requis` };
   }
   if (state.combatEncounter) return { ok: false, reason: 'Combat en cours' };
-
-  const dailyKind = isBoss ? 'soloBoss' : 'soloMob';
-  const dailyCheck = canSpendDailyCombat(state, balance, dailyKind);
-  if (!dailyCheck.ok) return dailyCheck;
-
   return { ok: true };
 }
 
@@ -65,38 +74,11 @@ export function canEnterDungeon(combatZone, state, balance, characterConfig) {
   if (state.combatEncounter) return { ok: false, reason: 'Combat en cours' };
   const rooms = buildDungeonRooms(combatZone);
   if (rooms.length === 0) return { ok: false, reason: 'Donjon vide' };
-
-  const unlockReason = getDungeonUnlockReason(combatZone, state, balance);
-  if (unlockReason) return { ok: false, reason: unlockReason };
-
-  const dailyCheck = canSpendDailyCombat(state, balance, 'dungeonRun');
-  if (!dailyCheck.ok) return dailyCheck;
-
+  if (!hasDungeonKey(state, combatZone.id)) {
+    const keyId = getDungeonKeyId(combatZone.id);
+    return { ok: false, reason: `Il te faut 1 clé de donjon (${keyId || '?'}) — farm en combat rapide ou achète à la HdV.` };
+  }
   return { ok: true, roomCount: rooms.length };
-}
-
-export function rollDrops(dropTable) {
-  const gained = {};
-  for (const [resId, spec] of Object.entries(dropTable || {})) {
-    if (Math.random() > (spec.chance ?? 1)) continue;
-    const min = spec.min ?? 1;
-    const max = spec.max ?? min;
-    const amount = min + Math.floor(Math.random() * (max - min + 1));
-    gained[resId] = (gained[resId] || 0) + amount;
-  }
-  return gained;
-}
-
-export function applyDrops(state, drops) {
-  for (const [resId, amount] of Object.entries(drops)) {
-    state.inventory[resId] = (state.inventory[resId] || 0) + amount;
-  }
-}
-
-function mergeDropTables(target, source) {
-  for (const [resId, amount] of Object.entries(source || {})) {
-    target[resId] = (target[resId] || 0) + amount;
-  }
 }
 
 function recordKill(state, zoneId, foe, isBoss) {
@@ -107,6 +89,14 @@ function recordKill(state, zoneId, foe, isBoss) {
     if (!state.bossKills) state.bossKills = {};
     state.bossKills[zoneId] = (state.bossKills[zoneId] || 0) + 1;
   }
+}
+
+function rollEquipmentDrop(zoneId, isBoss, state, combatItems, balance) {
+  if (!rollDungeonEquipmentDrop(isBoss, balance)) return null;
+  const item = pickRandomDropItem(zoneId, combatItems);
+  if (!item) return null;
+  const ref = grantCombatItem(state, item.id, combatItems, 'common');
+  return { itemId: item.id, name: item.name, emoji: item.emoji, rarity: 'common', ref };
 }
 
 export function startFight(
@@ -152,7 +142,9 @@ export function startDungeonRun(
   const check = canEnterDungeon(combatZone, state, balance, characterConfig);
   if (!check.ok) return check;
 
-  recordDailyCombatUse(state, 'dungeonRun');
+  if (!consumeDungeonKey(state, combatZone.id)) {
+    return { ok: false, reason: 'Clé de donjon manquante' };
+  }
 
   const rooms = buildDungeonRooms(combatZone);
   const party = buildParty(state, characterConfig, combatItems, companionDefs, balance);
@@ -167,6 +159,7 @@ export function startDungeonRun(
     roomIndex: 0,
     rooms,
     dungeonDrops: {},
+    dungeonEquipmentDrops: [],
     dungeonCharXp: 0,
     foe: first.foe,
     isBoss: first.isBoss,
@@ -183,14 +176,15 @@ function wearAfterCombat(state, combatItems) {
 
 function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, combatItems) {
   const run = state.combatEncounter;
-  const charXp = foe.charXpReward || 0;
+  const xpMult = balance.combat?.soloXpMultiplier ?? 0.25;
+  const charXp = Math.floor((foe.charXpReward || 0) * xpMult);
   const levelResult = charXp > 0 ? addCharacterXp(state, charXp, characterConfig, balance) : null;
-  const drops = rollDrops(foe.drops);
-  applyDrops(state, drops);
   recordKill(state, zoneId, foe, isBoss);
 
-  if (!run?.isDungeonRun) {
-    recordDailyCombatUse(state, isBoss ? 'soloBoss' : 'soloMob');
+  let keyDropped = false;
+  if (rollKeyDrop(isBoss, balance)) {
+    grantDungeonKey(state, zoneId);
+    keyDropped = true;
   }
 
   if (combatItems) wearAfterCombat(state, combatItems);
@@ -206,9 +200,11 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, c
     cleared: true,
     charXp,
     levelResult,
-    drops,
+    drops: {},
+    keyDropped,
     isBoss,
     zoneId,
+    isSolo: true,
   };
 }
 
@@ -236,17 +232,28 @@ function finishDungeonRun(run, state, characterConfig, balance, combatItems) {
     charXp: totalXp,
     levelResult,
     drops: { ...(run.dungeonDrops || {}) },
+    equipmentDrops: [...(run.dungeonEquipmentDrops || [])],
     roomCount,
     zoneId: run.zoneId,
     partyRestored: true,
   };
 }
 
+function applyDrops(state, drops) {
+  for (const [resId, amount] of Object.entries(drops || {})) {
+    state.inventory[resId] = (state.inventory[resId] || 0) + amount;
+  }
+}
+
 function advanceDungeonRoom(run, state, characterConfig, enemies, balance, combatItems) {
-  const drops = rollDrops(run.foe.drops);
-  mergeDropTables(run.dungeonDrops, drops);
   run.dungeonCharXp = (run.dungeonCharXp || 0) + (run.foe.charXpReward || 0);
   recordKill(state, run.zoneId, run.foe, run.isBoss);
+
+  const equipDrop = rollEquipmentDrop(run.zoneId, run.isBoss, state, combatItems, balance);
+  if (equipDrop) {
+    if (!run.dungeonEquipmentDrops) run.dungeonEquipmentDrops = [];
+    run.dungeonEquipmentDrops.push(equipDrop);
+  }
 
   if (combatItems) wearAfterCombat(state, combatItems);
 
@@ -275,6 +282,13 @@ function advanceDungeonRoom(run, state, characterConfig, enemies, balance, comba
     });
   }
 
+  if (equipDrop && run.combat?.log) {
+    run.combat.log.push({
+      type: 'loot',
+      text: `🎁 Drop : ${equipDrop.emoji} ${equipDrop.name} (${RARITY_LABELS.common})`,
+    });
+  }
+
   return {
     continuing: true,
     roomAdvanced: true,
@@ -286,6 +300,7 @@ function advanceDungeonRoom(run, state, characterConfig, enemies, balance, comba
     phase: run.combat.phase,
     activeMemberIndex: run.combat.activeMemberIndex,
     roomHeal: DUNGEON_ROOM_HEAL,
+    equipDrop,
   };
 }
 
@@ -385,18 +400,20 @@ export function useCombatDefend(state, characterConfig, enemies, balance, combat
   };
 }
 
-export function useCombatMeal(mealId, state, characterConfig, enemies, balance, combatItems) {
+export function useCombatMeal(mealId, state, characterConfig, resources, balance, combatItems, enemies) {
   const run = state.combatEncounter;
   if (!run?.combat) return null;
 
-  const heal = peekMealHeal(mealId, state);
+  const charLevel = state.character?.level || 1;
+  const memberIndex = run.combat.activeMemberIndex;
+  const member = run.party[memberIndex];
+  const heal = peekMealHeal(mealId, state, resources, balance, charLevel);
   if (!heal.ok) return { blocked: true, reason: heal.reason };
 
-  const memberIndex = run.combat.activeMemberIndex;
   const mealCheck = canUseMemberMeal(run, memberIndex);
   if (!mealCheck.ok) return { blocked: true, reason: mealCheck.reason };
 
-  const gain = heal.healAmount;
+  const gain = calcMealHealAmount(member?.maxHp || 1, heal.healPct);
   const result = useMemberMeal(run, memberIndex, gain, heal.label, mealId);
   if (!result) return { blocked: true, reason: 'Impossible d\'utiliser ce repas' };
   if (result.blocked) return result;

@@ -1,4 +1,4 @@
-import { resolveItemId } from './combat.js';
+import { resolveItemId, getInstanceEffectiveStats } from './combat.js';
 import { getActiveSetBonus } from './setBonus.js';
 import { getSeasonLevelCap } from './prestige.js';
 
@@ -23,12 +23,10 @@ export function getCombatStatsBreakdown(state, characterConfig, combatEquipment,
 
   for (const ref of Object.values(state.combatEquipment || {})) {
     if (!ref) continue;
-    const itemId = resolveItemId(state, ref, combatItems) || ref;
-    const item = combatItems[itemId];
-    if (!item?.stats) continue;
-    equipment.hp += item.stats.hp || 0;
-    equipment.atk += item.stats.atk || 0;
-    equipment.def += item.stats.def || 0;
+    const stats = getInstanceEffectiveStats(state, ref, combatItems);
+    equipment.hp += stats.hp || 0;
+    equipment.atk += stats.atk || 0;
+    equipment.def += stats.def || 0;
   }
 
   const { bonus: setBonus, sets } = getActiveSetBonus(state, combatItems, balance);
@@ -51,12 +49,10 @@ export function getCombatStats(state, characterConfig, combatEquipment, combatIt
 
   for (const ref of Object.values(state.combatEquipment || {})) {
     if (!ref) continue;
-    const itemId = resolveItemId(state, ref, combatItems) || ref;
-    const item = combatItems[itemId];
-    if (!item?.stats) continue;
-    stats.hp += item.stats.hp || 0;
-    stats.atk += item.stats.atk || 0;
-    stats.def += item.stats.def || 0;
+    const eqStats = getInstanceEffectiveStats(state, ref, combatItems);
+    stats.hp += eqStats.hp || 0;
+    stats.atk += eqStats.atk || 0;
+    stats.def += eqStats.def || 0;
   }
 
   return stats;

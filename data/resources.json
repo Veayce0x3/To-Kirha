@@ -1311,7 +1311,10 @@
     "sellPrice": 18,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +25 PV"
+    "description": "Soin en combat : +25 PV",
+    "mealTier": 1,
+    "requiredCharLevelMin": 1,
+    "requiredCharLevelMax": 9
   },
   "meal_poisson": {
     "id": "meal_poisson",
@@ -1320,7 +1323,10 @@
     "sellPrice": 16,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +35 PV"
+    "description": "Soin en combat : +35 PV",
+    "mealTier": 10,
+    "requiredCharLevelMin": 10,
+    "requiredCharLevelMax": 19
   },
   "meal_oeufs": {
     "id": "meal_oeufs",
@@ -1329,7 +1335,10 @@
     "sellPrice": 22,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +20 PV"
+    "description": "Soin en combat : +20 PV",
+    "mealTier": 1,
+    "requiredCharLevelMin": 1,
+    "requiredCharLevelMax": 9
   },
   "meal_soupe": {
     "id": "meal_soupe",
@@ -1338,7 +1347,10 @@
     "sellPrice": 28,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +45 PV"
+    "description": "Soin en combat : +45 PV",
+    "mealTier": 10,
+    "requiredCharLevelMin": 10,
+    "requiredCharLevelMax": 19
   },
   "meal_brochette": {
     "id": "meal_brochette",
@@ -1347,7 +1359,10 @@
     "sellPrice": 35,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +15 PV"
+    "description": "Soin en combat : +15 PV",
+    "mealTier": 1,
+    "requiredCharLevelMin": 1,
+    "requiredCharLevelMax": 9
   },
   "meal_gateau": {
     "id": "meal_gateau",
@@ -1356,7 +1371,10 @@
     "sellPrice": 55,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +55 PV"
+    "description": "Soin en combat : +55 PV",
+    "mealTier": 20,
+    "requiredCharLevelMin": 20,
+    "requiredCharLevelMax": 29
   },
   "meal_festin": {
     "id": "meal_festin",
@@ -1365,6 +1383,9 @@
     "sellPrice": 120,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +80 PV"
+    "description": "Soin en combat : +80 PV",
+    "mealTier": 30,
+    "requiredCharLevelMin": 30,
+    "requiredCharLevelMax": 39
   }
 }

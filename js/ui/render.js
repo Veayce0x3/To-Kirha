@@ -1,4 +1,5 @@
 import { on } from '../core/events.js';
+import { RARITY_LABELS } from '../systems/equipmentRarity.js';
 import { getNavIcon, getCategoryIcon, getJobIcon, iconHtml, UI, renderResourceIcon } from '../core/assets.js';
 import {
   navigate,
@@ -12,6 +13,7 @@ import {
   isFarmView,
 } from './router.js';
 import { isRecipeEquipped } from '../systems/equipment.js';
+import { initCareerChoiceModal, showCareerChoiceIfNeeded } from './careerChoiceUi.js';
 import {
   renderView,
   renderJobSwitcherDock,
@@ -39,6 +41,8 @@ import {
 
 export function initUI(game, audio) {
   initSakuraPetals();
+  initCareerChoiceModal(game);
+  showCareerChoiceIfNeeded(game);
 
   const els = {
     kirha: document.getElementById('kirha-amount'),
@@ -125,7 +129,7 @@ export function initUI(game, audio) {
     els.sidebarNav.innerHTML = '';
     els.sidebarFooter.innerHTML = '';
 
-    for (const cat of getNavCategories()) {
+    for (const cat of getNavCategories(game.state)) {
       const section = document.createElement('div');
       section.className = 'nav-category';
 
@@ -386,13 +390,15 @@ export function initUI(game, audio) {
       showToast(els, `Salle ${(r.roomIndex ?? 0) + 1}/${r.roomCount || '?'} — ${r.foe?.emoji || '👾'} ${r.foe?.name || ''}${healNote}`, 'upgrade');
     }
   });
+  on('navRefresh', () => buildNav());
+  on('careerChoiceApplied', () => buildNav());
+  on('equipmentFused', (r) => { showToast(els, `Fusion : ${RARITY_LABELS[r.toRarity] || r.toRarity} !`, 'upgrade'); });
   on('combatVictory', (r) => {
     closeDungeonCombatModal();
     showDungeonResult(game, r);
-    const dropCount = Object.values(r.drops || {}).reduce((sum, n) => sum + n, 0);
-    const msg = r.isDungeon
-      ? `Donjon terminé ! +${r.charXp} XP · +${dropCount} 🪙`
-      : `Victoire ! +${r.charXp} XP${dropCount ? ` · +${dropCount} 🪙` : ''}`;
+    const equipCount = (r.equipmentDrops || []).length;
+    const keyNote = r.keyDropped ? ' · 🗝️ Clé !' : '';
+    const msg = r.isDungeon ? `Donjon terminé ! +${r.charXp} XP${equipCount ? ` · ${equipCount} équip.` : ''}` : `Victoire ! +${r.charXp} XP${keyNote}`;
     showToast(els, msg, 'prestige');
     audio.playSfx('levelup');
   });

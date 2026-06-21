@@ -14,6 +14,10 @@ import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
 import { listOwnedMeals, countOwnedMeals } from '../systems/consumables.js';
+import { RARITY_LABELS, RARITY_EMOJI } from '../systems/equipmentRarity.js';
+import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
+import { getDungeonKeyId } from '../systems/dungeonKeys.js';
+import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
 import { renderCombatDurabilityBar, hasCombatDurability } from '../systems/combatDurability.js';
 
 let workshopTab = 'toolmaker';
@@ -220,9 +224,9 @@ const JOB_SWITCHER_STATUS_CLASSES = [
   'nav-harvest-empty',
 ];
 
-function getJobSwitcherGroup(viewId) {
-  if (viewId?.startsWith('job_')) return { type: 'harvest', views: HARVEST_JOB_VIEWS };
-  if (isFarmView(viewId)) return { type: 'farm', views: FARM_BUILDING_VIEWS };
+function getJobSwitcherGroup(viewId, state) {
+  if (viewId?.startsWith('job_')) return { type: 'harvest', views: getVisibleHarvestViews(state) };
+  if (isFarmView(viewId)) return { type: 'farm', views: getVisibleFarmViews(state) };
   return null;
 }
 
@@ -262,7 +266,7 @@ function renderJobSwitcherChip(game, viewId, activeViewId) {
 export function renderJobSwitcherDock(game, el, viewId) {
   if (!el) return;
 
-  const group = getJobSwitcherGroup(viewId);
+  const group = getJobSwitcherGroup(viewId, game.state);
   if (!group) {
     el.classList.add('hidden');
     el.innerHTML = '';
@@ -452,6 +456,7 @@ function renderCharacter(game, el) {
 
   renderCharDofusEquipGrid(game, el.querySelector('#char-dofus-equip'));
   renderCombatOwnedReserve(game, el.querySelector('#combat-owned-reserve'));
+  renderFusionPanel(game, el.querySelector('#fusion-panel'));
 
   renderObjectiveBanner(game, el.querySelector('#char-objective'), { ready: questReady });
   renderPrestigeTeaser(game, el.querySelector('#char-prestige-teaser'));
@@ -546,6 +551,33 @@ function renderCharDofusEquipGrid(game, container) {
     }
     container.appendChild(cell);
   }
+}
+
+
+function renderFusionPanel(game, container) {
+  if (!container) return;
+  const groups = game.getFusionGroups();
+  if (!groups.length) {
+    container.innerHTML = '<h3>🔮 Fusion</h3><p class="view-desc">Aucune pièce en réserve.</p>';
+    return;
+  }
+  container.innerHTML = '<h3>🔮 Fusion</h3>' + groups.map((g) => {
+    const key = `${g.itemId}::${g.rarity}`;
+    const need = getFusionInputCount(g.rarity);
+    const check = canFuseGroup(g, game.balance);
+    const cost = getFusionKirhaCost(g.rarity, game.balance);
+    return `<div class="fusion-row"><span>${g.item.emoji} ${g.item.name} ${RARITY_EMOJI[g.rarity] || ''} · ${g.refs.length}/${need}</span><button type="button" class="btn btn-craft btn-fusion" data-fusion="${key}" ${check.ok ? '' : 'disabled'}>Fusionner (${cost} 💰)</button></div>`;
+  }).join('');
+  container.querySelectorAll('.btn-fusion').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const result = game.doFuseEquipment(btn.dataset.fusion);
+      if (!result.ok) {
+        emit('farmBlocked', { message: result.reason || 'Fusion impossible' });
+        return;
+      }
+      renderCharacter(game, document.getElementById('view-container'));
+    });
+  });
 }
 
 function renderCombatOwnedReserve(game, container) {
@@ -1999,7 +2031,7 @@ function renderWorkshopHub(game, el) {
   el.innerHTML = `
     <div class="view-header">
       <h2>${iconHtml(getNavIcon('workshop'), 'view-header-icon', 'Atelier')} Atelier</h2>
-      <p class="view-desc">Fabrique outils, armes et équipements — choisis un métier ci-dessous</p>
+      <p class="view-desc">Fabrique et répare tes outils de récolte et de ferme</p>
     </div>
     <div class="workshop-tabs" id="workshop-tabs" role="tablist"></div>
     <div id="workshop-content"></div>
@@ -2450,13 +2482,9 @@ function renderCombat(game, el) {
       <p class="view-desc">${game.getCharacterDisplayName()} · Nv.${charProg.level} · ❤️ ${stats.hp} · ⚔️ ${stats.atk} · 🛡️ ${stats.def}</p>
       <p class="view-desc">Arme : ${weaponLabel} · Équipe : ${1 + game.getActiveCompanionCount()}/3</p>
       ${game.state.combatWear?.solo?.hero != null ? `<p class="view-desc">HP entraînement conservés : ❤️ ${game.state.combatWear.solo.hero}</p>` : ''}
-      <p class="combat-daily-banner">
-        📅 Aujourd'hui — Combats rapides : <strong>${daily.remaining.soloMob}</strong>/${daily.limits.soloMob}
-        · Boss rapides : <strong>${daily.remaining.soloBoss}</strong>/${daily.limits.soloBoss}
-        · Donjons : <strong>∞</strong>
-      </p>
+      <p class="view-desc">🗝️ Farm les <strong>clés</strong> en combat rapide (faible %) · 🍱 <strong>Repas</strong> indispensables en donjon.</p>
       ${ownedMeals.length > 0 ? `
-        <p class="view-desc meal-combat-hint">🍱 ${ownedMeals.length} type(s) de repas en stock — en combat, ouvre <strong>Objets</strong> pour soigner (+PV fixes).</p>
+        <p class="view-desc meal-combat-hint">🍱 ${ownedMeals.length} type(s) de repas — menu <strong>Objets</strong> (% PV max).</p>
       ` : ''}
     </div>
     <div id="combat-zone-list"></div>
@@ -2487,17 +2515,8 @@ function renderCombat(game, el) {
         ${!zoneUnlocked ? '<p class="tile-lock">🔒 Zone verrouillée</p>' : ''}
       </div>
       <div class="combat-dungeon-entry">
-        <p class="view-desc">Donjon multi-salles (équipe à 3) — distinct de l'entraînement rapide ci-dessous. Les petits monstres restent combattables à volonté (limite journalière).</p>
-        ${dungeonUnlock && !dungeonUnlock.ready ? `
-          <ul class="combat-unlock-list">
-            ${dungeonUnlock.monsterProgress.map((m) => `
-              <li class="${m.met ? 'combat-unlock-done' : ''}">${m.emoji} ${m.name} : ${m.kills}/${m.required} victoires rapides</li>
-            `).join('')}
-            ${dungeonCfg.requireBossSoloKill && combatZone.boss ? `
-              <li class="${dungeonUnlock.bossMet ? 'combat-unlock-done' : ''}">${combatZone.boss.emoji} Boss ${combatZone.boss.name} (rapide) : ${dungeonUnlock.bossSoloKills}/1</li>
-            ` : ''}
-          </ul>
-        ` : ''}
+        <p class="view-desc">Donjon multi-salles — <strong>1 clé</strong> consommée à l'entrée. Équipement droppé ici uniquement.</p>
+        <p class="view-desc">🗝️ Clés en stock : <strong>${game.getDungeonKeyCount(combatZone.id)}</strong></p>
         <button type="button" class="btn btn-prestige btn-dungeon-run" ${zoneUnlocked && dungeonCheck.ok ? '' : 'disabled'} title="${dungeonCheck.reason || ''}">
           🚪 Entrer dans le donjon
         </button>
@@ -2789,7 +2808,7 @@ function renderDungeonCombatBody(game) {
       `).join('') : '<p class="dq-cmd-empty">Aucun sort pour l\'instant.</p>'}
     `;
   } else if (combatUi.menu === 'items' && canAct) {
-    const ownedMeals = listOwnedMeals(game.state);
+    const ownedMeals = listOwnedMeals(game.state, game.resources, game.balance);
     const memberAte = !!activeMember?.mealUsedThisRound;
     commandHtml = `
       <button type="button" class="dq-cmd-btn dq-cmd-back" data-menu="main">◀ Retour</button>
@@ -2804,8 +2823,8 @@ function renderDungeonCombatBody(game) {
       ${!memberAte && !ownedMeals.length ? '<p class="dq-cmd-empty">Aucun repas en stock — fabrique-en à la Cuisine.</p>' : ''}
     `;
   } else {
-    const ownedMeals = listOwnedMeals(game.state);
-    const mealCount = countOwnedMeals(game.state);
+    const ownedMeals = listOwnedMeals(game.state, game.resources, game.balance);
+    const mealCount = countOwnedMeals(game.state, game.resources, game.balance);
     const memberAte = !!activeMember?.mealUsedThisRound;
     const canUseMeal = canAct && mealCount > 0 && !memberAte;
     commandHtml = `
@@ -2828,7 +2847,7 @@ function renderDungeonCombatBody(game) {
   }
 
   const phaseLabel = isPlayerTurn ? 'Ton tour' : 'Tour ennemi';
-  const ownedMealsStrip = listOwnedMeals(game.state);
+  const ownedMealsStrip = listOwnedMeals(game.state, game.resources, game.balance);
   const mealsStripHtml = ownedMealsStrip.length
     ? `<div class="dq-meals-strip" aria-label="Repas en stock">
         ${ownedMealsStrip.map((m) => {
@@ -2944,6 +2963,13 @@ export function showCombatResult(game, result) {
     for (const [resId, amount] of Object.entries(result.drops || {})) {
       const res = game.resources[resId];
       lootHtml += `<div class="offline-gain-row">${renderResourceIcon(res, 'loot-icon')}+${amount} ${res?.name || resId}</div>`;
+    }
+    for (const drop of result.equipmentDrops || []) {
+      lootHtml += `<div class="offline-gain-row">${drop.emoji || '⚔️'} ${drop.name} ${RARITY_EMOJI[drop.rarity] || ''}</div>`;
+    }
+    if (result.keyDropped) {
+      const keyId = getDungeonKeyId(result.zoneId);
+      lootHtml += `<div class="offline-gain-row">🗝️ ${game.resources[keyId]?.name || keyId}</div>`;
     }
     const title = result.isDungeon
       ? `🏰 Donjon terminé ! (${result.roomCount || ''} salles)`

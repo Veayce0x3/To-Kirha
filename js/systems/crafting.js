@@ -55,8 +55,17 @@ export function isRecipeStillOwned(state, recipeId, recipe, combatItems = {}) {
 }
 
 /** Pourquoi la fabrication est impossible — null si OK. */
+
+export function isAllowedCraftRecipe(recipe) {
+  if (!recipe) return false;
+  if (recipe.combatItem) return false;
+  const job = recipe.craftJob || 'blacksmith';
+  return job === 'toolmaker' || job === 'cook';
+}
+
 export function whyCannotCraft(recipeId, ctx) {
   const recipe = ctx.recipes[recipeId];
+  if (!isAllowedCraftRecipe(recipe)) return { ok: false, reason: 'Recette désactivée' };
   if (!recipe) return 'Recette inconnue.';
 
   if (isRecipeStillOwned(ctx.state, recipeId, recipe, ctx.combatItems)) {
@@ -229,6 +238,7 @@ export function listWorkshopRecipes(craftJobId, ctx) {
   const locked = [];
 
   for (const [id, recipe] of Object.entries(ctx.recipes)) {
+    if (!isAllowedCraftRecipe(recipe)) continue;
     if (!recipeBelongsToWorkshopTab(id, recipe, craftJobId, ctx.equipment)) continue;
     const info = inspectRecipe(id, ctx);
     if (!info) continue;
