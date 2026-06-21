@@ -204,6 +204,34 @@ export function clearSoloHpWear(state) {
   if (state.combatWear) delete state.combatWear.solo;
 }
 
+export function snapshotDungeonParty(state, party) {
+  if (!state.combatWear) state.combatWear = {};
+  state.combatWear.dungeonEntry = Object.fromEntries(party.map((m) => [m.id, m.hp]));
+}
+
+export function applyDungeonPartySnapshot(state, party) {
+  const snap = state.combatWear?.dungeonEntry;
+  if (!snap) return;
+  for (const member of party) {
+    if (snap[member.id] != null) {
+      member.hp = Math.max(0, Math.min(member.maxHp, snap[member.id]));
+    }
+  }
+}
+
+export function restoreCombatWearFromDungeonEntry(state) {
+  const snap = state.combatWear?.dungeonEntry;
+  if (!snap) return;
+  if (!state.combatWear) state.combatWear = {};
+  if (snap.hero != null) {
+    state.combatWear.solo = { hero: snap.hero };
+  }
+}
+
+export function clearDungeonPartySnapshot(state) {
+  if (state.combatWear) delete state.combatWear.dungeonEntry;
+}
+
 export function buildParty(state, characterConfig, combatItems, companionDefs, balance) {
   const members = buildHeroOnlyParty(state, characterConfig, combatItems, balance);
 
@@ -496,12 +524,23 @@ export function useMemberDefend(run, memberIndex) {
   return { enemyDefeated: false, ...advance };
 }
 
-export function useMemberMeal(run, memberIndex, healAmount, mealLabel, mealId) {
-  if (!run.combat || run.combat.phase !== 'player') return null;
-  if (run.combat.activeMemberIndex !== memberIndex) return null;
+export function canUseMemberMeal(run, memberIndex) {
+  if (!run?.combat || run.combat.phase !== 'player') {
+    return { ok: false, reason: 'Pas ton tour' };
+  }
+  if (run.combat.activeMemberIndex !== memberIndex) {
+    return { ok: false, reason: 'Ce n\'est pas le tour de ce combattant' };
+  }
   const member = run.party[memberIndex];
-  if (!member || member.hp <= 0) return { blocked: true, reason: 'Combattant KO' };
-  if (member.mealUsedThisRound) return { blocked: true, reason: 'Déjà mangé ce tour' };
+  if (!member || member.hp <= 0) return { ok: false, reason: 'Combattant KO' };
+  if (member.mealUsedThisRound) return { ok: false, reason: 'Déjà mangé ce tour' };
+  return { ok: true, member };
+}
+
+export function useMemberMeal(run, memberIndex, healAmount, mealLabel, mealId) {
+  const check = canUseMemberMeal(run, memberIndex);
+  if (!check.ok) return { blocked: true, reason: check.reason };
+  const member = check.member;
 
   member.hp = Math.min(member.maxHp, member.hp + healAmount);
   member.mealUsedThisRound = true;

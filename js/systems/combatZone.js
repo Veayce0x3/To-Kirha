@@ -3,6 +3,7 @@ import {
   useMemberSkill,
   useMemberDefend,
   useMemberMeal,
+  canUseMemberMeal,
   enemyAttackTurn,
   buildParty,
   buildHeroOnlyParty,
@@ -11,9 +12,13 @@ import {
   DEFEND_ACTION,
   saveSoloHp,
   clearSoloHpWear,
+  snapshotDungeonParty,
+  applyDungeonPartySnapshot,
+  restoreCombatWearFromDungeonEntry,
+  clearDungeonPartySnapshot,
 } from './combat.js';
 import { addCharacterXp } from './character.js';
-import { useMealHealInCombat, clearCombatMealBuff, DUNGEON_ROOM_HEAL } from './consumables.js';
+import { peekMealHeal, consumeMealFromInventory, clearCombatMealBuff, DUNGEON_ROOM_HEAL } from './consumables.js';
 import { wearEquippedCombatGear } from './combatDurability.js';
 import {
   canSpendDailyCombat,
@@ -151,6 +156,8 @@ export function startDungeonRun(
 
   const rooms = buildDungeonRooms(combatZone);
   const party = buildParty(state, characterConfig, combatItems, companionDefs, balance);
+  applyDungeonPartySnapshot(state, party);
+  snapshotDungeonParty(state, party);
   const first = rooms[0];
 
   state.combatEncounter = {
@@ -188,7 +195,7 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, c
 
   if (combatItems) wearAfterCombat(state, combatItems);
 
-  if (run?.isSoloFight && run.party) {
+  if (run?.isSoloFight && !run?.isDungeonRun && run.party) {
     saveSoloHp(state, run.party);
   }
 
@@ -216,6 +223,7 @@ function finishDungeonRun(run, state, characterConfig, balance, combatItems) {
   }
 
   clearSoloHpWear(state);
+  clearDungeonPartySnapshot(state);
   clearCombatMealBuff(state);
 
   state.combatEncounter = null;
@@ -293,7 +301,11 @@ function resolveEnemyPhaseStep(state, characterConfig, enemies, balance, combatI
   const enemyResult = enemyAttackTurn(run);
 
   if (enemyResult?.playerDefeated) {
-    if (run?.isSoloFight && run.party) saveSoloHp(state, run.party);
+    if (run?.isDungeonRun) {
+      restoreCombatWearFromDungeonEntry(state);
+    } else if (run?.isSoloFight && run.party) {
+      saveSoloHp(state, run.party);
+    }
     const fail = { victory: false, cleared: false, isDungeon: !!run.isDungeonRun };
     state.combatEncounter = null;
     return fail;
@@ -377,14 +389,19 @@ export function useCombatMeal(mealId, state, characterConfig, enemies, balance, 
   const run = state.combatEncounter;
   if (!run?.combat) return null;
 
-  const heal = useMealHealInCombat(state, mealId);
+  const heal = peekMealHeal(mealId, state);
   if (!heal.ok) return { blocked: true, reason: heal.reason };
 
   const memberIndex = run.combat.activeMemberIndex;
+  const mealCheck = canUseMemberMeal(run, memberIndex);
+  if (!mealCheck.ok) return { blocked: true, reason: mealCheck.reason };
+
   const gain = heal.healAmount;
   const result = useMemberMeal(run, memberIndex, gain, heal.label, mealId);
   if (!result) return { blocked: true, reason: 'Impossible d\'utiliser ce repas' };
   if (result.blocked) return result;
+
+  consumeMealFromInventory(state, mealId);
 
   if (result.enemyDefeated) {
     return onEnemyDefeated(run, state, characterConfig, enemies, balance, combatItems);
@@ -405,6 +422,10 @@ export function useCombatMeal(mealId, state, characterConfig, enemies, balance, 
 }
 
 export function abandonCombat(state) {
+  const run = state.combatEncounter;
+  if (run?.isDungeonRun) {
+    restoreCombatWearFromDungeonEntry(state);
+  }
   state.combatEncounter = null;
 }
 

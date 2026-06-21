@@ -43,11 +43,23 @@ export function listCombatHealMeals(state) {
   return listOwnedMeals(state);
 }
 
-export function useMealHealInCombat(state, mealId) {
+export function peekMealHeal(mealId, state) {
   const effect = MEAL_EFFECTS[mealId];
   if (!effect?.healAmount) return { ok: false, reason: 'Repas inconnu' };
   if ((state.inventory[mealId] || 0) < 1) return { ok: false, reason: 'Plus de ce repas' };
+  return { ok: true, healAmount: effect.healAmount, label: effect.label };
+}
+
+export function consumeMealFromInventory(state, mealId) {
+  if ((state.inventory[mealId] || 0) < 1) return false;
   state.inventory[mealId] -= 1;
   if (state.inventory[mealId] <= 0) delete state.inventory[mealId];
-  return { ok: true, healAmount: effect.healAmount, label: effect.label };
+  return true;
+}
+
+export function useMealHealInCombat(state, mealId) {
+  const peek = peekMealHeal(mealId, state);
+  if (!peek.ok) return peek;
+  consumeMealFromInventory(state, mealId);
+  return peek;
 }
