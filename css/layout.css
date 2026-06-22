@@ -5448,6 +5448,19 @@ img.inventory-grid-icon,
 }
 
 .modal-career { max-width: 520px; }
+
+#career-choice-modal.modal-overlay.active {
+  z-index: 13000;
+}
+
+body.career-choice-pending .app-shell {
+  pointer-events: none;
+}
+
+body.career-choice-pending #career-choice-modal.modal-overlay.active {
+  pointer-events: auto;
+}
+
 .career-pick-grid { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.5rem 0; }
 .career-pick-btn { min-height: 44px; padding: 0.45rem 0.75rem; border-radius: 10px; border: 2px solid #9B59B6; background: #fff; cursor: pointer; font-family: inherit; }
 .career-pick-btn.picked { background: #F8E8EE; border-color: #2D5A27; }

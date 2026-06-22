@@ -75,6 +75,7 @@ function renderCareerModal(game) {
     const result = game.doApplyCareerChoice([...selectedGathering], [...selectedFarm]);
     if (!result.ok) return;
     modalEl.classList.remove('active');
+    document.body.classList.remove('career-choice-pending');
     emit('navRefresh');
     emit('stateChange', game.state);
   });
@@ -89,7 +90,12 @@ export function initCareerChoiceModal(game) {
 }
 
 export function showCareerChoiceIfNeeded(game) {
-  if (!game.needsCareerChoice()) return;
+  if (!game.needsCareerChoice()) {
+    document.body.classList.remove('career-choice-pending');
+    modalEl?.classList.remove('active');
+    return;
+  }
+  document.body.classList.add('career-choice-pending');
   modalEl?.classList.add('active');
   renderCareerModal(game);
 }
