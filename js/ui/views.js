@@ -2480,11 +2480,6 @@ export function renderOptions(game, el) {
   el.querySelector('#reset-save')?.addEventListener('click', async () => {
     const step1 = confirm('Créer une nouvelle partie ? Ta progression actuelle sera perdue.');
     if (!step1) return;
-    const typed = prompt('Tape EFFACER pour confirmer (un export sera copié avant) :');
-    if (typed !== 'EFFACER') {
-      hint('Réinitialisation annulée.');
-      return;
-    }
     try {
       await navigator.clipboard.writeText(game.exportSave());
       hint('Ancienne sauvegarde exportée dans le presse-papiers. Réinitialisation…');
