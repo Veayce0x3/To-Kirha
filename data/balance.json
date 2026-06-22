@@ -1,9 +1,16 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 25,
+  "saveVersion": 26,
   "betaMode": false,
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
+  "testHdv": {
+    "enabled": true,
+    "priceMultiplier": 1.2,
+    "flatMaxPrice": 12,
+    "bulkQuantities": [1, 5, 10, 25],
+    "banner": "Marché test — ressources des métiers et bâtiments que tu n'as pas choisis, à prix réduits. HDV joueur ↔ joueur bientôt."
+  },
   "combat": {
     "keyDrops": {
       "mobChance": 0.04,

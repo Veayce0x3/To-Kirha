@@ -1482,6 +1482,30 @@
   opacity: 0.9;
 }
 
+.auction-test-banner {
+  margin-bottom: 0.75rem;
+  border: 1px dashed rgba(155, 89, 182, 0.4);
+  background: rgba(248, 232, 238, 0.65);
+}
+
+.auction-vendor-details > summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  color: var(--brun);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.auction-vendor-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.auction-vendor-test {
+  border-left: 3px solid var(--violet-sakura);
+}
+
 .link-btn {
   background: none;
   border: none;

@@ -1,0 +1,135 @@
+/**
+ * HDV test (beta) — vente des ressources que le joueur ne produit pas (choix carrière).
+ * Remplacé plus tard par l'HDV joueur ↔ joueur.
+ */
+
+import {
+  GATHERING_JOB_IDS,
+  FREE_FARM_BUILDING,
+  isGatheringJobUnlocked,
+  isFarmBuildingUnlocked,
+} from './careerChoice.js';
+import { FARM_BUILDING_LABELS } from './farm.js';
+
+const EXCLUDED_ID_PREFIXES = ['meal_', 'key_'];
+const EXCLUDED_IDS = new Set(['ancient_scroll', 'gold_nugget', 'kirha']);
+
+function isTestHdvCfg(balance) {
+  return !!balance?.testHdv?.enabled;
+}
+
+export function isTestHdvEnabled(balance) {
+  return isTestHdvCfg(balance);
+}
+
+function calcUnitPrice(resource, balance) {
+  const cfg = balance.testHdv || {};
+  const mult = cfg.priceMultiplier ?? 1.2;
+  const maxPrice = cfg.flatMaxPrice ?? 12;
+  const base = resource.sellPrice || 3;
+  return Math.max(1, Math.min(maxPrice, Math.ceil(base * mult)));
+}
+
+function isExcludedResource(id, resource) {
+  if (!resource || EXCLUDED_IDS.has(id)) return true;
+  if (EXCLUDED_ID_PREFIXES.some((p) => id.startsWith(p))) return true;
+  if (resource.combatOnly || resource.merchantOnly || resource.notSellable) return true;
+  if (resource.craftOnly && !resource.farmOnly) return true;
+  if (id.startsWith('meal_')) return true;
+  return false;
+}
+
+function isHarvestOffer(resource) {
+  return (
+    resource.job
+    && GATHERING_JOB_IDS.includes(resource.job)
+    && !resource.craftOnly
+    && !resource.combatOnly
+    && !resource.farmOnly
+    && !resource.notHarvestable
+  );
+}
+
+function isFarmOffer(resource) {
+  return resource.farmOnly && resource.job === 'breeder';
+}
+
+function makeOffer(resourceId, resource, balance) {
+  const cfg = balance.testHdv || {};
+  return {
+    resourceId,
+    unitPrice: calcUnitPrice(resource, balance),
+    sellable: false,
+    testHdv: true,
+    bulkQuantities: cfg.bulkQuantities || [1, 5, 10, 25],
+  };
+}
+
+/**
+ * Vendeurs dynamiques : métiers / bâtiments non choisis à la carrière.
+ */
+export function buildTestHdvVendors(state, resources, farmData, balance, jobs) {
+  if (!isTestHdvCfg(balance) || !state.careerChoice?.confirmed) {
+    return {};
+  }
+
+  const vendors = {};
+
+  for (const jobId of GATHERING_JOB_IDS) {
+    if (isGatheringJobUnlocked(jobId, state)) continue;
+
+    const job = jobs[jobId];
+    const offers = {};
+    for (const [id, resource] of Object.entries(resources)) {
+      if (isExcludedResource(id, resource)) continue;
+      if (!isHarvestOffer(resource) || resource.job !== jobId) continue;
+      offers[id] = makeOffer(id, resource, balance);
+    }
+    if (!Object.keys(offers).length) continue;
+
+    vendors[`test_hdv_job_${jobId}`] = {
+      id: `test_hdv_job_${jobId}`,
+      name: job?.name || jobId,
+      emoji: job?.emoji || '📦',
+      description: `Ressources ${job?.name || jobId} — tu n'as pas choisi ce métier.`,
+      testHdv: true,
+      offers,
+    };
+  }
+
+  for (const [buildingId, building] of Object.entries(farmData?.buildings || {})) {
+    if (buildingId === FREE_FARM_BUILDING) continue;
+    if (isFarmBuildingUnlocked(buildingId, state)) continue;
+
+    const offers = {};
+    for (const productId of Object.keys(building.products || {})) {
+      const resource = resources[productId];
+      if (isExcludedResource(productId, resource)) continue;
+      if (!isFarmOffer(resource)) continue;
+      offers[productId] = makeOffer(productId, resource, balance);
+    }
+    if (!Object.keys(offers).length) continue;
+
+    const label = FARM_BUILDING_LABELS[buildingId] || building.name || buildingId;
+    vendors[`test_hdv_farm_${buildingId}`] = {
+      id: `test_hdv_farm_${buildingId}`,
+      name: label,
+      emoji: building.emoji || '🏠',
+      description: `Produits ${label} — tu n'as pas choisi ce bâtiment.`,
+      testHdv: true,
+      offers,
+    };
+  }
+
+  return vendors;
+}
+
+export function mergeMerchantVendors(merchant, testVendors) {
+  return { ...(merchant?.vendors || {}), ...testVendors };
+}
+
+export function getTestHdvBanner(balance) {
+  if (!isTestHdvCfg(balance)) return null;
+  return balance.testHdv.banner
+    || 'Marché test — achète ici ce que tu ne produis pas. HDV joueur à venir.';
+}

@@ -25,6 +25,7 @@ import {
 } from '../systems/zones.js';
 import { migrateToolDurability, wearToolsForHarvest } from '../systems/toolDurability.js';
 import { getVendorOffer, canBuyOffer, buyOffer, canSellOffer, sellOffer } from '../systems/merchant.js';
+import { buildTestHdvVendors, mergeMerchantVendors } from '../systems/testHdv.js';
 import { getAideCost } from '../systems/passive.js';
 import { applyOfflineProgress } from '../systems/offline.js';
 import {
@@ -1164,13 +1165,24 @@ export class Game {
     return this.state.inventory.ancient_scroll || 0;
   }
 
+  getMerchantVendors() {
+    const testVendors = buildTestHdvVendors(
+      this.state,
+      this.resources,
+      this.farmData,
+      this.balance,
+      this.jobs
+    );
+    return mergeMerchantVendors(this.merchant, testVendors);
+  }
+
   canBuyMerchant(vendorId, offerId, quantity) {
-    const offer = getVendorOffer(this.merchant, vendorId, offerId);
+    const offer = getVendorOffer(this.merchant, vendorId, offerId, this.getMerchantVendors());
     return canBuyOffer(offer, quantity, this.state, this.resources);
   }
 
   buyMerchant(vendorId, offerId, quantity) {
-    const offer = getVendorOffer(this.merchant, vendorId, offerId);
+    const offer = getVendorOffer(this.merchant, vendorId, offerId, this.getMerchantVendors());
     const result = buyOffer(offer, quantity, this.state, this.resources);
     if (!result) return false;
     emit('merchantBuy', { vendorId, offerId, ...result });
@@ -1180,12 +1192,12 @@ export class Game {
   }
 
   canSellMerchant(vendorId, offerId, quantity) {
-    const offer = getVendorOffer(this.merchant, vendorId, offerId);
+    const offer = getVendorOffer(this.merchant, vendorId, offerId, this.getMerchantVendors());
     return canSellOffer(offer, quantity, this.state);
   }
 
   sellMerchant(vendorId, offerId, quantity) {
-    const offer = getVendorOffer(this.merchant, vendorId, offerId);
+    const offer = getVendorOffer(this.merchant, vendorId, offerId, this.getMerchantVendors());
     const result = sellOffer(offer, quantity, this.state);
     if (!result) return false;
     emit('merchantSell', { vendorId, offerId, ...result });

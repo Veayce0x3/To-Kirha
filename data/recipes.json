@@ -961,124 +961,143 @@
     "id": "recipe_onigiri",
     "name": "Onigiri",
     "emoji": "🍙",
-    "description": "Soin en combat : +25 PV",
+    "description": "Repas niv. 1–9 : soin % PV max en donjon",
+    "kirhaCost": 20,
     "ingredients": {
-      "goujon": 2,
-      "eau": 1,
-      "ble": 2
+      "goujon": 5,
+      "ble": 4,
+      "eau": 2,
+      "ancient_scroll": 1
     },
     "output": "meal_onigiri",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 1,
-    "jobXp": 12
+    "requiredJobLevel": 3,
+    "jobXp": 18
   },
   "recipe_poisson": {
     "id": "recipe_poisson",
     "name": "Poisson grillé",
     "emoji": "🐟",
-    "description": "Soin en combat : +35 PV",
+    "description": "Repas niv. 10–19 : soin % PV max en donjon",
+    "kirhaCost": 50,
     "ingredients": {
-      "goujon": 3,
-      "eau": 1,
-      "ble": 1
+      "goujon": 6,
+      "truite": 4,
+      "eau": 2,
+      "ble": 2,
+      "ancient_scroll": 2
     },
     "output": "meal_poisson",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 1,
-    "jobXp": 10
+    "requiredJobLevel": 10,
+    "jobXp": 22
   },
   "recipe_oeufs": {
     "id": "recipe_oeufs",
     "name": "Œufs brouillés",
     "emoji": "🍳",
+    "description": "Repas niv. 1–9 : soin % PV max en donjon",
+    "kirhaCost": 25,
     "ingredients": {
-      "oeuf": 2,
-      "eau": 1
+      "oeuf": 4,
+      "eau": 2,
+      "ble": 2,
+      "ancient_scroll": 1
     },
     "output": "meal_oeufs",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 2,
-    "jobXp": 14,
-    "description": "Soin en combat : +20 PV"
+    "requiredJobLevel": 4,
+    "jobXp": 16
   },
   "recipe_soupe": {
     "id": "recipe_soupe",
     "name": "Soupe au lait",
     "emoji": "🥣",
+    "description": "Repas niv. 10–19 : soin % PV max en donjon",
+    "kirhaCost": 55,
     "ingredients": {
-      "lait": 2,
-      "eau": 1,
-      "ble": 1
+      "lait": 4,
+      "lait_brebis": 2,
+      "ble": 3,
+      "eau": 3,
+      "ancient_scroll": 2
     },
     "output": "meal_soupe",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 4,
-    "jobXp": 16,
-    "description": "Soin en combat : +45 PV"
+    "requiredJobLevel": 12,
+    "jobXp": 24
   },
   "recipe_brochette": {
     "id": "recipe_brochette",
     "name": "Brochette",
     "emoji": "🍢",
+    "description": "Repas niv. 1–9 : soin % PV max en donjon",
+    "kirhaCost": 35,
     "ingredients": {
-      "jambon": 1,
-      "bacon": 1,
-      "eau": 1
+      "jambon": 3,
+      "bacon": 3,
+      "eau": 2,
+      "ortie": 3,
+      "ancient_scroll": 1
     },
     "output": "meal_brochette",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
     "requiredJobLevel": 6,
-    "jobXp": 20,
-    "description": "Soin en combat : +15 PV"
+    "jobXp": 20
   },
   "recipe_gateau": {
     "id": "recipe_gateau",
     "name": "Gâteau au miel",
     "emoji": "🍰",
+    "description": "Repas niv. 20–29 : soin % PV max en donjon",
+    "kirhaCost": 90,
     "ingredients": {
-      "miel": 2,
-      "ble": 3,
-      "gelee_royale": 1
+      "miel": 4,
+      "ble": 6,
+      "gelee_royale": 2,
+      "oeuf": 3,
+      "ancient_scroll": 3
     },
     "output": "meal_gateau",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 10,
-    "jobXp": 28,
-    "description": "Soin en combat : +55 PV"
+    "requiredJobLevel": 16,
+    "jobXp": 32
   },
   "recipe_festin": {
     "id": "recipe_festin",
     "name": "Festin du Temple",
     "emoji": "🍱",
-    "description": "Soin en combat : +80 PV",
+    "description": "Repas niv. 30–39 : soin % PV max en donjon",
+    "kirhaCost": 180,
     "ingredients": {
-      "jambon": 2,
-      "lait": 2,
-      "miel": 2,
-      "ble": 5,
-      "gelee_royale": 1,
-      "goujon": 2,
-      "frene": 3,
-      "ancient_scroll": 1
+      "jambon": 4,
+      "lait": 4,
+      "miel": 4,
+      "ble": 8,
+      "gelee_royale": 2,
+      "goujon": 4,
+      "frene": 5,
+      "ortie": 5,
+      "ancient_scroll": 5
     },
     "output": "meal_festin",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 15,
-    "jobXp": 45
+    "requiredJobLevel": 22,
+    "jobXp": 50
   },
   "recipe_tablier": {
     "id": "recipe_tablier",

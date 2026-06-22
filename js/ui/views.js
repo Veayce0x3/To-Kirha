@@ -18,6 +18,7 @@ import { RARITY_LABELS, RARITY_EMOJI } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId } from '../systems/dungeonKeys.js';
 import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
+import { getTestHdvBanner, isTestHdvEnabled } from '../systems/testHdv.js';
 import { renderCombatDurabilityBar, hasCombatDurability } from '../systems/combatDurability.js';
 
 let workshopTab = 'toolmaker';
@@ -2077,34 +2078,59 @@ export function renderAuctionHouse(game, el) {
   const merchant = game.merchant;
   const scrollRes = game.resources.ancient_scroll;
   const owned = game.getScrollCount();
+  const testBanner = getTestHdvBanner(game.balance);
+  const careerPending = isTestHdvEnabled(game.balance) && !game.state.careerChoice?.confirmed;
+  const vendors = game.getMerchantVendors();
 
   el.innerHTML = `
     <div class="view-header">
       <h2>${iconHtml(getNavIcon('auction_house'), 'view-header-icon', merchant.name)} ${merchant.name}</h2>
       <p class="view-desc">${merchant.description}</p>
     </div>
+    ${testBanner ? `<div class="panel-inner auction-test-banner"><p class="view-desc">${testBanner}</p></div>` : ''}
+    ${careerPending ? '<div class="panel-inner"><p class="view-desc">Choisis ta voie au lancement pour débloquer les ressources des autres métiers ici.</p></div>' : ''}
     <div class="panel-inner auction-owned">
       <span class="auction-owned-label">Tes parchemins</span>
       <span class="auction-owned-value">${renderResourceIcon(scrollRes, 'auction-scroll-icon')} ×${owned}</span>
     </div>
     <div id="auction-vendors"></div>
     <div class="panel-inner auction-tip">
-      <p>💡 Vends tes récoltes à la <button type="button" class="link-btn" id="goto-bank">Banque</button> pour obtenir des Kirha, puis achète des parchemins ici.</p>
+      <p>💡 Vends tes récoltes à la <button type="button" class="link-btn" id="goto-bank">Banque</button> pour obtenir des Kirha${testBanner ? ', puis achète ici ce que tu ne produis pas' : ', puis achète des parchemins ici'}.</p>
     </div>
   `;
 
   el.querySelector('#goto-bank')?.addEventListener('click', () => navigate('inventory'));
 
   const vendorsEl = el.querySelector('#auction-vendors');
-  for (const [vendorId, vendor] of Object.entries(merchant.vendors || {})) {
+  const vendorEntries = Object.entries(vendors);
+  if (!vendorEntries.length) {
+    vendorsEl.innerHTML = '<p class="empty-text panel-inner">Aucune offre pour le moment.</p>';
+    return;
+  }
+
+  for (const [vendorId, vendor] of vendorEntries) {
     const section = document.createElement('section');
-    section.className = 'auction-vendor panel-inner';
-    section.innerHTML = `<h3 class="auction-vendor-title">${vendor.emoji} ${vendor.name}</h3><p class="view-desc">${vendor.description}</p>`;
+    section.className = `auction-vendor panel-inner${vendor.testHdv ? ' auction-vendor-test' : ''}`;
+    const openAttr = vendor.testHdv ? '' : ' open';
+    section.innerHTML = `
+      <details class="auction-vendor-details"${openAttr}>
+        <summary class="auction-vendor-title">${vendor.emoji} ${vendor.name}</summary>
+        <p class="view-desc">${vendor.description}</p>
+        <div class="auction-offers" data-vendor-grid="${vendorId}"></div>
+      </details>
+    `;
 
-    const offersGrid = document.createElement('div');
-    offersGrid.className = 'auction-offers';
+    const offersGrid = section.querySelector('.auction-offers');
 
-    for (const [offerId, offer] of Object.entries(vendor.offers || {})) {
+    const offerEntries = Object.entries(vendor.offers || {}).sort(([, a], [, b]) => {
+      const ra = game.resources[a.resourceId];
+      const rb = game.resources[b.resourceId];
+      const lvl = (ra?.requiredJobLevel || 1) - (rb?.requiredJobLevel || 1);
+      if (lvl !== 0) return lvl;
+      return (ra?.name || '').localeCompare(rb?.name || '', 'fr');
+    });
+
+    for (const [offerId, offer] of offerEntries) {
       const resource = game.resources[offer.resourceId];
       if (!resource) continue;
 
@@ -2156,7 +2182,6 @@ export function renderAuctionHouse(game, el) {
       offersGrid.appendChild(card);
     }
 
-    section.appendChild(offersGrid);
     vendorsEl.appendChild(section);
   }
 }

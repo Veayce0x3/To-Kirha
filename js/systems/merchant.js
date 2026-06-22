@@ -1,5 +1,6 @@
-export function getVendorOffer(merchant, vendorId, offerId) {
-  const vendor = merchant?.vendors?.[vendorId];
+export function getVendorOffer(merchant, vendorId, offerId, vendors = null) {
+  const catalog = vendors || merchant?.vendors;
+  const vendor = catalog?.[vendorId];
   return vendor?.offers?.[offerId] || null;
 }
 
@@ -11,7 +12,8 @@ export function getBuyPrice(offer, quantity) {
 export function canBuyOffer(offer, quantity, state, resources) {
   if (!offer || quantity <= 0) return false;
   const resource = resources[offer.resourceId];
-  if (!resource?.merchantOnly) return false;
+  if (!resource) return false;
+  if (!offer.testHdv && !resource.merchantOnly) return false;
   const price = getBuyPrice(offer, quantity);
   return price !== null && state.kirha >= price;
 }

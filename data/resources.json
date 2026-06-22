@@ -1311,7 +1311,7 @@
     "sellPrice": 18,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +25 PV",
+    "description": "Repas — soin % PV max (niv. perso 1–9)",
     "mealTier": 1,
     "requiredCharLevelMin": 1,
     "requiredCharLevelMax": 9
@@ -1323,7 +1323,7 @@
     "sellPrice": 16,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +35 PV",
+    "description": "Repas — soin % PV max (niv. perso 10–19)",
     "mealTier": 10,
     "requiredCharLevelMin": 10,
     "requiredCharLevelMax": 19
@@ -1335,7 +1335,7 @@
     "sellPrice": 22,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +20 PV",
+    "description": "Repas — soin % PV max (niv. perso 1–9)",
     "mealTier": 1,
     "requiredCharLevelMin": 1,
     "requiredCharLevelMax": 9
@@ -1347,7 +1347,7 @@
     "sellPrice": 28,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +45 PV",
+    "description": "Repas — soin % PV max (niv. perso 10–19)",
     "mealTier": 10,
     "requiredCharLevelMin": 10,
     "requiredCharLevelMax": 19
@@ -1359,7 +1359,7 @@
     "sellPrice": 35,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +15 PV",
+    "description": "Repas — soin % PV max (niv. perso 1–9)",
     "mealTier": 1,
     "requiredCharLevelMin": 1,
     "requiredCharLevelMax": 9
@@ -1371,7 +1371,7 @@
     "sellPrice": 55,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +55 PV",
+    "description": "Repas — soin % PV max (niv. perso 20–29)",
     "mealTier": 20,
     "requiredCharLevelMin": 20,
     "requiredCharLevelMax": 29
@@ -1383,7 +1383,7 @@
     "sellPrice": 120,
     "craftOnly": true,
     "consumable": true,
-    "description": "Soin en combat : +80 PV",
+    "description": "Repas — soin % PV max (niv. perso 30–39)",
     "mealTier": 30,
     "requiredCharLevelMin": 30,
     "requiredCharLevelMax": 39
