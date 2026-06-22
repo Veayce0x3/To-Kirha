@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.5.0] — 2026-06-22
+
+### Économie spécialisée & cuisine pivot (`saveVersion` 26)
+
+**Choix de carrière**
+- Modal début : **2 métiers récolte** + **2 bâtiments ferme** ; Puits gratuit
+- Navigation et slots filtrés selon le choix (`careerChoice.js`)
+
+**Hôtel des Ventes test**
+- Vendeurs dynamiques pour ressources des métiers/bâtiments **non choisis** (`testHdv.js`)
+- Prix réduits (`balance.testHdv`) — en attendant HDV joueur ↔ joueur
+
+**Combat & donjon**
+- **Clés DJ** : drop combat rapide, 1 clé consommée à l'entrée
+- **Équipement commun** : drop donjon uniquement
+- **Fusion** : même pièce + set, coûts Kirha par rareté
+- Suppression limites journalières combat
+- Repas en combat (menu Objets) + hors combat (Sac/Banque)
+- Snapshot PV équipe à l'entrée DJ
+
+**Cuisine**
+- Toutes recettes avec **Parchemins des Anciens** + coûts Kirha renforcés
+- Repas **% PV max** par palier perso
+- Boucle : Cuisine → donjon → équipement
+
+**Craft**
+- Atelier limité à **Outilleur + Cuisinier** (plus de craft équipement combat)
+
+**Technique**
+- Fix chargement **GitHub Pages** (`farm.js`, `import.meta.url`, `.nojekyll`)
+- `betaMode: false` — équipiers à débloquer en jeu
+- Config agent Cursor (`.cursor/permissions.json`, `sandbox.json`)
+
+## [1.4.0] — 2026-06-21
+
+### Correctifs post-économie phase 1
+
+- Fix `state is not defined` dans `farm.js` (écran vide)
+- Consommation repas inventaire + fusion UI Perso
+
 ## [1.3.0] — 2026-06-11
 
 ### Ferme, durabilité outils & refonte tuto/atelier (`saveVersion` 24)

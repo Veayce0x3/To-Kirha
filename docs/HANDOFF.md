@@ -1,4 +1,4 @@
-# 🌸 To-Kirha — Note de reprise (v1.4)
+# 🌸 To-Kirha — Note de reprise (v1.5)
 
 > Colle ce fichier en contexte au début d'une nouvelle conversation Cursor.
 
@@ -8,107 +8,94 @@
 npm run dev
 ```
 
-→ http://localhost:5173 (ES modules = HTTP obligatoire, pas `file://`)
+→ http://localhost:5173 · Prod : https://veayce0x3.github.io/To-Kirha/
 
 ## Vision en une phrase
 
-Jeu web **zen sakura** : récolte parallèle, ferme éleveur, 8 ateliers craft + cuisine, **combat DQ à 3** (héros + 2 équipiers), économie Kirha, outils à durabilité.
+Jeu web **zen sakura** : **carrière spécialisée** (2 récolte + 2 ferme), HDV test, **Cuisine → donjon → équipement**, combat DQ à 3, fusion, saisons.
 
 ## Décisions design validées
 
 | Sujet | Choix |
 |-------|--------|
-| Combat | **DQ direct** — 1 action / membre / tour, pas de PA |
-| Drops combat | **Pépites d'or** + XP perso — pas de Kirha |
-| Énergie | **Supprimée** (v17) — jeu libre, limites = slots / niveau / combat |
-| Beta | `betaMode: true` — équipiers débloqués, reset masqué |
-| Équipe | Héros + **2 équipiers** achetables en Kirha |
-| Équipiers | Niveau = héros ; **arme + tenue + charme** (craft répétable) |
-| Craft combat | Héros = unique / équipe = instances répétables ; pas de `requiresZone` |
-| Héros | 10 slots set complet |
-| Classe | Arme équipée → compétences |
-| Outils | **Durabilité** (`maxUses`) — usure à chaque récolte/ferme ; refab Outilleur |
-| Récolte début | **1ʳᵉ ressource Nv.1** sans outil (lent) ; paliers outil au-delà |
-| Ferme | 6 bâtiments, rations choisies, coût affiché, outil éleveur requis |
-| Cuisine | Repas → buff **1 run** de donjon |
-| Atelier Outilleur | **Tous** les outils équipables métier dans cet onglet |
+| Carrière | **2 récolte + 2 bâtiments** au lancement ; Puits gratuit |
+| Économie | Produire le tien, acheter le reste (HDV test → HDV P2P plus tard) |
+| Craft atelier | **Outilleur + Cuisinier** seulement ; pas de craft équipement combat |
+| Équipement combat | Drop **donjon** (commun) + **fusion** (même set/pièce) |
+| Clés donjon | Drop entraînement rapide ; **1 clé = 1 entrée DJ** |
+| Repas | **% PV max** par palier perso ; **parchemins** sur toutes recettes cuisine |
+| Repas usage | Menu **Objets** en combat + **Sac/Banque** hors combat |
+| Combat | DQ — 1 action / membre / tour |
+| Drops combat rapide | XP + clés (pas d'équipement) |
+| `betaMode` | **false** — équipiers à débloquer en jeu |
+| HDV test | `balance.testHdv.enabled` — ressources non choisies à prix bas |
 
-## Boucle de jeu
+## Boucle de jeu (phase 1)
 
 ```
-Zone → récolte (slots) → ferme (optionnel) → combat (pépites + XP)
-→ craft → équipement / outils → zone suivante
+Carrière → récolte/ferme (2+2) → vendre / HDV test
+→ parchemins + mats → Cuisine (repas) → clé + donjon → équipement → fusion
 ```
 
 ## Zones
 
-| Zone monde | Déblocage Kirha | Zone combat | Accès combat |
-|------------|-----------------|-------------|--------------|
-| 🌸 Village Sakura | Départ | Temple du Cerisier | Perso Nv. 1 |
-| 🌿 Forêt des Pétales | 500 💰 | Tanière des Pétales | Perso Nv. 10 |
-| ⛩️ Montagnes de Jade | 2000 💰 | Grotte de Jade | Perso Nv. 25 |
+| Zone monde | Déblocage Kirha | Zone combat |
+|------------|-----------------|-------------|
+| 🌸 Village Sakura | Départ | Temple du Cerisier |
+| 🌿 Forêt des Pétales | 500 💰 | Tanière des Pétales |
+| ⛩️ Montagnes de Jade | 2000 💰 | Grotte de Jade |
 
 ## Fichiers clés
 
 ```
 data/
-  resources.json          # ressources récolte + ferme + cuisine
-  jobs.json                 # 5 récoltes + éleveur + 8 crafts (dont cook)
-  farm.json                 # 6 bâtiments, rations, cycles
-  balance.json              # zones, slots, farmSlots, betaMode, saveVersion: 24
-  combat_resources.json     # gold_nugget (pépites)
-  recipes.json              # outils (maxUses) + sets combat + repas
-  tutorial.json             # tutoriel guidé (récolte → ferme → donjon)
-  character.json            # XP / stats perso
-  combat_equipment.json     # 10 slots, 3 sets complets
-  combat_zones.json         # monstres + boss par zone
-  combat_skills.json        # compétences par type d'arme
-  companions.json           # équipiers + coûts recrutement
-  merchant.json             # Hôtel des Ventes
-  equipment.json            # outils de récolte / éleveur (equipable)
-  enemies.json              # stats ennemis
+  balance.json              # saveVersion: 26, testHdv, meals, combat keys/fusion
+  resources.json            # mealTier, ressources récolte/ferme
+  recipes.json              # repas (parchemins), outils ; combatItem = drop only
+  merchant.json             # parchemins (vendeur fixe)
+  farm.json                 # 6 bâtiments
+  combat_zones.json         # monstres + boss
+  combat_equipment.json     # sets, rareté
 
 js/
-  core/game.js              # état, craft, combat, ferme, save
-  systems/slots.js          # emplacements récolte
-  systems/farm.js             # production animale, rations, slots ferme
-  systems/tools.js            # blocage outil ferme / éleveur
-  systems/toolDurability.js   # usure outils
-  systems/toolTier.js         # paliers outil vs ressource
-  systems/consumables.js      # repas / buffs donjon
-  systems/equipmentDisplay.js # barres durabilité UI
-  systems/craft.js            # craft + grantCombatItem
-  systems/combat.js           # skills, équipement
-  systems/combatZone.js       # zones combat, donjons DQ, drops, victoire
-  systems/companions.js       # recrutement + équipement équipiers
-  systems/character.js        # stats perso
-  systems/merchant.js         # Hôtel des Ventes
-  systems/tutorial.js         # progression tutoriel
-  systems/dungeon.js          # LEGACY — non utilisé par le flux principal
-  ui/views.js                 # écrans (métiers, ferme, atelier, cuisine)
-  ui/router.js                # navigation (farm_*, cuisine, workshop)
-  ui/render.js                # shell + toasts + events
-  ui/tutorialUi.js            # overlay tutoriel + modales
+  systems/careerChoice.js   # choix 2+2, visibilité nav
+  systems/testHdv.js        # vendeurs dynamiques HDV test
+  systems/merchant.js       # achat HDV (+ flag testHdv)
+  systems/consumables.js    # repas % PV, paliers
+  systems/combatZone.js     # DJ, clés, drops équipement
+  systems/dungeonKeys.js    # inventaire clés
+  systems/equipmentFusion.js
+  systems/equipmentRarity.js
+  systems/crafting.js       # isAllowedCraftRecipe (toolmaker|cook)
+  systems/farm.js           # normalizePurchasedFarmSlots(state, …)
+  core/game.js              # useInventoryMeal, getMerchantVendors, carrière
+  ui/careerChoiceUi.js
+  ui/views.js               # HDV, combat Objets, fusion, inventaire repas
+  main.js                   # load JSON via import.meta.url (GitHub Pages)
+
+.cursor/
+  permissions.json          # auto-approbation agent (git push, npm…)
+  sandbox.json                # réseau sandbox
+  rules/to-kirha.mdc
 ```
 
 ## État technique
 
-- Vanilla JS (ES modules), pas de framework
-- Save : `localStorage` + export/import base64
-- `saveVersion` **24** : ferme, durabilité outils, cuisine, tutoriel étendu
-- `CloudSaveProvider` = stub Supabase (`docs/SUPABASE.md`)
+- Vanilla JS (ES modules)
+- Save : `localStorage` + export/import · `saveVersion` **26**
+- GitHub Pages : `.nojekyll`, chemins JSON via `import.meta.url`
+- `CloudSaveProvider` = stub (`docs/SUPABASE.md`)
 
 ## Ce qui manque / priorités
 
-1. Balancing ferme + durabilité outils (playtest)
-2. Sets Brume / Lotus
-3. `betaMode: false` en release
-4. Nettoyer `dungeon.js` / `dungeons.json`
-5. GitHub Pages · sprites définitifs · tests auto
+1. HDV joueur ↔ joueur (Supabase)
+2. Tutoriel adapté au choix carrière
+3. Sets Brume / Lotus · `testHdv.enabled: false` en prod finale
+4. Sprites · tests auto
 
 ## Prompt type pour nouvelle session
 
 ```
-Continue To-Kirha v1.4. Lis docs/HANDOFF.md et docs/project-state.md.
+Continue To-Kirha v1.5. Lis docs/HANDOFF.md et docs/project-state.md.
 [Ta tâche ici]
 ```

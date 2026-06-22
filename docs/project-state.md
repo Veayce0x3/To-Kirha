@@ -1,109 +1,122 @@
-# 🌸 TO-KIRHA — Project State v1.4
+# 🌸 TO-KIRHA — Project State v1.5
 
 > État actuel du projet. Voir aussi `HANDOFF.md` pour reprendre une session.  
-> `saveVersion` : **24**
+> `saveVersion` : **26** · jeu en ligne : [veayce0x3.github.io/To-Kirha](https://veayce0x3.github.io/To-Kirha/)
 
 ## Vision
 
-Jeu web idle/RPG **zen sakura** pensé pour **durer des années** : récolte parallèle, métiers, craft par zone, ferme éleveur, combat DQ à 3, saisons / prestige, guidage à règles (pas de LLM).
+Jeu web idle/RPG **zen sakura** pensé pour **durer des années** : récolte parallèle, **économie spécialisée** (choix de carrière), craft ciblé, ferme éleveur, **Cuisine au cœur du donjon**, combat DQ à 3, saisons / prestige.
+
+## Boucle économique (phase 1 — beta)
+
+```
+Choix carrière (2 récolte + 2 bâtiments ferme)
+  → produire / vendre / HDV test (ressources manquantes)
+  → parchemins (HDV) + ingrédients
+  → Cuisine (repas coûteux, parchemins obligatoires)
+  → Donjon (clé consommée, repas en combat)
+  → Équipement commun (drop DJ uniquement) → fusion → progression
+```
+
+## Choix de carrière
+
+- Au **premier lancement** : modal « Choisis ta voie »
+- **2 métiers de récolte** parmi 5 + **2 bâtiments ferme** parmi 5 (+ **Puits** gratuit pour tous)
+- Métiers / bâtiments non choisis : **inaccessibles en récolte/ferme**
+- **HDV test** (`balance.testHdv`) : achat des ressources des métiers/bâtiments non choisis à prix réduits (en attendant HDV joueur ↔ joueur)
+- Fichiers : `js/systems/careerChoice.js`, `js/systems/testHdv.js`, `js/ui/careerChoiceUi.js`
 
 ## Progression (3 axes)
 
-1. **Personnage** — XP combat, stats HP/ATK/DEF, équipement (10 slots), **plafond par saison**
-2. **Métiers** — 5 récoltes + 1 éleveur + 8 crafts (dont Cuisine), niveaux indépendants, **plafond par saison**
-3. **Économie** — Kirha, zones, Renaissance du Cerisier (bonus permanents cumulés)
+1. **Personnage** — XP combat, stats HP/ATK/DEF, équipement (10 slots), plafond par saison
+2. **Métiers** — récolte partielle + éleveur + **Outilleur + Cuisinier** (craft équipement combat désactivé en atelier)
+3. **Économie** — Kirha, zones, Renaissance, parchemins, HDV
 
 ### Saisons
 
-- Cap S1 : perso **55**, métiers **95** — finir Lotus OK, pas les paliers 110/200
-- Chaque Renaissance : +11 perso / +12 métiers de plafond + +5 % Kirha/XP (pas de passif)
-- Prestige requiert : Lotus, 100k Kirha vie, boss Lotus, missions Lotus
+- Cap S1 : perso **55**, métiers **95**
+- Prestige : Lotus, 100k Kirha vie, boss Lotus, missions Lotus
 - Voir `docs/progression-matrix.md`
 
-## Métiers
+## Métiers & craft
 
-- **Récolte (5)** : Bûcheron, Pêcheur, Mineur, Paysan, Alchimiste — ~11 ressources/métier
-- **Ferme (1)** : Éleveur — 6 bâtiments (Puits, Poulailler, Étable, Bergerie, Porcherie, Ruches)
-- **Craft (8)** : Outilleur → Bijoutier + **Cuisinier** — sets combat par zone (sakura, petal, jade)
+| Catégorie | Détail |
+|-----------|--------|
+| Récolte (5) | Bûcheron, Pêcheur, Mineur, Paysan, Alchimiste — **2 choisis** |
+| Ferme | Éleveur — 6 bâtiments, **2 choisis** + Puits |
+| Atelier | **Outilleur** uniquement (outils métier) |
+| Cuisine | **Cuisinier** — repas obligatoires pour les donjons |
 
-## Ferme éleveur
+- Recettes `combatItem` : **non craftables** en atelier (drops donjon + fusion)
+- `isAllowedCraftRecipe` : `toolmaker` + `cook` seulement
 
-- Navigation sidebar **Ferme** → une vue par bâtiment (`farm_well`, `farm_chicken_coop`, …)
-- **Emplacements** par bâtiment : 1 au départ, jusqu'à 4 achetables (Kirha + ressource)
-- **Production** : timer par emplacement, XP Éleveur à la collecte
-- **Rations** : choix parmi toutes les options (même si stock insuffisant) ; coût par production affiché (`stock/requis`)
-- **Outil requis** : seau / outil éleveur équipé (`toolJob: breeder`, palier outil)
-- Données : `data/farm.json` · logique : `js/systems/farm.js`, `js/systems/tools.js`
+## Cuisine (pilier donjon)
 
-## Outils & durabilité
+- **7 repas** par paliers de niveau perso (1–9, 10–19, 20–29, 30–39)
+- Soin **% PV max** en combat (`consumables.js`, `balance.meals`)
+- **Toutes les recettes** exigent des **Parchemins des Anciens** + coût Kirha + ingrédients multi-métiers/ferme
+- Consommation : menu **Objets** en combat **ou** Sac / Banque hors combat (PV entraînement solo)
+- Sans repas → donjon très difficile ; sans donjon → pas d'équipement commun
 
-- Outils de récolte / éleveur : **`maxUses`** dans `recipes.json` — s'usent à chaque emploi
-- **1ʳᵉ ressource Nv.1** de chaque métier récoltable **sans outil** (lent) ; au-delà, outil équipé obligatoire
-- **Paliers outil** (`toolTier`) : outil insuffisant bloque les ressources de palier supérieur
-- **Affichage** : hint au craft, barre sur page métier, minibar, Perso → Outils, ferme (outil éleveur)
-- Outil **usé** → refabrication à l'atelier (onglet Outilleur regroupe **tous** les outils de métier)
-- Logique : `js/systems/toolDurability.js`, `js/systems/toolTier.js`, `js/systems/equipmentDisplay.js`
+## Combat & donjon
 
-## Cuisine
+- Combat rapide (héros seul) : farm **clés DJ** (faible % mob/boss)
+- Entrée donjon : **1 clé consommée**, équipe à 3, multi-salles
+- **Équipement** : drop **commun** en donjon uniquement (pas en entraînement rapide)
+- **Fusion** : même pièce + même set, coûts Kirha (`equipmentFusion.js`)
+- Plus de limites journalières combat (`combatDaily.js`)
+- PV équipe : snapshot à l'entrée DJ, repas entre salles, restauration à l'échec
 
-- Métier **Cuisinier** (`cook`) · vue **Cuisine** dans la sidebar
-- Repas craftés → buff **1 donjon** (HP / ATK / DEF / regain entre salles)
-- Consommation au lancement du donjon (`js/systems/consumables.js`)
+## Hôtel des Ventes
 
-## Combat
+| Vendeur | Contenu |
+|---------|---------|
+| Marchand des Anciens | Parchemins (achat / revente) |
+| HDV test (dynamique) | Ressources des métiers/bâtiments **non choisis** |
 
-- Tour DQ plein écran, menu Attaquer/Sorts/Défense/Fuir
-- Donjon multi-salles, équipe à 3
-- Bonus set : 4 pièces / 8 pièces (`combatSetBonuses`)
-- 5 zones combat alignées sur 5 zones monde
-- Drops : **pépites d'or** + XP perso (pas de Kirha en combat)
+- Désactiver plus tard : `balance.testHdv.enabled: false`
+- Futur : HDV joueur ↔ joueur (Supabase)
 
-## UI
+## Ferme, outils, UI
 
-- Sidebar : Missions, Récolte (5), **Ferme (6)**, Atelier, **Cuisine**, Gestion
-- **Tutoriel guidé** (~5–10 min) : récolte, banque, hache offerte, puits, poulailler, arme, donjon, parchemins (`data/tutorial.json`)
-- Bandeau **objectif actuel** (Personnage + Missions) via `guidance.js` — après tutoriel
-- Stats Personnage : onglets Équipement / Stats / Métiers / Équipe / **Outils** (liste plate équipés + réserve)
-- Preview craft combat : stats + rôle arme avant fabrication
-- Atelier **Outilleur** : tous les outils équipables métier visibles dans un seul onglet
-- Combat : fond sombre sakura, panneau dialogue clair
+- Ferme : 6 bâtiments, rations, slots, durabilité outil éleveur — inchangé (v1.3+)
+- Outils : `maxUses`, paliers `toolTier`, Outilleur unifié
+- Sidebar filtrée selon carrière après choix
+- Fusion : Perso → section dédiée
+- GitHub Pages : `import.meta.url` pour JSON, `.nojekyll`, fix `farm.js`
 
-## Récolte mobile
+## Stack & déploiement
 
-- Grille **2×2** sur petit écran, picker repliable
-- **Pas d'idle** : récolte active par slots uniquement (pas de passif prestige / aides / offline)
-- Récolte **3 s** fixe ; repousse séparée (8–30 s selon tier/zone)
-- Touch 44px+ sur combat DQ
-
-## Stack
-
-- Vanilla JS · JSON · localStorage (`saveVersion` 24)
+- Vanilla JS · JSON · localStorage (`saveVersion` 26)
 - `npm run dev` → http://localhost:5173
+- Prod : **GitHub Pages** branche `main`, racine `/`
+- Agent Cursor : `.cursor/permissions.json`, `.cursor/sandbox.json`
 
 ## Docs
 
 | Fichier | Rôle |
 |---------|------|
 | `PROMPT.md` | Vision design |
-| `progression-matrix.md` | Grille zones × saisons × équilibre |
+| `progression-matrix.md` | Grille zones × saisons |
 | `ROADMAP.md` | Planning |
 | `HANDOFF.md` | Reprise session |
 | `CHANGELOG.md` | Historique versions |
 
 ## Prochaines étapes
 
-- [ ] Sets Brume / Lotus
-- [ ] `betaMode: false` en prod
-- [ ] Contenu paliers 200+ (vision 10 ans)
-- [ ] GitHub Pages · Supabase · tests auto
-- [ ] Sprites / icônes définitifs
+- [ ] HDV joueur ↔ joueur (Supabase)
+- [ ] 3ᵉ métier / 3ᵉ bâtiment (extension carrière)
+- [ ] Sets Brume / Lotus · paliers 200+
+- [ ] Tutoriel adapté au choix de carrière
+- [ ] Sprites définitifs · tests auto
+- [ ] Désactiver `testHdv` en prod finale
 
-## Livré récemment (v1.3–v1.4)
+## Livré récemment (v1.5)
 
-- **Ferme éleveur** : 6 bâtiments, rations, slots, XP métier, navigation dédiée
-- **Durabilité outils** : usure, affichage craft/métier/minibar/ferme, refabrication
-- **Outilleur unifié** : tous les outils de métier dans un onglet
-- **Récolte sans outil** : 1ʳᵉ ressource Nv.1 lente ; paliers outil (`toolTier`)
-- **Cuisine** : repas + buffs donjon
-- **Tutoriel** : hache offerte, étapes ferme (puits + poulailler), corrections progression
-- **UI ferme** : coûts rations visibles, bouton production après collecte, sync slots
+- Choix carrière 2+2 + Puits gratuit
+- HDV test (ressources non produites)
+- Économie phase 1 : clés DJ, drops équipement DJ, fusion, rareté
+- Cuisine renforcée (parchemins, coûts, pivot donjon)
+- Repas % PV, conso combat + inventaire
+- Fix chargement GitHub Pages
+- `betaMode: false` (équipiers à débloquer en jeu)

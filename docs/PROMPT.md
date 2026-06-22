@@ -100,12 +100,26 @@ Débloquer zone → récolter ressources zone → combattre (mats + XP)
 - 3 zones de combat (`combat_zones.json`) : monstres libres + boss illimité
 - 6 classes d'armes : Paladin, Chevalier, Archer, Miko, Assassin, Lancier
 - Récompenses : XP personnage, **pépites d'or** (pas de Kirha en combat)
-- **Repas** (Cuisine) : buff optionnel consommé au lancement d'un donjon
-- Recettes équipement = mats récolte + pépites + drop boss + parchemins
+- **Repas** (Cuisine) : consommables en donjon (% PV max) — **obligatoires** pour progresser en DJ
+- Équipement combat : **drops donjon** (commun) + fusion ; pas de craft atelier
+- Clés donjon : farm en combat rapide, consommées à l'entrée
 
 ### Hôtel des Ventes
 
-- **Parchemin des Anciens** : achat uniquement chez le marchand, requis pour la plupart des crafts
+- **Parchemin des Anciens** : achat chez le marchand fixe, requis pour **tous les repas** et la plupart des crafts
+- **HDV test** (`testHdv`) : ressources des métiers/bâtiments **non choisis** à prix réduits (beta)
+- Futur : marché **joueur ↔ joueur** (Supabase)
+
+### Cuisine (pilier)
+
+- Métier **Cuisinier** — seul craft « consommable » combat
+- Repas : **% PV max** selon palier perso ; recettes **coûteuses** (mats + Kirha + parchemins)
+- **Sans repas → pas de donjon viable** ; sans donjon → pas d'équipement
+
+### Choix de carrière
+
+- Début de partie : **2 métiers récolte** + **2 bâtiments ferme** (+ Puits gratuit)
+- Spécialisation économique : le reste s'achète (HDV test puis P2P)
 
 ## Économie (Kirha)
 
@@ -140,7 +154,7 @@ récolter → vendre → améliorer métiers / acheter slots → craft → comba
 
 - **Actuel :** localStorage (`SaveProvider`) + export/import base64
 - **Futur :** Supabase (`CloudSaveProvider` stub dans `js/core/save.js`)
-- `saveVersion: 24` dans `data/balance.json`
+- `saveVersion: 26` dans `data/balance.json`
 
 ## Systèmes livrés
 
@@ -148,6 +162,10 @@ récolter → vendre → améliorer métiers / acheter slots → craft → comba
 - [x] 8 métiers craft + sets combat par zone (stats fixes)
 - [x] Combat DQ équipe à 3 + 6 classes d'armes
 - [x] Hôtel des Ventes + parchemins
+- [x] Choix carrière 2+2 + HDV test
+- [x] Cuisine pivot donjon (repas % PV, parchemins, coûts)
+- [x] Clés DJ, drops équipement, fusion, rareté
+- [x] GitHub Pages en ligne
 - [x] Prestige saisons + plafonds
 - [x] Tutoriel guidé + guidage dynamique
 - [x] Ferme éleveur (6 bâtiments, rations, slots)

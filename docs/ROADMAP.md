@@ -22,6 +22,7 @@ Monnaie : **Kirha**. Stack : vanilla JS, HTML, CSS, JSON. Hébergement cible : G
 | 5 | v0.5–0.6 | UI sidebar, tuiles métiers, banque, minibar, burger mobile |
 | 6 | v1.0 | 5 métiers récolte, slots parallèles, perso, donjons |
 | 7 | v1.1 | Renommage sakura, Hôtel des Ventes, combat PA, 7 crafts, zones combat |
+| 8 | v1.5 | Carrière 2+2, HDV test, économie phase 1, cuisine pivot, GitHub Pages |
 
 ---
 
@@ -41,42 +42,31 @@ Monnaie : **Kirha**. Stack : vanilla JS, HTML, CSS, JSON. Hébergement cible : G
 
 ---
 
-## Phase 8 — En cours
+## Phase 9 — En cours
 
 ### Vision long terme (~10 ans)
 
-- Saisons / Renaissance = pilier central (plafonds + bonus, pas de LLM)
-- Moteur d’objectifs à règles (`guidance.js`) — toujours un but pertinent
-- Extensions futures : paliers > 200, nouvelles zones, événements saisonniers
+- Saisons / Renaissance = pilier central
+- **Économie spécialisée** : carrière → HDV test → HDV P2P
+- **Cuisine** = pivot donjon → équipement
+- Extensions : paliers > 200, nouvelles zones, événements saisonniers
 
 ### Livré récemment ✅
 
-- [x] Plafonds de saison (perso / métiers) — prestige obligatoire pour maxer
-- [x] Calibrage anti-rush (100k Kirha, coûts zones, repousse récolte)
-- [x] Bonus de set combat (4 / 8 pièces) + affichage Personnage
-- [x] Guidage dynamique (`getCurrentObjective`) + bandeaux UI
-- [x] Icônes Missions / Atelier, combat DQ plein écran
-- [x] Recommandation ATK par zone combat
-- [x] Atelier : blocage niveau vs ingrédients
-- [x] `docs/progression-matrix.md`
-- [x] Tutoriel guidé début de partie (spotlight + quêtes village)
-- [x] Anti-idle (pas de passif prestige / aides / offline gains)
-- [x] Preview craft équipement + rôles armes
-- [x] Personnage onglets, récolte 2×2 mobile, fond combat sakura
-- [x] **Ferme éleveur** — 6 bâtiments, rations, slots, métier Éleveur (`farm.json`)
-- [x] **Durabilité outils** — usure, affichage craft/métier/minibar/ferme, refabrication
-- [x] **Outilleur unifié** — tous les outils de métier dans un seul onglet
-- [x] **Récolte début** — 1ʳᵉ ressource Nv.1 sans outil (lente) + paliers `toolTier`
-- [x] **Cuisine** — métier Cuisinier, repas, buffs donjon (`consumables.js`)
-- [x] **Tutoriel étendu** — hache offerte, puits, poulailler, sync progression
-- [x] **UI ferme** — coûts rations visibles, fix bouton après production
+- [x] Fondations v1.2–v1.3 : ferme, durabilité, tutoriel, guidage, saisons
+- [x] **Choix carrière** (2 récolte + 2 ferme + Puits)
+- [x] **HDV test** (`testHdv.js`) — ressources non produites
+- [x] **Économie phase 1** : clés DJ, drops équipement DJ, fusion, craft limité
+- [x] **Cuisine pivot** : parchemins sur tous repas, % PV, coûts renforcés
+- [x] Repas combat + inventaire · **GitHub Pages** live
+- [x] `betaMode: false`
 
 ### Gameplay & contenu (reste)
 
-- [ ] Balancing fin XP métiers / perso / combat / slots / ferme / durabilité (playtest)
-- [ ] Sets Brume / Lotus
-- [x] Nourriture paysan → buff en donjon (Cuisine livrée — soin HP direct en combat : optionnel)
-- [ ] Plus de zones + contenu (paliers 100–200+)
+- [ ] HDV joueur ↔ joueur (Supabase)
+- [ ] Tutoriel adapté au choix carrière
+- [ ] Balancing playtest (cuisine, HDV, fusion)
+- [ ] Sets Brume / Lotus · paliers 200+
 
 ### UI & polish (reste)
 
@@ -85,21 +75,19 @@ Monnaie : **Kirha**. Stack : vanilla JS, HTML, CSS, JSON. Hébergement cible : G
 ### Technique (reste)
 
 - [ ] Nettoyer legacy `dungeon.js` / `dungeons.json`
-- [ ] `betaMode: false` en release
-- [ ] GitHub Pages · Supabase · tests auto
+- [ ] Désactiver `testHdv` en prod finale
+- [ ] Supabase · tests auto
 
 ### Plus tard
 
-- [ ] Métiers craft additionnels (extension contenu)
-- [ ] Carte monde (optionnel)
-- [ ] Événements saisonniers
-- [ ] PvP / multijoueur (hors scope actuel)
+- [ ] 3ᵉ métier / bâtiment · carte monde · événements · PvP
 
 ---
 
 ## Historique versions
 
-- **v1.3** — Ferme éleveur, durabilité outils, cuisine, tutoriel étendu, Outilleur unifié (`saveVersion` 24)
+- **v1.5** — Carrière 2+2, HDV test, économie phase 1, cuisine pivot, GitHub Pages (`saveVersion` 26)
+- **v1.3** — Ferme éleveur, durabilité outils, cuisine, tutoriel étendu (`saveVersion` 24)
 - **v1.2** — Tutoriel, anti-idle, combat DQ équipe, saisons, guidage, assets récolte
 - **v1.1** — Combat PA, 7 crafts, Hôtel des Ventes, zones combat, sets fixes
 - **v1.0.0** — 5 métiers, slots, perso, donjons, burger mobile

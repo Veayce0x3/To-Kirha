@@ -1,41 +1,37 @@
 # To-Kirha 🌸
 
-Jeu web idle/RPG **zen sakura** — récolte parallèle, métiers, craft, combat style Dragon Quest, saisons et prestige.  
+Jeu web idle/RPG **zen sakura** — récolte parallèle, métiers spécialisés, cuisine, donjons, combat style Dragon Quest, saisons et prestige.  
 100 % navigateur, sans installation.
 
-**Version actuelle :** `0.5.0` · `saveVersion` 22
+**Version actuelle :** `0.6.0` · `saveVersion` **26**
 
-## Jouer en ligne (beta)
+## Jouer en ligne
 
-Une fois GitHub Pages activé sur ce dépôt :
+**https://veayce0x3.github.io/To-Kirha/**
 
-1. **Settings → Pages → Source** : branche `main`, dossier `/ (root)`
-2. Le jeu sera accessible à : `https://<ton-compte>.github.io/To-Kirha/`
-
-> Si tu testes en local : `npm install` puis `npm run dev` → [http://localhost:5173](http://localhost:5173)
+> Local : `npm install` puis `npm run dev` → [http://localhost:5173](http://localhost:5173)  
+> Nouvelle partie : ajoute `?newgame=1` à l’URL pour voir le choix de carrière.
 
 ## Beta testeurs — à savoir
 
-- **Nouvelle partie recommandée** pour cette beta (durabilité des outils, suppression des améliorations métier Kirha).
-- Sauvegarde dans le **localStorage** du navigateur (pas de compte pour l’instant).
-- En cas de bug bizarre : **Options → Réinitialiser la partie**.
-- Mobile et desktop supportés ; boutons pensés pour le tactile (44 px min).
-- UI en **français**.
+- **Choix de carrière** au départ : 2 métiers de récolte + 2 bâtiments de ferme (Puits gratuit).
+- Le reste des ressources s’achète à l’**Hôtel des Ventes** (marché test, prix bas) en attendant l’HDV joueur.
+- **Cuisine** = cœur du jeu : repas (parchemins + ingrédients) → **donjon** (clé) → **équipement**.
+- Sauvegarde **localStorage** — pas de compte pour l’instant.
+- Bug ou écran vide : **rechargement forcé** (Cmd+Shift+R) ou **Options → Réinitialiser**.
+- Mobile et desktop · UI en **français** · boutons 44 px min.
 
 ### Parcours à tester
 
-1. Tutoriel guidé (récolte → arme → forge → donjon → parchemin)
-2. Craft **Outilleur** → équiper → récolter → usure de l’outil → **Refabriquer**
-3. Combat (zones, donjon, équipe à 3)
-4. Missions / quêtes et **Nouvelle Saison** (prestige)
+1. Choix carrière → récolte / ferme sur tes 2+2 métiers
+2. HDV : parchemins + ressources des métiers que tu n’as pas choisis
+3. **Cuisine** : fabriquer des repas (coûteux) → **Combat → Donjon**
+4. Fusion d’équipement commun (Perso) · entraînement rapide pour les clés
+5. Missions · Nouvelle Saison (prestige)
 
-### Retours bienvenus
+### Retours
 
-Ouvre une **Issue** sur GitHub avec :
-
-- Navigateur + OS (ex. Safari iOS, Chrome Windows)
-- Étapes pour reproduire le bug
-- Capture d’écran si possible
+Ouvre une **Issue** sur GitHub : navigateur + OS, étapes, capture si possible.
 
 ## Développement
 
@@ -48,18 +44,18 @@ npm run dev
 |---------|------|
 | `data/` | JSON (balance, recettes, quêtes, zones…) |
 | `js/core/` | Boucle de jeu, sauvegarde |
-| `js/systems/` | Métiers, craft, combat, prestige… |
+| `js/systems/` | Métiers, craft, combat, HDV test, carrière… |
 | `js/ui/` | Vues et rendu |
 | `docs/` | Vision, roadmap, état du projet |
+| `.cursor/` | Règles agent + permissions sandbox |
 
-Docs utiles : [`docs/PROMPT.md`](docs/PROMPT.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) · [`docs/project-state.md`](docs/project-state.md)
+Docs : [`docs/PROMPT.md`](docs/PROMPT.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) · [`docs/project-state.md`](docs/project-state.md) · [`docs/HANDOFF.md`](docs/HANDOFF.md)
 
 ## Stack
 
-- HTML / CSS / JavaScript vanilla (pas de framework)
-- Données JSON
-- Sauvegarde `localStorage`
-- Hébergement statique (GitHub Pages)
+- HTML / CSS / JavaScript vanilla (ES modules)
+- Données JSON · sauvegarde `localStorage`
+- Hébergement : **GitHub Pages**
 
 ## Licence
 
