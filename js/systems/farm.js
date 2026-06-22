@@ -21,7 +21,7 @@ export const FARM_BUILDING_LABELS = {
   beehive: 'Ruches',
 };
 
-export function normalizePurchasedFarmSlots(saved, farmData) {
+export function normalizePurchasedFarmSlots(saved, farmData, state) {
   const starting = farmData.startingSlotsPerBuilding || 1;
   const out = {};
   for (const id of FARM_BUILDING_IDS.filter((bid) => isFarmBuildingUnlocked(bid, state))) {
@@ -33,7 +33,7 @@ export function normalizePurchasedFarmSlots(saved, farmData) {
 export function getMaxFarmSlots(state, farmData, balance, buildingId) {
   const cfg = balance?.farmSlots || {};
   const cap = farmData.maxSlotsPerBuilding || cfg.maxPerBuilding || 4;
-  const purchased = normalizePurchasedFarmSlots(state.purchasedFarmSlots, farmData);
+  const purchased = normalizePurchasedFarmSlots(state.purchasedFarmSlots, farmData, state);
   return Math.min(purchased[buildingId] ?? (farmData.startingSlotsPerBuilding || 1), cap);
 }
 
@@ -91,7 +91,7 @@ export function buyFarmSlot(state, farmData, balance, buildingId) {
   }
 
   if (!state.purchasedFarmSlots) {
-    state.purchasedFarmSlots = normalizePurchasedFarmSlots(null, farmData);
+    state.purchasedFarmSlots = normalizePurchasedFarmSlots(null, farmData, state);
   }
   state.purchasedFarmSlots[buildingId] = current + 1;
   ensureFarmSlots(state, farmData, balance);
@@ -100,7 +100,7 @@ export function buyFarmSlot(state, farmData, balance, buildingId) {
 
 export function ensureFarmSlots(state, farmData, balance) {
   if (!state.farmSlots) state.farmSlots = {};
-  state.purchasedFarmSlots = normalizePurchasedFarmSlots(state.purchasedFarmSlots, farmData);
+  state.purchasedFarmSlots = normalizePurchasedFarmSlots(state.purchasedFarmSlots, farmData, state);
 
   for (const id of FARM_BUILDING_IDS) {
     const max = getMaxFarmSlots(state, farmData, balance, id);

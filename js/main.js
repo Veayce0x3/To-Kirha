@@ -3,8 +3,11 @@ import { initUI } from './ui/render.js';
 import { SaveProvider } from './core/save.js';
 import { audio } from './core/audio.js';
 
-async function loadJSON(path) {
-  const res = await fetch(path);
+const DATA_BASE = new URL('../data/', import.meta.url);
+
+async function loadJSON(file) {
+  const res = await fetch(new URL(file, DATA_BASE));
+  if (!res.ok) throw new Error(`Impossible de charger ${file} (${res.status})`);
   return res.json();
 }
 
@@ -14,23 +17,23 @@ async function loadJSON(path) {
     characterConfig, combatEquipment, combatZones, enemies, merchant,
     combatSkills, combatResources, companions, quests, weaponRoles,
   ] = await Promise.all([
-    loadJSON('./data/resources.json'),
-    loadJSON('./data/jobs.json'),
-    loadJSON('./data/balance.json'),
-    loadJSON('./data/recipes.json'),
-    loadJSON('./data/aides.json'),
-    loadJSON('./data/equipment.json'),
-    loadJSON('./data/farm.json'),
-    loadJSON('./data/character.json'),
-    loadJSON('./data/combat_equipment.json'),
-    loadJSON('./data/combat_zones.json'),
-    loadJSON('./data/enemies.json'),
-    loadJSON('./data/merchant.json'),
-    loadJSON('./data/combat_skills.json'),
-    loadJSON('./data/combat_resources.json'),
-    loadJSON('./data/companions.json'),
-    loadJSON('./data/quests.json'),
-    loadJSON('./data/weapon_roles.json'),
+    loadJSON('resources.json'),
+    loadJSON('jobs.json'),
+    loadJSON('balance.json'),
+    loadJSON('recipes.json'),
+    loadJSON('aides.json'),
+    loadJSON('equipment.json'),
+    loadJSON('farm.json'),
+    loadJSON('character.json'),
+    loadJSON('combat_equipment.json'),
+    loadJSON('combat_zones.json'),
+    loadJSON('enemies.json'),
+    loadJSON('merchant.json'),
+    loadJSON('combat_skills.json'),
+    loadJSON('combat_resources.json'),
+    loadJSON('companions.json'),
+    loadJSON('quests.json'),
+    loadJSON('weapon_roles.json'),
   ]);
 
   Object.assign(resources, combatResources);

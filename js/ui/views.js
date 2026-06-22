@@ -13,7 +13,7 @@ import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabil
 import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
-import { listOwnedMeals, countOwnedMeals } from '../systems/consumables.js';
+import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consumables.js';
 import { RARITY_LABELS, RARITY_EMOJI } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId } from '../systems/dungeonKeys.js';
@@ -444,6 +444,10 @@ function renderCharacter(game, el) {
         <summary>Pièces de combat en réserve</summary>
         <div id="combat-owned-reserve" class="equip-actions"></div>
       </details>
+      <details class="char-fusion-details">
+        <summary>🔮 Fusion d'équipement</summary>
+        <div id="fusion-panel"></div>
+      </details>
     </div>
     <div class="char-tabs" role="tablist">
       <button type="button" class="char-tab-btn${charTab === 'bag' ? ' active' : ''}" data-tab="bag" role="tab">Sac</button>
@@ -624,7 +628,7 @@ function renderCharBagTab(game, panel) {
       <span class="bank-total" id="char-bag-total"></span>
     </div>
     <div class="inventory-grid" id="char-bag-grid"></div>
-    <p class="view-desc bag-hint">Même contenu que la Banque — clique un objet pour vendre, épingler ou équiper.</p>
+    <p class="view-desc bag-hint">Même contenu que la Banque — clique un objet pour vendre, épingler, équiper ou consommer un repas.</p>
   `;
   panel.querySelectorAll('.bag-filter-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -2206,7 +2210,7 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
 
 export function renderInventory(game, el) {
   el.innerHTML = `
-    <div class="view-header"><h2>${iconHtml(getNavIcon('inventory'), 'view-header-icon', 'Banque')} Banque</h2><p class="view-desc">Clique un objet pour vendre, épingler ou équiper · <button type="button" class="link-btn" id="goto-char-bag">Voir sur Perso</button></p></div>
+    <div class="view-header"><h2>${iconHtml(getNavIcon('inventory'), 'view-header-icon', 'Banque')} Banque</h2><p class="view-desc">Clique un objet pour vendre, épingler, équiper ou consommer un repas · <button type="button" class="link-btn" id="goto-char-bag">Voir sur Perso</button></p></div>
     <div class="panel-inner">
       <div class="bank-toolbar">
         <span class="bank-total" id="bank-total">Valeur totale : 0 💰</span>
@@ -2248,6 +2252,15 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   const isCrafted = (game.state.crafted || []).includes(resourceId);
   const isEquipped = isRecipeEquipped(game.state, resourceId);
 
+  const mealEffect = resourceId.startsWith('meal_')
+    ? getMealEffect(resourceId, game.resources, game.balance)
+    : null;
+  const charLevel = game.state.character?.level || 1;
+  const maxHp = mealEffect ? game.getCharacterStats().hp : 0;
+  const storedHp = game.state.combatWear?.solo?.hero;
+  const currentHp = storedHp != null ? storedHp : maxHp;
+  const mealLevelOk = mealEffect ? charLevel >= mealEffect.levelMin && charLevel <= mealEffect.levelMax : false;
+
   let compareHtml = '';
   if (recipe?.effect && isEquipped) {
     compareHtml = `
@@ -2259,6 +2272,12 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
     compareHtml = `<div class="item-stat-compare">${recipe.description}</div>`;
   } else if (notSellable && resource.merchantOnly) {
     compareHtml = '<p class="item-stat-compare">Objet spécial — acheté à l\'Hôtel des Ventes. Requis pour de nombreuses fabrications.</p>';
+  } else if (mealEffect) {
+    const levelNote = mealLevelOk
+      ? ''
+      : ` · Réservé aux persos niv. ${mealEffect.levelMin}–${mealEffect.levelMax}`;
+    const hpNote = maxHp > 0 ? ` · PV entraînement : ${currentHp}/${maxHp}` : '';
+    compareHtml = `<p class="item-stat-compare">Repas : ${mealEffect.label}${levelNote}${hpNote}</p>`;
   }
 
   const sellActions = notSellable
@@ -2278,6 +2297,7 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
     ${notSellable ? '' : `<p>Prix unitaire : ${formatNumber(unitPrice)} 💰${isProtected ? ' · <span class="item-pinned-badge">Épinglé</span>' : ''}</p>`}
     ${compareHtml}
     <div class="modal-item-actions">
+      ${mealEffect ? `<button type="button" class="btn btn-craft" id="modal-consume-meal" ${mealLevelOk && currentHp < maxHp ? '' : 'disabled'}>🍙 Consommer</button>` : ''}
       ${sellActions}
       ${recipe && isCrafted && !isEquipped ? '<button class="btn btn-craft" id="modal-equip">Équiper</button>' : ''}
       <button class="btn btn-muted" id="modal-close">Fermer</button>
@@ -2315,6 +2335,18 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   body.querySelector('#modal-equip')?.addEventListener('click', () => {
     game.doEquip(resourceId);
     modal.classList.remove('active');
+  });
+  body.querySelector('#modal-consume-meal')?.addEventListener('click', () => {
+    const result = game.useInventoryMeal(resourceId);
+    if (!result.ok) {
+      emit('farmBlocked', { message: result.reason || 'Impossible de consommer ce repas' });
+      return;
+    }
+    modal.classList.remove('active');
+    const panel = document.querySelector('#char-tab-panel');
+    const bankEl = document.getElementById('view-container');
+    if (panel) renderCharBagTab(game, panel);
+    else if (bankEl && getView() === 'inventory') renderInventory(game, bankEl);
   });
   body.querySelector('#modal-close')?.addEventListener('click', () => modal.classList.remove('active'));
 

@@ -462,6 +462,9 @@ export function initUI(game, audio) {
   on('farmBlocked', ({ message }) => {
     showToast(els, message || 'Impossible de produire', 'sell');
   });
+  on('mealUsed', ({ mealName, healed, hp, maxHp }) => {
+    showToast(els, `🍙 ${mealName} : +${healed} PV (${hp}/${maxHp})`, 'upgrade');
+  });
   on('farmComplete', ({ buildingId }) => {
     if (buildingId != null) {
       patchFarmBuildingSlots(game, buildingId);

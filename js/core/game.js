@@ -155,7 +155,7 @@ import {
 } from '../systems/farm.js';
 import { getFarmToolCheck, getHarvestToolCheck } from '../systems/toolTier.js';
 import { migrateCombatDurability } from '../systems/combatDurability.js';
-import { clearCombatMealBuff, listOwnedMeals } from '../systems/consumables.js';
+import { clearCombatMealBuff, listOwnedMeals, peekMealHeal, consumeMealFromInventory, calcMealHealAmount } from '../systems/consumables.js';
 import { applyCareerChoice, needsCareerChoice as checkNeedsCareerChoice } from '../systems/careerChoice.js';
 import { getFusionableGroups, fuseEquipmentGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId, getKeyCount as countDungeonKeys } from '../systems/dungeonKeys.js';
@@ -900,6 +900,38 @@ export class Game {
 
     emit('stateChange', this.state);
     return { ok: true, ...result };
+  }
+
+  useInventoryMeal(mealId) {
+    if (this.state.combatEncounter) {
+      return { ok: false, reason: 'En combat, utilise le menu Objets' };
+    }
+    const charLevel = this.state.character?.level || 1;
+    const heal = peekMealHeal(mealId, this.state, this.resources, this.balance, charLevel);
+    if (!heal.ok) return { ok: false, reason: heal.reason };
+
+    const maxHp = this.getCharacterStats().hp;
+    const stored = this.state.combatWear?.solo?.hero;
+    const currentHp = stored != null ? stored : maxHp;
+    if (currentHp >= maxHp) {
+      return { ok: false, reason: 'PV déjà au maximum' };
+    }
+
+    const gain = calcMealHealAmount(maxHp, heal.healPct);
+    const newHp = Math.min(maxHp, currentHp + gain);
+    if (!this.state.combatWear) this.state.combatWear = {};
+    if (!this.state.combatWear.solo) this.state.combatWear.solo = {};
+    this.state.combatWear.solo.hero = newHp;
+
+    if (!consumeMealFromInventory(this.state, mealId)) {
+      return { ok: false, reason: 'Plus de ce repas' };
+    }
+
+    const mealName = this.resources[mealId]?.name || mealId;
+    emit('mealUsed', { mealName, healed: newHp - currentHp, hp: newHp, maxHp });
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return { ok: true, healed: newHp - currentHp, hp: newHp, maxHp };
   }
 
   getFarmBuildingNavStatus(buildingId) {
