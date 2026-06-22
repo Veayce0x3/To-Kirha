@@ -1,4 +1,6 @@
 import { emit } from '../core/events.js';
+import { SaveProvider } from '../core/save.js';
+import { navigate } from './router.js';
 import {
   GATHERING_JOB_IDS,
   PICKABLE_FARM_BUILDINGS,
@@ -8,8 +10,15 @@ import {
 import { FARM_BUILDING_LABELS } from '../systems/farm.js';
 
 let modalEl = null;
+let gameRef = null;
 let selectedGathering = new Set();
 let selectedFarm = new Set();
+let listenersBound = false;
+
+function closeCareerModal() {
+  document.body.classList.remove('career-choice-pending');
+  modalEl?.classList.remove('active');
+}
 
 function togglePick(set, id, max) {
   if (set.has(id)) {
@@ -20,13 +29,13 @@ function togglePick(set, id, max) {
   set.add(id);
 }
 
-function renderCareerModal(game) {
-  if (!modalEl) return;
+function renderCareerModal() {
+  if (!modalEl || !gameRef) return;
   const body = modalEl.querySelector('#career-choice-body');
   if (!body) return;
 
   const gatheringHtml = GATHERING_JOB_IDS.map((id) => {
-    const job = game.jobs[id];
+    const job = gameRef.jobs[id];
     const picked = selectedGathering.has(id);
     return `<button type="button" class="career-pick-btn${picked ? ' picked' : ''}" data-gather="${id}">
       ${job?.emoji || '⚒️'} ${job?.name || id}
@@ -55,47 +64,122 @@ function renderCareerModal(game) {
       <h3>Ferme (${selectedFarm.size}/${CAREER_PICK_COUNTS.farm}) + 🪣 Puits gratuit</h3>
       <div class="career-pick-grid">${farmHtml}</div>
     </section>
-    <p class="career-status">${status}</p>
-    <button type="button" class="btn btn-prestige" id="career-confirm" ${check.ok ? '' : 'disabled'}>Commencer l'aventure</button>
+    <p class="career-status" id="career-status">${status}</p>
+    <p class="career-error save-warn hidden" id="career-error" role="alert"></p>
+    <div class="career-actions">
+      <button type="button" class="btn btn-prestige" id="career-confirm" ${check.ok ? '' : 'disabled'}>Commencer l'aventure</button>
+      <button type="button" class="btn btn-muted" id="career-options">⚙️ Options</button>
+      <button type="button" class="btn btn-muted" id="career-reset">Réinitialiser la partie</button>
+    </div>
+    <p class="view-desc career-reset-hint">Bloqué ou sauvegarde abîmée ? Ouvre les Options pour recharger, ou réinitialise pour repartir de zéro.</p>
   `;
+}
 
-  body.querySelectorAll('[data-gather]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      togglePick(selectedGathering, btn.dataset.gather, CAREER_PICK_COUNTS.gathering);
-      renderCareerModal(game);
-    });
+function setCareerError(msg) {
+  const el = modalEl?.querySelector('#career-error');
+  if (!el) return;
+  if (msg) {
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  } else {
+    el.textContent = '';
+    el.classList.add('hidden');
+  }
+}
+
+async function confirmCareerChoice() {
+  if (!gameRef) return;
+  setCareerError('');
+  const check = validateCareerSelection([...selectedGathering], [...selectedFarm]);
+  if (!check.ok) {
+    setCareerError(check.reason || 'Sélection incomplète.');
+    renderCareerModal();
+    return;
+  }
+
+  const result = gameRef.doApplyCareerChoice([...selectedGathering], [...selectedFarm]);
+  if (!result.ok) {
+    setCareerError(result.reason || 'Impossible de valider ton parcours.');
+    return;
+  }
+
+  closeCareerModal();
+  emit('navRefresh');
+}
+
+async function resetFromCareerModal() {
+  if (!gameRef) return;
+  const ok = confirm('Réinitialiser toute la progression et recommencer une nouvelle partie ?');
+  if (!ok) return;
+
+  await SaveProvider.clear();
+  gameRef.resetSave();
+  selectedGathering = new Set();
+  selectedFarm = new Set();
+  setCareerError('');
+  showCareerChoiceIfNeeded(gameRef);
+}
+
+function bindCareerModalListeners() {
+  if (!modalEl || listenersBound) return;
+  listenersBound = true;
+
+  modalEl.addEventListener('click', (e) => {
+    const gatherBtn = e.target.closest('[data-gather]');
+    if (gatherBtn) {
+      togglePick(selectedGathering, gatherBtn.dataset.gather, CAREER_PICK_COUNTS.gathering);
+      renderCareerModal();
+      return;
+    }
+
+    const farmBtn = e.target.closest('[data-farm]');
+    if (farmBtn) {
+      togglePick(selectedFarm, farmBtn.dataset.farm, CAREER_PICK_COUNTS.farm);
+      renderCareerModal();
+      return;
+    }
+
+    if (e.target.closest('#career-confirm')) {
+      confirmCareerChoice();
+      return;
+    }
+
+    if (e.target.closest('#career-options')) {
+      openCareerOptions();
+      return;
+    }
+
+    if (e.target.closest('#career-reset')) {
+      resetFromCareerModal();
+    }
   });
-  body.querySelectorAll('[data-farm]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      togglePick(selectedFarm, btn.dataset.farm, CAREER_PICK_COUNTS.farm);
-      renderCareerModal(game);
-    });
-  });
-  body.querySelector('#career-confirm')?.addEventListener('click', () => {
-    const result = game.doApplyCareerChoice([...selectedGathering], [...selectedFarm]);
-    if (!result.ok) return;
-    modalEl.classList.remove('active');
-    document.body.classList.remove('career-choice-pending');
-    emit('navRefresh');
-    emit('stateChange', game.state);
-  });
+}
+
+function openCareerOptions() {
+  closeCareerModal();
+  navigate('options');
 }
 
 export function initCareerChoiceModal(game) {
+  gameRef = game;
   modalEl = document.getElementById('career-choice-modal');
   if (!modalEl) return;
+  bindCareerModalListeners();
   selectedGathering = new Set();
   selectedFarm = new Set();
-  renderCareerModal(game);
 }
 
 export function showCareerChoiceIfNeeded(game) {
+  gameRef = game;
   if (!game.needsCareerChoice()) {
-    document.body.classList.remove('career-choice-pending');
-    modalEl?.classList.remove('active');
+    closeCareerModal();
     return;
   }
   document.body.classList.add('career-choice-pending');
   modalEl?.classList.add('active');
-  renderCareerModal(game);
+  renderCareerModal();
+}
+
+export function hideCareerChoiceModal() {
+  closeCareerModal();
 }

@@ -10,7 +10,23 @@ export const FREE_FARM_BUILDING = 'well';
 export const CAREER_PICK_COUNTS = { gathering: 2, farm: 2 };
 
 export function needsCareerChoice(state) {
-  return !state.careerChoice?.confirmed;
+  return !isCareerChoiceComplete(state.careerChoice);
+}
+
+/** Sauvegarde valide uniquement si confirmé avec sélection complète. */
+export function isCareerChoiceComplete(careerChoice) {
+  if (!careerChoice?.confirmed) return false;
+  const check = validateCareerSelection(
+    careerChoice.gatheringJobs,
+    careerChoice.farmBuildings
+  );
+  return check.ok;
+}
+
+export function migrateCareerChoice(saved) {
+  if (!saved) return null;
+  if (isCareerChoiceComplete(saved)) return saved;
+  return null;
 }
 
 export function validateCareerSelection(gatheringJobs, farmBuildings) {

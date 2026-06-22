@@ -304,9 +304,6 @@ export function initUI(game, audio) {
     updateNavActive();
   });
   on('stateChange', (state) => {
-    if (game.needsCareerChoice()) {
-      showCareerChoiceIfNeeded(game);
-    }
     refreshHeader(state);
     const view = getView();
     const jobId = VIEWS[view]?.job;

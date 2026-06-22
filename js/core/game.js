@@ -157,7 +157,7 @@ import {
 import { getFarmToolCheck, getHarvestToolCheck } from '../systems/toolTier.js';
 import { migrateCombatDurability } from '../systems/combatDurability.js';
 import { clearCombatMealBuff, listOwnedMeals, peekMealHeal, consumeMealFromInventory, calcMealHealAmount } from '../systems/consumables.js';
-import { applyCareerChoice, needsCareerChoice as checkNeedsCareerChoice } from '../systems/careerChoice.js';
+import { applyCareerChoice, needsCareerChoice as checkNeedsCareerChoice, migrateCareerChoice } from '../systems/careerChoice.js';
 import { getFusionableGroups, fuseEquipmentGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId, getKeyCount as countDungeonKeys } from '../systems/dungeonKeys.js';
 
@@ -347,7 +347,7 @@ export class Game {
       combatMealBuff: null,
       quests: migrateQuests(saved.quests),
       bankProtected: saved.bankProtected || defaults.bankProtected,
-      careerChoice: saved.careerChoice || null,
+      careerChoice: migrateCareerChoice(saved.careerChoice),
     };
     ensureSlots(merged, this.balance);
     ensureFarmSlots(merged, this.farmData, this.balance);
@@ -809,6 +809,7 @@ export class Game {
     if (!result.ok) return result;
     ensureSlots(this.state, this.balance);
     ensureFarmSlots(this.state, this.farmData, this.balance);
+    SaveProvider.save(this.state);
     emit('careerChoiceApplied', result);
     emit('stateChange', this.state);
     this.scheduleSave();

@@ -5461,6 +5461,28 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
   pointer-events: auto;
 }
 
+.career-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.career-actions .btn {
+  width: 100%;
+  min-height: 44px;
+}
+
+.career-reset-hint {
+  margin-top: 0.65rem;
+  font-size: 0.82rem;
+  opacity: 0.85;
+}
+
+.career-error.hidden {
+  display: none;
+}
+
 .career-pick-grid { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.5rem 0; }
 .career-pick-btn { min-height: 44px; padding: 0.45rem 0.75rem; border-radius: 10px; border: 2px solid #9B59B6; background: #fff; cursor: pointer; font-family: inherit; }
 .career-pick-btn.picked { background: #F8E8EE; border-color: #2D5A27; }

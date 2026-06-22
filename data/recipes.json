@@ -973,7 +973,7 @@
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 3,
+    "requiredJobLevel": 1,
     "jobXp": 18
   },
   "recipe_poisson": {
@@ -981,123 +981,419 @@
     "name": "Poisson grillé",
     "emoji": "🐟",
     "description": "Repas niv. 10–19 : soin % PV max en donjon",
-    "kirhaCost": 50,
+    "kirhaCost": 80,
     "ingredients": {
-      "goujon": 6,
       "truite": 4,
+      "orge": 3,
       "eau": 2,
-      "ble": 2,
-      "ancient_scroll": 2
+      "ancient_scroll": 2,
+      "meal_onigiri": 1
     },
     "output": "meal_poisson",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
     "requiredJobLevel": 10,
-    "jobXp": 22
-  },
-  "recipe_oeufs": {
-    "id": "recipe_oeufs",
-    "name": "Œufs brouillés",
-    "emoji": "🍳",
-    "description": "Repas niv. 1–9 : soin % PV max en donjon",
-    "kirhaCost": 25,
-    "ingredients": {
-      "oeuf": 4,
-      "eau": 2,
-      "ble": 2,
-      "ancient_scroll": 1
-    },
-    "output": "meal_oeufs",
-    "outputAmount": 1,
-    "repeatable": true,
-    "craftJob": "cook",
-    "requiredJobLevel": 4,
-    "jobXp": 16
-  },
-  "recipe_soupe": {
-    "id": "recipe_soupe",
-    "name": "Soupe au lait",
-    "emoji": "🥣",
-    "description": "Repas niv. 10–19 : soin % PV max en donjon",
-    "kirhaCost": 55,
-    "ingredients": {
-      "lait": 4,
-      "lait_brebis": 2,
-      "ble": 3,
-      "eau": 3,
-      "ancient_scroll": 2
-    },
-    "output": "meal_soupe",
-    "outputAmount": 1,
-    "repeatable": true,
-    "craftJob": "cook",
-    "requiredJobLevel": 12,
-    "jobXp": 24
-  },
-  "recipe_brochette": {
-    "id": "recipe_brochette",
-    "name": "Brochette",
-    "emoji": "🍢",
-    "description": "Repas niv. 1–9 : soin % PV max en donjon",
-    "kirhaCost": 35,
-    "ingredients": {
-      "jambon": 3,
-      "bacon": 3,
-      "eau": 2,
-      "ortie": 3,
-      "ancient_scroll": 1
-    },
-    "output": "meal_brochette",
-    "outputAmount": 1,
-    "repeatable": true,
-    "craftJob": "cook",
-    "requiredJobLevel": 6,
-    "jobXp": 20
+    "jobXp": 21
   },
   "recipe_gateau": {
     "id": "recipe_gateau",
     "name": "Gâteau au miel",
     "emoji": "🍰",
     "description": "Repas niv. 20–29 : soin % PV max en donjon",
-    "kirhaCost": 90,
+    "kirhaCost": 135,
     "ingredients": {
       "miel": 4,
-      "ble": 6,
-      "gelee_royale": 2,
+      "avoine": 4,
       "oeuf": 3,
-      "ancient_scroll": 3
+      "ancient_scroll": 2,
+      "meal_poisson": 1
     },
     "output": "meal_gateau",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 16,
-    "jobXp": 32
+    "requiredJobLevel": 20,
+    "jobXp": 29
   },
   "recipe_festin": {
     "id": "recipe_festin",
     "name": "Festin du Temple",
     "emoji": "🍱",
     "description": "Repas niv. 30–39 : soin % PV max en donjon",
-    "kirhaCost": 180,
+    "kirhaCost": 190,
     "ingredients": {
       "jambon": 4,
       "lait": 4,
-      "miel": 4,
-      "ble": 8,
-      "gelee_royale": 2,
-      "goujon": 4,
-      "frene": 5,
-      "ortie": 5,
-      "ancient_scroll": 5
+      "noyer": 3,
+      "ortie": 4,
+      "ancient_scroll": 3,
+      "meal_gateau": 1
     },
     "output": "meal_festin",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 22,
-    "jobXp": 50
+    "requiredJobLevel": 30,
+    "jobXp": 38
+  },
+  "recipe_bento": {
+    "id": "recipe_bento",
+    "name": "Bento du voyage",
+    "emoji": "🍘",
+    "description": "Repas niv. 40–49 : soin % PV max en donjon",
+    "kirhaCost": 245,
+    "ingredients": {
+      "brochet": 4,
+      "houblon": 4,
+      "menthe": 3,
+      "bacon": 2,
+      "ancient_scroll": 4,
+      "meal_festin": 1
+    },
+    "output": "meal_bento",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 40,
+    "jobXp": 46
+  },
+  "recipe_ramen": {
+    "id": "recipe_ramen",
+    "name": "Ramen du maître",
+    "emoji": "🍜",
+    "description": "Repas niv. 50–59 : soin % PV max en donjon",
+    "kirhaCost": 300,
+    "ingredients": {
+      "sardine": 4,
+      "malt": 4,
+      "ginseng": 3,
+      "lait_brebis": 2,
+      "ancient_scroll": 5,
+      "meal_bento": 1
+    },
+    "output": "meal_ramen",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 50,
+    "jobXp": 55
+  },
+  "recipe_sushi": {
+    "id": "recipe_sushi",
+    "name": "Plateau sushi",
+    "emoji": "🍣",
+    "description": "Repas niv. 60–69 : soin % PV max en donjon",
+    "kirhaCost": 355,
+    "ingredients": {
+      "carpe": 4,
+      "lin": 4,
+      "orchidee": 3,
+      "cuivre": 2,
+      "ancient_scroll": 6,
+      "meal_ramen": 1
+    },
+    "output": "meal_sushi",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 60,
+    "jobXp": 63
+  },
+  "recipe_tempura": {
+    "id": "recipe_tempura",
+    "name": "Tempura croustillante",
+    "emoji": "🍤",
+    "description": "Repas niv. 70–79 : soin % PV max en donjon",
+    "kirhaCost": 410,
+    "ingredients": {
+      "bar": 4,
+      "chanvre": 4,
+      "belladone": 3,
+      "bambou": 3,
+      "ancient_scroll": 7,
+      "meal_sushi": 1
+    },
+    "output": "meal_tempura",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 70,
+    "jobXp": 72
+  },
+  "recipe_udon": {
+    "id": "recipe_udon",
+    "name": "Udon fumant",
+    "emoji": "🍲",
+    "description": "Repas niv. 80–89 : soin % PV max en donjon",
+    "kirhaCost": 465,
+    "ingredients": {
+      "dorade": 4,
+      "mais": 4,
+      "mandragore": 3,
+      "merisier": 3,
+      "ancient_scroll": 8,
+      "meal_tempura": 1
+    },
+    "output": "meal_udon",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 80,
+    "jobXp": 80
+  },
+  "recipe_yakitori": {
+    "id": "recipe_yakitori",
+    "name": "Yakitori grillé",
+    "emoji": "🍢",
+    "description": "Repas niv. 90–99 : soin % PV max en donjon",
+    "kirhaCost": 520,
+    "ingredients": {
+      "raie": 4,
+      "seigle": 4,
+      "edelweiss": 3,
+      "erable": 3,
+      "ancient_scroll": 9,
+      "meal_udon": 1
+    },
+    "output": "meal_yakitori",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 90,
+    "jobXp": 89
+  },
+  "recipe_kaiseki": {
+    "id": "recipe_kaiseki",
+    "name": "Kaiseki cérémonial",
+    "emoji": "🍽️",
+    "description": "Repas niv. 100–109 : soin % PV max en donjon",
+    "kirhaCost": 575,
+    "ingredients": {
+      "perche": 4,
+      "millet": 4,
+      "perce_neige": 3,
+      "charme": 3,
+      "ancient_scroll": 10,
+      "meal_yakitori": 1
+    },
+    "output": "meal_kaiseki",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 100,
+    "jobXp": 97
+  },
+  "recipe_mochi": {
+    "id": "recipe_mochi",
+    "name": "Mochi sacré",
+    "emoji": "🍡",
+    "description": "Repas niv. 110–119 : soin % PV max en donjon",
+    "kirhaCost": 630,
+    "ingredients": {
+      "etain": 3,
+      "or_minerai": 2,
+      "kobalte": 2,
+      "bombu": 3,
+      "ancient_scroll": 11,
+      "meal_kaiseki": 1
+    },
+    "output": "meal_mochi",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 110,
+    "jobXp": 106
+  },
+  "recipe_dango": {
+    "id": "recipe_dango",
+    "name": "Dango du Lotus",
+    "emoji": "🎋",
+    "description": "Repas niv. 120–129 : soin % PV max en donjon",
+    "kirhaCost": 685,
+    "ingredients": {
+      "lotus_grain": 4,
+      "lotus_essence": 2,
+      "lotus_carp": 3,
+      "lotus_crystal": 2,
+      "ancient_scroll": 12,
+      "meal_mochi": 1
+    },
+    "output": "meal_dango",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 120,
+    "jobXp": 114
+  },
+  "recipe_miso": {
+    "id": "recipe_miso",
+    "name": "Miso impérial",
+    "emoji": "🥣",
+    "description": "Repas niv. 130–139 : soin % PV max en donjon",
+    "kirhaCost": 740,
+    "ingredients": {
+      "brume_ble": 3,
+      "brume_truite": 3,
+      "gelee_royale": 2,
+      "plume": 3,
+      "ancient_scroll": 13,
+      "meal_dango": 1
+    },
+    "output": "meal_miso",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 130,
+    "jobXp": 123
+  },
+  "recipe_teriyaki": {
+    "id": "recipe_teriyaki",
+    "name": "Teriyaki d'argent",
+    "emoji": "🥩",
+    "description": "Repas niv. 140–149 : soin % PV max en donjon",
+    "kirhaCost": 795,
+    "ingredients": {
+      "brume_quartz": 3,
+      "brume_saule": 3,
+      "lait_brebis": 3,
+      "cuir": 2,
+      "ancient_scroll": 14,
+      "meal_miso": 1
+    },
+    "output": "meal_teriyaki",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 140,
+    "jobXp": 131
+  },
+  "recipe_katsu": {
+    "id": "recipe_katsu",
+    "name": "Katsu du champion",
+    "emoji": "🍗",
+    "description": "Repas niv. 150–159 : soin % PV max en donjon",
+    "kirhaCost": 850,
+    "ingredients": {
+      "bronze": 4,
+      "manganese": 3,
+      "bauxite": 3,
+      "laine": 3,
+      "ancient_scroll": 15,
+      "meal_teriyaki": 1
+    },
+    "output": "meal_katsu",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 150,
+    "jobXp": 140
+  },
+  "recipe_sashimi": {
+    "id": "recipe_sashimi",
+    "name": "Sashimi de raie",
+    "emoji": "🐡",
+    "description": "Repas niv. 160–169 : soin % PV max en donjon",
+    "kirhaCost": 905,
+    "ingredients": {
+      "silicate": 4,
+      "kobalte": 3,
+      "chataignier": 4,
+      "sauge": 3,
+      "ancient_scroll": 16,
+      "meal_katsu": 1
+    },
+    "output": "meal_sashimi",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 160,
+    "jobXp": 148
+  },
+  "recipe_sukiyaki": {
+    "id": "recipe_sukiyaki",
+    "name": "Sukiyaki royal",
+    "emoji": "🥘",
+    "description": "Repas niv. 170–179 : soin % PV max en donjon",
+    "kirhaCost": 960,
+    "ingredients": {
+      "argent": 3,
+      "carpe": 4,
+      "miel": 3,
+      "if": 3,
+      "ancient_scroll": 17,
+      "meal_sashimi": 1
+    },
+    "output": "meal_sukiyaki",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 170,
+    "jobXp": 157
+  },
+  "recipe_tonkatsu": {
+    "id": "recipe_tonkatsu",
+    "name": "Tonkatsu légendaire",
+    "emoji": "🥩",
+    "description": "Repas niv. 180–189 : soin % PV max en donjon",
+    "kirhaCost": 1015,
+    "ingredients": {
+      "or_minerai": 3,
+      "perche": 4,
+      "edelweiss": 4,
+      "jambon": 4,
+      "ancient_scroll": 18,
+      "meal_sukiyaki": 1
+    },
+    "output": "meal_tonkatsu",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 180,
+    "jobXp": 165
+  },
+  "recipe_okonomiyaki": {
+    "id": "recipe_okonomiyaki",
+    "name": "Okonomiyaki divin",
+    "emoji": "🥞",
+    "description": "Repas niv. 190–199 : soin % PV max en donjon",
+    "kirhaCost": 1070,
+    "ingredients": {
+      "lotus_tree": 3,
+      "lotus_crystal": 3,
+      "gelee_royale": 4,
+      "laine": 3,
+      "ancient_scroll": 19,
+      "meal_tonkatsu": 1
+    },
+    "output": "meal_okonomiyaki",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 190,
+    "jobXp": 174
+  },
+  "recipe_omakase": {
+    "id": "recipe_omakase",
+    "name": "Omakase transcendental",
+    "emoji": "✨",
+    "description": "Repas niv. 200–209 : soin % PV max en donjon",
+    "kirhaCost": 1125,
+    "ingredients": {
+      "frostiz": 4,
+      "kralamoure": 3,
+      "cendrepierre": 3,
+      "salikronia": 3,
+      "orme": 3,
+      "ancient_scroll": 20,
+      "meal_okonomiyaki": 1
+    },
+    "output": "meal_omakase",
+    "outputAmount": 1,
+    "repeatable": true,
+    "craftJob": "cook",
+    "requiredJobLevel": 200,
+    "jobXp": 182
   },
   "recipe_tablier": {
     "id": "recipe_tablier",
