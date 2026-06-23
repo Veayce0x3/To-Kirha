@@ -5765,8 +5765,30 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
 }
 
 .career-pick-grid { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.5rem 0; }
-.career-pick-btn { min-height: 44px; padding: 0.45rem 0.75rem; border-radius: 10px; border: 2px solid #9B59B6; background: #fff; cursor: pointer; font-family: inherit; }
+.career-pick-btn { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; padding: 0.45rem 0.75rem; border-radius: 10px; border: 2px solid #9B59B6; background: #fff; cursor: pointer; font-family: inherit; }
 .career-pick-btn.picked { background: #F8E8EE; border-color: #2D5A27; }
+.career-pick-btn.recommended {
+  box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.1);
+}
+
+.career-rec-badge {
+  padding: 0.12rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(45, 90, 39, 0.12);
+  color: var(--vert-foret);
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.career-recommendation {
+  margin: 0.25rem 0 0.45rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  background: rgba(232, 245, 228, 0.55);
+  color: var(--brun);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
 .career-weapon-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));

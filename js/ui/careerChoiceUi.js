@@ -5,6 +5,8 @@ import {
   PICKABLE_FARM_BUILDINGS,
   CAREER_PICK_COUNTS,
   STARTER_WEAPON_CHOICES,
+  RECOMMENDED_FARM_BY_GATHERING,
+  getRecommendedFarmBuildingsForGathering,
   validateCareerSelection,
 } from '../systems/careerChoice.js';
 import { FARM_BUILDING_LABELS } from '../systems/farm.js';
@@ -43,10 +45,23 @@ function renderCareerModal() {
     </button>`;
   }).join('');
 
+  const recommendedFarmIds = getRecommendedFarmBuildingsForGathering([...selectedGathering]);
+  const recommendedFarmSet = new Set(recommendedFarmIds);
+  const recommendationLines = [...selectedGathering].map((jobId) => {
+    const rec = RECOMMENDED_FARM_BY_GATHERING[jobId];
+    if (!rec) return '';
+    const job = gameRef.jobs[jobId];
+    const label = FARM_BUILDING_LABELS[rec.building] || rec.building;
+    return `${job?.emoji || ''} ${job?.name || jobId} → ${label} (${rec.reason})`;
+  }).filter(Boolean);
+
   const farmHtml = PICKABLE_FARM_BUILDINGS.map((id) => {
     const picked = selectedFarm.has(id);
     const label = FARM_BUILDING_LABELS[id] || id;
-    return `<button type="button" class="career-pick-btn${picked ? ' picked' : ''}" data-farm="${id}">${label}</button>`;
+    const recommended = recommendedFarmSet.has(id);
+    return `<button type="button" class="career-pick-btn${picked ? ' picked' : ''}${recommended ? ' recommended' : ''}" data-farm="${id}">
+      ${label}${recommended ? '<span class="career-rec-badge">Conseillé</span>' : ''}
+    </button>`;
   }).join('');
 
   const weaponHtml = STARTER_WEAPON_CHOICES.map((choice) => {
@@ -67,8 +82,14 @@ function renderCareerModal() {
   }).join('');
 
   const check = validateCareerSelection([...selectedGathering], [...selectedFarm], selectedWeaponType);
+  const missingRecommended = recommendedFarmIds.filter((id) => !selectedFarm.has(id));
+  const recommendationHtml = recommendationLines.length
+    ? `<p class="career-recommendation">Conseillé : ${recommendationLines.join(' · ')}</p>`
+    : '<p class="career-recommendation">Choisis tes métiers de récolte pour voir les bâtiments de ferme conseillés.</p>';
   const status = check.ok
-    ? '✅ Tu peux valider ton parcours.'
+    ? missingRecommended.length
+      ? `✅ Parcours valide. Conseil confort : remplace par ${missingRecommended.map((id) => FARM_BUILDING_LABELS[id] || id).join(' + ')} si tu veux un départ plus simple.`
+      : '✅ Tu peux valider ton parcours conseillé.'
     : `Choisis ${CAREER_PICK_COUNTS.gathering} métiers de récolte, ${CAREER_PICK_COUNTS.farm} bâtiments de ferme et ton arme de départ. Le Puits est gratuit pour tous.`;
 
   body.innerHTML = `
@@ -80,6 +101,7 @@ function renderCareerModal() {
     </section>
     <section class="career-section">
       <h3>Ferme (${selectedFarm.size}/${CAREER_PICK_COUNTS.farm}) + 🪣 Puits gratuit</h3>
+      ${recommendationHtml}
       <div class="career-pick-grid">${farmHtml}</div>
     </section>
     <section class="career-section">

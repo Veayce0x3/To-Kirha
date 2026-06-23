@@ -4,7 +4,7 @@ import { mountCraftWorkshop } from './craftView.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
 import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped } from '../systems/equipment.js';
 import { formatOfflineDuration } from '../systems/offline.js';
-import { navigate, getView, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getAdjacentHarvestView, getHarvestViewForJob, getAdjacentFarmView, getFarmViewForBuilding, isFarmView, HARVEST_JOB_VIEWS, FARM_BUILDING_VIEWS } from './router.js';
+import { navigate, getView, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getHarvestViewForJob, getFarmViewForBuilding, isFarmView, HARVEST_JOB_VIEWS, FARM_BUILDING_VIEWS } from './router.js';
 import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '../systems/harvest.js';
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
@@ -266,6 +266,14 @@ function renderJobSwitcherChip(game, viewId, activeViewId) {
       </span>
     </button>
   `;
+}
+
+function getAdjacentVisibleView(viewId, visibleViews, direction) {
+  if (!visibleViews?.length) return null;
+  const idx = visibleViews.indexOf(viewId);
+  if (idx < 0 || visibleViews.length <= 1) return null;
+  const next = (idx + direction + visibleViews.length) % visibleViews.length;
+  return visibleViews[next];
 }
 
 export function renderJobSwitcherDock(game, el, viewId) {
@@ -1646,8 +1654,9 @@ function renderJob(game, el, jobId) {
   const assignable = game.getAssignableResources(jobId);
   const lockedResources = assignable.filter((r) => !isResourceUnlockedByJob(r, game.state));
   const currentView = getHarvestViewForJob(jobId);
-  const prevView = currentView ? getAdjacentHarvestView(currentView, -1) : null;
-  const nextView = currentView ? getAdjacentHarvestView(currentView, 1) : null;
+  const visibleHarvestViews = getVisibleHarvestViews(game.state);
+  const prevView = currentView ? getAdjacentVisibleView(currentView, visibleHarvestViews, -1) : null;
+  const nextView = currentView ? getAdjacentVisibleView(currentView, visibleHarvestViews, 1) : null;
   const prevJob = prevView ? VIEWS[prevView]?.job : null;
   const nextJob = nextView ? VIEWS[nextView]?.job : null;
 
@@ -2009,8 +2018,9 @@ function renderFarmBuilding(game, el, buildingId) {
   const pct = (prog.xp / prog.needed) * 100;
   const toolBlock = game.getFarmToolBlockReason(buildingId);
   const currentView = getFarmViewForBuilding(buildingId);
-  const prevView = getAdjacentFarmView(currentView, -1);
-  const nextView = getAdjacentFarmView(currentView, 1);
+  const visibleFarmViews = getVisibleFarmViews(game.state);
+  const prevView = getAdjacentVisibleView(currentView, visibleFarmViews, -1);
+  const nextView = getAdjacentVisibleView(currentView, visibleFarmViews, 1);
   const prevBuilding = prevView ? FARM_BUILDING_LABELS[prevView.slice(5)] : null;
   const nextBuilding = nextView ? FARM_BUILDING_LABELS[nextView.slice(5)] : null;
   const buildingIcon = getFarmBuildingIcon(buildingId);

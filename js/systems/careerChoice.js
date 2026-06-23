@@ -9,6 +9,35 @@ export const FREE_FARM_BUILDING = 'well';
 
 export const CAREER_PICK_COUNTS = { gathering: 2, farm: 2 };
 
+export const RECOMMENDED_FARM_BY_GATHERING = {
+  lumberjack: {
+    building: 'barn',
+    reason: 'cuir et lait utiles aux crafts, bon complément du bois'
+  },
+  fisher: {
+    building: 'pigsty',
+    reason: 'le Goujon nourrit la porcherie'
+  },
+  miner: {
+    building: 'sheepfold',
+    reason: 'la laine et le lait de brebis reviennent souvent avec les minerais'
+  },
+  farmer: {
+    building: 'chicken_coop',
+    reason: 'le Blé nourrit le poulailler dès le début'
+  },
+  alchemist: {
+    building: 'beehive',
+    reason: "l'Ortie nourrit les ruches"
+  },
+};
+
+export function getRecommendedFarmBuildingsForGathering(gatheringJobs) {
+  return [...new Set((gatheringJobs || [])
+    .map((jobId) => RECOMMENDED_FARM_BY_GATHERING[jobId]?.building)
+    .filter(Boolean))];
+}
+
 export const STARTER_WEAPON_CHOICES = [
   {
     weaponType: 'sword_shield',
