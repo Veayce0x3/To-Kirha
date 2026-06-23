@@ -263,14 +263,13 @@ export function initUI(game, audio) {
   }
 
   function showStartupRefreshPrompt() {
-    const key = 'tokirha-startup-refresh-seen';
-    if (!els.startupRefreshModal || sessionStorage.getItem(key) === '1') return;
+    const justRefreshed = new URL(window.location.href).searchParams.has('tokirha_refresh');
+    if (!els.startupRefreshModal || justRefreshed) return;
     els.startupRefreshModal.classList.add('active');
     els.startupRefreshConfirm?.addEventListener('click', () => {
       forceAppRefresh(game);
     }, { once: true });
     els.startupRefreshSkip?.addEventListener('click', () => {
-      sessionStorage.setItem(key, '1');
       els.startupRefreshModal.classList.remove('active');
     }, { once: true });
   }
