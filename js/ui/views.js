@@ -2621,6 +2621,7 @@ function renderCombat(game, el) {
   const daily = game.getCombatDailyStatus();
   const dungeonCfg = game.getDungeonUnlockConfig();
   const ownedMeals = game.getOwnedMeals();
+  const healPanelHtml = renderOutOfCombatHealPanel(game);
 
   el.innerHTML = `
     <div class="view-header">
@@ -2633,8 +2634,20 @@ function renderCombat(game, el) {
         <p class="view-desc meal-combat-hint">🍱 ${ownedMeals.length} type(s) de repas — menu <strong>Objets</strong> (% PV max).</p>
       ` : ''}
     </div>
+    ${healPanelHtml}
     <div id="combat-zone-list"></div>
   `;
+
+  el.querySelectorAll('[data-inventory-meal]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const result = game.useInventoryMeal(btn.dataset.inventoryMeal);
+      if (!result.ok) {
+        emit('farmBlocked', { message: result.reason || 'Impossible de consommer ce repas' });
+        return;
+      }
+      renderCombat(game, el);
+    });
+  });
 
   const list = el.querySelector('#combat-zone-list');
 
@@ -2722,6 +2735,42 @@ function renderCombat(game, el) {
 
     list.appendChild(card);
   }
+}
+
+function renderOutOfCombatHealPanel(game) {
+  const stats = game.getCharacterStats();
+  const maxHp = stats.hp;
+  const currentHp = game.state.combatWear?.solo?.hero ?? maxHp;
+  const hpPct = maxHp > 0 ? Math.max(0, Math.min(100, (currentHp / maxHp) * 100)) : 100;
+  const meals = listOwnedMeals(game.state, game.resources, game.balance);
+  const needsHeal = currentHp < maxHp;
+  const hpState = hpPct <= 25 ? ' danger' : hpPct <= 50 ? ' warn' : '';
+
+  const mealButtons = meals.length
+    ? meals.map((meal) => {
+      const res = game.resources[meal.id];
+      const preview = getInventoryMealInfo(game, meal.id);
+      return `
+        <button type="button" class="btn btn-small combat-heal-meal${preview?.canHeal ? ' affordable' : ''}" data-inventory-meal="${meal.id}" ${preview?.canHeal ? '' : 'disabled'} title="${preview?.disabledReason || meal.effect.label}">
+          ${res?.emoji || '🍙'} ${res?.name || meal.id} · ×${meal.qty} · ${meal.effect.label}
+        </button>
+      `;
+    }).join('')
+    : '<p class="empty-text">Aucun repas en stock. Prépare-en à la Cuisine pour récupérer entre deux entraînements.</p>';
+
+  return `
+    <section class="panel-inner combat-heal-panel">
+      <div class="combat-heal-head">
+        <div>
+          <h3>🍱 Soin hors combat</h3>
+          <p class="view-desc">Soigne tes PV d'entraînement avant de relancer un combat rapide.</p>
+        </div>
+        <strong class="combat-heal-value${hpState}">❤️ ${currentHp}/${maxHp}</strong>
+      </div>
+      <div class="combat-heal-bar${hpState}"><div class="combat-heal-fill" style="width:${hpPct}%"></div></div>
+      ${needsHeal ? `<div class="combat-heal-actions">${mealButtons}</div>` : '<p class="empty-text">PV déjà au maximum.</p>'}
+    </section>
+  `;
 }
 
 function getCombatDialogue(combat) {
@@ -3027,6 +3076,14 @@ function renderDungeonCombatBody(game) {
         <div class="dq-arena-ring" aria-hidden="true"></div>
         <div class="dq-depth-lines" aria-hidden="true"></div>
         <div class="dq-battle-vignette" aria-hidden="true"></div>
+        <div class="dq-battle-hud" aria-hidden="true">
+          <span class="dq-hud-pill">👥 ${party.filter((m) => m.hp > 0).length}/${party.length}</span>
+          <span class="dq-hud-vs">VS</span>
+          <span class="dq-hud-pill">${isBoss ? '👑 ' : '👾 '}${livingEnemies.length}/${allEnemies.length}</span>
+        </div>
+        <div class="dq-turn-ribbon${isEnemyTurn ? ' enemy' : ' player'}" aria-hidden="true">
+          ${isEnemyTurn ? 'Tour ennemi' : activeMember ? `Tour de ${activeMember.name}` : 'Ton tour'}
+        </div>
         <div class="dq-party-allies">${partyHtml}</div>
         <div class="dq-enemies-group">${enemiesHtml}</div>
         <div class="dq-party-status">${partyStatusHtml}</div>
