@@ -6104,6 +6104,27 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
   opacity: 0.85;
 }
 
+.career-nickname-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--brun);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.career-nickname-input {
+  width: 100%;
+  min-height: 46px;
+  border: 2px solid rgba(155, 89, 182, 0.35);
+  background: rgba(255, 253, 249, 0.96);
+}
+
+.career-nickname-summary {
+  background: rgba(155, 89, 182, 0.06);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+}
+
 .career-error.hidden {
   display: none;
 }
