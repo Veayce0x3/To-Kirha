@@ -5692,6 +5692,11 @@ body.has-job-switcher .footer {
   border-color: var(--violet, #9B59B6);
 }
 
+.inventory-grid-cell.meal {
+  min-height: 92px;
+  padding-bottom: 1.85rem;
+}
+
 .inventory-grid-icon,
 .inventory-grid-emoji {
   font-size: 1.75rem;
@@ -5718,6 +5723,35 @@ img.inventory-grid-icon,
   background: rgba(255, 255, 255, 0.85);
   padding: 0 4px;
   border-radius: 4px;
+}
+
+.inventory-grid-cell.meal .inventory-grid-qty {
+  bottom: 1.75rem;
+}
+
+.inventory-meal-heal-btn {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  min-height: 24px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(155, 89, 182, 0.22);
+  color: var(--brun, #4A3728);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inventory-meal-heal-btn.affordable {
+  background: var(--vert-fonce, #2D5A27);
+  color: #fff;
+}
+
+.inventory-meal-heal-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .inventory-grid-pin {

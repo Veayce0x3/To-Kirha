@@ -663,7 +663,7 @@ function renderCharBagTab(game, panel) {
       <span class="bank-total" id="char-bag-total"></span>
     </div>
     <div class="inventory-grid" id="char-bag-grid"></div>
-    <p class="view-desc bag-hint">Même contenu que la Banque — clique un objet pour vendre, épingler, équiper ou consommer un repas.</p>
+    <p class="view-desc bag-hint">Même contenu que la Banque — les repas affichent un bouton <strong>Se soigner</strong> quand il manque des PV.</p>
   `;
   panel.querySelectorAll('.bag-filter-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -676,6 +676,33 @@ function renderCharBagTab(game, panel) {
     filter: bagFilter,
     onTotal: (v) => { if (totalEl) totalEl.textContent = `Valeur : ${formatNumber(v)} 💰`; },
   });
+}
+
+function getInventoryMealInfo(game, resourceId) {
+  if (!resourceId.startsWith('meal_')) return null;
+  const effect = getMealEffect(resourceId, game.resources, game.balance);
+  if (!effect) return null;
+
+  const charLevel = game.state.character?.level || 1;
+  const maxHp = game.getCharacterStats().hp;
+  const storedHp = game.state.combatWear?.solo?.hero;
+  const currentHp = storedHp != null ? storedHp : maxHp;
+  const levelOk = charLevel >= effect.levelMin && charLevel <= effect.levelMax;
+  const inCombat = !!game.state.combatEncounter;
+  const canHeal = levelOk && !inCombat && currentHp < maxHp;
+  let disabledReason = '';
+  if (inCombat) disabledReason = 'En combat, utilise le menu Objets.';
+  else if (!levelOk) disabledReason = `Réservé aux persos niv. ${effect.levelMin}–${effect.levelMax}.`;
+  else if (currentHp >= maxHp) disabledReason = 'PV déjà au maximum.';
+
+  return { effect, maxHp, currentHp, levelOk, inCombat, canHeal, disabledReason };
+}
+
+function refreshInventoryPanels(game) {
+  const panel = document.querySelector('#char-tab-panel');
+  const bankEl = document.getElementById('view-container');
+  if (panel) renderCharBagTab(game, panel);
+  else if (bankEl && getView() === 'inventory') renderInventory(game, bankEl);
 }
 
 function renderCharToolsTab(game, panel) {
@@ -2254,10 +2281,11 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
     const resource = game.resources[id];
     if (!resource) continue;
     const isCraft = !!game.equipment.equipable[id];
+    const mealInfo = getInventoryMealInfo(game, id);
     const isCombat = !!resource.combatOnly;
-    if (filter === 'resource' && (isCraft || isCombat || resource.craftOnly)) continue;
+    if (filter === 'resource' && (isCraft || isCombat || mealInfo || resource.craftOnly)) continue;
     if (filter === 'craft' && !isCraft) continue;
-    if (filter === 'combat' && !isCombat) continue;
+    if (filter === 'combat' && !isCombat && !mealInfo) continue;
 
     hasItems = true;
     const notSellable = resource.notSellable || resource.merchantOnly;
@@ -2267,15 +2295,39 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
     const value = unitPrice * amount;
     if (!notSellable && !isProtected) totalValue += value;
 
-    const cell = document.createElement('button');
-    cell.type = 'button';
-    cell.className = `inventory-grid-cell${isProtected ? ' pinned' : ''}${notSellable ? ' special' : ''}`;
+    const cell = document.createElement('div');
+    cell.className = `inventory-grid-cell${isProtected ? ' pinned' : ''}${notSellable ? ' special' : ''}${mealInfo ? ' meal' : ''}`;
+    cell.setAttribute('role', 'button');
+    cell.tabIndex = 0;
     cell.title = resource.name;
     cell.innerHTML = `
       ${renderResourceIcon(resource, 'inventory-grid-icon') || `<span class="inventory-grid-emoji">${resource.emoji || '?'}</span>`}
       <span class="inventory-grid-qty">×${amount}</span>
     `;
+    if (mealInfo) {
+      const healBtn = document.createElement('button');
+      healBtn.type = 'button';
+      healBtn.className = `inventory-meal-heal-btn${mealInfo.canHeal ? ' affordable' : ''}`;
+      healBtn.textContent = mealInfo.canHeal ? 'Se soigner' : 'PV max';
+      healBtn.disabled = !mealInfo.canHeal;
+      healBtn.title = mealInfo.disabledReason || `Soigne ${mealInfo.effect.label}`;
+      healBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const result = game.useInventoryMeal(id);
+        if (!result.ok) {
+          emit('farmBlocked', { message: result.reason || 'Impossible de consommer ce repas' });
+          return;
+        }
+        refreshInventoryPanels(game);
+      });
+      cell.appendChild(healBtn);
+    }
     cell.addEventListener('click', () => {
+      openItemModal(game, id, resource, amount, unitPrice, notSellable);
+    });
+    cell.addEventListener('keydown', (e) => {
+      if (e.target !== cell || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
       openItemModal(game, id, resource, amount, unitPrice, notSellable);
     });
     container.appendChild(cell);
@@ -2290,7 +2342,7 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
 
 export function renderInventory(game, el) {
   el.innerHTML = `
-    <div class="view-header"><h2>${iconHtml(getNavIcon('inventory'), 'view-header-icon', 'Banque')} Banque</h2><p class="view-desc">Clique un objet pour vendre, épingler, équiper ou consommer un repas · <button type="button" class="link-btn" id="goto-char-bag">Voir sur Perso</button></p></div>
+    <div class="view-header"><h2>${iconHtml(getNavIcon('inventory'), 'view-header-icon', 'Banque')} Banque</h2><p class="view-desc">Clique un objet pour vendre, épingler ou équiper. Les repas peuvent soigner directement hors combat. · <button type="button" class="link-btn" id="goto-char-bag">Voir sur Perso</button></p></div>
     <div class="panel-inner">
       <div class="bank-toolbar">
         <span class="bank-total" id="bank-total">Valeur totale : 0 💰</span>
@@ -2332,14 +2384,8 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   const isCrafted = (game.state.crafted || []).includes(resourceId);
   const isEquipped = isRecipeEquipped(game.state, resourceId);
 
-  const mealEffect = resourceId.startsWith('meal_')
-    ? getMealEffect(resourceId, game.resources, game.balance)
-    : null;
-  const charLevel = game.state.character?.level || 1;
-  const maxHp = mealEffect ? game.getCharacterStats().hp : 0;
-  const storedHp = game.state.combatWear?.solo?.hero;
-  const currentHp = storedHp != null ? storedHp : maxHp;
-  const mealLevelOk = mealEffect ? charLevel >= mealEffect.levelMin && charLevel <= mealEffect.levelMax : false;
+  const mealInfo = getInventoryMealInfo(game, resourceId);
+  const mealEffect = mealInfo?.effect || null;
 
   let compareHtml = '';
   if (recipe?.effect && isEquipped) {
@@ -2353,10 +2399,10 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   } else if (notSellable && resource.merchantOnly) {
     compareHtml = '<p class="item-stat-compare">Objet spécial — acheté à l\'Hôtel des Ventes. Requis pour de nombreuses fabrications.</p>';
   } else if (mealEffect) {
-    const levelNote = mealLevelOk
+    const levelNote = mealInfo.levelOk
       ? ''
       : ` · Réservé aux persos niv. ${mealEffect.levelMin}–${mealEffect.levelMax}`;
-    const hpNote = maxHp > 0 ? ` · PV entraînement : ${currentHp}/${maxHp}` : '';
+    const hpNote = mealInfo.maxHp > 0 ? ` · PV entraînement : ${mealInfo.currentHp}/${mealInfo.maxHp}` : '';
     compareHtml = `<p class="item-stat-compare">Repas : ${mealEffect.label}${levelNote}${hpNote}</p>`;
   }
 
@@ -2377,7 +2423,7 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
     ${notSellable ? '' : `<p>Prix unitaire : ${formatNumber(unitPrice)} 💰${isProtected ? ' · <span class="item-pinned-badge">Épinglé</span>' : ''}</p>`}
     ${compareHtml}
     <div class="modal-item-actions">
-      ${mealEffect ? `<button type="button" class="btn btn-craft" id="modal-consume-meal" ${mealLevelOk && currentHp < maxHp ? '' : 'disabled'}>🍙 Consommer</button>` : ''}
+      ${mealEffect ? `<button type="button" class="btn btn-craft" id="modal-consume-meal" ${mealInfo.canHeal ? '' : 'disabled'} title="${mealInfo.disabledReason || ''}">🍙 Se soigner</button>` : ''}
       ${sellActions}
       ${recipe && isCrafted && !isEquipped ? '<button class="btn btn-craft" id="modal-equip">Équiper</button>' : ''}
       <button class="btn btn-muted" id="modal-close">Fermer</button>
@@ -2403,10 +2449,7 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   body.querySelector('#modal-pin')?.addEventListener('click', () => {
     game.toggleBankProtected(resourceId);
     modal.classList.remove('active');
-    const panel = document.querySelector('#char-tab-panel');
-    const bankEl = document.getElementById('view-container');
-    if (panel) renderCharBagTab(game, panel);
-    else if (bankEl && getView() === 'inventory') renderInventory(game, bankEl);
+    refreshInventoryPanels(game);
   });
   body.querySelector('#modal-goto-auction')?.addEventListener('click', () => {
     modal.classList.remove('active');
@@ -2423,10 +2466,7 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
       return;
     }
     modal.classList.remove('active');
-    const panel = document.querySelector('#char-tab-panel');
-    const bankEl = document.getElementById('view-container');
-    if (panel) renderCharBagTab(game, panel);
-    else if (bankEl && getView() === 'inventory') renderInventory(game, bankEl);
+    refreshInventoryPanels(game);
   });
   body.querySelector('#modal-close')?.addEventListener('click', () => modal.classList.remove('active'));
 
