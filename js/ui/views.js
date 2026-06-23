@@ -2588,7 +2588,7 @@ function renderCombat(game, el) {
       <p class="view-desc">${game.getCharacterDisplayName()} · Nv.${charProg.level} · ❤️ ${stats.hp} · ⚔️ ${stats.atk} · 🛡️ ${stats.def}</p>
       <p class="view-desc">Arme : ${weaponLabel} · Équipe : ${1 + game.getActiveCompanionCount()}/3</p>
       ${game.state.combatWear?.solo?.hero != null ? `<p class="view-desc">HP entraînement conservés : ❤️ ${game.state.combatWear.solo.hero}</p>` : ''}
-      <p class="view-desc">🗝️ Farm les <strong>clés</strong> en combat rapide (faible %) · 🍱 <strong>Repas</strong> indispensables en donjon.</p>
+      <p class="view-desc">🗝️ Farm les <strong>clés</strong> en combat rapide (faible %) · 🍱 <strong>Repas</strong> utiles surtout après le premier donjon.</p>
       ${ownedMeals.length > 0 ? `
         <p class="view-desc meal-combat-hint">🍱 ${ownedMeals.length} type(s) de repas — menu <strong>Objets</strong> (% PV max).</p>
       ` : ''}
@@ -2612,6 +2612,10 @@ function renderCombat(game, el) {
       ? `Recommandé : Perso Nv.${rec.charLevel} · ⚔️ ~${rec.recommendedAtk}`
       : `Recommandé : Perso Nv.${combatZone.requiredCharLevel}`;
 
+    const dungeonIntro = combatZone.id === 'village_sakura'
+      ? 'Mini-donjon d\'initiation — <strong>1 clé</strong> consommée à l\'entrée. Pensé pour découvrir le combat en douceur.'
+      : 'Donjon multi-salles — <strong>1 clé</strong> consommée à l\'entrée. Équipement droppé ici uniquement.';
+
     const card = document.createElement('div');
     card.className = `dungeon-card combat-zone-card${!zoneUnlocked ? ' locked' : ''}`;
     card.innerHTML = `
@@ -2621,7 +2625,7 @@ function renderCombat(game, el) {
         ${!zoneUnlocked ? '<p class="tile-lock">🔒 Zone verrouillée</p>' : ''}
       </div>
       <div class="combat-dungeon-entry">
-        <p class="view-desc">Donjon multi-salles — <strong>1 clé</strong> consommée à l'entrée. Équipement droppé ici uniquement.</p>
+        <p class="view-desc">${dungeonIntro}</p>
         <p class="view-desc">🗝️ Clés en stock : <strong>${game.getDungeonKeyCount(combatZone.id)}</strong></p>
         <button type="button" class="btn btn-prestige btn-dungeon-run" ${zoneUnlocked && dungeonCheck.ok ? '' : 'disabled'} title="${dungeonCheck.reason || ''}">
           🚪 Entrer dans le donjon

@@ -321,6 +321,9 @@ export function buildEncounterEnemies(primaryFoe, enemiesDb, partySize, combatZo
     : Math.min(2, Math.max(0, partySize - 1));
 
   if (!isBoss && partySize >= 2 && pool.length > 0) extraCount = Math.max(extraCount, 1);
+  if (Number.isInteger(combatZone?.maxExtraEnemies)) {
+    extraCount = Math.min(extraCount, Math.max(0, combatZone.maxExtraEnemies));
+  }
 
   for (let i = 0; i < extraCount && pool.length; i += 1) {
     const pick = pool[Math.floor(Math.random() * pool.length)];
