@@ -1228,6 +1228,7 @@ export class Game {
     if (!result) return false;
     emit('merchantBuy', { vendorId, offerId, ...result });
     emit('stateChange', this.state);
+    SaveProvider.save(this.state);
     this.scheduleSave();
     return true;
   }
@@ -1243,6 +1244,7 @@ export class Game {
     if (!result) return false;
     emit('merchantSell', { vendorId, offerId, ...result });
     emit('stateChange', this.state);
+    SaveProvider.save(this.state);
     this.scheduleSave();
     return true;
   }

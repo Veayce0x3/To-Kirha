@@ -2221,7 +2221,8 @@ export function renderAuctionHouse(game, el) {
         <span class="auction-offer-icon">${renderResourceIcon(resource, 'auction-offer-icon')}</span>
         <div>
           <div class="auction-offer-name">${resource.name}</div>
-          <div class="auction-offer-source">${vendor.emoji} ${vendor.name}${ownedQty ? ` · Possédé : ×${ownedQty}` : ''}</div>
+          <div class="auction-offer-source">${vendor.emoji} ${vendor.name}</div>
+          <div class="auction-owned-inline">Dans ton inventaire : ×${ownedQty}</div>
         </div>
       </div>
       <div class="auction-list-price">
