@@ -2787,6 +2787,7 @@
 }
 
 .dq-sprite {
+  position: relative;
   font-size: 3.35rem;
   line-height: 1;
   max-height: 3.65rem;
