@@ -1,6 +1,6 @@
 import { emit } from '../core/events.js';
 import { SaveProvider } from '../core/save.js';
-import { forceAppRefresh } from '../core/reload.js';
+import { forceAppRefresh, forceNewGameReload } from '../core/reload.js';
 import {
   GATHERING_JOB_IDS,
   PICKABLE_FARM_BUILDINGS,
@@ -211,14 +211,18 @@ async function resetFromCareerModal() {
   const ok = confirm('Réinitialiser toute la progression et recommencer une nouvelle partie ?');
   if (!ok) return;
 
-  await SaveProvider.clear();
-  gameRef.resetSave();
-  selectedGathering = new Set();
-  selectedFarm = new Set();
-  selectedWeaponType = null;
-  selectedNickname = '';
-  setCareerError('');
-  showCareerChoiceIfNeeded(gameRef);
+  try {
+    await SaveProvider.clear();
+    selectedGathering = new Set();
+    selectedFarm = new Set();
+    selectedWeaponType = null;
+    selectedNickname = '';
+    setCareerError('');
+    await forceNewGameReload();
+  } catch (err) {
+    console.error('Reset failed:', err);
+    setCareerError('Réinitialisation impossible. Essaie depuis Options ou actualise la page.');
+  }
 }
 
 function bindCareerModalListeners() {

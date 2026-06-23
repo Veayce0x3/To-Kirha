@@ -27,3 +27,19 @@ export async function forceAppRefresh(game = null) {
   url.searchParams.set('tokirha_refresh', String(Date.now()));
   window.location.replace(url.toString());
 }
+
+export async function forceNewGameReload() {
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+  } catch {
+    // Cache cleanup is best-effort only.
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.set('newgame', '1');
+  url.searchParams.set('tokirha_refresh', String(Date.now()));
+  window.location.replace(url.toString());
+}
