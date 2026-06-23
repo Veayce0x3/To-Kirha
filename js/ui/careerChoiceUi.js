@@ -1,6 +1,5 @@
 import { emit } from '../core/events.js';
 import { SaveProvider } from '../core/save.js';
-import { navigate } from './router.js';
 import {
   GATHERING_JOB_IDS,
   PICKABLE_FARM_BUILDINGS,
@@ -68,10 +67,10 @@ function renderCareerModal() {
     <p class="career-error save-warn hidden" id="career-error" role="alert"></p>
     <div class="career-actions">
       <button type="button" class="btn btn-prestige" id="career-confirm" ${check.ok ? '' : 'disabled'}>Commencer l'aventure</button>
-      <button type="button" class="btn btn-muted" id="career-options">⚙️ Options</button>
+      <button type="button" class="btn btn-muted" id="career-reload">Actualiser la page</button>
       <button type="button" class="btn btn-muted" id="career-reset">Réinitialiser la partie</button>
     </div>
-    <p class="view-desc career-reset-hint">Bloqué ou sauvegarde abîmée ? Ouvre les Options pour recharger, ou réinitialise pour repartir de zéro.</p>
+    <p class="view-desc career-reset-hint">Bloqué ou sauvegarde abîmée ? Actualise la page, ou réinitialise pour repartir de zéro.</p>
   `;
 }
 
@@ -144,8 +143,8 @@ function bindCareerModalListeners() {
       return;
     }
 
-    if (e.target.closest('#career-options')) {
-      openCareerOptions();
+    if (e.target.closest('#career-reload')) {
+      window.location.reload();
       return;
     }
 
@@ -153,11 +152,6 @@ function bindCareerModalListeners() {
       resetFromCareerModal();
     }
   });
-}
-
-function openCareerOptions() {
-  closeCareerModal();
-  navigate('options');
 }
 
 export function initCareerChoiceModal(game) {

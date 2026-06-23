@@ -129,33 +129,18 @@
       },
       "maxDurability": 80
     },
-    "set_sakura_weapon": {
-      "id": "set_sakura_weapon",
-      "name": "Katana Sakura",
-      "emoji": "⚔️",
-      "slot": "weapon",
-      "zone": "village_sakura",
-      "weaponType": "longsword",
-      "className": "Chevalier",
-      "stats": {
-        "hp": 0,
-        "atk": 10,
-        "def": 0
-      },
-      "maxDurability": 80
-    },
     "set_sakura_guardian_blade": {
       "id": "set_sakura_guardian_blade",
-      "name": "Épée du Gardien",
-      "emoji": "🗡️",
+      "name": "Épée-bouclier du Guerrier",
+      "emoji": "🛡️",
       "slot": "weapon",
       "zone": "village_sakura",
       "weaponType": "sword_shield",
-      "className": "Paladin",
+      "className": "Guerrier",
       "stats": {
-        "hp": 5,
-        "atk": 8,
-        "def": 2
+        "hp": 12,
+        "atk": 7,
+        "def": 6
       },
       "maxDurability": 80
     },
@@ -169,53 +154,23 @@
       "className": "Archer",
       "stats": {
         "hp": 0,
-        "atk": 9,
+        "atk": 13,
         "def": 0
       },
       "maxDurability": 80
     },
     "set_sakura_staff": {
       "id": "set_sakura_staff",
-      "name": "Bâton du Temple",
+      "name": "Bâton du Mage",
       "emoji": "🪄",
       "slot": "weapon",
       "zone": "village_sakura",
       "weaponType": "staff",
-      "className": "Miko",
+      "className": "Mage",
       "stats": {
-        "hp": 5,
-        "atk": 6,
-        "def": 0
-      },
-      "maxDurability": 80
-    },
-    "set_sakura_dagger": {
-      "id": "set_sakura_dagger",
-      "name": "Dague Pétale",
-      "emoji": "🔪",
-      "slot": "weapon",
-      "zone": "village_sakura",
-      "weaponType": "dagger",
-      "className": "Assassin",
-      "stats": {
-        "hp": 0,
+        "hp": 8,
         "atk": 9,
-        "def": 0
-      },
-      "maxDurability": 80
-    },
-    "set_sakura_spear": {
-      "id": "set_sakura_spear",
-      "name": "Lance du Cerisier",
-      "emoji": "🔱",
-      "slot": "weapon",
-      "zone": "village_sakura",
-      "weaponType": "spear",
-      "className": "Lancier",
-      "stats": {
-        "hp": 0,
-        "atk": 9,
-        "def": 1
+        "def": 3
       },
       "maxDurability": 80
     },
@@ -329,7 +284,7 @@
       "className": "Archer",
       "stats": {
         "hp": 0,
-        "atk": 22,
+        "atk": 28,
         "def": 0
       }
     },
@@ -443,16 +398,16 @@
     },
     "set_jade_weapon": {
       "id": "set_jade_weapon",
-      "name": "Bâton de Jade",
+      "name": "Bâton de Jade du Mage",
       "emoji": "🪄",
       "slot": "weapon",
       "zone": "jade_mountains",
       "weaponType": "staff",
-      "className": "Miko",
+      "className": "Mage",
       "stats": {
-        "hp": 10,
-        "atk": 35,
-        "def": 0
+        "hp": 18,
+        "atk": 32,
+        "def": 10
       }
     },
     "set_jade_boots": {

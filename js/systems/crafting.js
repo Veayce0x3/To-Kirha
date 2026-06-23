@@ -6,6 +6,7 @@ import { hasWorkingCombatItem } from './combatDurability.js';
 import { equip, getJobEquippedTool, recipeBelongsToWorkshopTab } from './equipment.js';
 import { initToolDurability, isDurabilityTool, isToolEffectActive } from './toolDurability.js';
 import { addJobXp } from './harvest.js';
+import { GATHERING_JOB_IDS, isGatheringJobUnlocked } from './careerChoice.js';
 
 export function makeCraftContext(game) {
   return {
@@ -231,6 +232,20 @@ export function inspectRecipe(recipeId, ctx) {
   };
 }
 
+function isRecipeVisibleInWorkshop(recipeId, craftJobId, ctx) {
+  if (craftJobId !== 'toolmaker') return true;
+
+  const meta = ctx.equipment?.equipable?.[recipeId];
+  if (!meta?.job) return true;
+
+  if (GATHERING_JOB_IDS.includes(meta.job)) {
+    return isGatheringJobUnlocked(meta.job, ctx.state);
+  }
+
+  // Breeder/cook/global helpers stay visible because the farm path is always part of a career.
+  return meta.job === 'breeder' || meta.job === 'cook';
+}
+
 /** Regroupe les recettes d'un onglet atelier. */
 export function listWorkshopRecipes(craftJobId, ctx) {
   const available = [];
@@ -240,6 +255,7 @@ export function listWorkshopRecipes(craftJobId, ctx) {
   for (const [id, recipe] of Object.entries(ctx.recipes)) {
     if (!isAllowedCraftRecipe(recipe)) continue;
     if (!recipeBelongsToWorkshopTab(id, recipe, craftJobId, ctx.equipment)) continue;
+    if (!isRecipeVisibleInWorkshop(id, craftJobId, ctx)) continue;
     const info = inspectRecipe(id, ctx);
     if (!info) continue;
     if (info.locked) locked.push(info);

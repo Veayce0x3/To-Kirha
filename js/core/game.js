@@ -1699,7 +1699,7 @@ export class Game {
   }
 
   getCraftJobs() {
-    return Object.values(this.jobs).filter((j) => j.gathering === false && j.id !== 'cook');
+    return Object.values(this.jobs).filter((j) => j.id === 'toolmaker');
   }
 
   getCuisineJob() {

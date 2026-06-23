@@ -23,6 +23,7 @@ import { renderCombatDurabilityBar, hasCombatDurability } from '../systems/comba
 
 let workshopTab = 'toolmaker';
 let charTab = 'bag';
+let auctionCategory = 'all';
 let combatUi = { step: 'action', menu: 'main', pendingSkill: null, targetMode: null };
 
 export function resetCombatUi() {
@@ -228,7 +229,10 @@ const JOB_SWITCHER_STATUS_CLASSES = [
 function getJobSwitcherGroup(viewId, state) {
   if (viewId?.startsWith('job_')) return { type: 'harvest', views: getVisibleHarvestViews(state) };
   if (isFarmView(viewId)) return { type: 'farm', views: getVisibleFarmViews(state) };
-  return null;
+  return {
+    type: 'quick',
+    views: [...getVisibleHarvestViews(state), ...getVisibleFarmViews(state)],
+  };
 }
 
 function renderJobSwitcherChip(game, viewId, activeViewId) {
@@ -280,7 +284,11 @@ export function renderJobSwitcherDock(game, el, viewId) {
   el.dataset.switcherType = group.type;
   el.setAttribute(
     'aria-label',
-    group.type === 'harvest' ? 'Changer de métier de récolte' : 'Changer de bâtiment de ferme'
+    group.type === 'harvest'
+      ? 'Changer de métier de récolte'
+      : group.type === 'farm'
+        ? 'Changer de bâtiment de ferme'
+        : 'Accès rapide récolte et ferme'
   );
 
   el.innerHTML = `<div class="job-switcher-scroll" role="list">${group.views.map((vid) => renderJobSwitcherChip(game, vid, viewId)).join('')}</div>`;
@@ -455,6 +463,7 @@ function renderCharacter(game, el) {
       <button type="button" class="char-tab-btn${charTab === 'tools' ? ' active' : ''}" data-tab="tools" role="tab">Outils</button>
       <button type="button" class="char-tab-btn${charTab === 'jobs' ? ' active' : ''}" data-tab="jobs" role="tab">Métiers</button>
       <button type="button" class="char-tab-btn${charTab === 'team' ? ' active' : ''}" data-tab="team" role="tab">Équipe</button>
+      <button type="button" class="char-tab-btn${charTab === 'help' ? ' active' : ''}" data-tab="help" role="tab">Infos</button>
     </div>
     <div class="panel-inner char-tab-panel" id="char-tab-panel"></div>
   `;
@@ -499,6 +508,7 @@ function renderCharTabPanel(game, el) {
   else if (charTab === 'tools') renderCharToolsTab(game, panel);
   else if (charTab === 'jobs') renderCharJobsTab(game, panel);
   else if (charTab === 'team') renderCharTeamTab(game, panel);
+  else if (charTab === 'help') renderCharHelpTab(panel);
 }
 
 const DOFUS_SLOT_LAYOUT = [
@@ -531,11 +541,19 @@ function renderCharDofusEquipGrid(game, container) {
     if (!slot || slot.companionOnly) continue;
     const ref = s.combatEquipment?.[entry.id];
     const item = ref ? resolveItem(s, ref, game.combatEquipment.items) : null;
+    const statsLine = item?.stats
+      ? [
+        item.stats.hp ? `+${item.stats.hp} PV` : '',
+        item.stats.atk ? `+${item.stats.atk} ATQ` : '',
+        item.stats.def ? `+${item.stats.def} DEF` : '',
+      ].filter(Boolean).join(' · ')
+      : '';
+    if (item) cell.classList.add('filled');
     cell.innerHTML = `
       <span class="char-equip-slot-label">${slot.emoji}</span>
       ${item
-        ? `<span class="char-equip-item" title="${item.name}">${item.emoji}</span>${ref && hasCombatDurability(item) ? renderCombatDurabilityBar(s, ref, item) : ''}`
-        : '<span class="char-equip-empty">—</span>'}
+        ? `<span class="char-equip-item" title="${item.name}">${item.emoji}</span><span class="char-equip-name">${item.name}</span>${statsLine ? `<span class="char-equip-stats">${statsLine}</span>` : ''}${ref && hasCombatDurability(item) ? renderCombatDurabilityBar(s, ref, item) : ''}`
+        : `<span class="char-equip-empty">${slot.name}</span>`}
     `;
     if (item) {
       cell.title = `${item.name} · +${item.stats?.hp || 0} HP · +${item.stats?.atk || 0} ATQ · +${item.stats?.def || 0} DEF`;
@@ -550,8 +568,8 @@ function renderCharDofusEquipGrid(game, container) {
       btn.type = 'button';
       btn.className = 'btn btn-small btn-craft affordable char-equip-forge';
       btn.textContent = '🔨';
-      btn.title = 'Forger une arme';
-      btn.addEventListener('click', () => navigate('workshop_blacksmith'));
+      btn.title = 'Ouvrir l\'atelier';
+      btn.addEventListener('click', () => navigate('workshop'));
       cell.appendChild(btn);
     }
     container.appendChild(cell);
@@ -729,8 +747,6 @@ function renderCharJobsTab(game, panel) {
   panel.innerHTML = `
     <h3>📜 Métiers de récolte</h3>
     <div id="char-jobs"></div>
-    <h3 class="char-subsection-title">🔨 Métiers d'artisanat</h3>
-    <div id="char-craft-jobs"></div>
     <h3 class="char-subsection-title">👨‍🍳 Cuisine</h3>
     <div id="char-cuisine-job"></div>
   `;
@@ -754,21 +770,6 @@ function renderCharJobsTab(game, panel) {
     jobsEl.appendChild(row);
   }
 
-  const craftJobsEl = panel.querySelector('#char-craft-jobs');
-  for (const job of game.getCraftJobs()) {
-    const prog = game.getJobProgress(job.id);
-    const pct = (prog.xp / prog.needed) * 100;
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'job-row job-row-link';
-    row.innerHTML = `
-      <span>${job.emoji} ${job.name} <strong>Nv.${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}</strong></span>
-      <div class="xp-bar-container"><div class="xp-bar" style="width:${pct}%"></div></div>
-    `;
-    row.addEventListener('click', () => navigate(JOB_VIEW_MAP[job.id] || 'character'));
-    craftJobsEl.appendChild(row);
-  }
-
   const cuisineJob = game.getCuisineJob?.();
   const cuisineEl = panel.querySelector('#char-cuisine-job');
   if (cuisineJob && cuisineEl) {
@@ -787,6 +788,38 @@ function renderCharJobsTab(game, panel) {
     row.addEventListener('click', () => navigate('cuisine'));
     cuisineEl.appendChild(row);
   }
+}
+
+function renderCharHelpTab(panel) {
+  panel.innerHTML = `
+    <h3>📘 Infos & conseils</h3>
+    <div class="help-grid">
+      <section class="help-card">
+        <h4>🌱 Voie de départ</h4>
+        <p>Tu choisis 2 métiers de récolte et 2 bâtiments de ferme. Le reste se récupère via l'Hôtel des Ventes.</p>
+      </section>
+      <section class="help-card">
+        <h4>🏛️ Hôtel des Ventes</h4>
+        <p>Utilise les catégories pour acheter les ressources que tu ne produis pas. Vends tes surplus à la Banque pour financer les achats.</p>
+      </section>
+      <section class="help-card">
+        <h4>🛠️ Outilleur</h4>
+        <p>L'atelier affiche seulement les outils utiles à ta voie. Les outils augmentent vitesse, rendement et confort de progression.</p>
+      </section>
+      <section class="help-card">
+        <h4>🍱 Nourriture</h4>
+        <p>Prépare des repas avant les donjons. Les zones après le début sont pensées pour être très dures sans soins.</p>
+      </section>
+      <section class="help-card">
+        <h4>⚔️ Combat</h4>
+        <p>Guerrier = défense, Archer = attaque, Mage = mixte. Change ton équipement selon la zone et garde de la nourriture en réserve.</p>
+      </section>
+      <section class="help-card">
+        <h4>📱 Mobile</h4>
+        <p>Le menu rapide du bas donne accès aux métiers de récolte et bâtiments de ferme choisis sans rouvrir toute la navigation.</p>
+      </section>
+    </div>
+  `;
 }
 
 function renderCharTeamTab(game, panel) {
@@ -2108,81 +2141,121 @@ export function renderAuctionHouse(game, el) {
     return;
   }
 
+  const allOffers = [];
   for (const [vendorId, vendor] of vendorEntries) {
-    const section = document.createElement('section');
-    section.className = `auction-vendor panel-inner${vendor.testHdv ? ' auction-vendor-test' : ''}`;
-    const openAttr = vendor.testHdv ? '' : ' open';
-    section.innerHTML = `
-      <details class="auction-vendor-details"${openAttr}>
-        <summary class="auction-vendor-title">${vendor.emoji} ${vendor.name}</summary>
-        <p class="view-desc">${vendor.description}</p>
-        <div class="auction-offers" data-vendor-grid="${vendorId}"></div>
-      </details>
-    `;
-
-    const offersGrid = section.querySelector('.auction-offers');
-
-    const offerEntries = Object.entries(vendor.offers || {}).sort(([, a], [, b]) => {
-      const ra = game.resources[a.resourceId];
-      const rb = game.resources[b.resourceId];
-      const lvl = (ra?.requiredJobLevel || 1) - (rb?.requiredJobLevel || 1);
-      if (lvl !== 0) return lvl;
-      return (ra?.name || '').localeCompare(rb?.name || '', 'fr');
-    });
-
-    for (const [offerId, offer] of offerEntries) {
+    for (const [offerId, offer] of Object.entries(vendor.offers || {})) {
       const resource = game.resources[offer.resourceId];
       if (!resource) continue;
+      allOffers.push({ vendorId, vendor, offerId, offer, resource });
+    }
+  }
 
-      const card = document.createElement('div');
-      card.className = 'auction-offer-card';
-      const sellUnit = offer.sellable ? Math.floor(offer.unitPrice / 2) : 0;
-      card.innerHTML = `
-        <div class="auction-offer-head">
-          <span class="auction-offer-icon">${renderResourceIcon(resource, 'auction-offer-icon')}</span>
-          <div>
-            <div class="auction-offer-name">${resource.name}</div>
-            <div class="auction-offer-price">Achat : ${formatNumber(offer.unitPrice)} 💰 / unité</div>
-            ${offer.sellable ? `<div class="auction-offer-price auction-sell-price">Revente : ${formatNumber(sellUnit)} 💰 / unité</div>` : ''}
-          </div>
+  if (!allOffers.length) {
+    vendorsEl.innerHTML = '<p class="empty-text panel-inner">Aucune offre pour le moment.</p>';
+    return;
+  }
+
+  const validCategories = new Set(['all', ...vendorEntries.map(([vendorId]) => vendorId)]);
+  if (!validCategories.has(auctionCategory)) auctionCategory = 'all';
+
+  vendorsEl.innerHTML = `
+    <div class="auction-hdv panel-inner">
+      <aside class="auction-categories" aria-label="Catégories HDV">
+        <button type="button" class="auction-cat-btn${auctionCategory === 'all' ? ' active' : ''}" data-auction-cat="all">
+          <span>📦 Toutes les offres</span>
+          <strong>${allOffers.length}</strong>
+        </button>
+        ${vendorEntries.map(([vendorId, vendor]) => {
+          const count = Object.keys(vendor.offers || {}).length;
+          return `
+            <button type="button" class="auction-cat-btn${auctionCategory === vendorId ? ' active' : ''}${vendor.testHdv ? ' test' : ''}" data-auction-cat="${vendorId}">
+              <span>${vendor.emoji} ${vendor.name}</span>
+              <strong>${count}</strong>
+            </button>
+          `;
+        }).join('')}
+      </aside>
+      <section class="auction-list-wrap">
+        <div class="auction-list-head">
+          <span>Objet</span>
+          <span>Prix unité</span>
+          <span>Actions</span>
         </div>
+        <div class="auction-list" id="auction-offer-list"></div>
+      </section>
+    </div>
+  `;
+
+  vendorsEl.querySelectorAll('.auction-cat-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      auctionCategory = btn.dataset.auctionCat || 'all';
+      renderAuctionHouse(game, el);
+    });
+  });
+
+  const listEl = vendorsEl.querySelector('#auction-offer-list');
+  const visibleOffers = allOffers
+    .filter(({ vendorId }) => auctionCategory === 'all' || auctionCategory === vendorId)
+    .sort((a, b) => {
+      const lvl = (a.resource.requiredJobLevel || 1) - (b.resource.requiredJobLevel || 1);
+      if (lvl !== 0) return lvl;
+      const vendorCmp = (a.vendor.name || '').localeCompare(b.vendor.name || '', 'fr');
+      if (vendorCmp !== 0) return vendorCmp;
+      return (a.resource.name || '').localeCompare(b.resource.name || '', 'fr');
+    });
+
+  for (const { vendorId, vendor, offerId, offer, resource } of visibleOffers) {
+    const row = document.createElement('article');
+    row.className = `auction-list-row${vendor.testHdv ? ' auction-list-row-test' : ''}`;
+    const sellUnit = offer.sellable ? Math.floor(offer.unitPrice / 2) : 0;
+    const ownedQty = game.state.inventory?.[offer.resourceId] || 0;
+    row.innerHTML = `
+      <div class="auction-list-item">
+        <span class="auction-offer-icon">${renderResourceIcon(resource, 'auction-offer-icon')}</span>
+        <div>
+          <div class="auction-offer-name">${resource.name}</div>
+          <div class="auction-offer-source">${vendor.emoji} ${vendor.name}${ownedQty ? ` · Possédé : ×${ownedQty}` : ''}</div>
+        </div>
+      </div>
+      <div class="auction-list-price">
+        <strong>${formatNumber(offer.unitPrice)} 💰</strong>
+        ${offer.sellable ? `<span>Revente ${formatNumber(sellUnit)} 💰</span>` : ''}
+      </div>
+      <div class="auction-list-actions">
         <div class="auction-buy-row" data-vendor="${vendorId}" data-offer="${offerId}"></div>
         ${offer.sellable ? `<div class="auction-sell-row" data-vendor="${vendorId}" data-offer="${offerId}"></div>` : ''}
-      `;
+      </div>
+    `;
 
-      const row = card.querySelector('.auction-buy-row');
-      for (const qty of offer.bulkQuantities || [1]) {
-        const total = offer.unitPrice * qty;
-        const canAfford = game.state.kirha >= total;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `btn btn-buy-scroll${canAfford ? ' affordable' : ''}`;
-        btn.disabled = !canAfford;
-        btn.textContent = `Acheter ×${qty} — ${formatNumber(total)} 💰`;
-        btn.addEventListener('click', () => game.buyMerchant(vendorId, offerId, qty));
-        row.appendChild(btn);
-      }
-
-      if (offer.sellable) {
-        const sellRow = card.querySelector('.auction-sell-row');
-        const ownedScrolls = game.getScrollCount();
-        for (const qty of offer.bulkQuantities || [1]) {
-          const total = sellUnit * qty;
-          const canSell = ownedScrolls >= qty;
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = `btn btn-sell-scroll${canSell ? ' affordable' : ''}`;
-          btn.disabled = !canSell;
-          btn.textContent = `Vendre ×${qty} — ${formatNumber(total)} 💰`;
-          btn.addEventListener('click', () => game.sellMerchant(vendorId, offerId, qty));
-          sellRow.appendChild(btn);
-        }
-      }
-
-      offersGrid.appendChild(card);
+    const buyRow = row.querySelector('.auction-buy-row');
+    for (const qty of offer.bulkQuantities || [1]) {
+      const total = offer.unitPrice * qty;
+      const canAfford = game.state.kirha >= total;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `btn btn-buy-scroll${canAfford ? ' affordable' : ''}`;
+      btn.disabled = !canAfford;
+      btn.textContent = `Acheter ×${qty} · ${formatNumber(total)} 💰`;
+      btn.addEventListener('click', () => game.buyMerchant(vendorId, offerId, qty));
+      buyRow.appendChild(btn);
     }
 
-    vendorsEl.appendChild(section);
+    if (offer.sellable) {
+      const sellRow = row.querySelector('.auction-sell-row');
+      for (const qty of offer.bulkQuantities || [1]) {
+        const total = sellUnit * qty;
+        const canSell = ownedQty >= qty;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `btn btn-sell-scroll${canSell ? ' affordable' : ''}`;
+        btn.disabled = !canSell;
+        btn.textContent = `Vendre ×${qty} · ${formatNumber(total)} 💰`;
+        btn.addEventListener('click', () => game.sellMerchant(vendorId, offerId, qty));
+        sellRow.appendChild(btn);
+      }
+    }
+
+    listEl.appendChild(row);
   }
 }
 
@@ -2776,6 +2849,7 @@ function renderDungeonCombatBody(game) {
       <${tag}${isTargetable ? ' type="button"' : ''} class="dq-party-member${isActive ? ' dq-active-fighter' : ''}${member.hp <= 0 ? ' dq-ko' : ''}${isTargetable ? ' dq-targetable' : ''}"
         ${isTargetable ? `data-target-id="${member.id}"` : ''}>
         <div class="dq-sprite dq-sprite-party" data-member-id="${member.id}" aria-hidden="true">${member.emoji}</div>
+        <div class="dq-fighter-name">${member.name}</div>
         <div class="dq-mini-hp" aria-hidden="true"><div class="dq-mini-hp-fill" style="width:${hpPct}%"></div></div>
         ${isActive ? '<span class="dq-active-cursor" aria-hidden="true">▶</span>' : ''}
       </${tag}>
@@ -2795,6 +2869,7 @@ function renderDungeonCombatBody(game) {
         <div class="dq-sprite dq-sprite-enemy${foe.boss ? ' dq-sprite-boss' : ''}" aria-hidden="true">${foe.emoji}</div>
         <div class="dq-enemy-label">${foe.name}</div>
         <div class="dq-mini-hp dq-mini-hp-enemy" aria-hidden="true"><div class="dq-mini-hp-fill" style="width:${hpPct}%"></div></div>
+        <div class="dq-enemy-hp">${foe.hp}/${foe.maxHp}</div>
       </${tag}>
     `;
   }).join('');

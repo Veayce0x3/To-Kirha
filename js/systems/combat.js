@@ -12,20 +12,14 @@ export const COMBAT_SLOT_IDS = [
 
 export const WEAPON_TYPE_SKILLS = {
   sword_shield: ['ss_slash', 'ss_guard', 'ss_shield_bash', 'ss_riposte'],
-  longsword: ['ls_slash', 'ls_thrust', 'ls_charged', 'ls_whirlwind'],
   bow: ['bow_quick', 'bow_precise', 'bow_volley', 'bow_pierce'],
   staff: ['staff_spark', 'staff_bind', 'staff_heal', 'staff_orb'],
-  dagger: ['dg_stab', 'dg_sneak', 'dg_poison', 'dg_crit'],
-  spear: ['sp_thrust', 'sp_charge', 'sp_brace', 'sp_sweep'],
 };
 
 export const WEAPON_CLASS_LABELS = {
-  sword_shield: 'Paladin',
-  longsword: 'Chevalier',
+  sword_shield: 'Guerrier',
   bow: 'Archer',
-  staff: 'Miko',
-  dagger: 'Assassin',
-  spear: 'Lancier',
+  staff: 'Mage',
 };
 
 export function getWeaponClassLabel(item) {
@@ -74,6 +68,22 @@ export function ownsCombatRef(state, ref) {
 
 export function migrateCombatItemInstances(state, combatItems) {
   if (!state.combatItemInstances) state.combatItemInstances = [];
+
+  state.combatItemInstances = state.combatItemInstances.filter((inst) => inst?.itemId && combatItems[inst.itemId]);
+  const knownInstanceIds = new Set(state.combatItemInstances.map((inst) => inst.instanceId));
+  const isKnownRef = (ref) => !ref || combatItems[ref] || knownInstanceIds.has(ref);
+
+  state.ownedCombatItems = (state.ownedCombatItems || []).filter(isKnownRef);
+  for (const slot of COMBAT_SLOT_IDS) {
+    if (state.combatEquipment?.[slot] && !isKnownRef(state.combatEquipment[slot])) {
+      state.combatEquipment[slot] = null;
+    }
+  }
+  for (const comp of Object.values(state.companions || {})) {
+    for (const [slot, ref] of Object.entries(comp.equipment || {})) {
+      if (ref && !isKnownRef(ref)) comp.equipment[slot] = null;
+    }
+  }
 
   const toInstance = (itemId) => {
     if (!itemId) return itemId;

@@ -4,222 +4,190 @@
     "name": "Coup de poing",
     "emoji": "👊",
     "paCost": 1,
-    "damage": { "multiplier": 0.5 }
+    "damage": {
+      "multiplier": 0.5
+    }
   },
   "kick": {
     "id": "kick",
     "name": "Coup de pied",
     "emoji": "🦶",
     "paCost": 2,
-    "damage": { "multiplier": 0.7 }
+    "damage": {
+      "multiplier": 0.7
+    }
   },
   "throw_pebble": {
     "id": "throw_pebble",
     "name": "Lancer de caillou",
     "emoji": "🪨",
     "paCost": 1,
-    "damage": { "multiplier": 0.4 }
+    "damage": {
+      "multiplier": 0.4
+    }
   },
   "desperate_blow": {
     "id": "desperate_blow",
     "name": "Coup désespéré",
     "emoji": "💢",
     "paCost": 3,
-    "damage": { "multiplier": 1.0 }
+    "damage": {
+      "multiplier": 1.0
+    }
   },
   "ss_slash": {
     "id": "ss_slash",
     "name": "Entaille",
     "emoji": "⚔️",
     "paCost": 2,
-    "weaponTypes": ["sword_shield"],
-    "damage": { "multiplier": 1.0 }
+    "weaponTypes": [
+      "sword_shield"
+    ],
+    "damage": {
+      "multiplier": 1.0
+    }
   },
   "ss_guard": {
     "id": "ss_guard",
     "name": "Garde",
     "emoji": "🛡️",
     "paCost": 1,
-    "weaponTypes": ["sword_shield"],
-    "effect": { "type": "guard", "defBonus": 4 }
+    "weaponTypes": [
+      "sword_shield"
+    ],
+    "effect": {
+      "type": "guard",
+      "defBonus": 4
+    }
   },
   "ss_shield_bash": {
     "id": "ss_shield_bash",
     "name": "Coup de bouclier",
     "emoji": "💥",
     "paCost": 2,
-    "weaponTypes": ["sword_shield"],
-    "damage": { "multiplier": 0.75 },
-    "effect": { "type": "stun", "chance": 0.2 }
+    "weaponTypes": [
+      "sword_shield"
+    ],
+    "damage": {
+      "multiplier": 0.75
+    },
+    "effect": {
+      "type": "stun",
+      "chance": 0.2
+    }
   },
   "ss_riposte": {
     "id": "ss_riposte",
     "name": "Riposte",
     "emoji": "↩️",
     "paCost": 3,
-    "weaponTypes": ["sword_shield"],
-    "damage": { "multiplier": 1.35 }
-  },
-  "ls_slash": {
-    "id": "ls_slash",
-    "name": "Entaille",
-    "emoji": "⚔️",
-    "paCost": 1,
-    "weaponTypes": ["longsword"],
-    "damage": { "multiplier": 0.85 }
-  },
-  "ls_thrust": {
-    "id": "ls_thrust",
-    "name": "Estoc",
-    "emoji": "🗡️",
-    "paCost": 2,
-    "weaponTypes": ["longsword"],
-    "damage": { "multiplier": 1.1 }
-  },
-  "ls_charged": {
-    "id": "ls_charged",
-    "name": "Frappe chargée",
-    "emoji": "💥",
-    "paCost": 3,
-    "weaponTypes": ["longsword"],
-    "damage": { "multiplier": 1.5 }
-  },
-  "ls_whirlwind": {
-    "id": "ls_whirlwind",
-    "name": "Lame circulaire",
-    "emoji": "🌀",
-    "paCost": 3,
-    "weaponTypes": ["longsword"],
-    "damage": { "multiplier": 1.25 }
+    "weaponTypes": [
+      "sword_shield"
+    ],
+    "damage": {
+      "multiplier": 1.35
+    }
   },
   "bow_quick": {
     "id": "bow_quick",
     "name": "Tir rapide",
     "emoji": "🏹",
     "paCost": 1,
-    "weaponTypes": ["bow"],
-    "damage": { "multiplier": 0.8 }
+    "weaponTypes": [
+      "bow"
+    ],
+    "damage": {
+      "multiplier": 0.8
+    }
   },
   "bow_precise": {
     "id": "bow_precise",
     "name": "Tir précis",
     "emoji": "🎯",
     "paCost": 2,
-    "weaponTypes": ["bow"],
-    "damage": { "multiplier": 1.15, "ignoreDef": 2 }
+    "weaponTypes": [
+      "bow"
+    ],
+    "damage": {
+      "multiplier": 1.15,
+      "ignoreDef": 2
+    }
   },
   "bow_volley": {
     "id": "bow_volley",
     "name": "Volée",
     "emoji": "🌧️",
     "paCost": 3,
-    "weaponTypes": ["bow"],
-    "damage": { "multiplier": 1.3 }
+    "weaponTypes": [
+      "bow"
+    ],
+    "damage": {
+      "multiplier": 1.3
+    }
   },
   "bow_pierce": {
     "id": "bow_pierce",
     "name": "Flèche perçante",
     "emoji": "💠",
     "paCost": 3,
-    "weaponTypes": ["bow"],
-    "damage": { "multiplier": 1.2, "ignoreDef": 4 }
+    "weaponTypes": [
+      "bow"
+    ],
+    "damage": {
+      "multiplier": 1.2,
+      "ignoreDef": 4
+    }
   },
   "staff_spark": {
     "id": "staff_spark",
     "name": "Éclat",
     "emoji": "✨",
     "paCost": 2,
-    "weaponTypes": ["staff"],
-    "damage": { "multiplier": 1.0 }
+    "weaponTypes": [
+      "staff"
+    ],
+    "damage": {
+      "multiplier": 1.0
+    }
   },
   "staff_bind": {
     "id": "staff_bind",
     "name": "Entrave",
     "emoji": "🔗",
     "paCost": 2,
-    "weaponTypes": ["staff"],
-    "damage": { "multiplier": 0.6 },
-    "effect": { "type": "weaken", "atkReduction": 3 }
+    "weaponTypes": [
+      "staff"
+    ],
+    "damage": {
+      "multiplier": 0.6
+    },
+    "effect": {
+      "type": "weaken",
+      "atkReduction": 3
+    }
   },
   "staff_heal": {
     "id": "staff_heal",
     "name": "Soin léger",
     "emoji": "💚",
     "paCost": 2,
-    "weaponTypes": ["staff"],
-    "heal": { "percent": 0.12 }
+    "weaponTypes": [
+      "staff"
+    ],
+    "heal": {
+      "percent": 0.12
+    }
   },
   "staff_orb": {
     "id": "staff_orb",
     "name": "Orbe",
     "emoji": "🔮",
     "paCost": 3,
-    "weaponTypes": ["staff"],
-    "damage": { "multiplier": 1.45 }
-  },
-  "dg_stab": {
-    "id": "dg_stab",
-    "name": "Coup rapide",
-    "emoji": "🗡️",
-    "paCost": 1,
-    "weaponTypes": ["dagger"],
-    "damage": { "multiplier": 0.9 }
-  },
-  "dg_sneak": {
-    "id": "dg_sneak",
-    "name": "Attaque sournoise",
-    "emoji": "👤",
-    "paCost": 2,
-    "weaponTypes": ["dagger"],
-    "damage": { "multiplier": 1.15, "ignoreDef": 3 }
-  },
-  "dg_poison": {
-    "id": "dg_poison",
-    "name": "Poison pétale",
-    "emoji": "🌸",
-    "paCost": 2,
-    "weaponTypes": ["dagger"],
-    "damage": { "multiplier": 0.7 },
-    "effect": { "type": "weaken", "atkReduction": 4 }
-  },
-  "dg_crit": {
-    "id": "dg_crit",
-    "name": "Coup critique",
-    "emoji": "💥",
-    "paCost": 3,
-    "weaponTypes": ["dagger"],
-    "damage": { "multiplier": 1.55 }
-  },
-  "sp_thrust": {
-    "id": "sp_thrust",
-    "name": "Estoc",
-    "emoji": "🔱",
-    "paCost": 1,
-    "weaponTypes": ["spear"],
-    "damage": { "multiplier": 0.95, "ignoreDef": 1 }
-  },
-  "sp_charge": {
-    "id": "sp_charge",
-    "name": "Charge",
-    "emoji": "🐎",
-    "paCost": 3,
-    "weaponTypes": ["spear"],
-    "damage": { "multiplier": 1.4 }
-  },
-  "sp_brace": {
-    "id": "sp_brace",
-    "name": "Garde de lance",
-    "emoji": "🛡️",
-    "paCost": 1,
-    "weaponTypes": ["spear"],
-    "effect": { "type": "guard", "defBonus": 3 }
-  },
-  "sp_sweep": {
-    "id": "sp_sweep",
-    "name": "Balayage",
-    "emoji": "🌀",
-    "paCost": 2,
-    "weaponTypes": ["spear"],
-    "damage": { "multiplier": 1.1 }
+    "weaponTypes": [
+      "staff"
+    ],
+    "damage": {
+      "multiplier": 1.45
+    }
   }
 }

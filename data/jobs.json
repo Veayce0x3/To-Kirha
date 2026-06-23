@@ -6,7 +6,10 @@
     "maxLevel": 200,
     "xpPerLevel": 100,
     "xpScaling": 1.08,
-    "bonusesPerLevel": { "speedBonus": 0.005, "yieldBonus": 0.003 },
+    "bonusesPerLevel": {
+      "speedBonus": 0.005,
+      "yieldBonus": 0.003
+    },
     "gathering": true
   },
   "fisher": {
@@ -16,7 +19,10 @@
     "maxLevel": 200,
     "xpPerLevel": 110,
     "xpScaling": 1.08,
-    "bonusesPerLevel": { "speedBonus": 0.005, "yieldBonus": 0.003 },
+    "bonusesPerLevel": {
+      "speedBonus": 0.005,
+      "yieldBonus": 0.003
+    },
     "gathering": true
   },
   "miner": {
@@ -26,7 +32,10 @@
     "maxLevel": 200,
     "xpPerLevel": 120,
     "xpScaling": 1.08,
-    "bonusesPerLevel": { "speedBonus": 0.005, "yieldBonus": 0.003 },
+    "bonusesPerLevel": {
+      "speedBonus": 0.005,
+      "yieldBonus": 0.003
+    },
     "gathering": true
   },
   "farmer": {
@@ -36,7 +45,10 @@
     "maxLevel": 200,
     "xpPerLevel": 100,
     "xpScaling": 1.08,
-    "bonusesPerLevel": { "speedBonus": 0.005, "yieldBonus": 0.003 },
+    "bonusesPerLevel": {
+      "speedBonus": 0.005,
+      "yieldBonus": 0.003
+    },
     "gathering": true
   },
   "alchemist": {
@@ -46,7 +58,10 @@
     "maxLevel": 200,
     "xpPerLevel": 115,
     "xpScaling": 1.08,
-    "bonusesPerLevel": { "speedBonus": 0.005, "yieldBonus": 0.003 },
+    "bonusesPerLevel": {
+      "speedBonus": 0.005,
+      "yieldBonus": 0.003
+    },
     "gathering": true
   },
   "toolmaker": {
@@ -56,69 +71,11 @@
     "maxLevel": 200,
     "xpPerLevel": 120,
     "xpScaling": 1.1,
-    "bonusesPerLevel": { "craftValueBonus": 0.008 },
+    "bonusesPerLevel": {
+      "craftValueBonus": 0.008
+    },
     "gathering": false,
     "craftCategory": "tools"
-  },
-  "blacksmith": {
-    "id": "blacksmith",
-    "name": "Forgeron",
-    "emoji": "🔨",
-    "maxLevel": 200,
-    "xpPerLevel": 140,
-    "xpScaling": 1.1,
-    "bonusesPerLevel": { "craftValueBonus": 0.01 },
-    "gathering": false
-  },
-  "carver": {
-    "id": "carver",
-    "name": "Sculpteur",
-    "emoji": "🪵",
-    "maxLevel": 200,
-    "xpPerLevel": 140,
-    "xpScaling": 1.1,
-    "bonusesPerLevel": { "craftValueBonus": 0.01 },
-    "gathering": false
-  },
-  "armorer": {
-    "id": "armorer",
-    "name": "Armurier",
-    "emoji": "🥋",
-    "maxLevel": 200,
-    "xpPerLevel": 145,
-    "xpScaling": 1.1,
-    "bonusesPerLevel": { "craftValueBonus": 0.01 },
-    "gathering": false
-  },
-  "tailor": {
-    "id": "tailor",
-    "name": "Tailleur",
-    "emoji": "🧵",
-    "maxLevel": 200,
-    "xpPerLevel": 130,
-    "xpScaling": 1.1,
-    "bonusesPerLevel": { "craftValueBonus": 0.01 },
-    "gathering": false
-  },
-  "shoemaker": {
-    "id": "shoemaker",
-    "name": "Cordonnier",
-    "emoji": "👢",
-    "maxLevel": 200,
-    "xpPerLevel": 130,
-    "xpScaling": 1.1,
-    "bonusesPerLevel": { "craftValueBonus": 0.01 },
-    "gathering": false
-  },
-  "jeweler": {
-    "id": "jeweler",
-    "name": "Bijoutier",
-    "emoji": "💍",
-    "maxLevel": 200,
-    "xpPerLevel": 150,
-    "xpScaling": 1.1,
-    "bonusesPerLevel": { "craftValueBonus": 0.012 },
-    "gathering": false
   },
   "breeder": {
     "id": "breeder",
@@ -127,7 +84,10 @@
     "maxLevel": 200,
     "xpPerLevel": 100,
     "xpScaling": 1.08,
-    "bonusesPerLevel": { "speedBonus": 0.005, "yieldBonus": 0.003 },
+    "bonusesPerLevel": {
+      "speedBonus": 0.005,
+      "yieldBonus": 0.003
+    },
     "gathering": true,
     "farmJob": true
   },
@@ -138,7 +98,9 @@
     "maxLevel": 200,
     "xpPerLevel": 120,
     "xpScaling": 1.1,
-    "bonusesPerLevel": { "craftValueBonus": 0.01 },
+    "bonusesPerLevel": {
+      "craftValueBonus": 0.01
+    },
     "gathering": false,
     "craftCategory": "cuisine"
   }

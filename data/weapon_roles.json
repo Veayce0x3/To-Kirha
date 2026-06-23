@@ -1,44 +1,23 @@
 {
   "sword_shield": {
-    "label": "Paladin",
-    "role": "Soutien · Tank",
-    "description": "Garde, bouclier et riposte — idéal pour encaisser.",
+    "label": "Guerrier",
+    "role": "Tank · Bonus défense",
+    "description": "Épée et bouclier — encaisse mieux les coups et protège la progression.",
     "signatureSkill": "ss_shield_bash",
     "signatureHint": "Coup de bouclier — frappe et peut étourdir."
   },
-  "longsword": {
-    "label": "Chevalier",
-    "role": "Dégâts · Polyvalent",
-    "description": "Entailles et estocs — bon équilibre attaque et tenue.",
-    "signatureSkill": "ls_charged",
-    "signatureHint": "Frappe chargée — gros dégâts en un coup."
-  },
-  "staff": {
-    "label": "Miko",
-    "role": "Soutien · Dégâts · Soins",
-    "description": "Sorts et soin d'équipe — soutien offensif.",
-    "signatureSkill": "staff_heal",
-    "signatureHint": "Soin léger — restaure une partie de tes HP."
-  },
   "bow": {
     "label": "Archer",
-    "role": "Dégâts · Agilité",
-    "description": "Tirs précis à distance — dégâts réguliers.",
+    "role": "Dégâts · Bonus attaque",
+    "description": "Arc — inflige de gros dégâts réguliers à distance.",
     "signatureSkill": "bow_precise",
     "signatureHint": "Tir précis — ignore une partie de la défense."
   },
-  "spear": {
-    "label": "Lancier",
-    "role": "Dégâts · Agilité · Esquive",
-    "description": "Charge et garde — mobile et perçant.",
-    "signatureSkill": "sp_charge",
-    "signatureHint": "Charge — percée puissante."
-  },
-  "dagger": {
-    "label": "Assassin",
-    "role": "Gros dégâts · Fragile",
-    "description": "Critiques et poison — burst élevé, peu de marge.",
-    "signatureSkill": "dg_crit",
-    "signatureHint": "Coup critique — burst maximal."
+  "staff": {
+    "label": "Mage",
+    "role": "Mixte · Attaque et soutien",
+    "description": "Bâton — mélange dégâts, contrôle et soin pour rester polyvalent.",
+    "signatureSkill": "staff_heal",
+    "signatureHint": "Soin léger — restaure une partie de tes HP."
   }
 }

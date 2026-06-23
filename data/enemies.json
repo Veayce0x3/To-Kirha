@@ -1,23 +1,128 @@
 {
-  "spirit_lantern": { "hp": 40, "atk": 6, "def": 2, "xp": 15 },
-  "training_dummy": { "hp": 12, "atk": 0, "def": 0, "xp": 5 },
-  "petal_slime": { "hp": 55, "atk": 8, "def": 3, "xp": 20 },
-  "temple_guard": { "hp": 70, "atk": 10, "def": 5, "xp": 28 },
-  "sakura_boss": { "hp": 120, "atk": 14, "def": 8, "xp": 60 },
-  "wild_fox": { "hp": 90, "atk": 14, "def": 6, "xp": 35 },
-  "thorn_beast": { "hp": 110, "atk": 16, "def": 8, "xp": 42 },
-  "root_golem": { "hp": 140, "atk": 18, "def": 12, "xp": 50 },
-  "petal_boss": { "hp": 220, "atk": 24, "def": 15, "xp": 100 },
-  "cave_bat": { "hp": 160, "atk": 22, "def": 10, "xp": 55 },
-  "crystal_sprite": { "hp": 190, "atk": 26, "def": 14, "xp": 65 },
-  "stone_warden": { "hp": 230, "atk": 30, "def": 18, "xp": 80 },
-  "jade_boss": { "hp": 400, "atk": 38, "def": 25, "xp": 150 },
-  "mist_koi": { "hp": 130, "atk": 18, "def": 8, "xp": 40 },
-  "mist_wisp": { "hp": 150, "atk": 20, "def": 10, "xp": 48 },
-  "mist_serpent": { "hp": 175, "atk": 24, "def": 12, "xp": 55 },
-  "mist_boss": { "hp": 300, "atk": 32, "def": 20, "xp": 120 },
-  "lotus_guard": { "hp": 260, "atk": 34, "def": 22, "xp": 90 },
-  "lotus_spirit": { "hp": 280, "atk": 36, "def": 24, "xp": 100 },
-  "lotus_monk": { "hp": 310, "atk": 40, "def": 26, "xp": 110 },
-  "lotus_boss": { "hp": 520, "atk": 48, "def": 32, "xp": 200 }
+  "spirit_lantern": {
+    "hp": 28,
+    "atk": 3,
+    "def": 0,
+    "xp": 12
+  },
+  "training_dummy": {
+    "hp": 12,
+    "atk": 0,
+    "def": 0,
+    "xp": 5
+  },
+  "petal_slime": {
+    "hp": 42,
+    "atk": 5,
+    "def": 1,
+    "xp": 16
+  },
+  "temple_guard": {
+    "hp": 58,
+    "atk": 7,
+    "def": 3,
+    "xp": 24
+  },
+  "sakura_boss": {
+    "hp": 105,
+    "atk": 11,
+    "def": 6,
+    "xp": 60
+  },
+  "wild_fox": {
+    "hp": 135,
+    "atk": 22,
+    "def": 9,
+    "xp": 42
+  },
+  "thorn_beast": {
+    "hp": 165,
+    "atk": 26,
+    "def": 12,
+    "xp": 50
+  },
+  "root_golem": {
+    "hp": 210,
+    "atk": 30,
+    "def": 17,
+    "xp": 62
+  },
+  "petal_boss": {
+    "hp": 340,
+    "atk": 38,
+    "def": 22,
+    "xp": 130
+  },
+  "cave_bat": {
+    "hp": 250,
+    "atk": 38,
+    "def": 18,
+    "xp": 70
+  },
+  "crystal_sprite": {
+    "hp": 300,
+    "atk": 45,
+    "def": 23,
+    "xp": 84
+  },
+  "stone_warden": {
+    "hp": 360,
+    "atk": 52,
+    "def": 30,
+    "xp": 100
+  },
+  "jade_boss": {
+    "hp": 650,
+    "atk": 68,
+    "def": 40,
+    "xp": 190
+  },
+  "mist_koi": {
+    "hp": 200,
+    "atk": 30,
+    "def": 14,
+    "xp": 58
+  },
+  "mist_wisp": {
+    "hp": 230,
+    "atk": 34,
+    "def": 17,
+    "xp": 68
+  },
+  "mist_serpent": {
+    "hp": 270,
+    "atk": 40,
+    "def": 20,
+    "xp": 78
+  },
+  "mist_boss": {
+    "hp": 470,
+    "atk": 52,
+    "def": 30,
+    "xp": 155
+  },
+  "lotus_guard": {
+    "hp": 430,
+    "atk": 62,
+    "def": 36,
+    "xp": 110
+  },
+  "lotus_spirit": {
+    "hp": 470,
+    "atk": 68,
+    "def": 40,
+    "xp": 125
+  },
+  "lotus_monk": {
+    "hp": 530,
+    "atk": 76,
+    "def": 45,
+    "xp": 140
+  },
+  "lotus_boss": {
+    "hp": 900,
+    "atk": 95,
+    "def": 58,
+    "xp": 260
+  }
 }

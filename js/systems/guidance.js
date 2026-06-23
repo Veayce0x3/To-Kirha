@@ -4,6 +4,7 @@ import { canPayUnlockZone } from './zoneProgress.js';
 import { getRecipeRequiredLevel } from './craft.js';
 import { getJobEquippedTool } from './equipment.js';
 import { getCombatStats } from './character.js';
+import { resolveItemId } from './combat.js';
 
 const ZONE_ORDER = ['village_sakura', 'petal_forest', 'mist_river', 'jade_mountains', 'lotus_sanctuary'];
 
@@ -96,9 +97,9 @@ export function getCurrentObjective(ctx) {
 
   if (!state.combatEquipment?.weapon) {
     return objective(
-      'Forger une arme',
-      'Va à l\'Atelier et fabrique une arme, puis équipe-la sur ton personnage.',
-      { hintView: 'workshop', priority: 2, source: 'weapon' }
+      'Équiper une arme',
+      'Récupère une arme de combat, puis équipe-la sur ton personnage avant les zones difficiles.',
+      { hintView: 'combat', priority: 2, source: 'weapon' }
     );
   }
 
@@ -170,8 +171,8 @@ export function getCurrentObjective(ctx) {
   if (setRecipe) {
     return objective(
       'Compléter ton équipement',
-      `Fabrique ${setRecipe.emoji} ${setRecipe.name} à l'Atelier pour cette zone.`,
-      { hintView: 'workshop', priority: 5, source: 'craft_set' }
+      `Récupère ${setRecipe.emoji} ${setRecipe.name} et équipe-toi avant de pousser la zone.`,
+      { hintView: 'combat', priority: 5, source: 'craft_set' }
     );
   }
 

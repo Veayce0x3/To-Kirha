@@ -115,12 +115,6 @@ export const JOB_VIEW_MAP = {
   farmer: 'job_farmer',
   alchemist: 'job_alchemist',
   toolmaker: 'workshop_toolmaker',
-  blacksmith: 'workshop_blacksmith',
-  carver: 'workshop_carver',
-  armorer: 'workshop_armorer',
-  tailor: 'workshop_tailor',
-  shoemaker: 'workshop_shoemaker',
-  jeweler: 'workshop_jeweler',
   cook: 'cuisine',
 };
 
