@@ -8,6 +8,7 @@ import { navigate, getView, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV,
 import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '../systems/harvest.js';
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
+import { forceAppRefresh } from '../core/reload.js';
 import { getQuestStatusText, isQuestCompleted, isQuestAvailable, isQuestReady, QUEST_CHAPTER_LABELS } from '../systems/quests.js';
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
 import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
@@ -2528,8 +2529,7 @@ export function renderOptions(game, el) {
 
   renderSettingsIn(game, el.querySelector('#settings-grid'));
   el.querySelector('#reload-app')?.addEventListener('click', () => {
-    game.scheduleSave?.();
-    window.location.reload();
+    forceAppRefresh(game);
   });
   el.querySelector('#prestige-btn')?.addEventListener('click', () => emitPrestigeModal());
 

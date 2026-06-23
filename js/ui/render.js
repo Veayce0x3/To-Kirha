@@ -1,4 +1,5 @@
 import { on } from '../core/events.js';
+import { forceAppRefresh } from '../core/reload.js';
 import { RARITY_LABELS } from '../systems/equipmentRarity.js';
 import { getNavIcon, getCategoryIcon, getJobIcon, iconHtml, UI, renderResourceIcon } from '../core/assets.js';
 import {
@@ -266,8 +267,7 @@ export function initUI(game, audio) {
     if (!els.startupRefreshModal || sessionStorage.getItem(key) === '1') return;
     els.startupRefreshModal.classList.add('active');
     els.startupRefreshConfirm?.addEventListener('click', () => {
-      sessionStorage.setItem(key, '1');
-      window.location.reload();
+      forceAppRefresh(game);
     }, { once: true });
     els.startupRefreshSkip?.addEventListener('click', () => {
       sessionStorage.setItem(key, '1');

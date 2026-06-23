@@ -1,5 +1,6 @@
 import { emit } from '../core/events.js';
 import { SaveProvider } from '../core/save.js';
+import { forceAppRefresh } from '../core/reload.js';
 import {
   GATHERING_JOB_IDS,
   PICKABLE_FARM_BUILDINGS,
@@ -198,7 +199,7 @@ function bindCareerModalListeners() {
     }
 
     if (e.target.closest('#career-reload')) {
-      window.location.reload();
+      forceAppRefresh(gameRef);
       return;
     }
 
