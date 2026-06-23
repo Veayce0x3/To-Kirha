@@ -91,7 +91,7 @@ function renderCareerModal() {
     ? missingRecommended.length
       ? `✅ Parcours valide. Conseil confort : remplace par ${missingRecommended.map((id) => FARM_BUILDING_LABELS[id] || id).join(' + ')} si tu veux un départ plus simple.`
       : '✅ Tu peux valider ton parcours conseillé.'
-    : `Choisis ${CAREER_PICK_COUNTS.gathering} métiers de récolte, ${CAREER_PICK_COUNTS.farm} bâtiments de ferme et ton arme de départ. Le Puits est gratuit pour tous.`;
+    : check.reason || `Choisis ${CAREER_PICK_COUNTS.gathering} métiers de récolte, ${CAREER_PICK_COUNTS.farm} bâtiments de ferme et ton arme de départ. Le Puits est gratuit pour tous.`;
 
   body.innerHTML = `
     <h2>🌸 Choisis ta voie</h2>
@@ -113,7 +113,7 @@ function renderCareerModal() {
     <p class="career-status" id="career-status">${status}</p>
     <p class="career-error save-warn hidden" id="career-error" role="alert"></p>
     <div class="career-actions">
-      <button type="button" class="btn btn-prestige" id="career-confirm" ${check.ok ? '' : 'disabled'}>Commencer l'aventure</button>
+      <button type="button" class="btn btn-prestige" id="career-confirm" aria-disabled="${check.ok ? 'false' : 'true'}">Commencer l'aventure</button>
       <button type="button" class="btn btn-muted" id="career-reload">Actualiser la page</button>
       <button type="button" class="btn btn-muted" id="career-reset">Réinitialiser la partie</button>
     </div>
@@ -135,22 +135,27 @@ function setCareerError(msg) {
 
 async function confirmCareerChoice() {
   if (!gameRef) return;
-  setCareerError('');
-  const check = validateCareerSelection([...selectedGathering], [...selectedFarm], selectedWeaponType);
-  if (!check.ok) {
-    setCareerError(check.reason || 'Sélection incomplète.');
-    renderCareerModal();
-    return;
-  }
+  try {
+    setCareerError('');
+    const check = validateCareerSelection([...selectedGathering], [...selectedFarm], selectedWeaponType);
+    if (!check.ok) {
+      renderCareerModal();
+      setCareerError(check.reason || 'Sélection incomplète.');
+      return;
+    }
 
-  const result = gameRef.doApplyCareerChoice([...selectedGathering], [...selectedFarm], selectedWeaponType);
-  if (!result.ok) {
-    setCareerError(result.reason || 'Impossible de valider ton parcours.');
-    return;
-  }
+    const result = gameRef.doApplyCareerChoice([...selectedGathering], [...selectedFarm], selectedWeaponType);
+    if (!result.ok) {
+      setCareerError(result.reason || 'Impossible de valider ton parcours.');
+      return;
+    }
 
-  closeCareerModal();
-  emit('navRefresh');
+    closeCareerModal();
+    emit('navRefresh');
+  } catch (err) {
+    console.error('Career choice failed:', err);
+    setCareerError('Erreur pendant la validation. Actualise la page puis réessaie.');
+  }
 }
 
 async function resetFromCareerModal() {
@@ -194,6 +199,7 @@ function bindCareerModalListeners() {
     }
 
     if (e.target.closest('#career-confirm')) {
+      e.preventDefault();
       confirmCareerChoice();
       return;
     }
