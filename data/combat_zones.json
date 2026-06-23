@@ -1,39 +1,33 @@
 {
   "village_sakura": {
     "id": "village_sakura",
-    "name": "Temple du Cerisier",
+    "name": "Petit Temple du Cerisier",
     "emoji": "🌸",
     "zone": "village_sakura",
     "requiredCharLevel": 1,
+    "maxExtraEnemies": 0,
     "monsters": [
       {
         "enemyId": "spirit_lantern",
-        "name": "Esprit Lanterne",
-        "emoji": "👻",
+        "name": "Lanterne amicale",
+        "emoji": "🏮",
         "drops": {},
-        "charXpReward": 12
+        "charXpReward": 8
       },
       {
         "enemyId": "petal_slime",
         "name": "Slime Pétale",
         "emoji": "🌸",
         "drops": {},
-        "charXpReward": 15
-      },
-      {
-        "enemyId": "temple_guard",
-        "name": "Garde du Temple",
-        "emoji": "⛩️",
-        "drops": {},
-        "charXpReward": 20
+        "charXpReward": 10
       }
     ],
     "boss": {
       "enemyId": "sakura_boss",
-      "name": "Gardien du Cerisier",
+      "name": "Gardien bienveillant",
       "emoji": "🌺",
       "drops": {},
-      "charXpReward": 150
+      "charXpReward": 80
     }
   },
   "petal_forest": {

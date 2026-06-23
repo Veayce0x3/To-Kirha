@@ -1,9 +1,9 @@
 {
   "spirit_lantern": {
-    "hp": 28,
-    "atk": 3,
+    "hp": 18,
+    "atk": 1,
     "def": 0,
-    "xp": 12
+    "xp": 8
   },
   "training_dummy": {
     "hp": 12,
@@ -12,10 +12,10 @@
     "xp": 5
   },
   "petal_slime": {
-    "hp": 42,
-    "atk": 5,
-    "def": 1,
-    "xp": 16
+    "hp": 28,
+    "atk": 2,
+    "def": 0,
+    "xp": 10
   },
   "temple_guard": {
     "hp": 58,
@@ -24,10 +24,10 @@
     "xp": 24
   },
   "sakura_boss": {
-    "hp": 105,
-    "atk": 11,
-    "def": 6,
-    "xp": 60
+    "hp": 65,
+    "atk": 5,
+    "def": 2,
+    "xp": 35
   },
   "wild_fox": {
     "hp": 135,
