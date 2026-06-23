@@ -74,8 +74,7 @@
         "hp": 15,
         "atk": 2,
         "def": 3
-      },
-      "maxDurability": 80
+      }
     },
     "set_sakura_cape": {
       "id": "set_sakura_cape",
@@ -87,8 +86,7 @@
         "hp": 18,
         "atk": 1,
         "def": 4
-      },
-      "maxDurability": 80
+      }
     },
     "set_sakura_chest": {
       "id": "set_sakura_chest",
@@ -100,8 +98,7 @@
         "hp": 25,
         "atk": 3,
         "def": 5
-      },
-      "maxDurability": 80
+      }
     },
     "set_sakura_shield": {
       "id": "set_sakura_shield",
@@ -113,8 +110,7 @@
         "hp": 20,
         "atk": 0,
         "def": 6
-      },
-      "maxDurability": 80
+      }
     },
     "set_sakura_boots": {
       "id": "set_sakura_boots",
@@ -126,8 +122,7 @@
         "hp": 10,
         "atk": 1,
         "def": 2
-      },
-      "maxDurability": 80
+      }
     },
     "set_sakura_guardian_blade": {
       "id": "set_sakura_guardian_blade",
@@ -141,8 +136,7 @@
         "hp": 12,
         "atk": 7,
         "def": 6
-      },
-      "maxDurability": 80
+      }
     },
     "set_sakura_bow": {
       "id": "set_sakura_bow",
@@ -156,8 +150,7 @@
         "hp": 0,
         "atk": 13,
         "def": 0
-      },
-      "maxDurability": 80
+      }
     },
     "set_sakura_staff": {
       "id": "set_sakura_staff",
@@ -171,8 +164,7 @@
         "hp": 8,
         "atk": 9,
         "def": 3
-      },
-      "maxDurability": 80
+      }
     },
     "set_sakura_ring": {
       "id": "set_sakura_ring",
@@ -184,8 +176,7 @@
         "hp": 8,
         "atk": 4,
         "def": 1
-      },
-      "maxDurability": 80
+      }
     },
     "set_sakura_ring_right": {
       "id": "set_sakura_ring_right",
@@ -197,8 +188,7 @@
         "hp": 8,
         "atk": 3,
         "def": 2
-      },
-      "maxDurability": 80
+      }
     },
     "set_sakura_belt": {
       "id": "set_sakura_belt",
@@ -210,8 +200,7 @@
         "hp": 14,
         "atk": 2,
         "def": 3
-      },
-      "maxDurability": 80
+      }
     },
     "set_sakura_amulet": {
       "id": "set_sakura_amulet",
@@ -223,8 +212,7 @@
         "hp": 12,
         "atk": 2,
         "def": 2
-      },
-      "maxDurability": 80
+      }
     },
     "set_petal_helmet": {
       "id": "set_petal_helmet",
@@ -481,8 +469,7 @@
         "hp": 12,
         "atk": 0,
         "def": 4
-      },
-      "maxDurability": 80
+      }
     },
     "companion_sakura_charm": {
       "id": "companion_sakura_charm",
@@ -495,8 +482,7 @@
         "hp": 5,
         "atk": 2,
         "def": 1
-      },
-      "maxDurability": 80
+      }
     },
     "companion_petal_armor": {
       "id": "companion_petal_armor",

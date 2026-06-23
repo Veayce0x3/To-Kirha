@@ -20,7 +20,6 @@ import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../system
 import { getDungeonKeyId } from '../systems/dungeonKeys.js';
 import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
 import { getTestHdvBanner, isTestHdvEnabled } from '../systems/testHdv.js';
-import { renderCombatDurabilityBar, hasCombatDurability } from '../systems/combatDurability.js';
 
 let workshopTab = 'toolmaker';
 let charTab = 'bag';
@@ -568,7 +567,7 @@ function renderCharDofusEquipGrid(game, container) {
     cell.innerHTML = `
       <span class="char-equip-slot-label">${slot.emoji}</span>
       ${item
-        ? `<span class="char-equip-item" title="${item.name}">${item.emoji}</span><span class="char-equip-name">${item.name}</span>${statsLine ? `<span class="char-equip-stats">${statsLine}</span>` : ''}${ref && hasCombatDurability(item) ? renderCombatDurabilityBar(s, ref, item) : ''}`
+        ? `<span class="char-equip-item" title="${item.name}">${item.emoji}</span><span class="char-equip-name">${item.name}</span>${statsLine ? `<span class="char-equip-stats">${statsLine}</span>` : ''}`
         : `<span class="char-equip-empty">${slot.name}</span>`}
     `;
     if (item) {
@@ -632,10 +631,9 @@ function renderCombatOwnedReserve(game, container) {
     const item = resolveItem(s, ref, game.combatEquipment.items);
     if (!item) continue;
     if (s.combatEquipment?.[item.slot] === ref) continue;
-    const dur = ref && hasCombatDurability(item) ? renderCombatDurabilityBar(s, ref, item) : '';
     const wrap = document.createElement('div');
     wrap.className = 'combat-reserve-item';
-    wrap.innerHTML = `<span>${item.emoji} ${item.name}</span>${dur}`;
+    wrap.innerHTML = `<span>${item.emoji} ${item.name}</span>`;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn btn-small';
@@ -2243,9 +2241,15 @@ export function renderAuctionHouse(game, el) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `btn btn-buy-scroll${canAfford ? ' affordable' : ''}`;
-      btn.disabled = !canAfford;
-      btn.textContent = `Acheter ×${qty} · ${formatNumber(total)} 💰`;
-      btn.addEventListener('click', () => game.buyMerchant(vendorId, offerId, qty));
+      btn.textContent = canAfford
+        ? `Acheter ×${qty} · ${formatNumber(total)} 💰`
+        : `×${qty} · manque ${formatNumber(total - game.state.kirha)} 💰`;
+      btn.addEventListener('click', () => {
+        const result = game.buyMerchant(vendorId, offerId, qty);
+        if (!result) {
+          emit('farmBlocked', { message: canAfford ? 'Achat impossible.' : `Il manque ${formatNumber(total - game.state.kirha)} Kirha.` });
+        }
+      });
       buyRow.appendChild(btn);
     }
 

@@ -41,13 +41,9 @@ function renderRecipeCard(game, info) {
   if (recipe.combatItem) {
     const preview = getCombatItemPreview(recipe.combatItem, game.combatEquipment.items, game.weaponRoles);
     if (preview) {
-      const durHint = preview.item?.maxDurability
-        ? `<div class="tile-stats">🔧 ${preview.item.maxDurability} combats — s'use après chaque salle</div>`
-        : '';
       combatHtml = `
         <div class="craft-combat-preview">
           <div class="tile-stats">Nv.${preview.level} · ${preview.statsLine}</div>
-          ${durHint}
         </div>
       `;
     }
