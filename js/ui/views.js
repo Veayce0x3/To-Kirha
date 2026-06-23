@@ -2860,6 +2860,7 @@ function renderDungeonCombatBody(game) {
   const soloHpNote = isSoloFight && game.state.combatWear?.solo?.hero != null
     ? ` · HP entraînement : ${game.state.combatWear.solo.hero}`
     : '';
+  const hpStateClass = (pct) => (pct <= 25 ? ' hp-danger' : pct <= 50 ? ' hp-warn' : '');
 
   const partyHtml = party.map((member, index) => {
     const hpPct = Math.max(0, (member.hp / member.maxHp) * 100);
@@ -2871,7 +2872,7 @@ function renderDungeonCombatBody(game) {
         ${isTargetable ? `data-target-id="${member.id}"` : ''}>
         <div class="dq-sprite dq-sprite-party" data-member-id="${member.id}" aria-hidden="true">${member.emoji}</div>
         <div class="dq-fighter-name">${member.name}</div>
-        <div class="dq-mini-hp" aria-hidden="true"><div class="dq-mini-hp-fill" style="width:${hpPct}%"></div></div>
+        <div class="dq-mini-hp${hpStateClass(hpPct)}" aria-hidden="true"><div class="dq-mini-hp-fill" style="width:${hpPct}%"></div></div>
         ${isActive ? '<span class="dq-active-cursor" aria-hidden="true">▶</span>' : ''}
       </${tag}>
     `;
@@ -2888,9 +2889,11 @@ function renderDungeonCombatBody(game) {
         class="dq-enemy-card${foe.boss ? ' dq-enemy-boss' : ''}${isActiveFoe ? ' dq-active-enemy' : ''}${isTargetable ? ' dq-targetable' : ''}"
         data-enemy-id="${foe.id}" ${isTargetable ? `data-target-id="${foe.id}"` : ''}>
         <div class="dq-sprite dq-sprite-enemy${foe.boss ? ' dq-sprite-boss' : ''}" aria-hidden="true">${foe.emoji}</div>
-        <div class="dq-enemy-label">${foe.name}</div>
-        <div class="dq-mini-hp dq-mini-hp-enemy" aria-hidden="true"><div class="dq-mini-hp-fill" style="width:${hpPct}%"></div></div>
-        <div class="dq-enemy-hp">${foe.hp}/${foe.maxHp}</div>
+        <div class="dq-enemy-plate">
+          <div class="dq-enemy-label">${foe.name}</div>
+          <div class="dq-mini-hp dq-mini-hp-enemy${hpStateClass(hpPct)}" aria-hidden="true"><div class="dq-mini-hp-fill" style="width:${hpPct}%"></div></div>
+          <div class="dq-enemy-hp">${foe.hp}/${foe.maxHp}</div>
+        </div>
       </${tag}>
     `;
   }).join('');
@@ -2901,7 +2904,7 @@ function renderDungeonCombatBody(game) {
     return `
       <div class="dq-status-chip${member.hp <= 0 ? ' dq-ko' : ''}${isActive ? ' dq-status-active' : ''}">
         <span class="dq-status-name">${member.emoji} ${member.name}</span>
-        <div class="dq-status-hp"><div class="dq-status-hp-fill" style="width:${hpPct}%"></div></div>
+        <div class="dq-status-hp${hpStateClass(hpPct)}"><div class="dq-status-hp-fill" style="width:${hpPct}%"></div></div>
         <span class="dq-status-num">${member.hp}/${member.maxHp}</span>
       </div>
     `;
@@ -3021,6 +3024,9 @@ function renderDungeonCombatBody(game) {
       <div class="dq-battlefield${isBoss ? ' dq-boss-room' : ''}${targetMode === 'enemy' ? ' dq-pick-enemy' : ''}${isEnemyTurn ? ' dq-enemy-turn' : ''}">
         <div class="dq-sky"></div>
         <div class="dq-ground"></div>
+        <div class="dq-arena-ring" aria-hidden="true"></div>
+        <div class="dq-depth-lines" aria-hidden="true"></div>
+        <div class="dq-battle-vignette" aria-hidden="true"></div>
         <div class="dq-party-allies">${partyHtml}</div>
         <div class="dq-enemies-group">${enemiesHtml}</div>
         <div class="dq-party-status">${partyStatusHtml}</div>

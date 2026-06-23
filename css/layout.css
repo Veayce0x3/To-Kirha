@@ -2676,7 +2676,9 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: linear-gradient(180deg, #2d5a27 0%, #1a3a18 100%);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(248, 232, 238, 0.2), transparent 36%),
+    linear-gradient(180deg, #233f32 0%, #15291f 100%);
   color: #f8e8ee;
 }
 
@@ -2686,9 +2688,11 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.55rem 0.85rem;
-  background: rgba(26, 58, 24, 0.85);
-  border-bottom: 3px solid #f8e8ee;
+  padding: 0.65rem 0.95rem;
+  background:
+    linear-gradient(90deg, rgba(26, 58, 24, 0.94), rgba(74, 45, 90, 0.9)),
+    rgba(26, 58, 24, 0.9);
+  border-bottom: 2px solid rgba(248, 232, 238, 0.72);
   font-size: 0.82rem;
   font-weight: 700;
   color: #f8e8ee;
@@ -2698,6 +2702,7 @@
 .dq-zone-name {
   flex: 1;
   min-width: 0;
+  letter-spacing: 0.02em;
 }
 
 .dq-room {
@@ -2712,20 +2717,25 @@
   min-height: 0;
   overflow: hidden;
   background:
-    radial-gradient(circle at 72% 22%, rgba(255, 255, 255, 0.28), transparent 18%),
-    linear-gradient(180deg, #7fb2d6 0%, #4c8f54 46%, #1a3a18 100%);
+    radial-gradient(circle at 78% 18%, rgba(255, 253, 249, 0.5), transparent 12%),
+    radial-gradient(circle at 28% 22%, rgba(248, 232, 238, 0.32), transparent 20%),
+    linear-gradient(180deg, #86b8da 0%, #5a9a73 43%, #2d5a27 66%, #173417 100%);
 }
 
 .dq-battlefield.dq-boss-room {
   background:
-    radial-gradient(circle at 72% 18%, rgba(248, 232, 238, 0.22), transparent 20%),
-    linear-gradient(180deg, #4a2d5a 0%, #2d5a27 42%, #1a3a18 100%);
+    radial-gradient(circle at 74% 18%, rgba(248, 232, 238, 0.34), transparent 16%),
+    radial-gradient(circle at 20% 12%, rgba(155, 89, 182, 0.34), transparent 24%),
+    linear-gradient(180deg, #4a2d5a 0%, #304f55 38%, #2d5a27 66%, #101f15 100%);
 }
 
 .dq-sky {
   position: absolute;
   inset: 0 0 42%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent);
+  background:
+    radial-gradient(ellipse at 35% 28%, rgba(255, 253, 249, 0.28), transparent 18%),
+    radial-gradient(ellipse at 62% 34%, rgba(255, 253, 249, 0.2), transparent 16%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent);
   pointer-events: none;
 }
 
@@ -2736,8 +2746,47 @@
   right: 0;
   height: 46%;
   background:
-    radial-gradient(ellipse at center, rgba(255, 253, 249, 0.24), transparent 58%),
-    linear-gradient(180deg, transparent, rgba(45, 90, 39, 0.55));
+    radial-gradient(ellipse at 55% 42%, rgba(255, 253, 249, 0.34), transparent 46%),
+    radial-gradient(ellipse at 25% 64%, rgba(232, 180, 203, 0.16), transparent 34%),
+    linear-gradient(180deg, transparent, rgba(45, 90, 39, 0.68));
+  pointer-events: none;
+}
+
+.dq-arena-ring {
+  position: absolute;
+  left: 50%;
+  bottom: 16%;
+  width: min(72vw, 720px);
+  height: 32%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at center, rgba(255, 253, 249, 0.18) 0 35%, transparent 36%),
+    radial-gradient(ellipse at center, transparent 0 54%, rgba(248, 232, 238, 0.16) 55% 62%, transparent 63%);
+  border: 1px solid rgba(255, 253, 249, 0.22);
+  box-shadow: inset 0 0 24px rgba(255, 253, 249, 0.12);
+  pointer-events: none;
+}
+
+.dq-depth-lines {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12%;
+  height: 28%;
+  background:
+    linear-gradient(105deg, transparent 0 44%, rgba(255, 253, 249, 0.12) 45% 45.5%, transparent 46%),
+    linear-gradient(75deg, transparent 0 54%, rgba(255, 253, 249, 0.1) 55% 55.5%, transparent 56%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.dq-battle-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent 28%, rgba(0, 0, 0, 0.18)),
+    radial-gradient(ellipse at center, transparent 42%, rgba(0, 0, 0, 0.24));
   pointer-events: none;
 }
 
@@ -2749,7 +2798,7 @@
   flex-direction: row;
   align-items: flex-end;
   gap: 0.65rem;
-  z-index: 2;
+  z-index: 4;
   max-width: 52%;
 }
 
@@ -2761,14 +2810,20 @@
   gap: 0.2rem;
   border: none;
   background: transparent;
-  padding: 0.25rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 253, 249, 0.16), rgba(255, 253, 249, 0.04));
+  border: 1px solid rgba(255, 253, 249, 0.14);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
   font: inherit;
   color: inherit;
   transition: transform 0.15s, opacity 0.15s;
 }
 
 .dq-party-member.dq-active-fighter {
-  transform: scale(1.06);
+  transform: translateY(-5px) scale(1.06);
+  border-color: rgba(245, 230, 66, 0.5);
+  box-shadow: 0 0 0 2px rgba(245, 230, 66, 0.16), 0 10px 26px rgba(0, 0, 0, 0.2);
 }
 
 .dq-party-member.dq-active-fighter .dq-sprite-party {
@@ -2804,7 +2859,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(3px 5px 8px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(3px 7px 10px rgba(0, 0, 0, 0.42));
   transition: transform 0.1s;
 }
 
@@ -2841,25 +2896,50 @@
 }
 
 .dq-mini-hp {
-  width: 3.25rem;
-  height: 5px;
-  background: rgba(74, 55, 40, 0.25);
-  border-radius: 2px;
+  width: 3.6rem;
+  height: 7px;
+  background: rgba(20, 25, 20, 0.45);
+  border-radius: 999px;
   overflow: hidden;
+  border: 1px solid rgba(255, 253, 249, 0.35);
 }
 
 .dq-mini-hp-fill {
   height: 100%;
-  background: linear-gradient(90deg, #f5e642, #e8c547);
+  background: linear-gradient(90deg, #68d66f, #e8c547);
   transition: width 0.35s ease;
 }
 
+.dq-mini-hp.hp-warn .dq-mini-hp-fill,
+.dq-status-hp.hp-warn .dq-status-hp-fill {
+  background: linear-gradient(90deg, #f5e642, #e8a838);
+}
+
+.dq-mini-hp.hp-danger .dq-mini-hp-fill,
+.dq-status-hp.hp-danger .dq-status-hp-fill {
+  background: linear-gradient(90deg, #ff6b6b, #c0392b);
+}
+
 .dq-enemy-label {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-align: center;
   max-width: 5.5rem;
   line-height: 1.15;
+}
+
+.dq-enemy-plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 4.9rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 12px;
+  background: rgba(22, 31, 24, 0.62);
+  border: 1px solid rgba(248, 232, 238, 0.2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
 }
 
 .dq-fighter-name,
@@ -2886,21 +2966,21 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  padding: 0.4rem 0.55rem;
-  background: linear-gradient(180deg, transparent, rgba(255, 253, 249, 0.88));
-  z-index: 3;
+  padding: 0.5rem 0.65rem;
+  background: linear-gradient(180deg, transparent, rgba(255, 253, 249, 0.9));
+  z-index: 5;
 }
 
 .dq-status-chip {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.2rem 0.45rem;
+  padding: 0.28rem 0.5rem;
   background: rgba(255, 253, 249, 0.95);
-  border: 2px solid var(--bois);
-  border-radius: 6px;
+  border: 1px solid rgba(74, 55, 40, 0.28);
+  border-radius: 999px;
   font-size: 0.68rem;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.12);
+  box-shadow: 0 3px 12px rgba(74, 55, 40, 0.12);
 }
 
 .dq-status-chip.dq-status-active {
@@ -2919,7 +2999,7 @@
 
 .dq-status-hp {
   width: 2.5rem;
-  height: 5px;
+  height: 6px;
   background: rgba(74, 55, 40, 0.2);
   border-radius: 2px;
   overflow: hidden;
@@ -2927,7 +3007,7 @@
 
 .dq-status-hp-fill {
   height: 100%;
-  background: linear-gradient(90deg, #f5e642, #e8c547);
+  background: linear-gradient(90deg, #68d66f, #e8c547);
 }
 
 .dq-status-num {
@@ -2939,34 +3019,39 @@
   flex-shrink: 0;
   display: grid;
   grid-template-columns: 1fr minmax(9.5rem, 38%);
-  border-top: 4px solid var(--bois);
-  background: linear-gradient(180deg, #fffdf9, #f8e8ee);
+  border-top: 3px solid rgba(74, 55, 40, 0.72);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 249, 0.98), rgba(248, 232, 238, 0.98));
   min-height: 9.5rem;
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.14);
 }
 
 .dq-dialogue {
   padding: 0.85rem 1rem;
-  border-right: 3px solid var(--bois);
+  border-right: 2px solid rgba(74, 55, 40, 0.18);
   display: flex;
   align-items: center;
 }
 
 .dq-dialogue-text {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1rem;
   line-height: 1.5;
   font-weight: 600;
+  color: var(--bois);
 }
 
 .dq-command-menu {
   display: flex;
   flex-direction: column;
-  background: #f8e8ee;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  background: rgba(248, 232, 238, 0.62);
 }
 
 .dq-cmd-btn {
-  border-width: 2px;
-  box-shadow: 2px 2px 0 rgba(74, 55, 40, 0.14);
+  border-width: 1px;
+  box-shadow: 0 3px 10px rgba(74, 55, 40, 0.08);
 }
 
 .dq-cmd-btn.dq-cmd-main {
@@ -2991,19 +3076,15 @@
   width: 100%;
   min-height: 48px;
   padding: 0.55rem 0.75rem;
-  border: 2px solid transparent;
-  border-bottom: 2px solid rgba(74, 55, 40, 0.15);
-  background: #f8e8ee;
+  border: 1px solid rgba(232, 180, 203, 0.45);
+  border-radius: 12px;
+  background: rgba(255, 253, 249, 0.86);
   color: var(--bois);
   font-family: inherit;
   font-size: 0.9rem;
   font-weight: 700;
   text-align: left;
   cursor: pointer;
-}
-
-.dq-cmd-btn:last-child {
-  border-bottom: none;
 }
 
 .dq-cmd-btn:disabled {
@@ -3013,7 +3094,8 @@
 
 .dq-cmd-btn:not(:disabled):active,
 .dq-cmd-btn.dq-cmd-main:not(:disabled):hover {
-  background: rgba(155, 89, 182, 0.12);
+  background: rgba(155, 89, 182, 0.14);
+  transform: translateY(-1px);
 }
 
 .dq-cmd-btn.dq-cmd-back,
@@ -3102,7 +3184,7 @@
   justify-content: flex-end;
   gap: 0.75rem;
   align-items: flex-end;
-  z-index: 2;
+  z-index: 4;
   max-width: 50%;
 }
 
@@ -3112,8 +3194,11 @@
   align-items: center;
   gap: 0.2rem;
   border: none;
-  background: transparent;
-  padding: 0.25rem;
+  background: linear-gradient(180deg, rgba(255, 253, 249, 0.13), rgba(255, 253, 249, 0.04));
+  padding: 0.35rem 0.45rem;
+  border-radius: 16px;
+  border: 1px solid rgba(248, 232, 238, 0.14);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
   font: inherit;
   color: inherit;
   text-align: center;
