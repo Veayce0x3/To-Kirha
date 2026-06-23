@@ -264,7 +264,7 @@ export function initUI(game, audio) {
 
   function showStartupRefreshPrompt() {
     const justRefreshed = new URL(window.location.href).searchParams.has('tokirha_refresh');
-    if (!els.startupRefreshModal || justRefreshed) return;
+    if (!els.startupRefreshModal || justRefreshed || game.needsCareerChoice()) return;
     els.startupRefreshModal.classList.add('active');
     els.startupRefreshConfirm?.addEventListener('click', () => {
       forceAppRefresh(game);
