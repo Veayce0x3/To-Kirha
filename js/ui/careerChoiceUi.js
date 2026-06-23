@@ -212,6 +212,7 @@ async function resetFromCareerModal() {
   if (!ok) return;
 
   try {
+    SaveProvider.beginReset();
     await SaveProvider.clear();
     selectedGathering = new Set();
     selectedFarm = new Set();

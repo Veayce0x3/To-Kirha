@@ -1,3 +1,5 @@
+import { SaveProvider } from './save.js';
+
 export async function forceAppRefresh(game = null) {
   try {
     game?.scheduleSave?.();
@@ -29,6 +31,8 @@ export async function forceAppRefresh(game = null) {
 }
 
 export async function forceNewGameReload() {
+  SaveProvider.beginReset();
+
   try {
     if ('caches' in window) {
       const keys = await caches.keys();

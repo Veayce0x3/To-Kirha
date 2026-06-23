@@ -1,10 +1,20 @@
 import { getDefaultSettings } from '../systems/prestige.js';
 
 const SAVE_KEY = 'tokirha_save';
+const RESET_FLAG_KEY = 'tokirha_resetting';
+
+function storageHasResetFlag() {
+  try {
+    return sessionStorage.getItem(RESET_FLAG_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 export const SaveProvider = {
   async save(data) {
     try {
+      if (storageHasResetFlag()) return false;
       const payload = { ...data, lastOnline: Date.now() };
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
       return true;
@@ -16,9 +26,16 @@ export const SaveProvider = {
 
   async load() {
     try {
-      if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('newgame') === '1') {
+      const resetRequested = typeof window !== 'undefined'
+        && (new URLSearchParams(window.location.search).get('newgame') === '1' || storageHasResetFlag());
+      if (resetRequested) {
         localStorage.removeItem(SAVE_KEY);
-        window.history.replaceState({}, '', window.location.pathname);
+        try {
+          sessionStorage.removeItem(RESET_FLAG_KEY);
+        } catch {}
+        if (new URLSearchParams(window.location.search).get('newgame') === '1') {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
         return null;
       }
       const raw = localStorage.getItem(SAVE_KEY);
@@ -31,6 +48,16 @@ export const SaveProvider = {
 
   async clear() {
     localStorage.removeItem(SAVE_KEY);
+  },
+
+  beginReset() {
+    try {
+      sessionStorage.setItem(RESET_FLAG_KEY, '1');
+    } catch {}
+  },
+
+  isResetting() {
+    return storageHasResetFlag();
   },
 
   encode(data) {

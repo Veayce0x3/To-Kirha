@@ -62,12 +62,14 @@ async function loadJSON(file) {
   document.addEventListener('touchstart', unlockAudio);
 
   window.addEventListener('beforeunload', () => {
+    if (SaveProvider.isResetting()) return;
     game.state.lastOnline = Date.now();
     SaveProvider.save(game.state);
   });
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
+      if (SaveProvider.isResetting()) return;
       game.state.lastOnline = Date.now();
       SaveProvider.save(game.state);
     }
