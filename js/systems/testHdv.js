@@ -1,5 +1,5 @@
 /**
- * HDV test (beta) — vente des ressources que le joueur ne produit pas (choix carrière).
+ * HDV test (beta) — vente des ressources métiers/ferme pour faciliter les tests.
  * Remplacé plus tard par l'HDV joueur ↔ joueur.
  */
 
@@ -66,7 +66,7 @@ function makeOffer(resourceId, resource, balance) {
 }
 
 /**
- * Vendeurs dynamiques : métiers / bâtiments non choisis à la carrière.
+ * Vendeurs dynamiques : métiers / bâtiments de carrière.
  */
 export function buildTestHdvVendors(state, resources, farmData, balance, jobs) {
   if (!isTestHdvCfg(balance) || !state.careerChoice?.confirmed) {
@@ -76,9 +76,8 @@ export function buildTestHdvVendors(state, resources, farmData, balance, jobs) {
   const vendors = {};
 
   for (const jobId of GATHERING_JOB_IDS) {
-    if (isGatheringJobUnlocked(jobId, state)) continue;
-
     const job = jobs[jobId];
+    const chosen = isGatheringJobUnlocked(jobId, state);
     const offers = {};
     for (const [id, resource] of Object.entries(resources)) {
       if (isExcludedResource(id, resource)) continue;
@@ -91,7 +90,9 @@ export function buildTestHdvVendors(state, resources, farmData, balance, jobs) {
       id: `test_hdv_job_${jobId}`,
       name: job?.name || jobId,
       emoji: job?.emoji || '📦',
-      description: `Ressources ${job?.name || jobId} — tu n'as pas choisi ce métier.`,
+      description: chosen
+        ? `Ressources ${job?.name || jobId} — ton métier, disponible aussi à l'achat pour les tests.`
+        : `Ressources ${job?.name || jobId} — complément de carrière.`,
       testHdv: true,
       offers,
     };
@@ -99,7 +100,7 @@ export function buildTestHdvVendors(state, resources, farmData, balance, jobs) {
 
   for (const [buildingId, building] of Object.entries(farmData?.buildings || {})) {
     if (buildingId === FREE_FARM_BUILDING) continue;
-    if (isFarmBuildingUnlocked(buildingId, state)) continue;
+    const chosen = isFarmBuildingUnlocked(buildingId, state);
 
     const offers = {};
     for (const productId of Object.keys(building.products || {})) {
@@ -115,7 +116,9 @@ export function buildTestHdvVendors(state, resources, farmData, balance, jobs) {
       id: `test_hdv_farm_${buildingId}`,
       name: label,
       emoji: building.emoji || '🏠',
-      description: `Produits ${label} — tu n'as pas choisi ce bâtiment.`,
+      description: chosen
+        ? `Produits ${label} — ton bâtiment, disponible aussi à l'achat pour les tests.`
+        : `Produits ${label} — complément de carrière.`,
       testHdv: true,
       offers,
     };
@@ -131,5 +134,5 @@ export function mergeMerchantVendors(merchant, testVendors) {
 export function getTestHdvBanner(balance) {
   if (!isTestHdvCfg(balance)) return null;
   return balance.testHdv.banner
-    || 'Marché test — achète ici ce que tu ne produis pas. HDV joueur à venir.';
+    || 'Marché test — achète ici les ressources métiers et ferme pour faciliter les tests. HDV joueur à venir.';
 }
