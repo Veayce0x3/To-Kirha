@@ -9,7 +9,7 @@ import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
 import { forceAppRefresh } from '../core/reload.js';
-import { getQuestStatusText, isQuestCompleted, isQuestAvailable, isQuestReady, QUEST_CHAPTER_LABELS } from '../systems/quests.js';
+import { getQuestStatusText, isQuestCompleted, isQuestReady } from '../systems/quests.js';
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
 import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
@@ -228,8 +228,7 @@ const JOB_SWITCHER_STATUS_CLASSES = [
 ];
 
 function getJobSwitcherGroup(viewId, state) {
-  if (viewId?.startsWith('job_')) return { type: 'harvest', views: getVisibleHarvestViews(state) };
-  if (isFarmView(viewId)) return { type: 'farm', views: getVisibleFarmViews(state) };
+  if (!viewId?.startsWith('job_') && !isFarmView(viewId)) return null;
   return {
     type: 'quick',
     views: [...getVisibleHarvestViews(state), ...getVisibleFarmViews(state)],
@@ -293,11 +292,7 @@ export function renderJobSwitcherDock(game, el, viewId) {
   el.dataset.switcherType = group.type;
   el.setAttribute(
     'aria-label',
-    group.type === 'harvest'
-      ? 'Changer de métier de récolte'
-      : group.type === 'farm'
-        ? 'Changer de bâtiment de ferme'
-        : 'Accès rapide récolte et ferme'
+    'Accès rapide récolte et ferme'
   );
 
   el.innerHTML = `<div class="job-switcher-scroll" role="list">${group.views.map((vid) => renderJobSwitcherChip(game, vid, viewId)).join('')}</div>`;
@@ -423,18 +418,15 @@ function renderCharacter(game, el) {
     `;
   }
 
-  const nextQuest = game.getNextQuest();
-  const questReady = nextQuest && !isQuestCompleted(s, nextQuest.id) && isQuestReady(nextQuest, s, game.recipes);
-
   const statsDetail = statsBreakdown.sets.length
     ? `<div class="stat-row stat-sets">${statsBreakdown.sets.map((setInfo) => {
       const label = SET_LABELS[setInfo.setId] || setInfo.setId;
       return `✨ Set ${label} (${setInfo.count})`;
     }).join(' · ')}</div>`
     : '';
+  const statsCompareHtml = renderCharStatsComparison(statsBreakdown);
 
   el.innerHTML = `
-    <div class="mission-current panel-inner objective-banner" id="char-objective"></div>
     <div class="panel-inner prestige-teaser" id="char-prestige-teaser"></div>
     <div class="char-dofus-hero panel-inner">
       <div class="char-dofus-top">
@@ -446,6 +438,7 @@ function renderCharacter(game, el) {
           <div class="xp-bar-container"><div class="xp-bar" style="width:${charPct}%"></div></div>
           <p class="xp-text">${charProg.atSeasonCap ? `Plafond Saison ${s.season || 1} — passe à la suivante` : `${charProg.xp} / ${charProg.needed} XP`}</p>
           ${renderDQStatsBlock(statsBreakdown, charProg, { compact: true })}
+          ${statsCompareHtml}
           <details class="char-stats-details">
             <summary>Détail des stats</summary>
             <p class="dq-stats-detail">Base Nv.${charProg.level} : ${statsBreakdown.base.hp} / ${statsBreakdown.base.atk} / ${statsBreakdown.base.def} · Équip. : +${statsBreakdown.equipment.hp} / +${statsBreakdown.equipment.atk} / +${statsBreakdown.equipment.def}</p>
@@ -462,14 +455,11 @@ function renderCharacter(game, el) {
         <summary>Pièces de combat en réserve</summary>
         <div id="combat-owned-reserve" class="equip-actions"></div>
       </details>
-      <details class="char-fusion-details">
-        <summary>🔮 Fusion d'équipement</summary>
-        <div id="fusion-panel"></div>
-      </details>
     </div>
     <div class="char-tabs" role="tablist">
       <button type="button" class="char-tab-btn${charTab === 'bag' ? ' active' : ''}" data-tab="bag" role="tab">Sac</button>
       <button type="button" class="char-tab-btn${charTab === 'tools' ? ' active' : ''}" data-tab="tools" role="tab">Outils</button>
+      <button type="button" class="char-tab-btn${charTab === 'fusion' ? ' active' : ''}" data-tab="fusion" role="tab">Fusion</button>
       <button type="button" class="char-tab-btn${charTab === 'jobs' ? ' active' : ''}" data-tab="jobs" role="tab">Métiers</button>
       <button type="button" class="char-tab-btn${charTab === 'team' ? ' active' : ''}" data-tab="team" role="tab">Équipe</button>
       <button type="button" class="char-tab-btn${charTab === 'help' ? ' active' : ''}" data-tab="help" role="tab">Infos</button>
@@ -479,9 +469,7 @@ function renderCharacter(game, el) {
 
   renderCharDofusEquipGrid(game, el.querySelector('#char-dofus-equip'));
   renderCombatOwnedReserve(game, el.querySelector('#combat-owned-reserve'));
-  renderFusionPanel(game, el.querySelector('#fusion-panel'));
 
-  renderObjectiveBanner(game, el.querySelector('#char-objective'), { ready: questReady });
   renderPrestigeTeaser(game, el.querySelector('#char-prestige-teaser'));
 
   el.querySelector('#goto-combat')?.addEventListener('click', () => navigate('combat'));
@@ -515,9 +503,28 @@ function renderCharTabPanel(game, el) {
   panel.innerHTML = '';
   if (charTab === 'bag') renderCharBagTab(game, panel);
   else if (charTab === 'tools') renderCharToolsTab(game, panel);
+  else if (charTab === 'fusion') renderFusionPanel(game, panel);
   else if (charTab === 'jobs') renderCharJobsTab(game, panel);
   else if (charTab === 'team') renderCharTeamTab(game, panel);
   else if (charTab === 'help') renderCharHelpTab(panel);
+}
+
+function renderCharStatsComparison(statsBreakdown) {
+  const rows = [
+    { label: 'Sans équipement', values: statsBreakdown.base, cls: 'base' },
+    { label: 'Gain équipement', values: statsBreakdown.equipment, cls: 'gain', prefix: '+' },
+    { label: 'Total équipé', values: statsBreakdown.total, cls: 'total' },
+  ];
+  return `
+    <div class="char-stat-compare" aria-label="Comparaison des statistiques">
+      ${rows.map((row) => `
+        <div class="char-stat-compare-row char-stat-${row.cls}">
+          <span>${row.label}</span>
+          <strong>❤️ ${row.prefix || ''}${row.values.hp} · ⚔️ ${row.prefix || ''}${row.values.atk} · 🛡️ ${row.prefix || ''}${row.values.def}</strong>
+        </div>
+      `).join('')}
+    </div>
+  `;
 }
 
 const DOFUS_SLOT_LAYOUT = [
@@ -951,79 +958,30 @@ function renderCharTeamTab(game, panel) {
 
 function renderMissions(game, el) {
   const season = game.state.season || 1;
-  const chapters = game.getQuestsByChapter();
-  const completedCount = game.state.quests?.completed?.length || 0;
-  const totalCount = Object.keys(game.quests).length;
-  const nextQuest = game.getNextQuest();
-  const questReady = nextQuest && !isQuestCompleted(game.state, nextQuest.id) && isQuestReady(nextQuest, game.state, game.recipes);
 
   el.innerHTML = `
     <div class="view-header">
       <h2>${iconHtml(getNavIcon('missions'), 'view-header-icon', 'Missions')} Missions</h2>
-      <p class="view-desc">Saison ${season} · ${completedCount}/${totalCount} missions accomplies</p>
+      <p class="view-desc">Saison ${season}</p>
     </div>
-    <div class="mission-current panel-inner" id="mission-current"></div>
-    <div class="panel-inner" id="mission-chapters"></div>
+    <div class="panel-inner mission-coming-soon">
+      <h3>📜 Missions bientôt</h3>
+      <p class="view-desc">Les quêtes sont mises en pause pendant les tests. Elles reviendront plus tard avec une progression mieux adaptée au choix de voie, aux classes et au combat.</p>
+      <p class="empty-text">Pour le moment, progresse librement : récolte, ferme, équipe ton personnage, prépare de la nourriture et teste les combats.</p>
+    </div>
   `;
-
-  renderObjectiveBanner(game, el.querySelector('#mission-current'), { ready: questReady });
-
-  const chaptersEl = el.querySelector('#mission-chapters');
-  const chapterOrder = ['village_sakura', 'petal_forest', 'mist_river', 'jade_mountains', 'lotus_sanctuary'];
-  for (const chapterId of chapterOrder) {
-    const data = chapters[chapterId];
-    if (!data) continue;
-    const all = [...data.completed, ...data.available, ...data.locked].sort((a, b) => (a.order || 0) - (b.order || 0));
-    if (all.length === 0) continue;
-
-    const section = document.createElement('section');
-    section.className = 'mission-chapter';
-    section.innerHTML = `<h3 class="mission-chapter-title">${QUEST_CHAPTER_LABELS[chapterId] || chapterId}</h3>`;
-
-    const list = document.createElement('div');
-    list.className = 'quest-list quest-list-compact';
-
-    for (const quest of all) {
-      const done = isQuestCompleted(game.state, quest.id);
-      const available = !done && isQuestAvailable(quest, game.state, game.recipes);
-      const isNext = nextQuest?.id === quest.id;
-      const row = document.createElement('div');
-      row.className = `quest-row${done ? ' quest-done' : ''}${isNext ? ' quest-ready' : ''}${!available && !done ? ' quest-locked' : ''}`;
-      row.innerHTML = `
-        <div class="quest-row-head">
-          <strong>${done ? '✓ ' : ''}${quest.title}</strong>
-          <span class="quest-status">${done ? 'Terminée' : getQuestStatusText(quest, game.state, game.recipes)}</span>
-        </div>
-        <p class="quest-desc">${quest.description}</p>
-      `;
-      list.appendChild(row);
-    }
-
-    section.appendChild(list);
-    chaptersEl.appendChild(section);
-  }
 }
 
 /* ── Monde ── */
 function renderWorld(game, el) {
   const s = game.state;
-  const next = game.getNextQuest();
   el.innerHTML = `
     <div class="view-header">
       <h2>${iconHtml(getNavIcon('world'), 'view-header-icon', 'Monde')} Monde</h2>
       <p class="view-desc">Voyage entre les zones pour accéder aux ressources</p>
     </div>
-    ${next && !isQuestCompleted(game.state, next.id) ? `
-      <div class="quest-banner mission-teaser">
-        <span class="quest-banner-label">Mission</span>
-        <strong>${next.title}</strong>
-        <span class="quest-banner-progress">${getQuestStatusText(next, game.state, game.recipes)}</span>
-        <button type="button" class="btn btn-small btn-muted" id="goto-missions">Toutes les missions</button>
-      </div>
-    ` : ''}
     <div id="world-list"></div>
   `;
-  el.querySelector('#goto-missions')?.addEventListener('click', () => navigate('missions'));
   const list = el.querySelector('#world-list');
 
   for (const zone of Object.values(game.balance.zones)) {
@@ -2212,14 +2170,23 @@ export function renderAuctionHouse(game, el) {
   const visibleOffers = allOffers
     .filter(({ vendorId }) => auctionCategory === 'all' || auctionCategory === vendorId)
     .sort((a, b) => {
-      const lvl = (a.resource.requiredJobLevel || 1) - (b.resource.requiredJobLevel || 1);
-      if (lvl !== 0) return lvl;
       const vendorCmp = (a.vendor.name || '').localeCompare(b.vendor.name || '', 'fr');
       if (vendorCmp !== 0) return vendorCmp;
+      const lvl = (a.resource.requiredJobLevel || 1) - (b.resource.requiredJobLevel || 1);
+      if (lvl !== 0) return lvl;
       return (a.resource.name || '').localeCompare(b.resource.name || '', 'fr');
     });
 
+  let lastVendorId = null;
   for (const { vendorId, vendor, offerId, offer, resource } of visibleOffers) {
+    if (auctionCategory === 'all' && vendorId !== lastVendorId) {
+      const header = document.createElement('div');
+      header.className = 'auction-group-title';
+      header.textContent = `${vendor.emoji} ${vendor.name}`;
+      listEl.appendChild(header);
+      lastVendorId = vendorId;
+    }
+
     const row = document.createElement('article');
     row.className = `auction-list-row${vendor.testHdv ? ' auction-list-row-test' : ''}`;
     const sellUnit = offer.sellable ? Math.floor(offer.unitPrice / 2) : 0;

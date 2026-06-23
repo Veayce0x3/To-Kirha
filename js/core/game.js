@@ -114,7 +114,6 @@ import {
   isQuestCompleted,
   getQuestsByChapter,
   getQuestGuidance,
-  QUEST_CHAPTER_LABELS,
 } from '../systems/quests.js';
 import {
   unlockWorldZone,
