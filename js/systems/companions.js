@@ -17,6 +17,7 @@ export function buildDefaultCompanions(companionDefs) {
     companions[id] = {
       unlocked: false,
       activeInParty: true,
+      assignedWeaponType: '',
       equipment: getDefaultCompanionEquipment(),
     };
   }
@@ -33,6 +34,7 @@ export function migrateCompanions(saved, companionDefs) {
       unlocked: !!prev.unlocked,
       activeInParty: prev.activeInParty !== false,
       nickname: prev.nickname || '',
+      assignedWeaponType: prev.assignedWeaponType || '',
       equipment: {
         ...getDefaultCompanionEquipment(),
         ...(prev.equipment || {}),
@@ -47,7 +49,7 @@ export function applyBetaUnlocks(state, companionDefs) {
   if (!state.companions) state.companions = buildDefaultCompanions(companionDefs);
   for (const id of Object.keys(companionDefs)) {
     if (!state.companions[id]) {
-      state.companions[id] = { unlocked: true, activeInParty: true, equipment: getDefaultCompanionEquipment() };
+      state.companions[id] = { unlocked: true, activeInParty: true, assignedWeaponType: '', equipment: getDefaultCompanionEquipment() };
     } else {
       state.companions[id].unlocked = true;
       if (state.companions[id].activeInParty === undefined) {

@@ -845,12 +845,16 @@ function renderCharTeamTab(game, panel) {
 
     if (!compState?.unlocked) {
       const check = game.canUnlockCompanion(def.id);
+      const assignedRole = compState?.assignedWeaponType
+        ? (game.weaponRoles?.[compState.assignedWeaponType]?.label || compState.assignedWeaponType)
+        : '';
       card.innerHTML = `
         <div class="companion-head">
           <span class="companion-emoji">${def.emoji}</span>
           <div>
             <strong>${def.name}</strong>
             <p class="view-desc">${def.description}</p>
+            ${assignedRole ? `<p class="view-desc">Rôle prévu : ${assignedRole}</p>` : ''}
           </div>
         </div>
         <button type="button" class="btn btn-craft btn-unlock-companion" ${check.ok ? '' : 'disabled'}>

@@ -4,6 +4,7 @@ import {
   GATHERING_JOB_IDS,
   PICKABLE_FARM_BUILDINGS,
   CAREER_PICK_COUNTS,
+  STARTER_WEAPON_CHOICES,
   validateCareerSelection,
 } from '../systems/careerChoice.js';
 import { FARM_BUILDING_LABELS } from '../systems/farm.js';
@@ -12,6 +13,7 @@ let modalEl = null;
 let gameRef = null;
 let selectedGathering = new Set();
 let selectedFarm = new Set();
+let selectedWeaponType = null;
 let listenersBound = false;
 
 function closeCareerModal() {
@@ -47,10 +49,27 @@ function renderCareerModal() {
     return `<button type="button" class="career-pick-btn${picked ? ' picked' : ''}" data-farm="${id}">${label}</button>`;
   }).join('');
 
-  const check = validateCareerSelection([...selectedGathering], [...selectedFarm]);
+  const weaponHtml = STARTER_WEAPON_CHOICES.map((choice) => {
+    const item = gameRef.combatEquipment?.items?.[choice.itemId];
+    const picked = selectedWeaponType === choice.weaponType;
+    const stats = item?.stats
+      ? `❤️ +${item.stats.hp || 0} · ⚔️ +${item.stats.atk || 0} · 🛡️ +${item.stats.def || 0}`
+      : '';
+    return `<button type="button" class="career-weapon-btn${picked ? ' picked' : ''}" data-weapon-type="${choice.weaponType}">
+      <span class="career-weapon-emoji">${choice.emoji}</span>
+      <span class="career-weapon-main">
+        <strong>${choice.label}</strong>
+        <small>${choice.bonus}</small>
+        <small>${choice.description}</small>
+        ${stats ? `<small>${stats}</small>` : ''}
+      </span>
+    </button>`;
+  }).join('');
+
+  const check = validateCareerSelection([...selectedGathering], [...selectedFarm], selectedWeaponType);
   const status = check.ok
     ? '✅ Tu peux valider ton parcours.'
-    : `Choisis ${CAREER_PICK_COUNTS.gathering} métiers de récolte et ${CAREER_PICK_COUNTS.farm} bâtiments de ferme. Le Puits est gratuit pour tous.`;
+    : `Choisis ${CAREER_PICK_COUNTS.gathering} métiers de récolte, ${CAREER_PICK_COUNTS.farm} bâtiments de ferme et ton arme de départ. Le Puits est gratuit pour tous.`;
 
   body.innerHTML = `
     <h2>🌸 Choisis ta voie</h2>
@@ -62,6 +81,11 @@ function renderCareerModal() {
     <section class="career-section">
       <h3>Ferme (${selectedFarm.size}/${CAREER_PICK_COUNTS.farm}) + 🪣 Puits gratuit</h3>
       <div class="career-pick-grid">${farmHtml}</div>
+    </section>
+    <section class="career-section">
+      <h3>Arme de départ</h3>
+      <p class="view-desc">Ton héros garde cette arme. Les deux équipiers recevront automatiquement les deux autres rôles pour former une équipe Guerrier + Archer + Mage.</p>
+      <div class="career-weapon-grid">${weaponHtml}</div>
     </section>
     <p class="career-status" id="career-status">${status}</p>
     <p class="career-error save-warn hidden" id="career-error" role="alert"></p>
@@ -89,14 +113,14 @@ function setCareerError(msg) {
 async function confirmCareerChoice() {
   if (!gameRef) return;
   setCareerError('');
-  const check = validateCareerSelection([...selectedGathering], [...selectedFarm]);
+  const check = validateCareerSelection([...selectedGathering], [...selectedFarm], selectedWeaponType);
   if (!check.ok) {
     setCareerError(check.reason || 'Sélection incomplète.');
     renderCareerModal();
     return;
   }
 
-  const result = gameRef.doApplyCareerChoice([...selectedGathering], [...selectedFarm]);
+  const result = gameRef.doApplyCareerChoice([...selectedGathering], [...selectedFarm], selectedWeaponType);
   if (!result.ok) {
     setCareerError(result.reason || 'Impossible de valider ton parcours.');
     return;
@@ -115,6 +139,7 @@ async function resetFromCareerModal() {
   gameRef.resetSave();
   selectedGathering = new Set();
   selectedFarm = new Set();
+  selectedWeaponType = null;
   setCareerError('');
   showCareerChoiceIfNeeded(gameRef);
 }
@@ -134,6 +159,13 @@ function bindCareerModalListeners() {
     const farmBtn = e.target.closest('[data-farm]');
     if (farmBtn) {
       togglePick(selectedFarm, farmBtn.dataset.farm, CAREER_PICK_COUNTS.farm);
+      renderCareerModal();
+      return;
+    }
+
+    const weaponBtn = e.target.closest('[data-weapon-type]');
+    if (weaponBtn) {
+      selectedWeaponType = weaponBtn.dataset.weaponType;
       renderCareerModal();
       return;
     }
@@ -161,6 +193,7 @@ export function initCareerChoiceModal(game) {
   bindCareerModalListeners();
   selectedGathering = new Set();
   selectedFarm = new Set();
+  selectedWeaponType = null;
 }
 
 export function showCareerChoiceIfNeeded(game) {
@@ -169,6 +202,9 @@ export function showCareerChoiceIfNeeded(game) {
     closeCareerModal();
     return;
   }
+  selectedGathering = new Set(game.state.careerChoice?.gatheringJobs || [...selectedGathering]);
+  selectedFarm = new Set(game.state.careerChoice?.farmBuildings || [...selectedFarm]);
+  selectedWeaponType = game.state.careerChoice?.weaponType || selectedWeaponType;
   document.body.classList.add('career-choice-pending');
   modalEl?.classList.add('active');
   renderCareerModal();

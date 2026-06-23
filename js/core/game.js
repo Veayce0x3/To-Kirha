@@ -157,7 +157,13 @@ import {
 import { getFarmToolCheck, getHarvestToolCheck } from '../systems/toolTier.js';
 import { migrateCombatDurability } from '../systems/combatDurability.js';
 import { clearCombatMealBuff, listOwnedMeals, peekMealHeal, consumeMealFromInventory, calcMealHealAmount } from '../systems/consumables.js';
-import { applyCareerChoice, needsCareerChoice as checkNeedsCareerChoice, migrateCareerChoice } from '../systems/careerChoice.js';
+import {
+  STARTER_WEAPON_CHOICES,
+  STARTER_WEAPON_TYPES,
+  applyCareerChoice,
+  needsCareerChoice as checkNeedsCareerChoice,
+  migrateCareerChoice,
+} from '../systems/careerChoice.js';
 import { getFusionableGroups, fuseEquipmentGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId, getKeyCount as countDungeonKeys } from '../systems/dungeonKeys.js';
 
@@ -804,11 +810,41 @@ export class Game {
     return checkNeedsCareerChoice(this.state);
   }
 
-  doApplyCareerChoice(gatheringJobs, farmBuildings) {
-    const result = applyCareerChoice(this.state, gatheringJobs, farmBuildings);
+  applyStarterWeaponTeam(weaponType) {
+    const choicesByType = Object.fromEntries(STARTER_WEAPON_CHOICES.map((choice) => [choice.weaponType, choice]));
+    const teamWeaponTypes = [
+      weaponType,
+      ...STARTER_WEAPON_TYPES.filter((type) => type !== weaponType),
+    ];
+    const companionIds = Object.keys(this.companions || {}).slice(0, 2);
+
+    const heroChoice = choicesByType[teamWeaponTypes[0]];
+    if (heroChoice?.itemId && this.combatEquipment.items[heroChoice.itemId]) {
+      const ref = grantCombatItem(this.state, heroChoice.itemId, this.combatEquipment.items);
+      this.state.combatEquipment.weapon = ref;
+    }
+
+    teamWeaponTypes.slice(1).forEach((type, index) => {
+      const companionId = companionIds[index];
+      const choice = choicesByType[type];
+      if (!companionId || !choice?.itemId || !this.combatEquipment.items[choice.itemId]) return;
+      if (!this.state.companions?.[companionId]) return;
+      const ref = grantCombatItem(this.state, choice.itemId, this.combatEquipment.items);
+      this.state.companions[companionId].equipment = {
+        ...this.state.companions[companionId].equipment,
+        weapon: ref,
+      };
+      this.state.companions[companionId].assignedWeaponType = type;
+    });
+  }
+
+  doApplyCareerChoice(gatheringJobs, farmBuildings, weaponType) {
+    const result = applyCareerChoice(this.state, gatheringJobs, farmBuildings, weaponType);
     if (!result.ok) return result;
+    this.applyStarterWeaponTeam(result.careerChoice.weaponType);
     ensureSlots(this.state, this.balance);
     ensureFarmSlots(this.state, this.farmData, this.balance);
+    this.processQuests();
     SaveProvider.save(this.state);
     emit('careerChoiceApplied', result);
     emit('stateChange', this.state);

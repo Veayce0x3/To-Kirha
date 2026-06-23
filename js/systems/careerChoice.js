@@ -9,6 +9,35 @@ export const FREE_FARM_BUILDING = 'well';
 
 export const CAREER_PICK_COUNTS = { gathering: 2, farm: 2 };
 
+export const STARTER_WEAPON_CHOICES = [
+  {
+    weaponType: 'sword_shield',
+    itemId: 'set_sakura_guardian_blade',
+    label: 'Guerrier',
+    emoji: '🛡️',
+    bonus: 'Bonus défense',
+    description: 'Épée + bouclier pour encaisser les gros combats.'
+  },
+  {
+    weaponType: 'bow',
+    itemId: 'set_sakura_bow',
+    label: 'Archer',
+    emoji: '🏹',
+    bonus: 'Bonus attaque',
+    description: 'Arc pour frapper fort et vite.'
+  },
+  {
+    weaponType: 'staff',
+    itemId: 'set_sakura_staff',
+    label: 'Mage',
+    emoji: '🪄',
+    bonus: 'Bonus mixte',
+    description: 'Bâton pour mélanger dégâts, contrôle et soin.'
+  },
+];
+
+export const STARTER_WEAPON_TYPES = STARTER_WEAPON_CHOICES.map((choice) => choice.weaponType);
+
 export function needsCareerChoice(state) {
   return !isCareerChoiceComplete(state.careerChoice);
 }
@@ -18,7 +47,8 @@ export function isCareerChoiceComplete(careerChoice) {
   if (!careerChoice?.confirmed) return false;
   const check = validateCareerSelection(
     careerChoice.gatheringJobs,
-    careerChoice.farmBuildings
+    careerChoice.farmBuildings,
+    careerChoice.weaponType
   );
   return check.ok;
 }
@@ -26,10 +56,18 @@ export function isCareerChoiceComplete(careerChoice) {
 export function migrateCareerChoice(saved) {
   if (!saved) return null;
   if (isCareerChoiceComplete(saved)) return saved;
+  const legacyCheck = validateCareerSelection(saved.gatheringJobs, saved.farmBuildings, 'sword_shield');
+  if (legacyCheck.ok && saved.confirmed) {
+    return {
+      ...saved,
+      weaponType: 'sword_shield',
+      teamWeaponTypes: [...STARTER_WEAPON_TYPES],
+    };
+  }
   return null;
 }
 
-export function validateCareerSelection(gatheringJobs, farmBuildings) {
+export function validateCareerSelection(gatheringJobs, farmBuildings, weaponType) {
   const g = [...new Set(gatheringJobs || [])];
   const f = [...new Set(farmBuildings || [])];
   if (g.length !== CAREER_PICK_COUNTS.gathering) {
@@ -44,16 +82,25 @@ export function validateCareerSelection(gatheringJobs, farmBuildings) {
   if (!f.every((id) => PICKABLE_FARM_BUILDINGS.includes(id))) {
     return { ok: false, reason: 'Bâtiment de ferme invalide.' };
   }
-  return { ok: true, gatheringJobs: g, farmBuildings: f };
+  if (!STARTER_WEAPON_TYPES.includes(weaponType)) {
+    return { ok: false, reason: 'Choisis ton arme de départ.' };
+  }
+  return { ok: true, gatheringJobs: g, farmBuildings: f, weaponType };
 }
 
-export function applyCareerChoice(state, gatheringJobs, farmBuildings) {
-  const check = validateCareerSelection(gatheringJobs, farmBuildings);
+export function applyCareerChoice(state, gatheringJobs, farmBuildings, weaponType) {
+  const check = validateCareerSelection(gatheringJobs, farmBuildings, weaponType);
   if (!check.ok) return check;
+  const teamWeaponTypes = [
+    check.weaponType,
+    ...STARTER_WEAPON_TYPES.filter((type) => type !== check.weaponType),
+  ];
   state.careerChoice = {
     confirmed: true,
     gatheringJobs: check.gatheringJobs,
     farmBuildings: check.farmBuildings,
+    weaponType: check.weaponType,
+    teamWeaponTypes,
   };
   return { ok: true, careerChoice: state.careerChoice };
 }

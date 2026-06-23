@@ -73,6 +73,9 @@ export function initUI(game, audio) {
     prestigeGains: document.getElementById('prestige-gains'),
     prestigeCancel: document.getElementById('prestige-cancel'),
     prestigeConfirm: document.getElementById('prestige-confirm'),
+    startupRefreshModal: document.getElementById('startup-refresh-modal'),
+    startupRefreshConfirm: document.getElementById('startup-refresh-confirm'),
+    startupRefreshSkip: document.getElementById('startup-refresh-skip'),
   };
 
   let lastKirha = game.state.kirha;
@@ -256,6 +259,20 @@ export function initUI(game, audio) {
 
   function tickHarvestUI() {
     tickActiveUI();
+  }
+
+  function showStartupRefreshPrompt() {
+    const key = 'tokirha-startup-refresh-seen';
+    if (!els.startupRefreshModal || sessionStorage.getItem(key) === '1') return;
+    els.startupRefreshModal.classList.add('active');
+    els.startupRefreshConfirm?.addEventListener('click', () => {
+      sessionStorage.setItem(key, '1');
+      window.location.reload();
+    }, { once: true });
+    els.startupRefreshSkip?.addEventListener('click', () => {
+      sessionStorage.setItem(key, '1');
+      els.startupRefreshModal.classList.remove('active');
+    }, { once: true });
   }
 
   buildNav();
@@ -510,6 +527,7 @@ export function initUI(game, audio) {
 
   refreshHeader(game.state);
   refreshView();
+  showStartupRefreshPrompt();
   if (game.isHarvesting() || game.isFarmActive()) tickHarvestUI();
 }
 
