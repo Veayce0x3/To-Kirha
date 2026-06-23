@@ -74,6 +74,7 @@ export function needsCareerChoice(state) {
 /** Sauvegarde valide uniquement si confirmé avec sélection complète. */
 export function isCareerChoiceComplete(careerChoice) {
   if (!careerChoice?.confirmed) return false;
+  if (!careerChoice.starterWeaponsGranted) return false;
   const check = validateCareerSelection(
     careerChoice.gatheringJobs,
     careerChoice.farmBuildings,
@@ -89,8 +90,9 @@ export function migrateCareerChoice(saved) {
   if (legacyCheck.ok && saved.confirmed) {
     return {
       ...saved,
-      weaponType: 'sword_shield',
-      teamWeaponTypes: [...STARTER_WEAPON_TYPES],
+      weaponType: null,
+      teamWeaponTypes: [],
+      starterWeaponsGranted: false,
     };
   }
   return null;
@@ -130,6 +132,7 @@ export function applyCareerChoice(state, gatheringJobs, farmBuildings, weaponTyp
     farmBuildings: check.farmBuildings,
     weaponType: check.weaponType,
     teamWeaponTypes,
+    starterWeaponsGranted: false,
   };
   return { ok: true, careerChoice: state.careerChoice };
 }

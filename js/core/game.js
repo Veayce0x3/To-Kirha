@@ -811,6 +811,8 @@ export class Game {
   }
 
   applyStarterWeaponTeam(weaponType) {
+    if (this.state.careerChoice?.starterWeaponsGranted) return;
+
     const choicesByType = Object.fromEntries(STARTER_WEAPON_CHOICES.map((choice) => [choice.weaponType, choice]));
     const teamWeaponTypes = [
       weaponType,
@@ -836,6 +838,9 @@ export class Game {
       };
       this.state.companions[companionId].assignedWeaponType = type;
     });
+
+    if (!this.state.careerChoice) this.state.careerChoice = {};
+    this.state.careerChoice.starterWeaponsGranted = true;
   }
 
   doApplyCareerChoice(gatheringJobs, farmBuildings, weaponType) {
