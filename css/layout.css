@@ -1519,6 +1519,47 @@
   gap: 0.45rem;
   position: sticky;
   top: 5rem;
+  max-height: calc(100vh - 7rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.auction-cat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.auction-cat-group + .auction-cat-group {
+  margin-top: 0.35rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(232, 180, 203, 0.35);
+}
+
+.auction-cat-group-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--brun-doux);
+  padding: 0 0.15rem;
+}
+
+.auction-nugget-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.auction-nugget-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.auction-nugget-actions .btn {
+  min-height: 44px;
+  flex: 1 1 180px;
 }
 
 .auction-cat-btn {
@@ -3714,6 +3755,82 @@
   }
 }
 
+@media (max-width: 1024px) {
+  .auction-hdv {
+    grid-template-columns: 1fr;
+  }
+
+  .auction-categories {
+    position: static;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: none;
+    padding-bottom: 0.15rem;
+    scrollbar-width: none;
+    gap: 0.75rem;
+  }
+
+  .auction-categories::-webkit-scrollbar {
+    display: none;
+  }
+
+  .auction-cat-group {
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .auction-cat-group + .auction-cat-group {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    padding-left: 0.55rem;
+    border-left: 1px solid rgba(232, 180, 203, 0.45);
+  }
+
+  .auction-cat-group-label {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding-right: 0.15rem;
+  }
+
+  .auction-cat-btn {
+    flex: 0 0 auto;
+    min-width: 132px;
+  }
+
+  .auction-list-head {
+    display: none;
+  }
+
+  .auction-list-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .auction-list-actions {
+    width: 100%;
+  }
+
+  .auction-list-actions .btn,
+  .auction-buy-row .btn {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .auction-buy-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 @media (max-width: 768px) {
   .burger-btn {
     display: flex;
@@ -3860,10 +3977,16 @@
     overflow-x: auto;
     padding-bottom: 0.15rem;
     scrollbar-width: none;
+    max-height: none;
   }
 
   .auction-categories::-webkit-scrollbar {
     display: none;
+  }
+
+  .auction-cat-group {
+    flex-direction: row;
+    align-items: center;
   }
 
   .auction-cat-btn {

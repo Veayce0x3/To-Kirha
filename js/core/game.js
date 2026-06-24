@@ -241,8 +241,11 @@ export class Game {
   }
 
   getDefaultState() {
+    const kirha = this.balance.testHdv?.enabled
+      ? (this.balance.testHdv.startingKirha ?? this.balance.startingKirha)
+      : this.balance.startingKirha;
     const state = {
-      kirha: this.balance.startingKirha,
+      kirha,
       inventory: this.buildDefaultInventory(),
       jobs: this.buildDefaultJobs(),
       character: { level: 1, xp: 0 },
@@ -1723,6 +1726,42 @@ export class Game {
 
   getGoldNuggetCount() {
     return this.state.inventory.gold_nugget || 0;
+  }
+
+  exchangeGoldNuggets(mode, quantity = 1) {
+    const qty = Math.max(1, Math.floor(quantity || 1));
+    const have = this.getGoldNuggetCount();
+    const cfg = this.balance.goldNuggetExchange || {};
+    if (mode === 'scroll') {
+      const cost = (cfg.scrollCost ?? 5) * qty;
+      if (have < cost) return { ok: false, reason: `Il faut ${cost} pépite(s) d'or.` };
+      this.state.inventory.gold_nugget = have - cost;
+      if (this.state.inventory.gold_nugget <= 0) delete this.state.inventory.gold_nugget;
+      this.state.inventory.ancient_scroll = (this.state.inventory.ancient_scroll || 0) + qty;
+      emit('stateChange', this.state);
+      this.scheduleSave();
+      return { ok: true, gained: qty, resourceId: 'ancient_scroll' };
+    }
+    if (mode === 'kirha') {
+      const perNugget = cfg.kirhaPerNugget ?? 40;
+      if (have < qty) return { ok: false, reason: `Il faut ${qty} pépite(s) d'or.` };
+      this.state.inventory.gold_nugget = have - qty;
+      if (this.state.inventory.gold_nugget <= 0) delete this.state.inventory.gold_nugget;
+      this.state.kirha = (this.state.kirha || 0) + perNugget * qty;
+      emit('stateChange', this.state);
+      this.scheduleSave();
+      return { ok: true, gained: perNugget * qty, resourceId: 'kirha' };
+    }
+    return { ok: false, reason: 'Échange inconnu.' };
+  }
+
+  getGoldNuggetExchangeInfo() {
+    const cfg = this.balance.goldNuggetExchange || {};
+    return {
+      scrollCost: cfg.scrollCost ?? 5,
+      kirhaPerNugget: cfg.kirhaPerNugget ?? 40,
+      owned: this.getGoldNuggetCount(),
+    };
   }
 
   getJobProgress(jobId) {

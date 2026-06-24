@@ -54,9 +54,20 @@ export function getInstanceRarity(instance) {
   return normalizeRarity(instance?.rarity);
 }
 
-export function rollDungeonEquipmentDrop(isBoss, balance) {
+export function getEquipmentDropChance(zoneId, isBoss, combatZones, balance) {
+  const zoneRates = combatZones?.[zoneId]?.dropRates || {};
   const cfg = balance.combat?.equipmentDrops || {};
-  const chance = isBoss ? (cfg.bossChance ?? 0.12) : (cfg.mobChance ?? 0.05);
+  if (isBoss) return zoneRates.equipmentBoss ?? cfg.bossChance ?? 0.12;
+  return zoneRates.equipmentMob ?? cfg.mobChance ?? 0.05;
+}
+
+export function rollDungeonEquipmentDrop(isBoss, balance, zoneId = null, combatZones = null) {
+  const chance = zoneId && combatZones
+    ? getEquipmentDropChance(zoneId, isBoss, combatZones, balance)
+    : (() => {
+      const cfg = balance.combat?.equipmentDrops || {};
+      return isBoss ? (cfg.bossChance ?? 0.12) : (cfg.mobChance ?? 0.05);
+    })();
   return Math.random() < chance;
 }
 

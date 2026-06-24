@@ -5,6 +5,12 @@
     "emoji": "🌸",
     "zone": "village_sakura",
     "requiredCharLevel": 1,
+    "dropRates": {
+      "equipmentMob": 0.14,
+      "equipmentBoss": 0.4,
+      "keyMob": 0.1,
+      "keyBoss": 0.22
+    },
     "monsters": [
       {
         "enemyId": "spirit_lantern",

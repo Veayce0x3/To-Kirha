@@ -91,8 +91,9 @@ function recordKill(state, zoneId, foe, isBoss) {
   }
 }
 
-function rollEquipmentDrop(zoneId, isBoss, state, combatItems, balance) {
-  if (!rollDungeonEquipmentDrop(isBoss, balance)) return null;
+function rollEquipmentDrop(zoneId, isBoss, state, combatItems, balance, combatZone) {
+  const zones = combatZone ? { [zoneId]: combatZone } : null;
+  if (!rollDungeonEquipmentDrop(isBoss, balance, zoneId, zones)) return null;
   const item = pickRandomDropItem(zoneId, combatItems);
   if (!item) return null;
   const ref = grantCombatItem(state, item.id, combatItems, 'common');
@@ -174,15 +175,16 @@ function wearAfterCombat(state, combatItems) {
   return wearEquippedCombatGear(state, combatItems);
 }
 
-function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, combatItems) {
+function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, combatItems, combatZone) {
   const run = state.combatEncounter;
   const xpMult = balance.combat?.soloXpMultiplier ?? 0.25;
   const charXp = Math.floor((foe.charXpReward || 0) * xpMult);
   const levelResult = charXp > 0 ? addCharacterXp(state, charXp, characterConfig, balance) : null;
   recordKill(state, zoneId, foe, isBoss);
 
+  const zoneMap = combatZone ? { [zoneId]: combatZone } : null;
   let keyDropped = false;
-  if (rollKeyDrop(isBoss, balance)) {
+  if (rollKeyDrop(isBoss, balance, zoneId, zoneMap)) {
     grantDungeonKey(state, zoneId);
     keyDropped = true;
   }
@@ -249,7 +251,7 @@ function advanceDungeonRoom(run, state, characterConfig, enemies, balance, comba
   run.dungeonCharXp = (run.dungeonCharXp || 0) + (run.foe.charXpReward || 0);
   recordKill(state, run.zoneId, run.foe, run.isBoss);
 
-  const equipDrop = rollEquipmentDrop(run.zoneId, run.isBoss, state, combatItems, balance);
+  const equipDrop = rollEquipmentDrop(run.zoneId, run.isBoss, state, combatItems, balance, run.combatZone);
   if (equipDrop) {
     if (!run.dungeonEquipmentDrops) run.dungeonEquipmentDrops = [];
     run.dungeonEquipmentDrops.push(equipDrop);
@@ -308,7 +310,7 @@ function onEnemyDefeated(run, state, characterConfig, enemies, balance, combatIt
   if (run.isDungeonRun) {
     return advanceDungeonRoom(run, state, characterConfig, enemies, balance, combatItems);
   }
-  return completeVictory(run.zoneId, run.foe, run.isBoss, state, characterConfig, balance, combatItems);
+  return completeVictory(run.zoneId, run.foe, run.isBoss, state, characterConfig, balance, combatItems, run.combatZone);
 }
 
 function resolveEnemyPhaseStep(state, characterConfig, enemies, balance, combatItems) {

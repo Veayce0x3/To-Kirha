@@ -23,7 +23,7 @@ import { getTestHdvBanner, isTestHdvEnabled } from '../systems/testHdv.js';
 
 let workshopTab = 'toolmaker';
 let charTab = 'bag';
-let auctionCategory = 'all';
+let auctionCategory = '';
 let combatUi = { step: 'action', menu: 'main', pendingSkill: null, targetMode: null };
 
 export function resetCombatUi() {
@@ -2105,6 +2105,32 @@ function renderCuisine(game, el) {
 }
 
 /* ── Hôtel des Ventes ── */
+function getAuctionVendorGroups(vendorEntries) {
+  const services = [];
+  const gathering = [];
+  const farm = [];
+  for (const entry of vendorEntries) {
+    const [vendorId, vendor] = entry;
+    if (vendor.testHdv && vendorId.includes('_job_')) gathering.push(entry);
+    else if (vendor.testHdv && vendorId.includes('_farm_')) farm.push(entry);
+    else services.push(entry);
+  }
+  const sortByName = (a, b) => (a[1].name || '').localeCompare(b[1].name || '', 'fr');
+  gathering.sort(sortByName);
+  farm.sort(sortByName);
+  services.sort(sortByName);
+  return [
+    { id: 'services', label: 'Services', entries: services },
+    { id: 'gathering', label: 'Récolte', entries: gathering },
+    { id: 'farm', label: 'Ferme', entries: farm },
+  ].filter((group) => group.entries.length > 0);
+}
+
+function pickDefaultAuctionCategory(vendorEntries) {
+  const groups = getAuctionVendorGroups(vendorEntries);
+  return groups[0]?.entries[0]?.[0] || vendorEntries[0]?.[0] || '';
+}
+
 export function renderAuctionHouse(game, el) {
   const merchant = game.merchant;
   const scrollRes = game.resources.ancient_scroll;
@@ -2112,6 +2138,8 @@ export function renderAuctionHouse(game, el) {
   const testBanner = getTestHdvBanner(game.balance);
   const careerPending = isTestHdvEnabled(game.balance) && !game.state.careerChoice?.confirmed;
   const vendors = game.getMerchantVendors();
+  const nuggetInfo = game.getGoldNuggetExchangeInfo?.() || null;
+  const nuggetRes = game.resources.gold_nugget;
 
   el.innerHTML = `
     <div class="view-header">
@@ -2124,6 +2152,22 @@ export function renderAuctionHouse(game, el) {
       <span class="auction-owned-label">Tes parchemins</span>
       <span class="auction-owned-value">${renderResourceIcon(scrollRes, 'auction-scroll-icon')} ×${owned}</span>
     </div>
+    ${nuggetInfo && nuggetRes ? `
+    <div class="panel-inner auction-nugget-panel">
+      <div class="auction-owned">
+        <span class="auction-owned-label">Pépites d'or</span>
+        <span class="auction-owned-value">${renderResourceIcon(nuggetRes, 'auction-scroll-icon')} ×${nuggetInfo.owned}</span>
+      </div>
+      <p class="view-desc">Échange tes pépites contre des parchemins ou des Kirha (récompenses de quêtes / futur premium).</p>
+      <div class="auction-nugget-actions">
+        <button type="button" class="btn btn-muted" id="nugget-to-scroll" ${nuggetInfo.owned < nuggetInfo.scrollCost ? 'disabled' : ''}>
+          ${nuggetInfo.scrollCost} pépites → 1 parchemin
+        </button>
+        <button type="button" class="btn btn-muted" id="nugget-to-kirha" ${nuggetInfo.owned < 1 ? 'disabled' : ''}>
+          1 pépite → ${nuggetInfo.kirhaPerNugget} 💰
+        </button>
+      </div>
+    </div>` : ''}
     <div id="auction-vendors"></div>
     <div class="panel-inner auction-tip">
       <p>💡 Vends tes récoltes à la <button type="button" class="link-btn" id="goto-bank">Banque</button> pour obtenir des Kirha${testBanner ? ', puis achète ici ce que tu ne produis pas' : ', puis achète des parchemins ici'}.</p>
@@ -2131,6 +2175,17 @@ export function renderAuctionHouse(game, el) {
   `;
 
   el.querySelector('#goto-bank')?.addEventListener('click', () => navigate('inventory'));
+
+  el.querySelector('#nugget-to-scroll')?.addEventListener('click', () => {
+    const result = game.exchangeGoldNuggets('scroll', 1);
+    if (!result.ok) emit('farmBlocked', { message: result.reason || 'Échange impossible.' });
+    else renderAuctionHouse(game, el);
+  });
+  el.querySelector('#nugget-to-kirha')?.addEventListener('click', () => {
+    const result = game.exchangeGoldNuggets('kirha', 1);
+    if (!result.ok) emit('farmBlocked', { message: result.reason || 'Échange impossible.' });
+    else renderAuctionHouse(game, el);
+  });
 
   const vendorsEl = el.querySelector('#auction-vendors');
   const vendorEntries = Object.entries(vendors);
@@ -2153,25 +2208,30 @@ export function renderAuctionHouse(game, el) {
     return;
   }
 
-  const validCategories = new Set(['all', ...vendorEntries.map(([vendorId]) => vendorId)]);
-  if (!validCategories.has(auctionCategory)) auctionCategory = 'all';
+  const validCategories = new Set(vendorEntries.map(([vendorId]) => vendorId));
+  if (!auctionCategory || !validCategories.has(auctionCategory)) {
+    auctionCategory = pickDefaultAuctionCategory(vendorEntries);
+  }
+
+  const vendorGroups = getAuctionVendorGroups(vendorEntries);
 
   vendorsEl.innerHTML = `
     <div class="auction-hdv panel-inner">
       <aside class="auction-categories" aria-label="Catégories HDV">
-        <button type="button" class="auction-cat-btn${auctionCategory === 'all' ? ' active' : ''}" data-auction-cat="all">
-          <span>📦 Toutes les offres</span>
-          <strong>${allOffers.length}</strong>
-        </button>
-        ${vendorEntries.map(([vendorId, vendor]) => {
-          const count = Object.keys(vendor.offers || {}).length;
-          return `
-            <button type="button" class="auction-cat-btn${auctionCategory === vendorId ? ' active' : ''}${vendor.testHdv ? ' test' : ''}" data-auction-cat="${vendorId}">
-              <span>${vendor.emoji} ${vendor.name}</span>
-              <strong>${count}</strong>
-            </button>
-          `;
-        }).join('')}
+        ${vendorGroups.map((group) => `
+          <div class="auction-cat-group">
+            <div class="auction-cat-group-label">${group.label}</div>
+            ${group.entries.map(([vendorId, vendor]) => {
+              const count = Object.keys(vendor.offers || {}).length;
+              return `
+                <button type="button" class="auction-cat-btn${auctionCategory === vendorId ? ' active' : ''}${vendor.testHdv ? ' test' : ''}" data-auction-cat="${vendorId}">
+                  <span>${vendor.emoji} ${vendor.name}</span>
+                  <strong>${count}</strong>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        `).join('')}
       </aside>
       <section class="auction-list-wrap">
         <div class="auction-list-head">
@@ -2186,14 +2246,14 @@ export function renderAuctionHouse(game, el) {
 
   vendorsEl.querySelectorAll('.auction-cat-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      auctionCategory = btn.dataset.auctionCat || 'all';
+      auctionCategory = btn.dataset.auctionCat || pickDefaultAuctionCategory(vendorEntries);
       renderAuctionHouse(game, el);
     });
   });
 
   const listEl = vendorsEl.querySelector('#auction-offer-list');
   const visibleOffers = allOffers
-    .filter(({ vendorId }) => auctionCategory === 'all' || auctionCategory === vendorId)
+    .filter(({ vendorId }) => auctionCategory === vendorId)
     .sort((a, b) => {
       const vendorCmp = (a.vendor.name || '').localeCompare(b.vendor.name || '', 'fr');
       if (vendorCmp !== 0) return vendorCmp;
@@ -2204,7 +2264,7 @@ export function renderAuctionHouse(game, el) {
 
   let lastVendorId = null;
   for (const { vendorId, vendor, offerId, offer, resource } of visibleOffers) {
-    if (auctionCategory === 'all' && vendorId !== lastVendorId) {
+    if (vendorId !== lastVendorId) {
       const header = document.createElement('div');
       header.className = 'auction-group-title';
       header.textContent = `${vendor.emoji} ${vendor.name}`;

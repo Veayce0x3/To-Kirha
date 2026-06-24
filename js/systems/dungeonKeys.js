@@ -37,16 +37,30 @@ export function grantDungeonKey(state, combatZoneId) {
   return true;
 }
 
-export function rollKeyDrop(isBoss, balance) {
+export function getKeyDropChance(zoneId, isBoss, combatZones, balance) {
+  const zoneRates = combatZones?.[zoneId]?.dropRates || {};
   const cfg = balance.combat?.keyDrops || {};
-  const chance = isBoss ? (cfg.bossChance ?? 0.08) : (cfg.mobChance ?? 0.04);
+  if (isBoss) return zoneRates.keyBoss ?? cfg.bossChance ?? 0.08;
+  return zoneRates.keyMob ?? cfg.mobChance ?? 0.04;
+}
+
+export function rollKeyDrop(isBoss, balance, zoneId = null, combatZones = null) {
+  const chance = zoneId && combatZones
+    ? getKeyDropChance(zoneId, isBoss, combatZones, balance)
+    : (() => {
+      const cfg = balance.combat?.keyDrops || {};
+      return isBoss ? (cfg.bossChance ?? 0.08) : (cfg.mobChance ?? 0.04);
+    })();
   return Math.random() < chance;
 }
 
-export function getKeyDropPreview(balance) {
-  const cfg = balance.combat?.keyDrops || {};
+export function getKeyDropPreview(balance, zoneId = null, combatZones = null) {
   return {
-    mobChance: cfg.mobChance ?? 0.04,
-    bossChance: cfg.bossChance ?? 0.08,
+    mobChance: zoneId && combatZones
+      ? getKeyDropChance(zoneId, false, combatZones, balance)
+      : (balance.combat?.keyDrops?.mobChance ?? 0.04),
+    bossChance: zoneId && combatZones
+      ? getKeyDropChance(zoneId, true, combatZones, balance)
+      : (balance.combat?.keyDrops?.bossChance ?? 0.08),
   };
 }

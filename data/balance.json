@@ -6,10 +6,15 @@
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
   "testHdv": {
     "enabled": true,
+    "startingKirha": 10000,
     "priceMultiplier": 1.2,
     "flatMaxPrice": 12,
     "bulkQuantities": [1, 5, 10, 25],
     "banner": "Marché test — ressources métiers et ferme disponibles à prix réduits pour faciliter les tests. HDV joueur ↔ joueur bientôt."
+  },
+  "goldNuggetExchange": {
+    "scrollCost": 5,
+    "kirhaPerNugget": 40
   },
   "combat": {
     "keyDrops": {

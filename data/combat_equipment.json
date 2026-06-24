@@ -276,6 +276,34 @@
         "def": 0
       }
     },
+    "set_petal_guardian_blade": {
+      "id": "set_petal_guardian_blade",
+      "name": "Épée-bouclier Florale",
+      "emoji": "🛡️",
+      "slot": "weapon",
+      "zone": "petal_forest",
+      "weaponType": "sword_shield",
+      "className": "Guerrier",
+      "stats": {
+        "hp": 26,
+        "atk": 14,
+        "def": 11
+      }
+    },
+    "set_petal_staff": {
+      "id": "set_petal_staff",
+      "name": "Bâton des Pétales",
+      "emoji": "🪄",
+      "slot": "weapon",
+      "zone": "petal_forest",
+      "weaponType": "staff",
+      "className": "Mage",
+      "stats": {
+        "hp": 16,
+        "atk": 20,
+        "def": 6
+      }
+    },
     "set_petal_boots": {
       "id": "set_petal_boots",
       "name": "Bottes Florales",
@@ -396,6 +424,34 @@
         "hp": 18,
         "atk": 32,
         "def": 10
+      }
+    },
+    "set_jade_guardian_blade": {
+      "id": "set_jade_guardian_blade",
+      "name": "Épée-bouclier de Jade",
+      "emoji": "🛡️",
+      "slot": "weapon",
+      "zone": "jade_mountains",
+      "weaponType": "sword_shield",
+      "className": "Guerrier",
+      "stats": {
+        "hp": 30,
+        "atk": 18,
+        "def": 14
+      }
+    },
+    "set_jade_bow": {
+      "id": "set_jade_bow",
+      "name": "Arc de Jade",
+      "emoji": "🏹",
+      "slot": "weapon",
+      "zone": "jade_mountains",
+      "weaponType": "bow",
+      "className": "Archer",
+      "stats": {
+        "hp": 0,
+        "atk": 34,
+        "def": 0
       }
     },
     "set_jade_boots": {
