@@ -183,14 +183,6 @@ async function confirmCareerChoice() {
         setCareerError(nicknameCheck.reason || 'Pseudo invalide.');
         return;
       }
-    }
-
-    const result = gameRef.doApplyCareerChoice([...selectedGathering], [...selectedFarm], selectedWeaponType);
-    if (!result.ok) {
-      setCareerError(result.reason || 'Impossible de valider ton parcours.');
-      return;
-    }
-    if (!nickInfo.hasNickname) {
       const nickResult = gameRef.setCharacterNickname(selectedNickname, false, { silent: true });
       if (!nickResult.ok) {
         setCareerError(nickResult.reason || 'Impossible de valider ton pseudo.');
@@ -198,7 +190,14 @@ async function confirmCareerChoice() {
       }
     }
 
+    const result = gameRef.doApplyCareerChoice([...selectedGathering], [...selectedFarm], selectedWeaponType);
+    if (!result.ok) {
+      setCareerError(result.reason || 'Impossible de valider ton parcours.');
+      return;
+    }
+
     closeCareerModal();
+    emit('nicknameChange', { name: gameRef.getCharacterDisplayName(), renamed: false });
     emit('navRefresh');
   } catch (err) {
     console.error('Career choice failed:', err);
@@ -300,9 +299,10 @@ export function showCareerChoiceIfNeeded(game) {
     closeCareerModal();
     return;
   }
-  selectedGathering = new Set(game.state.careerChoice?.gatheringJobs || [...selectedGathering]);
-  selectedFarm = new Set(game.state.careerChoice?.farmBuildings || [...selectedFarm]);
-  selectedWeaponType = game.state.careerChoice?.weaponType || selectedWeaponType;
+  selectedGathering = new Set(game.state.careerChoice?.gatheringJobs || []);
+  selectedFarm = new Set(game.state.careerChoice?.farmBuildings || []);
+  selectedWeaponType = game.state.careerChoice?.weaponType || null;
+  selectedNickname = game.state.character?.nickname?.trim() || '';
   document.body.classList.add('career-choice-pending');
   modalEl?.classList.add('active');
   renderCareerModal();

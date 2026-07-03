@@ -138,25 +138,24 @@ export function applyCareerChoice(state, gatheringJobs, farmBuildings, weaponTyp
 }
 
 export function isGatheringJobUnlocked(jobId, state) {
-  if (!state.careerChoice?.confirmed) return GATHERING_JOB_IDS.includes(jobId);
+  if (!state.careerChoice?.confirmed) return false;
   return state.careerChoice.gatheringJobs.includes(jobId);
 }
 
 export function isFarmBuildingUnlocked(buildingId, state) {
-  if (buildingId === FREE_FARM_BUILDING) return true;
   if (!state.careerChoice?.confirmed) return false;
+  if (buildingId === FREE_FARM_BUILDING) return true;
   return state.careerChoice.farmBuildings.includes(buildingId);
 }
 
 export function getUnlockedGatheringJobs(state) {
-  if (!state.careerChoice?.confirmed) return [...GATHERING_JOB_IDS];
+  if (!state.careerChoice?.confirmed) return [];
   return state.careerChoice.gatheringJobs;
 }
 
 export function getUnlockedFarmBuildings(state) {
-  const list = [FREE_FARM_BUILDING];
-  if (!state.careerChoice?.confirmed) return list;
-  return [...list, ...state.careerChoice.farmBuildings];
+  if (!state.careerChoice?.confirmed) return [];
+  return [FREE_FARM_BUILDING, ...state.careerChoice.farmBuildings];
 }
 
 export function getVisibleHarvestViews(state) {

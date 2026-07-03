@@ -33,6 +33,11 @@ export class AudioManager {
       craft: [{ freq: 440, dur: 0.1, type: 'triangle' }, { freq: 554, dur: 0.15, type: 'triangle', delay: 0.07 }],
       prestige: [{ freq: 392, dur: 0.2, type: 'sine' }, { freq: 494, dur: 0.2, type: 'sine', delay: 0.15 }, { freq: 587, dur: 0.3, type: 'sine', delay: 0.3 }],
       click: [{ freq: 400, dur: 0.05, type: 'sine' }],
+      ready: [
+        { freq: 587, dur: 0.1, type: 'sine' },
+        { freq: 740, dur: 0.12, type: 'sine', delay: 0.1 },
+        { freq: 880, dur: 0.18, type: 'sine', delay: 0.22 },
+      ],
     };
 
     const notes = profiles[type] || profiles.click;

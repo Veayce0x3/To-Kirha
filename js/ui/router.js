@@ -3,11 +3,21 @@ import { FARM_BUILDING_IDS, FARM_BUILDING_LABELS } from '../systems/farm.js';
 import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
 
 let currentView = 'character';
+let navigateGuard = null;
+
+export function setNavigateGuard(fn) {
+  navigateGuard = typeof fn === 'function' ? fn : null;
+}
+
+export function clearNavigateGuard() {
+  navigateGuard = null;
+}
 
 const categoryCollapsed = {};
 
 export const CRAFT_NAV = [
   { id: 'toolmaker', emoji: '🛠️', label: 'Outilleur', category: 'outillage' },
+  { id: 'fusion', emoji: '🔮', label: 'Fusion', category: 'fusion' },
 ];
 
 function craftViewId(jobId) {
@@ -174,6 +184,10 @@ export function isWorkshopView(viewId) {
 export function navigate(viewId) {
   if (viewId === 'workshop_cook') viewId = 'cuisine';
   if (!VIEWS[viewId]) return;
+  if (navigateGuard && !navigateGuard(viewId)) {
+    emit('navBlocked', { viewId, reason: 'career' });
+    return;
+  }
   currentView = viewId;
   emit('navigate', viewId);
 }
@@ -187,7 +201,9 @@ export function getViewTitle(viewId = currentView) {
 }
 
 export function getNavCategories(state = null) {
-  if (!state?.careerChoice?.confirmed) return NAV_CATEGORIES;
+  if (!state?.careerChoice?.confirmed) {
+    return NAV_CATEGORIES.filter((cat) => cat.id === 'personnage');
+  }
   const harvestItems = getVisibleHarvestViews(state);
   const farmItems = getVisibleFarmViews(state);
   return NAV_CATEGORIES.map((cat) => {

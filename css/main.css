@@ -436,6 +436,10 @@ body {
   background: var(--bois);
 }
 
+.toast-ready {
+  background: #8A5A10;
+}
+
 .panel-desc {
   font-size: 0.8rem;
   opacity: 0.6;

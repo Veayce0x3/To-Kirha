@@ -11,7 +11,10 @@ import {
   toggleCategory,
   SIDEBAR_FOOTER,
   VIEWS,
+  JOB_VIEW_MAP,
   isFarmView,
+  setNavigateGuard,
+  isWorkshopView,
 } from './router.js';
 import { isRecipeEquipped } from '../systems/equipment.js';
 import { initCareerChoiceModal, showCareerChoiceIfNeeded } from './careerChoiceUi.js';
@@ -46,6 +49,11 @@ export function initUI(game, audio) {
   initSakuraPetals();
   initCareerChoiceModal(game);
   showCareerChoiceIfNeeded(game);
+
+  setNavigateGuard((viewId) => {
+    if (!game.needsCareerChoice()) return true;
+    return viewId === 'character' || viewId === 'options';
+  });
 
   const els = {
     kirha: document.getElementById('kirha-amount'),
@@ -264,7 +272,7 @@ export function initUI(game, audio) {
 
   function showStartupRefreshPrompt() {
     const justRefreshed = new URL(window.location.href).searchParams.has('tokirha_refresh');
-    if (!els.startupRefreshModal || justRefreshed) return;
+    if (!els.startupRefreshModal || justRefreshed || game.needsCareerChoice()) return;
     els.startupRefreshModal.classList.add('active');
     els.startupRefreshConfirm?.addEventListener('click', () => {
       forceAppRefresh(game);
@@ -311,6 +319,10 @@ export function initUI(game, audio) {
     els.prestigeModal.classList.add('active');
   });
 
+  on('navBlocked', () => {
+    showCareerChoiceIfNeeded(game);
+  });
+
   on('navigate', () => {
     refreshView();
     refreshHeader(game.state);
@@ -318,6 +330,7 @@ export function initUI(game, audio) {
     updateNavActive();
   });
   on('stateChange', (state) => {
+    showCareerChoiceIfNeeded(game);
     refreshHeader(state);
     const view = getView();
     const jobId = VIEWS[view]?.job;
@@ -384,8 +397,29 @@ export function initUI(game, audio) {
     patchHarvestSlot(game, jobId, slotIndex);
     tickHarvestUI();
   });
-  on('regrowthComplete', ({ jobId, slotIndex }) => {
+  on('regrowthComplete', ({ resourceId, jobId, slotIndex }) => {
     patchHarvestSlot(game, jobId, slotIndex);
+    flashHarvestSlotReady(jobId, slotIndex);
+    updateNavActive();
+    if (game.isHarvesting()) tickHarvestUI();
+    audio.playSfx('ready');
+    const viewJob = VIEWS[getView()]?.job;
+    if (viewJob !== jobId) {
+      const resource = game.resources[resourceId];
+      const job = game.jobs[jobId];
+      const targetView = JOB_VIEW_MAP[jobId];
+      const label = resource?.emoji
+        ? `${resource.emoji} Prêt : ${resource.name || ''}`
+        : `Prêt à récolter : ${resource?.name || ''}`;
+      showToast(
+        els,
+        label,
+        'ready',
+        targetView
+          ? { label: `→ ${job?.name || 'Récolte'}`, onClick: () => navigate(targetView) }
+          : null
+      );
+    }
   });
   on('nicknameError', ({ reason }) => showToast(els, reason, 'sell'));
   on('nicknameChange', (r) => {
@@ -393,6 +427,8 @@ export function initUI(game, audio) {
       ? `Pseudo : ${r.name} (−${formatNumber(r.cost)} 💰)`
       : `Bienvenue, ${r.name} !`;
     showToast(els, msg, 'upgrade');
+    refreshHeader(game.state);
+    if (getView() === 'character') refreshView();
   });
   on('charLevelUp', ({ level }) => {
     els.levelFlash.classList.add('active');
@@ -411,7 +447,11 @@ export function initUI(game, audio) {
     }
   });
   on('navRefresh', () => buildNav());
-  on('careerChoiceApplied', () => buildNav());
+  on('careerChoiceApplied', () => {
+    buildNav();
+    refreshView();
+    refreshHeader(game.state);
+  });
   on('equipmentFused', (r) => { showToast(els, `Fusion : ${RARITY_LABELS[r.toRarity] || r.toRarity} !`, 'upgrade'); });
   on('combatVictory', (r) => {
     closeDungeonCombatModal();

@@ -4,7 +4,7 @@ import { mountCraftWorkshop } from './craftView.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
 import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped } from '../systems/equipment.js';
 import { formatOfflineDuration } from '../systems/offline.js';
-import { navigate, getView, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getHarvestViewForJob, getFarmViewForBuilding, isFarmView, HARVEST_JOB_VIEWS, FARM_BUILDING_VIEWS } from './router.js';
+import { navigate, getView, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getHarvestViewForJob, getFarmViewForBuilding, isFarmView, HARVEST_JOB_VIEWS, FARM_BUILDING_VIEWS, isWorkshopView } from './router.js';
 import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '../systems/harvest.js';
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
@@ -20,9 +20,15 @@ import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../system
 import { getDungeonKeyId } from '../systems/dungeonKeys.js';
 import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
 import { getTestHdvBanner, isTestHdvEnabled } from '../systems/testHdv.js';
+import { showCareerChoiceIfNeeded } from './careerChoiceUi.js';
 
 let workshopTab = 'toolmaker';
 let charTab = 'bag';
+const CHAR_TABS = new Set(['bag', 'gear', 'tools', 'team']);
+
+function normalizeCharTab(tab) {
+  return CHAR_TABS.has(tab) ? tab : 'bag';
+}
 let auctionCategory = '';
 let auctionGroup = 'services';
 let auctionRootEl = null;
@@ -373,102 +379,88 @@ function renderCompanionEquipPicker(game, companionId, slotFilter, container, co
   container.appendChild(wrap);
 }
 
+function renderCharStatPills(stats) {
+  return `
+    <div class="char-stat-pills" aria-label="Statistiques">
+      <span class="char-stat-pill">❤️ ${stats.hp}</span>
+      <span class="char-stat-pill">⚔️ ${stats.atk}</span>
+      <span class="char-stat-pill">🛡️ ${stats.def}</span>
+    </div>
+  `;
+}
+
 function renderCharacter(game, el) {
+  charTab = normalizeCharTab(charTab);
   const s = game.state;
   const zone = game.getCurrentZone();
   const p = s.prestige || {};
   const charProg = game.getCharacterProgress();
-  const charPct = (charProg.xp / charProg.needed) * 100;
+  const charPct = Math.min(100, (charProg.xp / charProg.needed) * 100);
   const displayName = game.getCharacterDisplayName();
   const nickInfo = game.getNicknameRenameInfo();
   const maxLen = game.characterConfig.nicknameMaxLength || 20;
   const statsBreakdown = game.getCharacterStatsBreakdown();
+  const careerPending = game.needsCareerChoice();
 
   let nicknameHtml = '';
-  if (!nickInfo.hasNickname) {
+  if (careerPending) {
+    nicknameHtml = '<p class="char-career-hint">Complète la fenêtre « Choisis ta voie » pour commencer à jouer.</p>';
+  } else if (!nickInfo.hasNickname) {
     nicknameHtml = `
-      <div class="nickname-form">
-        <label class="nickname-label" for="nickname-input">Choisis ton pseudo</label>
+      <div class="nickname-form char-nickname-form">
+        <label class="nickname-label" for="nickname-input">Pseudo</label>
         <div class="nickname-row">
-          <input id="nickname-input" class="nickname-input" type="text" maxlength="${maxLen}" placeholder="Ex. Kira le Bûcheron" />
+          <input id="nickname-input" class="nickname-input" type="text" maxlength="${maxLen}" placeholder="Ex. Kira" />
           <button type="button" class="btn btn-small btn-craft" id="nickname-set">Valider</button>
         </div>
-        <p class="nickname-hint">Gratuit une seule fois — ensuite renommage payant (1× / mois).</p>
       </div>
     `;
-  } else {
+  } else if (nickInfo.canRename) {
     nicknameHtml = `
-      <p class="nickname-hint">
-        ${nickInfo.canRename
-          ? `Renommage : ${formatNumber(nickInfo.cost)} 💰 (1× par mois)`
-          : `Renommage dans ${nickInfo.daysUntilRename} jour(s) · ${formatNumber(nickInfo.cost)} 💰`}
-      </p>
-      ${nickInfo.canRename ? `
-        <details class="nickname-rename-details">
-          <summary class="nickname-rename-summary">Renommer mon personnage</summary>
-          <div class="nickname-row">
-            <input id="nickname-rename-input" class="nickname-input" type="text" maxlength="${maxLen}" placeholder="Nouveau pseudo" />
-            <button type="button" class="btn btn-small btn-muted" id="nickname-rename">
-              ${formatNumber(nickInfo.cost)} 💰
-            </button>
-          </div>
-        </details>
-      ` : ''}
+      <details class="nickname-rename-details">
+        <summary>Renommer (${formatNumber(nickInfo.cost)} 💰)</summary>
+        <div class="nickname-row">
+          <input id="nickname-rename-input" class="nickname-input" type="text" maxlength="${maxLen}" placeholder="Nouveau pseudo" />
+          <button type="button" class="btn btn-small btn-muted" id="nickname-rename">${formatNumber(nickInfo.cost)} 💰</button>
+        </div>
+      </details>
     `;
   }
 
-  const statsDetail = statsBreakdown.sets.length
-    ? `<div class="stat-row stat-sets">${statsBreakdown.sets.map((setInfo) => {
-      const label = SET_LABELS[setInfo.setId] || setInfo.setId;
-      return `✨ Set ${label} (${setInfo.count})`;
-    }).join(' · ')}</div>`
-    : '';
-  const statsCompareHtml = renderCharStatsComparison(statsBreakdown);
-
   el.innerHTML = `
-    <div class="panel-inner prestige-teaser" id="char-prestige-teaser"></div>
-    <div class="char-dofus-hero panel-inner">
-      <div class="char-dofus-top">
-        <div class="char-dofus-identity">
-          <h3 class="char-display-name">${displayName}</h3>
-          ${nicknameHtml}
-          <p class="view-desc">Saison ${s.season || 1} · ${zone?.emoji || ''} ${zone?.name || ''}</p>
-          <div class="skill-header-meta">Personnage Nv.${charProg.level}${charProg.seasonCap ? ` / ${charProg.seasonCap}` : ''}</div>
-          <div class="xp-bar-container"><div class="xp-bar" style="width:${charPct}%"></div></div>
-          <p class="xp-text">${charProg.atSeasonCap ? `Plafond Saison ${s.season || 1} — passe à la suivante` : `${charProg.xp} / ${charProg.needed} XP`}</p>
-          ${renderDQStatsBlock(statsBreakdown, charProg, { compact: true })}
-          ${statsCompareHtml}
-          <details class="char-stats-details">
-            <summary>Détail des stats</summary>
-            <p class="dq-stats-detail">Base Nv.${charProg.level} : ${statsBreakdown.base.hp} / ${statsBreakdown.base.atk} / ${statsBreakdown.base.def} · Équip. : +${statsBreakdown.equipment.hp} / +${statsBreakdown.equipment.atk} / +${statsBreakdown.equipment.def}</p>
-            ${statsDetail}
-          </details>
-          <div class="stat-row">Bonus saison : +${Math.round((p.kirhaBonus || 0) * 100)}% 💰 · +${Math.round((p.xpBonus || 0) * 100)}% XP</div>
-          <button class="btn btn-muted btn-small" id="goto-combat" type="button">⚔️ Zones de combat</button>
+    <div class="char-page">
+      <div class="prestige-teaser" id="char-prestige-teaser"></div>
+      <section class="char-hero panel-inner">
+        <div class="char-hero-layout">
+          <div class="char-hero-main">
+            <h2 class="char-display-name">${displayName}</h2>
+            ${nicknameHtml}
+            <p class="char-hero-sub">Saison ${s.season || 1} · ${zone?.emoji || ''} ${zone?.name || ''} · Nv.${charProg.level}${charProg.seasonCap ? ` / ${charProg.seasonCap}` : ''}</p>
+            <div class="char-xp-row">
+              <div class="xp-bar-container"><div class="xp-bar" style="width:${charPct}%"></div></div>
+              <span class="xp-text">${charProg.atSeasonCap ? `Plafond Saison ${s.season || 1}` : `${charProg.xp} / ${charProg.needed} XP`}</span>
+            </div>
+            ${renderCharStatPills(statsBreakdown.total)}
+            <p class="char-bonus-line">Bonus saison : +${Math.round((p.kirhaBonus || 0) * 100)}% 💰 · +${Math.round((p.xpBonus || 0) * 100)}% XP</p>
+            <button class="btn btn-muted btn-small char-combat-link" id="goto-combat" type="button">⚔️ Zones de combat</button>
+          </div>
+          <div class="char-equip-wrap">
+            <p class="char-section-label">Équipement</p>
+            <div class="char-dofus-equip-grid" id="char-dofus-equip"></div>
+          </div>
         </div>
-        <div class="char-dofus-equip-wrap">
-          <div class="char-dofus-equip-grid" id="char-dofus-equip"></div>
-        </div>
-      </div>
-      <details class="char-owned-details"${game.getOwnedCombatItems().length ? ' open' : ''}>
-        <summary>Pièces de combat en réserve</summary>
-        <div id="combat-owned-reserve" class="equip-actions"></div>
-      </details>
+      </section>
+      <nav class="char-tabs" role="tablist" aria-label="Sections personnage">
+        <button type="button" class="char-tab-btn${charTab === 'bag' ? ' active' : ''}" data-tab="bag" role="tab">Sac</button>
+        <button type="button" class="char-tab-btn${charTab === 'gear' ? ' active' : ''}" data-tab="gear" role="tab">Équipement</button>
+        <button type="button" class="char-tab-btn${charTab === 'tools' ? ' active' : ''}" data-tab="tools" role="tab">Outils</button>
+        <button type="button" class="char-tab-btn${charTab === 'team' ? ' active' : ''}" data-tab="team" role="tab">Équipe</button>
+      </nav>
+      <div class="char-tab-panel panel-inner" id="char-tab-panel"></div>
     </div>
-    <div class="char-tabs" role="tablist">
-      <button type="button" class="char-tab-btn${charTab === 'bag' ? ' active' : ''}" data-tab="bag" role="tab">Sac</button>
-      <button type="button" class="char-tab-btn${charTab === 'tools' ? ' active' : ''}" data-tab="tools" role="tab">Outils</button>
-      <button type="button" class="char-tab-btn${charTab === 'fusion' ? ' active' : ''}" data-tab="fusion" role="tab">Fusion</button>
-      <button type="button" class="char-tab-btn${charTab === 'jobs' ? ' active' : ''}" data-tab="jobs" role="tab">Métiers</button>
-      <button type="button" class="char-tab-btn${charTab === 'team' ? ' active' : ''}" data-tab="team" role="tab">Équipe</button>
-      <button type="button" class="char-tab-btn${charTab === 'help' ? ' active' : ''}" data-tab="help" role="tab">Infos</button>
-    </div>
-    <div class="panel-inner char-tab-panel" id="char-tab-panel"></div>
   `;
 
   renderCharDofusEquipGrid(game, el.querySelector('#char-dofus-equip'));
-  renderCombatOwnedReserve(game, el.querySelector('#combat-owned-reserve'));
-
   renderPrestigeTeaser(game, el.querySelector('#char-prestige-teaser'));
 
   el.querySelector('#goto-combat')?.addEventListener('click', () => navigate('combat'));
@@ -487,7 +479,7 @@ function renderCharacter(game, el) {
 
   el.querySelectorAll('.char-tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      charTab = btn.dataset.tab;
+      charTab = normalizeCharTab(btn.dataset.tab);
       el.querySelectorAll('.char-tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === charTab));
       renderCharTabPanel(game, el);
     });
@@ -501,11 +493,17 @@ function renderCharTabPanel(game, el) {
   if (!panel) return;
   panel.innerHTML = '';
   if (charTab === 'bag') renderCharBagTab(game, panel);
+  else if (charTab === 'gear') renderCharGearTab(game, panel);
   else if (charTab === 'tools') renderCharToolsTab(game, panel);
-  else if (charTab === 'fusion') renderFusionPanel(game, panel);
-  else if (charTab === 'jobs') renderCharJobsTab(game, panel);
   else if (charTab === 'team') renderCharTeamTab(game, panel);
-  else if (charTab === 'help') renderCharHelpTab(panel);
+}
+
+function renderCharGearTab(game, panel) {
+  panel.innerHTML = `
+    <p class="view-desc char-gear-hint">Pièces droppées en combat — équipe-les sur les slots ci-dessus.</p>
+    <div id="combat-owned-reserve" class="char-gear-list"></div>
+  `;
+  renderCombatOwnedReserve(game, panel.querySelector('#combat-owned-reserve'));
 }
 
 function renderCharStatsComparison(statsBreakdown) {
@@ -578,14 +576,6 @@ function renderCharDofusEquipGrid(game, container) {
       btn.setAttribute('aria-label', `Retirer ${item.name}`);
       btn.addEventListener('click', () => game.doUnequipCombat(entry.id));
       cell.appendChild(btn);
-    } else if (entry.id === 'weapon') {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn btn-small btn-craft affordable char-equip-forge';
-      btn.textContent = '🔨';
-      btn.title = 'Ouvrir l\'atelier';
-      btn.addEventListener('click', () => navigate('workshop'));
-      cell.appendChild(btn);
     }
     container.appendChild(cell);
   }
@@ -613,7 +603,12 @@ function renderFusionPanel(game, container) {
         emit('farmBlocked', { message: result.reason || 'Fusion impossible' });
         return;
       }
-      renderCharacter(game, document.getElementById('view-container'));
+      const viewEl = document.getElementById('view-container');
+      if (viewEl && (getView() === 'workshop' || isWorkshopView(getView()))) {
+        renderWorkshopHub(game, viewEl);
+      } else if (viewEl && getView() === 'character') {
+        renderCharacter(game, viewEl);
+      }
     });
   });
 }
@@ -624,26 +619,33 @@ function renderCombatOwnedReserve(game, container) {
   const owned = game.getOwnedCombatItems();
   container.innerHTML = '';
   if (!owned.length) {
-    container.innerHTML = '<p class="empty-text">Aucun équipement en réserve.</p>';
+    container.innerHTML = '<p class="empty-text">Aucune pièce en réserve — farm les donjons pour en obtenir.</p>';
     return;
   }
   for (const ref of owned) {
     const item = resolveItem(s, ref, game.combatEquipment.items);
     if (!item) continue;
-    if (s.combatEquipment?.[item.slot] === ref) continue;
     const wrap = document.createElement('div');
-    wrap.className = 'combat-reserve-item';
-    wrap.innerHTML = `<span>${item.emoji} ${item.name}</span>`;
+    wrap.className = 'char-gear-row';
+    const stats = item.stats
+      ? [item.stats.hp ? `+${item.stats.hp} PV` : '', item.stats.atk ? `+${item.stats.atk} ATQ` : '', item.stats.def ? `+${item.stats.def} DEF` : ''].filter(Boolean).join(' · ')
+      : '';
+    wrap.innerHTML = `
+      <div class="char-gear-row-main">
+        <span class="char-gear-emoji">${item.emoji || '⚔️'}</span>
+        <div>
+          <strong>${item.name}</strong>
+          ${stats ? `<span class="char-gear-stats">${stats}</span>` : ''}
+        </div>
+      </div>
+    `;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'btn btn-small';
+    btn.className = 'btn btn-small btn-craft';
     btn.textContent = 'Équiper';
     btn.addEventListener('click', () => game.doEquipCombat(ref));
     wrap.appendChild(btn);
     container.appendChild(wrap);
-  }
-  if (!container.children.length) {
-    container.innerHTML = '<p class="empty-text">Tout ton équipement est porté.</p>';
   }
 }
 
@@ -661,7 +663,7 @@ function renderCharBagTab(game, panel) {
       <span class="bank-total" id="char-bag-total"></span>
     </div>
     <div class="inventory-grid" id="char-bag-grid"></div>
-    <p class="view-desc bag-hint">Ressources et équipements de combat — les repas affichent <strong>Se soigner</strong> quand il manque des PV. Les pièces droppées apparaissent ici avec un bouton <strong>Équiper</strong>.</p>
+    <p class="view-desc bag-hint">Repas : bouton <strong>Se soigner</strong> si PV bas. Équipement droppé : bouton <strong>Équiper</strong>.</p>
   `;
   panel.querySelectorAll('.bag-filter-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -700,10 +702,8 @@ export function refreshCharacterCombatPanels(game) {
   const el = document.getElementById('view-container');
   if (!el || getView() !== 'character') return;
   renderCharDofusEquipGrid(game, el.querySelector('#char-dofus-equip'));
-  renderCombatOwnedReserve(game, el.querySelector('#combat-owned-reserve'));
-  const ownedDetails = el.querySelector('.char-owned-details');
-  if (ownedDetails) ownedDetails.open = game.getOwnedCombatItems().length > 0;
   const panel = el.querySelector('#char-tab-panel');
+  if (panel && charTab === 'gear') renderCharGearTab(game, panel);
   if (panel && charTab === 'bag') renderCharBagTab(game, panel);
 }
 
@@ -750,9 +750,8 @@ function appendOwnedCombatItemsToGrid(game, container, filter) {
 
 function renderCharToolsTab(game, panel) {
   panel.innerHTML = `
-    <h3 class="char-subsection-title">🛠️ Outils de métier</h3>
-    <p class="view-desc char-tools-desc">Équipe ou retire tes outils de récolte.</p>
-    <div id="char-gather-equip"></div>
+    <p class="view-desc char-tools-desc">Outils de récolte équipés ou en réserve.</p>
+    <div id="char-gather-equip" class="char-tools-list"></div>
   `;
   const gatherEl = panel.querySelector('#char-gather-equip');
   const tools = getOwnedGatheringEquipment(game.state, game.equipment, game.recipes, game.jobs);
@@ -1344,21 +1343,22 @@ function createHarvestSlotCard(game, jobId, slotIndex) {
   const selected = selectedId ? game.resources[selectedId] : null;
   const display = getSlotVisualDisplay(selected, slot, progress);
 
-  const card = document.createElement('div');
-  card.className = `harvest-slot state-${display.visualState}${active ? ' active-harvest' : ''}`;
-  card.dataset.job = jobId;
-  card.dataset.slot = String(slotIndex);
-  card.dataset.visualState = display.visualState;
-
   const phase = slot?.active?.phase;
-  const btnLabel = getHarvestBtnLabel(phase, progress);
   const toolBlock = !active && selectedId
     ? game.getHarvestToolBlockReason(jobId, selectedId)
     : null;
+  const canHarvest = !active && selectedId && !toolBlock;
+  const btnLabel = canHarvest ? 'Récolter !' : getHarvestBtnLabel(phase, progress);
   const harvestHint = !active && selectedId
     ? (game.getHarvestSlotHint?.(jobId, selectedId) || toolBlock)
     : null;
   const harvestXp = selected && !active ? getHarvestXp(selected, game.state, game.balance) : 0;
+
+  const card = document.createElement('div');
+  card.className = `harvest-slot state-${display.visualState}${active ? ' active-harvest' : ''}${canHarvest ? ' slot-can-harvest' : ''}`;
+  card.dataset.job = jobId;
+  card.dataset.slot = String(slotIndex);
+  card.dataset.visualState = display.visualState;
 
   const spriteHtml = display.sprite
     ? `<img class="slot-visual-sprite" src="${display.sprite}" alt="" />`
@@ -1366,6 +1366,7 @@ function createHarvestSlotCard(game, jobId, slotIndex) {
 
   card.innerHTML = `
     <div class="slot-visual" data-state="${display.visualState}">
+      ${canHarvest ? '<span class="slot-ready-badge">Prêt</span>' : ''}
       ${spriteHtml}
     </div>
     <div class="slot-footer">
@@ -1421,6 +1422,20 @@ export function patchHarvestSlot(game, jobId, slotIndex) {
     slotIndex,
     `.harvest-slot[data-job="${jobId}"][data-slot="${slotIndex}"]`
   );
+}
+
+/** Animation ponctuelle quand un slot redevient récoltable après repousse. */
+export function flashHarvestSlotReady(jobId, slotIndex) {
+  requestAnimationFrame(() => {
+    const card = document.querySelector(
+      `.harvest-slot[data-job="${jobId}"][data-slot="${slotIndex}"]`
+    );
+    if (!card) return;
+    card.classList.add('slot-just-ready');
+    const done = () => card.classList.remove('slot-just-ready');
+    card.addEventListener('animationend', done, { once: true });
+    setTimeout(done, 2800);
+  });
 }
 
 export function updateHarvestSlotProgresses(game) {
@@ -2113,7 +2128,7 @@ function renderWorkshopHub(game, el) {
   el.innerHTML = `
     <div class="view-header">
       <h2>${iconHtml(getNavIcon('workshop'), 'view-header-icon', 'Atelier')} Atelier</h2>
-      <p class="view-desc">Fabrique et répare tes outils de récolte et de ferme</p>
+      <p class="view-desc">Fabrique tes outils, répare-les ou fusionne ton équipement de combat.</p>
     </div>
     <div class="workshop-tabs" id="workshop-tabs" role="tablist"></div>
     <div id="workshop-content"></div>
@@ -2135,7 +2150,16 @@ function renderWorkshopHub(game, el) {
     tabsEl.appendChild(btn);
   }
 
-  mountCraftWorkshop(game, el.querySelector('#workshop-content'), workshopTab);
+  mountWorkshopContent(game, el.querySelector('#workshop-content'));
+}
+
+function mountWorkshopContent(game, container) {
+  if (!container) return;
+  if (workshopTab === 'fusion') {
+    renderFusionPanel(game, container);
+    return;
+  }
+  mountCraftWorkshop(game, container, workshopTab);
 }
 
 function renderCuisine(game, el) {
@@ -2834,6 +2858,8 @@ export function renderOptions(game, el) {
       hint('Réinitialisation…');
     }
     game.resetSave();
+    showCareerChoiceIfNeeded(game);
+    emit('navRefresh');
   });
 }
 
