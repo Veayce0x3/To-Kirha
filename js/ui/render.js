@@ -33,6 +33,7 @@ import {
   syncStaleFarmSlots,
   refreshCharToolsIfVisible,
   patchHarvestSlot,
+  closeCharEquipPickerSheet,
   closeAllResourcePickers,
   isResourcePickerOpen,
   refreshJobViewLight,
@@ -231,6 +232,7 @@ export function initUI(game, audio) {
 
   function refreshView() {
     closeAllResourcePickers();
+    closeCharEquipPickerSheet();
     const view = getView();
     renderView(game, els.viewContainer, view);
     renderJobSwitcherDock(game, els.jobSwitcherDock, view);

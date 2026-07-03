@@ -2317,8 +2317,14 @@ body.hdv-sheet-open {
   overflow: hidden;
 }
 
+body.char-equip-sheet-open {
+  overflow: hidden;
+}
+
 body.hdv-sheet-open .tutorial-overlay,
-body.hdv-sheet-open .tutorial-spotlight-hole {
+body.hdv-sheet-open .tutorial-spotlight-hole,
+body.char-equip-sheet-open .tutorial-overlay,
+body.char-equip-sheet-open .tutorial-spotlight-hole {
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
@@ -2418,6 +2424,106 @@ body.hdv-sheet-open .tutorial-spotlight-hole {
 .hdv-sheet-option-price {
   font-size: 0.85rem;
   color: var(--violet-sakura);
+}
+
+.char-equip-picker-unequip {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 0.15rem;
+}
+
+.char-equip-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.char-equip-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(232, 180, 203, 0.45);
+  background: rgba(255, 253, 249, 0.95);
+  color: var(--brun);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.char-equip-picker-row:disabled,
+.char-equip-picker-row.equipped {
+  cursor: default;
+  border-color: var(--violet-sakura);
+  background: rgba(155, 89, 182, 0.08);
+}
+
+.char-equip-picker-row:not(:disabled):active {
+  background: rgba(45, 90, 39, 0.1);
+  border-color: var(--vert-clair);
+}
+
+.char-equip-picker-row-main {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.char-equip-picker-emoji {
+  font-size: 1.45rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.char-equip-picker-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.char-equip-picker-name {
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.char-equip-picker-meta {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--brun-doux);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.char-equip-picker-action {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--vert-foret);
+}
+
+.char-equip-picker-row.equipped .char-equip-picker-action {
+  color: var(--violet-sakura);
+}
+
+.char-equip-picker-empty {
+  margin: 0;
+  padding: 1.25rem 0.75rem;
+  text-align: center;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--brun-doux);
 }
 
 @media (min-width: 768px) {
@@ -6834,6 +6940,13 @@ body.has-job-switcher .footer {
   cursor: pointer;
   border: none;
   background: transparent;
+  border-radius: 10px;
+}
+
+.char-equip-slot-btn:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--vert-clair);
+  outline-offset: -2px;
 }
 
 .char-equip-forge {

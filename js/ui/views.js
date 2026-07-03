@@ -1,4 +1,4 @@
-import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy } from '../systems/combat.js';
+import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats } from '../systems/combat.js';
 import { getCraftSellBonus, getRecipeRequiredLevel } from '../systems/crafting.js';
 import { mountCraftWorkshop } from './craftView.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
@@ -15,7 +15,7 @@ import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
 import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consumables.js';
-import { RARITY_LABELS, RARITY_EMOJI } from '../systems/equipmentRarity.js';
+import { RARITY_LABELS, RARITY_EMOJI, getInstanceRarity } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId } from '../systems/dungeonKeys.js';
 import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
@@ -538,6 +538,138 @@ const DOFUS_SLOT_LAYOUT = [
   { id: 'ring_right', area: 'ringr' },
 ];
 
+function formatCombatItemStatsLine(stats) {
+  if (!stats) return '';
+  return [
+    stats.hp ? `+${stats.hp} PV` : '',
+    stats.atk ? `+${stats.atk} ATQ` : '',
+    stats.def ? `+${stats.def} DEF` : '',
+  ].filter(Boolean).join(' · ');
+}
+
+function getHeroCombatItemsForSlot(game, slotId) {
+  const s = game.state;
+  const equippedRef = s.combatEquipment?.[slotId] || null;
+  const items = [];
+  for (const ref of s.ownedCombatItems || []) {
+    const item = resolveItem(s, ref, game.combatEquipment.items);
+    if (!item || item.slot !== slotId || item.companionOnly) continue;
+    const owner = findCombatItemOwner(s, ref);
+    if (owner && owner !== 'hero') continue;
+    if (ref !== equippedRef && !canEquipCombatItem(s, ref, game.combatEquipment.items)) continue;
+    items.push({ ref, item, equipped: ref === equippedRef });
+  }
+  items.sort((a, b) => {
+    if (a.equipped !== b.equipped) return a.equipped ? -1 : 1;
+    return a.item.name.localeCompare(b.item.name, 'fr');
+  });
+  return items;
+}
+
+function closeCharEquipPicker() {
+  document.getElementById('char-equip-sheet-backdrop')?.classList.remove('active');
+  document.getElementById('char-equip-sheet')?.classList.remove('active');
+  document.body.classList.remove('char-equip-sheet-open');
+  document.getElementById('char-equip-sheet')?.replaceChildren();
+}
+
+function ensureCharEquipPickerNodes() {
+  if (!document.getElementById('char-equip-sheet-backdrop')) {
+    const backdrop = document.createElement('div');
+    backdrop.id = 'char-equip-sheet-backdrop';
+    backdrop.className = 'hdv-sheet-backdrop char-equip-sheet-backdrop';
+    backdrop.addEventListener('click', closeCharEquipPicker);
+    document.body.appendChild(backdrop);
+  }
+  if (!document.getElementById('char-equip-sheet')) {
+    const sheet = document.createElement('div');
+    sheet.id = 'char-equip-sheet';
+    sheet.className = 'hdv-sheet char-equip-sheet';
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-modal', 'true');
+    document.body.appendChild(sheet);
+  }
+}
+
+function openCharEquipPicker(game, slotId) {
+  ensureCharEquipPickerNodes();
+  const sheet = document.getElementById('char-equip-sheet');
+  const backdrop = document.getElementById('char-equip-sheet-backdrop');
+  const slotDef = game.combatEquipment.slots[slotId];
+  if (!sheet || !backdrop || !slotDef) return;
+
+  const s = game.state;
+  const equippedRef = s.combatEquipment?.[slotId] || null;
+  const candidates = getHeroCombatItemsForSlot(game, slotId);
+  const reserveCount = candidates.filter((entry) => !entry.equipped).length;
+
+  const renderRows = () => candidates.map(({ ref, item, equipped }) => {
+    const inst = s.combatItemInstances?.find((i) => i.instanceId === ref);
+    const rarity = getInstanceRarity(inst);
+    const stats = getInstanceEffectiveStats(s, ref, game.combatEquipment.items);
+    const statsLine = formatCombatItemStatsLine(stats);
+    return `
+      <button type="button" class="char-equip-picker-row${equipped ? ' equipped' : ''}" data-ref="${ref}" ${equipped ? 'disabled' : ''}>
+        <span class="char-equip-picker-row-main">
+          <span class="char-equip-picker-emoji">${item.emoji || '⚔️'}</span>
+          <span class="char-equip-picker-info">
+            <strong class="char-equip-picker-name">${item.name}</strong>
+            <span class="char-equip-picker-meta">${RARITY_EMOJI[rarity] || ''} ${RARITY_LABELS[rarity] || ''}${statsLine ? ` · ${statsLine}` : ''}</span>
+          </span>
+        </span>
+        <span class="char-equip-picker-action">${equipped ? 'Équipé' : 'Équiper'}</span>
+      </button>
+    `;
+  }).join('');
+
+  sheet.innerHTML = `
+    <div class="hdv-sheet-header">
+      <div>
+        <p class="hdv-sheet-kicker">Emplacement</p>
+        <h3 class="hdv-sheet-title">${slotDef.emoji || ''} ${slotDef.name}</h3>
+        <p class="hdv-sheet-meta">${reserveCount ? `${reserveCount} pièce${reserveCount > 1 ? 's' : ''} en réserve` : 'Aucune pièce en réserve'}</p>
+      </div>
+      <button type="button" class="hdv-sheet-close char-equip-sheet-close" aria-label="Fermer">✕</button>
+    </div>
+    ${equippedRef ? `
+      <button type="button" class="btn btn-muted btn-small char-equip-picker-unequip" id="char-equip-unequip">
+        Retirer l'équipement actuel
+      </button>
+    ` : ''}
+    <div class="char-equip-picker-list">
+      ${candidates.length
+    ? renderRows()
+    : '<p class="char-equip-picker-empty">Aucune pièce pour cet emplacement.<br>Farm les donjons pour en obtenir.</p>'}
+    </div>
+  `;
+
+  sheet.querySelector('.char-equip-sheet-close')?.addEventListener('click', closeCharEquipPicker);
+  sheet.querySelector('#char-equip-unequip')?.addEventListener('click', () => {
+    game.doUnequipCombat(slotId);
+    refreshCharacterCombatPanels(game);
+    openCharEquipPicker(game, slotId);
+  });
+  sheet.querySelectorAll('.char-equip-picker-row:not([disabled])').forEach((row) => {
+    row.addEventListener('click', () => {
+      const ref = row.dataset.ref;
+      if (!ref || !game.doEquipCombat(ref)) {
+        emit('farmBlocked', { message: 'Équipement impossible.' });
+        return;
+      }
+      closeCharEquipPicker();
+      refreshCharacterCombatPanels(game);
+    });
+  });
+
+  backdrop.classList.add('active');
+  sheet.classList.add('active');
+  document.body.classList.add('char-equip-sheet-open');
+}
+
+export function closeCharEquipPickerSheet() {
+  closeCharEquipPicker();
+}
+
 function renderCharDofusEquipGrid(game, container) {
   if (!container) return;
   const s = game.state;
@@ -570,13 +702,13 @@ function renderCharDofusEquipGrid(game, container) {
     `;
     if (item) {
       cell.title = `${item.name} · +${item.stats?.hp || 0} HP · +${item.stats?.atk || 0} ATQ · +${item.stats?.def || 0} DEF`;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'char-equip-slot-btn';
-      btn.setAttribute('aria-label', `Retirer ${item.name}`);
-      btn.addEventListener('click', () => game.doUnequipCombat(entry.id));
-      cell.appendChild(btn);
     }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'char-equip-slot-btn';
+    btn.setAttribute('aria-label', item ? `Changer ${slot.name}` : `Équiper ${slot.name}`);
+    btn.addEventListener('click', () => openCharEquipPicker(game, entry.id));
+    cell.appendChild(btn);
     container.appendChild(cell);
   }
 }
