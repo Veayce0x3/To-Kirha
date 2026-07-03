@@ -38,6 +38,8 @@ import {
   openDungeonCombatModal,
   refreshDungeonCombatModal,
   closeDungeonCombatModal,
+  refreshAuctionHouseLight,
+  refreshCharacterCombatPanels,
 } from './views.js';
 
 export function initUI(game, audio) {
@@ -341,6 +343,12 @@ export function initUI(game, audio) {
       if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
       return;
     }
+    if (partial?.kind === 'auction') {
+      refreshAuctionHouseLight(game);
+      refreshHeader(state);
+      updateNavActive();
+      return;
+    }
     refreshView();
     if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
   });
@@ -408,9 +416,11 @@ export function initUI(game, audio) {
   on('combatVictory', (r) => {
     closeDungeonCombatModal();
     showDungeonResult(game, r);
+    refreshCharacterCombatPanels(game);
     const equipCount = (r.equipmentDrops || []).length;
     const keyNote = r.keyDropped ? ' · 🗝️ Clé !' : '';
-    const msg = r.isDungeon ? `Donjon terminé ! +${r.charXp} XP${equipCount ? ` · ${equipCount} équip.` : ''}` : `Victoire ! +${r.charXp} XP${keyNote}`;
+    const equipNote = equipCount ? ` · ${equipCount} équip.` : '';
+    const msg = r.isDungeon ? `Donjon terminé ! +${r.charXp} XP${equipNote}` : `Victoire ! +${r.charXp} XP${keyNote}${equipNote}`;
     showToast(els, msg, 'prestige');
     audio.playSfx('levelup');
   });

@@ -189,6 +189,10 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, c
     keyDropped = true;
   }
 
+  const equipDrop = combatItems
+    ? rollEquipmentDrop(zoneId, isBoss, state, combatItems, balance, combatZone)
+    : null;
+
   if (combatItems) wearAfterCombat(state, combatItems);
 
   if (run?.isSoloFight && !run?.isDungeonRun && run.party) {
@@ -203,6 +207,7 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, c
     charXp,
     levelResult,
     drops: {},
+    equipmentDrops: equipDrop ? [equipDrop] : [],
     keyDropped,
     isBoss,
     zoneId,

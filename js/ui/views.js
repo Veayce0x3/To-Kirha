@@ -24,6 +24,8 @@ import { getTestHdvBanner, isTestHdvEnabled } from '../systems/testHdv.js';
 let workshopTab = 'toolmaker';
 let charTab = 'bag';
 let auctionCategory = '';
+let auctionGroup = 'services';
+let auctionRootEl = null;
 let combatUi = { step: 'action', menu: 'main', pendingSkill: null, targetMode: null };
 
 export function resetCombatUi() {
@@ -114,9 +116,7 @@ function renderPrestigeTeaser(game, container) {
 }
 
 function splitSkillsByDqMenu(skills) {
-  const attacks = skills.filter((s) => s.damage);
-  const spells = skills.filter((s) => !s.damage && (s.heal || s.effect));
-  return { attacks, spells };
+  return { attacks: skills, spells: [] };
 }
 
 function pickCombatSkill(game, body, skillId, skills, livingEnemies) {
@@ -450,7 +450,7 @@ function renderCharacter(game, el) {
           <div class="char-dofus-equip-grid" id="char-dofus-equip"></div>
         </div>
       </div>
-      <details class="char-owned-details">
+      <details class="char-owned-details"${game.getOwnedCombatItems().length ? ' open' : ''}>
         <summary>Pièces de combat en réserve</summary>
         <div id="combat-owned-reserve" class="equip-actions"></div>
       </details>
@@ -661,7 +661,7 @@ function renderCharBagTab(game, panel) {
       <span class="bank-total" id="char-bag-total"></span>
     </div>
     <div class="inventory-grid" id="char-bag-grid"></div>
-    <p class="view-desc bag-hint">Même contenu que la Banque — les repas affichent un bouton <strong>Se soigner</strong> quand il manque des PV.</p>
+    <p class="view-desc bag-hint">Ressources et équipements de combat — les repas affichent <strong>Se soigner</strong> quand il manque des PV. Les pièces droppées apparaissent ici avec un bouton <strong>Équiper</strong>.</p>
   `;
   panel.querySelectorAll('.bag-filter-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -696,11 +696,56 @@ function getInventoryMealInfo(game, resourceId) {
   return { effect, maxHp, currentHp, levelOk, inCombat, canHeal, disabledReason };
 }
 
+export function refreshCharacterCombatPanels(game) {
+  const el = document.getElementById('view-container');
+  if (!el || getView() !== 'character') return;
+  renderCharDofusEquipGrid(game, el.querySelector('#char-dofus-equip'));
+  renderCombatOwnedReserve(game, el.querySelector('#combat-owned-reserve'));
+  const ownedDetails = el.querySelector('.char-owned-details');
+  if (ownedDetails) ownedDetails.open = game.getOwnedCombatItems().length > 0;
+  const panel = el.querySelector('#char-tab-panel');
+  if (panel && charTab === 'bag') renderCharBagTab(game, panel);
+}
+
 function refreshInventoryPanels(game) {
   const panel = document.querySelector('#char-tab-panel');
   const bankEl = document.getElementById('view-container');
   if (panel) renderCharBagTab(game, panel);
   else if (bankEl && getView() === 'inventory') renderInventory(game, bankEl);
+  refreshCharacterCombatPanels(game);
+}
+
+function appendOwnedCombatItemsToGrid(game, container, filter) {
+  if (!container || (filter !== 'all' && filter !== 'combat')) return 0;
+  let count = 0;
+  const s = game.state;
+  for (const ref of game.getOwnedCombatItems()) {
+    const item = resolveItem(s, ref, game.combatEquipment.items);
+    if (!item) continue;
+    count += 1;
+    const cell = document.createElement('div');
+    cell.className = 'inventory-grid-cell combat-gear';
+    cell.title = item.name;
+    cell.innerHTML = `
+      <span class="inventory-grid-emoji">${item.emoji || '⚔️'}</span>
+      <span class="inventory-grid-combat-name">${item.name}</span>
+    `;
+    const equipBtn = document.createElement('button');
+    equipBtn.type = 'button';
+    equipBtn.className = 'inventory-meal-heal-btn affordable';
+    equipBtn.textContent = 'Équiper';
+    equipBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!game.doEquipCombat(ref)) {
+        emit('farmBlocked', { message: 'Équipement impossible.' });
+        return;
+      }
+      refreshInventoryPanels(game);
+    });
+    cell.appendChild(equipBtn);
+    container.appendChild(cell);
+  }
+  return count;
 }
 
 function renderCharToolsTab(game, panel) {
@@ -1959,6 +2004,7 @@ export function refreshFarmViewLight(game, buildingId) {
 }
 
 export function shouldPartialRefreshOnStateChange(view, game) {
+  if (view === 'auction_house') return { kind: 'auction' };
   const jobId = VIEWS[view]?.job;
   const buildingId = VIEWS[view]?.building;
   if (jobId && (game.isJobHarvesting(jobId) || game.isHarvesting())) return { kind: 'job', jobId };
@@ -2104,15 +2150,28 @@ function renderCuisine(game, el) {
   mountCraftWorkshop(game, el.querySelector('#cuisine-content'), 'cook');
 }
 
-/* ── Hôtel des Ventes ── */
+/* ── Hôtel des Ventes (mobile-first) ── */
+const AUCTION_GROUP_LABELS = {
+  services: 'Services',
+  gathering: 'Récolte',
+  farm: 'Ferme',
+};
+
+function getVendorGroupId(vendorId, vendor) {
+  if (vendor?.testHdv && vendorId.includes('_job_')) return 'gathering';
+  if (vendor?.testHdv && vendorId.includes('_farm_')) return 'farm';
+  return 'services';
+}
+
 function getAuctionVendorGroups(vendorEntries) {
   const services = [];
   const gathering = [];
   const farm = [];
   for (const entry of vendorEntries) {
     const [vendorId, vendor] = entry;
-    if (vendor.testHdv && vendorId.includes('_job_')) gathering.push(entry);
-    else if (vendor.testHdv && vendorId.includes('_farm_')) farm.push(entry);
+    const groupId = getVendorGroupId(vendorId, vendor);
+    if (groupId === 'gathering') gathering.push(entry);
+    else if (groupId === 'farm') farm.push(entry);
     else services.push(entry);
   }
   const sortByName = (a, b) => (a[1].name || '').localeCompare(b[1].name || '', 'fr');
@@ -2120,80 +2179,22 @@ function getAuctionVendorGroups(vendorEntries) {
   farm.sort(sortByName);
   services.sort(sortByName);
   return [
-    { id: 'services', label: 'Services', entries: services },
-    { id: 'gathering', label: 'Récolte', entries: gathering },
-    { id: 'farm', label: 'Ferme', entries: farm },
+    { id: 'services', label: AUCTION_GROUP_LABELS.services, entries: services },
+    { id: 'gathering', label: AUCTION_GROUP_LABELS.gathering, entries: gathering },
+    { id: 'farm', label: AUCTION_GROUP_LABELS.farm, entries: farm },
   ].filter((group) => group.entries.length > 0);
 }
 
-function pickDefaultAuctionCategory(vendorEntries) {
+function pickDefaultAuctionCategory(vendorEntries, groupId = auctionGroup) {
   const groups = getAuctionVendorGroups(vendorEntries);
-  return groups[0]?.entries[0]?.[0] || vendorEntries[0]?.[0] || '';
+  const group = groups.find((g) => g.id === groupId) || groups[0];
+  if (group) auctionGroup = group.id;
+  return group?.entries[0]?.[0] || vendorEntries[0]?.[0] || '';
 }
 
-export function renderAuctionHouse(game, el) {
-  const merchant = game.merchant;
-  const scrollRes = game.resources.ancient_scroll;
-  const owned = game.getScrollCount();
-  const testBanner = getTestHdvBanner(game.balance);
-  const careerPending = isTestHdvEnabled(game.balance) && !game.state.careerChoice?.confirmed;
+function buildAuctionCatalog(game) {
   const vendors = game.getMerchantVendors();
-  const nuggetInfo = game.getGoldNuggetExchangeInfo?.() || null;
-  const nuggetRes = game.resources.gold_nugget;
-
-  el.innerHTML = `
-    <div class="view-header">
-      <h2>${iconHtml(getNavIcon('auction_house'), 'view-header-icon', merchant.name)} ${merchant.name}</h2>
-      <p class="view-desc">${merchant.description}</p>
-    </div>
-    ${testBanner ? `<div class="panel-inner auction-test-banner"><p class="view-desc">${testBanner}</p></div>` : ''}
-    ${careerPending ? '<div class="panel-inner"><p class="view-desc">Choisis ta voie au lancement pour débloquer les ressources des autres métiers ici.</p></div>' : ''}
-    <div class="panel-inner auction-owned">
-      <span class="auction-owned-label">Tes parchemins</span>
-      <span class="auction-owned-value">${renderResourceIcon(scrollRes, 'auction-scroll-icon')} ×${owned}</span>
-    </div>
-    ${nuggetInfo && nuggetRes ? `
-    <div class="panel-inner auction-nugget-panel">
-      <div class="auction-owned">
-        <span class="auction-owned-label">Pépites d'or</span>
-        <span class="auction-owned-value">${renderResourceIcon(nuggetRes, 'auction-scroll-icon')} ×${nuggetInfo.owned}</span>
-      </div>
-      <p class="view-desc">Échange tes pépites contre des parchemins ou des Kirha (récompenses de quêtes / futur premium).</p>
-      <div class="auction-nugget-actions">
-        <button type="button" class="btn btn-muted" id="nugget-to-scroll" ${nuggetInfo.owned < nuggetInfo.scrollCost ? 'disabled' : ''}>
-          ${nuggetInfo.scrollCost} pépites → 1 parchemin
-        </button>
-        <button type="button" class="btn btn-muted" id="nugget-to-kirha" ${nuggetInfo.owned < 1 ? 'disabled' : ''}>
-          1 pépite → ${nuggetInfo.kirhaPerNugget} 💰
-        </button>
-      </div>
-    </div>` : ''}
-    <div id="auction-vendors"></div>
-    <div class="panel-inner auction-tip">
-      <p>💡 Vends tes récoltes à la <button type="button" class="link-btn" id="goto-bank">Banque</button> pour obtenir des Kirha${testBanner ? ', puis achète ici ce que tu ne produis pas' : ', puis achète des parchemins ici'}.</p>
-    </div>
-  `;
-
-  el.querySelector('#goto-bank')?.addEventListener('click', () => navigate('inventory'));
-
-  el.querySelector('#nugget-to-scroll')?.addEventListener('click', () => {
-    const result = game.exchangeGoldNuggets('scroll', 1);
-    if (!result.ok) emit('farmBlocked', { message: result.reason || 'Échange impossible.' });
-    else renderAuctionHouse(game, el);
-  });
-  el.querySelector('#nugget-to-kirha')?.addEventListener('click', () => {
-    const result = game.exchangeGoldNuggets('kirha', 1);
-    if (!result.ok) emit('farmBlocked', { message: result.reason || 'Échange impossible.' });
-    else renderAuctionHouse(game, el);
-  });
-
-  const vendorsEl = el.querySelector('#auction-vendors');
   const vendorEntries = Object.entries(vendors);
-  if (!vendorEntries.length) {
-    vendorsEl.innerHTML = '<p class="empty-text panel-inner">Aucune offre pour le moment.</p>';
-    return;
-  }
-
   const allOffers = [];
   for (const [vendorId, vendor] of vendorEntries) {
     for (const [offerId, offer] of Object.entries(vendor.offers || {})) {
@@ -2203,134 +2204,318 @@ export function renderAuctionHouse(game, el) {
     }
   }
 
-  if (!allOffers.length) {
-    vendorsEl.innerHTML = '<p class="empty-text panel-inner">Aucune offre pour le moment.</p>';
-    return;
-  }
-
-  const validCategories = new Set(vendorEntries.map(([vendorId]) => vendorId));
-  if (!auctionCategory || !validCategories.has(auctionCategory)) {
-    auctionCategory = pickDefaultAuctionCategory(vendorEntries);
-  }
-
   const vendorGroups = getAuctionVendorGroups(vendorEntries);
+  const validCategories = new Set(vendorEntries.map(([id]) => id));
+  const groupIds = new Set(vendorGroups.map((g) => g.id));
+  if (!groupIds.has(auctionGroup)) auctionGroup = vendorGroups[0]?.id || 'services';
+  if (!auctionCategory || !validCategories.has(auctionCategory)) {
+    auctionCategory = pickDefaultAuctionCategory(vendorEntries, auctionGroup);
+  } else {
+    const categoryGroup = getVendorGroupId(auctionCategory, vendors[auctionCategory]);
+    if (categoryGroup !== auctionGroup) {
+      auctionCategory = pickDefaultAuctionCategory(vendorEntries, auctionGroup);
+    }
+  }
 
-  vendorsEl.innerHTML = `
-    <div class="auction-hdv panel-inner">
-      <aside class="auction-categories" aria-label="Catégories HDV">
-        ${vendorGroups.map((group) => `
-          <div class="auction-cat-group">
-            <div class="auction-cat-group-label">${group.label}</div>
-            ${group.entries.map(([vendorId, vendor]) => {
-              const count = Object.keys(vendor.offers || {}).length;
-              return `
-                <button type="button" class="auction-cat-btn${auctionCategory === vendorId ? ' active' : ''}${vendor.testHdv ? ' test' : ''}" data-auction-cat="${vendorId}">
-                  <span>${vendor.emoji} ${vendor.name}</span>
-                  <strong>${count}</strong>
-                </button>
-              `;
-            }).join('')}
-          </div>
-        `).join('')}
-      </aside>
-      <section class="auction-list-wrap">
-        <div class="auction-list-head">
-          <span>Objet</span>
-          <span>Prix unité</span>
-          <span>Actions</span>
-        </div>
-        <div class="auction-list" id="auction-offer-list"></div>
-      </section>
-    </div>
-  `;
-
-  vendorsEl.querySelectorAll('.auction-cat-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      auctionCategory = btn.dataset.auctionCat || pickDefaultAuctionCategory(vendorEntries);
-      renderAuctionHouse(game, el);
-    });
-  });
-
-  const listEl = vendorsEl.querySelector('#auction-offer-list');
+  const activeGroup = vendorGroups.find((g) => g.id === auctionGroup) || vendorGroups[0];
+  const activeVendor = vendors[auctionCategory];
   const visibleOffers = allOffers
-    .filter(({ vendorId }) => auctionCategory === vendorId)
+    .filter(({ vendorId }) => vendorId === auctionCategory)
     .sort((a, b) => {
-      const vendorCmp = (a.vendor.name || '').localeCompare(b.vendor.name || '', 'fr');
-      if (vendorCmp !== 0) return vendorCmp;
       const lvl = (a.resource.requiredJobLevel || 1) - (b.resource.requiredJobLevel || 1);
       if (lvl !== 0) return lvl;
       return (a.resource.name || '').localeCompare(b.resource.name || '', 'fr');
     });
 
-  let lastVendorId = null;
+  return {
+    vendors,
+    vendorEntries,
+    vendorGroups,
+    activeGroup,
+    activeVendor,
+    visibleOffers,
+  };
+}
+
+function updateAuctionWallet(game, root) {
+  root.querySelector('#hdv-wallet-kirha')?.replaceChildren(
+    document.createTextNode(formatNumber(game.state.kirha || 0))
+  );
+  root.querySelector('#hdv-wallet-scrolls')?.replaceChildren(
+    document.createTextNode(String(game.getScrollCount()))
+  );
+  const nuggetEl = root.querySelector('#hdv-wallet-nuggets');
+  if (nuggetEl) nuggetEl.textContent = String(game.getGoldNuggetCount?.() || 0);
+}
+
+function closeAuctionSheet() {
+  document.getElementById('hdv-sheet-backdrop')?.classList.remove('active');
+  document.getElementById('hdv-sheet')?.classList.remove('active');
+  document.body.classList.remove('hdv-sheet-open');
+  document.getElementById('hdv-sheet')?.replaceChildren();
+}
+
+function ensureAuctionSheetNodes() {
+  if (!document.getElementById('hdv-sheet-backdrop')) {
+    const backdrop = document.createElement('div');
+    backdrop.id = 'hdv-sheet-backdrop';
+    backdrop.className = 'hdv-sheet-backdrop';
+    backdrop.addEventListener('click', closeAuctionSheet);
+    document.body.appendChild(backdrop);
+  }
+  if (!document.getElementById('hdv-sheet')) {
+    const sheet = document.createElement('div');
+    sheet.id = 'hdv-sheet';
+    sheet.className = 'hdv-sheet';
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-modal', 'true');
+    document.body.appendChild(sheet);
+  }
+}
+
+function openAuctionTradeSheet(game, ctx) {
+  ensureAuctionSheetNodes();
+  const sheet = document.getElementById('hdv-sheet');
+  const backdrop = document.getElementById('hdv-sheet-backdrop');
+  const { mode, vendorId, offerId, resource, offer } = ctx;
+  const quantities = offer.bulkQuantities || [1];
+  const unitPrice = mode === 'sell' ? Math.floor(offer.unitPrice / 2) : offer.unitPrice;
+  const ownedQty = game.state.inventory?.[offer.resourceId] || 0;
+  const kirha = game.state.kirha || 0;
+  const actionLabel = mode === 'sell' ? 'Vendre' : 'Acheter';
+
+  const options = quantities.map((qty) => {
+    const total = unitPrice * qty;
+    const ok = mode === 'sell' ? ownedQty >= qty : kirha >= total;
+    const sub = mode === 'sell'
+      ? `+${formatNumber(total)} 💰`
+      : ok ? `${formatNumber(total)} 💰` : `Manque ${formatNumber(total - kirha)} 💰`;
+    return { qty, total, ok, sub };
+  });
+
+  sheet.innerHTML = `
+    <div class="hdv-sheet-header">
+      <div>
+        <p class="hdv-sheet-kicker">${actionLabel}</p>
+        <h3 class="hdv-sheet-title">${resource.emoji || ''} ${resource.name}</h3>
+        <p class="hdv-sheet-meta">${formatNumber(unitPrice)} 💰 / unité · stock ×${ownedQty}</p>
+      </div>
+      <button type="button" class="hdv-sheet-close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="hdv-sheet-options">
+      ${options.map(({ qty, ok, sub }) => `
+        <button type="button" class="hdv-sheet-option${ok ? ' ok' : ''}" data-qty="${qty}" ${ok ? '' : 'disabled'}>
+          <span class="hdv-sheet-option-qty">×${qty}</span>
+          <span class="hdv-sheet-option-price">${sub}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+
+  sheet.querySelector('.hdv-sheet-close')?.addEventListener('click', closeAuctionSheet);
+  sheet.querySelectorAll('.hdv-sheet-option').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const qty = Number(btn.dataset.qty) || 1;
+      const result = mode === 'sell'
+        ? game.sellMerchant(vendorId, offerId, qty)
+        : game.buyMerchant(vendorId, offerId, qty);
+      if (!result) {
+        const total = unitPrice * qty;
+        const msg = mode === 'sell'
+          ? 'Vente impossible.'
+          : kirha >= total ? 'Achat impossible.' : `Il manque ${formatNumber(total - kirha)} Kirha.`;
+        emit('farmBlocked', { message: msg });
+        return;
+      }
+      closeAuctionSheet();
+    });
+  });
+
+  backdrop?.classList.add('active');
+  sheet.classList.add('active');
+  document.body.classList.add('hdv-sheet-open');
+}
+
+function renderAuctionOfferList(game, root) {
+  const listEl = root.querySelector('#auction-offer-list');
+  if (!listEl) return;
+
+  const { visibleOffers } = buildAuctionCatalog(game);
+  listEl.replaceChildren();
+
+  if (!visibleOffers.length) {
+    listEl.innerHTML = '<p class="empty-text">Aucune ressource dans cette catégorie.</p>';
+    return;
+  }
+
   for (const { vendorId, vendor, offerId, offer, resource } of visibleOffers) {
-    if (vendorId !== lastVendorId) {
-      const header = document.createElement('div');
-      header.className = 'auction-group-title';
-      header.textContent = `${vendor.emoji} ${vendor.name}`;
-      listEl.appendChild(header);
-      lastVendorId = vendorId;
-    }
+    const ownedQty = game.state.inventory?.[offer.resourceId] || 0;
+    const jobLvl = resource.requiredJobLevel || 1;
+    const meta = resource.farmOnly ? 'Ferme' : (resource.job ? `Nv.${jobLvl}` : '');
+    const unit = offer.unitPrice;
+    const canBuyOne = game.state.kirha >= unit;
+    const canSellOne = offer.sellable && ownedQty >= 1;
 
     const row = document.createElement('article');
-    row.className = `auction-list-row${vendor.testHdv ? ' auction-list-row-test' : ''}`;
-    const sellUnit = offer.sellable ? Math.floor(offer.unitPrice / 2) : 0;
-    const ownedQty = game.state.inventory?.[offer.resourceId] || 0;
+    row.className = `hdv-row${vendor.testHdv ? ' test' : ''}`;
     row.innerHTML = `
-      <div class="auction-list-item">
-        <span class="auction-offer-icon">${renderResourceIcon(resource, 'auction-offer-icon')}</span>
-        <div>
-          <div class="auction-offer-name">${resource.name}</div>
-          <div class="auction-offer-source">${vendor.emoji} ${vendor.name}</div>
-          <div class="auction-owned-inline">Dans ton inventaire : ×${ownedQty}</div>
+      <div class="hdv-row-body">
+        <span class="hdv-row-icon">${renderResourceIcon(resource, 'hdv-row-icon')}</span>
+        <div class="hdv-row-text">
+          <div class="hdv-row-title">
+            <span class="hdv-row-name">${resource.name}</span>
+            ${meta ? `<span class="hdv-row-meta">${meta}</span>` : ''}
+          </div>
+          <span class="hdv-row-stock">Inventaire ×${ownedQty}</span>
         </div>
+        <span class="hdv-row-price">${formatNumber(unit)}<small>💰/u</small></span>
       </div>
-      <div class="auction-list-price">
-        <strong>${formatNumber(offer.unitPrice)} 💰</strong>
-        ${offer.sellable ? `<span>Revente ${formatNumber(sellUnit)} 💰</span>` : ''}
-      </div>
-      <div class="auction-list-actions">
-        <div class="auction-buy-row" data-vendor="${vendorId}" data-offer="${offerId}"></div>
-        ${offer.sellable ? `<div class="auction-sell-row" data-vendor="${vendorId}" data-offer="${offerId}"></div>` : ''}
+      <div class="hdv-row-actions">
+        <button type="button" class="hdv-action-btn buy${canBuyOne ? ' ok' : ''}" data-action="buy">
+          Acheter
+        </button>
+        ${offer.sellable ? `<button type="button" class="hdv-action-btn sell${canSellOne ? ' ok' : ''}" data-action="sell" ${canSellOne ? '' : 'disabled'}>Vendre</button>` : ''}
       </div>
     `;
 
-    const buyRow = row.querySelector('.auction-buy-row');
-    for (const qty of offer.bulkQuantities || [1]) {
-      const total = offer.unitPrice * qty;
-      const canAfford = game.state.kirha >= total;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = `btn btn-buy-scroll${canAfford ? ' affordable' : ''}`;
-      btn.textContent = canAfford
-        ? `Acheter ×${qty} · ${formatNumber(total)} 💰`
-        : `×${qty} · manque ${formatNumber(total - game.state.kirha)} 💰`;
-      btn.addEventListener('click', () => {
-        const result = game.buyMerchant(vendorId, offerId, qty);
-        if (!result) {
-          emit('farmBlocked', { message: canAfford ? 'Achat impossible.' : `Il manque ${formatNumber(total - game.state.kirha)} Kirha.` });
-        }
-      });
-      buyRow.appendChild(btn);
-    }
-
-    if (offer.sellable) {
-      const sellRow = row.querySelector('.auction-sell-row');
-      for (const qty of offer.bulkQuantities || [1]) {
-        const total = sellUnit * qty;
-        const canSell = ownedQty >= qty;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `btn btn-sell-scroll${canSell ? ' affordable' : ''}`;
-        btn.disabled = !canSell;
-        btn.textContent = `Vendre ×${qty} · ${formatNumber(total)} 💰`;
-        btn.addEventListener('click', () => game.sellMerchant(vendorId, offerId, qty));
-        sellRow.appendChild(btn);
-      }
-    }
+    row.querySelector('[data-action="buy"]')?.addEventListener('click', () => {
+      openAuctionTradeSheet(game, { mode: 'buy', vendorId, offerId, resource, offer });
+    });
+    row.querySelector('[data-action="sell"]')?.addEventListener('click', () => {
+      openAuctionTradeSheet(game, { mode: 'sell', vendorId, offerId, resource, offer });
+    });
 
     listEl.appendChild(row);
   }
+}
+
+function mountAuctionNavigation(game, root) {
+  const { vendorGroups, activeGroup, activeVendor } = buildAuctionCatalog(game);
+  const breadcrumb = root.querySelector('#hdv-breadcrumb');
+  if (breadcrumb && activeVendor) {
+    breadcrumb.textContent = `HDV › ${AUCTION_GROUP_LABELS[auctionGroup] || auctionGroup} › ${activeVendor.name}`;
+  }
+
+  const tabsEl = root.querySelector('#hdv-group-tabs');
+  if (tabsEl) {
+    tabsEl.innerHTML = vendorGroups.map((group) => `
+      <button type="button" class="hdv-tab${auctionGroup === group.id ? ' active' : ''}" data-auction-group="${group.id}">
+        ${group.label}
+      </button>
+    `).join('');
+    tabsEl.querySelectorAll('.hdv-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        auctionGroup = btn.dataset.auctionGroup || 'services';
+        auctionCategory = pickDefaultAuctionCategory(Object.entries(game.getMerchantVendors()), auctionGroup);
+        mountAuctionNavigation(game, root);
+        renderAuctionOfferList(game, root);
+        root.querySelector('.hdv-list-wrap')?.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }
+
+  const chipsEl = root.querySelector('#hdv-vendor-chips');
+  if (chipsEl) {
+    chipsEl.innerHTML = (activeGroup?.entries || []).map(([vendorId, vendor]) => `
+      <button type="button" class="hdv-chip${auctionCategory === vendorId ? ' active' : ''}${vendor.testHdv ? ' test' : ''}" data-auction-cat="${vendorId}">
+        ${vendor.emoji} ${vendor.name}
+      </button>
+    `).join('');
+    chipsEl.querySelectorAll('.hdv-chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const vendorId = btn.dataset.auctionCat;
+        const vendors = game.getMerchantVendors();
+        if (vendorId && vendors[vendorId]) {
+          auctionCategory = vendorId;
+          auctionGroup = getVendorGroupId(vendorId, vendors[vendorId]);
+        } else {
+          auctionCategory = pickDefaultAuctionCategory(Object.entries(vendors), auctionGroup);
+        }
+        mountAuctionNavigation(game, root);
+        renderAuctionOfferList(game, root);
+        root.querySelector('.hdv-list-wrap')?.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }
+
+  const descEl = root.querySelector('#hdv-vendor-desc');
+  if (descEl) {
+    const desc = activeVendor?.description || '';
+    descEl.textContent = desc;
+    descEl.hidden = !desc;
+  }
+}
+
+export function refreshAuctionHouseLight(game) {
+  if (!auctionRootEl?.isConnected) return;
+  updateAuctionWallet(game, auctionRootEl);
+  const nuggetInfo = game.getGoldNuggetExchangeInfo?.();
+  if (nuggetInfo) {
+    auctionRootEl.querySelector('#nugget-to-scroll')?.toggleAttribute('disabled', nuggetInfo.owned < nuggetInfo.scrollCost);
+    auctionRootEl.querySelector('#nugget-to-kirha')?.toggleAttribute('disabled', nuggetInfo.owned < 1);
+  }
+  renderAuctionOfferList(game, auctionRootEl);
+}
+
+export function renderAuctionHouse(game, el) {
+  auctionRootEl = el;
+  const merchant = game.merchant;
+  const scrollRes = game.resources.ancient_scroll;
+  const nuggetRes = game.resources.gold_nugget;
+  const nuggetInfo = game.getGoldNuggetExchangeInfo?.() || null;
+  const testBanner = getTestHdvBanner(game.balance);
+  const careerPending = isTestHdvEnabled(game.balance) && !game.state.careerChoice?.confirmed;
+  const catalog = buildAuctionCatalog(game);
+
+  if (!catalog.vendorEntries.length) {
+    el.innerHTML = '<p class="empty-text panel-inner">Aucune offre pour le moment.</p>';
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="hdv-view">
+      ${testBanner ? `<p class="hdv-banner">${testBanner}</p>` : ''}
+      ${careerPending ? '<p class="hdv-banner warn">Choisis ta voie pour débloquer les ressources des autres métiers.</p>' : ''}
+      <div class="hdv-sticky">
+        <p class="hdv-breadcrumb" id="hdv-breadcrumb">HDV</p>
+        <div class="hdv-wallet" id="hdv-wallet">
+          <span class="hdv-wallet-item"><strong id="hdv-wallet-kirha">${formatNumber(game.state.kirha || 0)}</strong> 💰</span>
+          <span class="hdv-wallet-item"><span id="hdv-wallet-scroll-icon">${renderResourceIcon(scrollRes, 'hdv-wallet-icon')}</span> <strong id="hdv-wallet-scrolls">${game.getScrollCount()}</strong></span>
+          ${nuggetRes ? `<span class="hdv-wallet-item"><span id="hdv-wallet-nugget-icon">${renderResourceIcon(nuggetRes, 'hdv-wallet-icon')}</span> <strong id="hdv-wallet-nuggets">${nuggetInfo?.owned || 0}</strong></span>` : ''}
+        </div>
+        <nav class="hdv-tabs" id="hdv-group-tabs" aria-label="Type de marché"></nav>
+        <nav class="hdv-chips-scroll" id="hdv-vendor-chips" aria-label="Métier ou vendeur"></nav>
+      </div>
+      ${nuggetInfo && nuggetRes ? `
+      <details class="hdv-nuggets">
+        <summary>Pépites d'or</summary>
+        <div class="hdv-nugget-actions">
+          <button type="button" class="hdv-action-btn" id="nugget-to-scroll" ${nuggetInfo.owned < nuggetInfo.scrollCost ? 'disabled' : ''}>${nuggetInfo.scrollCost} → 1 📜</button>
+          <button type="button" class="hdv-action-btn" id="nugget-to-kirha" ${nuggetInfo.owned < 1 ? 'disabled' : ''}>1 → ${nuggetInfo.kirhaPerNugget} 💰</button>
+        </div>
+      </details>` : ''}
+      <p class="hdv-vendor-desc" id="hdv-vendor-desc" hidden></p>
+      <div class="hdv-list-wrap">
+        <div class="hdv-list" id="auction-offer-list"></div>
+      </div>
+      <p class="hdv-tip">Vends tes récoltes à la <button type="button" class="link-btn" id="goto-bank">Banque</button> pour obtenir des Kirha.</p>
+    </div>
+  `;
+
+  el.querySelector('#goto-bank')?.addEventListener('click', () => navigate('inventory'));
+  el.querySelector('#nugget-to-scroll')?.addEventListener('click', () => {
+    const result = game.exchangeGoldNuggets('scroll', 1);
+    if (!result.ok) emit('farmBlocked', { message: result.reason || 'Échange impossible.' });
+    else refreshAuctionHouseLight(game);
+  });
+  el.querySelector('#nugget-to-kirha')?.addEventListener('click', () => {
+    const result = game.exchangeGoldNuggets('kirha', 1);
+    if (!result.ok) emit('farmBlocked', { message: result.reason || 'Échange impossible.' });
+    else refreshAuctionHouseLight(game);
+  });
+
+  mountAuctionNavigation(game, el);
+  renderAuctionOfferList(game, el);
 }
 
 /* ── Inventaire (banque) ── */
@@ -2397,6 +2582,9 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
     });
     container.appendChild(cell);
   }
+
+  const combatCount = appendOwnedCombatItemsToGrid(game, container, filter);
+  if (combatCount) hasItems = true;
 
   if (!hasItems) {
     container.innerHTML = '<p class="empty-text">Aucun objet dans cette catégorie.</p>';
@@ -2960,7 +3148,7 @@ function renderDungeonCombatBody(game) {
   const party = run.party || [];
   const isBoss = !!run.isBoss;
   const skills = game.getPlayerCombatSkills();
-  const { attacks, spells } = splitSkillsByDqMenu(skills);
+  const { attacks } = splitSkillsByDqMenu(skills);
   const roomLabel = run.isDungeonRun
     ? `Salle ${(run.roomIndex ?? 0) + 1}/${run.rooms?.length || '?'}${isBoss ? ' · 👑 Boss' : ''}`
     : `${isBoss ? '👑 Boss' : 'Entraînement'} · Équipe ${party.length} · ${livingEnemies.length} ennemi${livingEnemies.length !== 1 ? 's' : ''}`;
@@ -3030,11 +3218,7 @@ function renderDungeonCombatBody(game) {
       ? `${activeMember.emoji} ${activeMember.name} — quel ennemi viser avec ${pendingSkillDef.emoji} ${pendingSkillDef.name} ?`
       : `${activeMember.emoji} ${activeMember.name} — qui soigner avec ${pendingSkillDef.emoji} ${pendingSkillDef.name} ?`;
   } else if (combatUi.menu === 'attack' && canAct) {
-    dialogue = `${activeMember?.emoji || '⚔️'} ${activeMember?.name || 'Héros'} — quelle attaque ?`;
-  } else if (combatUi.menu === 'spells' && canAct) {
-    dialogue = spells.length
-      ? `${activeMember?.emoji || '✨'} ${activeMember?.name || 'Héros'} — quel sort ?`
-      : 'Aucun sort disponible.';
+    dialogue = `${activeMember?.emoji || '⚔️'} ${activeMember?.name || 'Héros'} — quelle action ?`;
   } else if (combatUi.menu === 'items' && canAct) {
     dialogue = `${activeMember?.emoji || '🎒'} ${activeMember?.name || 'Héros'} — quel repas utiliser ? (1 par combattant et par tour)`;
   } else if (isPlayerTurn && activeMember) {
@@ -3062,16 +3246,6 @@ function renderDungeonCombatBody(game) {
         </button>`;
       }).join('')}
     `;
-  } else if (combatUi.menu === 'spells' && canAct) {
-    commandHtml = `
-      <button type="button" class="dq-cmd-btn dq-cmd-back" data-menu="main">◀ Retour</button>
-      ${spells.length ? spells.map((skill) => `
-        <button type="button" class="dq-cmd-btn" data-skill="${skill.id}">
-          <span class="dq-cmd-icon">${skill.emoji}</span>
-          <span class="dq-cmd-label">${skill.name}</span>
-        </button>
-      `).join('') : '<p class="dq-cmd-empty">Aucun sort pour l\'instant.</p>'}
-    `;
   } else if (combatUi.menu === 'items' && canAct) {
     const ownedMeals = listOwnedMeals(game.state, game.resources, game.balance);
     const memberAte = !!activeMember?.mealUsedThisRound;
@@ -3096,14 +3270,8 @@ function renderDungeonCombatBody(game) {
       <button type="button" class="dq-cmd-btn dq-cmd-main affordable" data-menu="attack" ${canAct ? '' : 'disabled'}>
         <span class="dq-cmd-icon">⚔️</span><span class="dq-cmd-label">Attaquer</span>
       </button>
-      <button type="button" class="dq-cmd-btn dq-cmd-main" data-menu="spells" ${canAct && spells.length ? '' : 'disabled'}>
-        <span class="dq-cmd-icon">✨</span><span class="dq-cmd-label">Sorts</span>
-      </button>
       <button type="button" class="dq-cmd-btn dq-cmd-main dq-cmd-items${canUseMeal ? ' affordable' : ''}" data-menu="items" ${canAct ? '' : 'disabled'}>
         <span class="dq-cmd-icon">🎒</span><span class="dq-cmd-label">Objets${mealCount > 0 ? ` (${mealCount})` : ''}</span>
-      </button>
-      <button type="button" class="dq-cmd-btn dq-cmd-main btn-combat-defend" ${canAct ? '' : 'disabled'}>
-        <span class="dq-cmd-icon">🛡️</span><span class="dq-cmd-label">Défense</span>
       </button>
       <button type="button" class="dq-cmd-btn dq-cmd-main btn-combat-flee">
         <span class="dq-cmd-icon">🏃</span><span class="dq-cmd-label">Fuir</span>
@@ -3199,10 +3367,6 @@ function renderDungeonCombatBody(game) {
         return result;
       });
     });
-  });
-
-  body.querySelector('.btn-combat-defend')?.addEventListener('click', () => {
-    executeCombatTurn(game, body, () => game.useCombatDefend());
   });
 
   body.querySelector('.btn-combat-flee')?.addEventListener('click', () => {
