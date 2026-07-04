@@ -33,11 +33,17 @@ Colonne **Nouveau nom** : à remplir lors de la refonte narrative, puis mettre �
 | `lotus_sanctuary` | Hall du Lotus       | Lotus      | 35            | Floraison Éternelle  |
 
 
-### Progression donjon (v1.3+)
+### Progression donjon (v1.5+)
 
-- **Combat rapide** : héros seul, 1 ennemi.
-- **Donjon** : débloqué après **3 victoires rapides par mob** + **1 boss rapide**.
-- **Limites journalières** (`balance.combat.dailyLimits`) : 20 mobs · 5 boss · 2 donjons.
+- **Combat rapide** : héros seul — XP réduit, farm **clés**, drops **équipement** (taux par zone dans `combat_zones.json`).
+- **Donjon** : équipe à 3, multi-salles — **1 clé consommée** à l'entrée ; drops équipement + repas entre salles.
+- **Plus de limites journalières** (`combatDaily.js` : limites à `null`).
+- **Plus de prérequis kills** avant entrée donjon (`killsPerMonster: 0`).
+
+### Craft équipement
+
+- Les recettes `combatItem` dans `recipes.json` servent aux **sets / drops / fusion**.
+- **Craft atelier désactivé** — seuls Outilleur + Cuisinier actifs ; fusion via Atelier.
 
 ---
 

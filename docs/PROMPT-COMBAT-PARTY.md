@@ -1,6 +1,7 @@
 # 🌸 TO-KIRHA — Combat DQ + équipe à 3
 
-> Spécification livrée en v1.2 (`saveVersion` 13).
+> Spécification livrée en v1.2 (`saveVersion` 13).  
+> **État actuel (v1.6)** : voir `project-state.md` — drops solo, clés, repas Objets, modal sans onglets Sorts/Défense.
 
 ## Résumé
 

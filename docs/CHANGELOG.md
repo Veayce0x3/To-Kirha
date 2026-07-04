@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.6.0] — 2026-07-04
+
+### UI Perso, HDV et UX récolte
+
+**Page Perso**
+- Refonte layout compact : stats pills, grille équipement 10 slots
+- Onglets : Sac · Équipement · Outils · Équipe (Fusion retirée)
+- **Clic sur un slot** → bottom sheet avec pièces compatibles en inventaire (+ retirer)
+
+**Atelier**
+- Onglet **🔮 Fusion** déplacé depuis Perso
+
+**Carrière**
+- Modal « Choisis ta voie » **obligatoire** — nav limitée à Perso + Options tant que non confirmé
+- Métiers / ferme verrouillés avant confirmation ; pseudo enregistré avant validation
+- Reset modal sans valeurs persistantes entre parties
+
+**HDV**
+- Refonte mobile-first : barre sticky, chips par métier, bottom sheet quantité
+- Catégories par métier (plus de vue « toutes ») ; refresh partiel
+
+**Récolte**
+- Son + badge « Prêt » + toast quand un slot redevient récoltable
+- Pulse nav métier concerné
+
+**Combat**
+- Drops équipement en **combat rapide** solo (en plus du donjon)
+- Pépites d'or visibles Sac + HDV
+- Retrait onglets Sorts / Défense en modal combat
+
 ## [1.5.0] — 2026-06-22
 
 ### Économie spécialisée & cuisine pivot (`saveVersion` 26)
