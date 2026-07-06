@@ -26,7 +26,7 @@ import { renderGuestBanner, renderAccountPanel, showAccountRequiredModal } from 
 import { isRegisteredAccount, hasFreeRenameAvailable, applyServerDisplayNameToGame, refreshProfile } from '../core/auth.js';
 import { changeDisplayNameFree } from '../systems/accountProfile.js';
 import { renderLeaderboard } from './leaderboardView.js';
-import { renderMarketP2pPanel } from './marketP2pView.js';
+import { renderMarketP2pPanel, teardownMarketP2pPanel } from './marketP2pView.js';
 import { renderAdmin } from './adminView.js';
 import { canUseOnlineFeatures, getOnlineBlockReason } from '../core/auth.js';
 import { isMaintenanceMode, isMarketP2pEnabled } from '../systems/gameConfig.js';
@@ -2656,8 +2656,8 @@ function mountAuctionNavigation(game, root) {
 
 export function refreshAuctionHouseLight(game) {
   if (!auctionRootEl?.isConnected) return;
-  if (hdvMainMode === 'players') return;
   updateAuctionWallet(game, auctionRootEl);
+  if (hdvMainMode === 'players') return;
   const nuggetInfo = game.getGoldNuggetExchangeInfo?.();
   if (nuggetInfo) {
     auctionRootEl.querySelector('#nugget-to-scroll')?.toggleAttribute('disabled', nuggetInfo.owned < nuggetInfo.scrollCost);
@@ -2689,19 +2689,20 @@ export function renderAuctionHouse(game, el) {
   const showTest = isTestHdvEnabled(game.balance);
   const maintenance = isMaintenanceMode();
   const modes = [
-    { id: 'npc', label: 'Marchand' },
-    ...(showTest ? [{ id: 'test', label: 'Test 10💰' }] : []),
-    ...(isMarketP2pEnabled() && !maintenance ? [{ id: 'players', label: 'Joueurs' }] : []),
+    { id: 'npc', label: '📜 Marchand' },
+    ...(showTest ? [{ id: 'test', label: '🧪 HDV Test' }] : []),
+    ...(isMarketP2pEnabled() && !maintenance ? [{ id: 'players', label: '👥 HDV Joueur' }] : []),
   ];
   if (!modes.some((m) => m.id === hdvMainMode)) hdvMainMode = 'npc';
 
   el.innerHTML = `
-    <div class="hdv-view">
+    <div class="hdv-view hdv-mode-${hdvMainMode}">
       ${maintenance ? '<p class="hdv-banner warn">Maintenance — HDV joueurs et classement limités.</p>' : ''}
-      ${testBanner && hdvMainMode !== 'players' ? `<p class="hdv-banner">${testBanner}</p>` : ''}
-      ${careerPending ? '<p class="hdv-banner warn">Choisis ta voie pour débloquer les ressources des autres métiers.</p>' : ''}
-      <nav class="hdv-main-tabs" id="hdv-main-tabs">
-        ${modes.map((m) => `<button type="button" class="hdv-main-tab${hdvMainMode === m.id ? ' active' : ''}" data-hdv-mode="${m.id}">${m.label}</button>`).join('')}
+      ${testBanner && hdvMainMode === 'test' ? `<p class="hdv-banner">${testBanner}</p>` : ''}
+      ${careerPending && hdvMainMode === 'test' ? '<p class="hdv-banner warn">Choisis ta voie pour débloquer les ressources des autres métiers.</p>' : ''}
+      ${hdvMainMode === 'players' ? '<p class="hdv-banner hdv-banner-p2p">Marché entre joueurs — achats et ventes instantanés.</p>' : ''}
+      <nav class="hdv-main-tabs" id="hdv-main-tabs" aria-label="Type d\'HDV">
+        ${modes.map((m) => `<button type="button" class="hdv-main-tab hdv-main-tab--${m.id}${hdvMainMode === m.id ? ' active' : ''}" data-hdv-mode="${m.id}">${m.label}</button>`).join('')}
       </nav>
       <div class="hdv-sticky">
         <div class="hdv-wallet" id="hdv-wallet">
@@ -2724,13 +2725,15 @@ export function renderAuctionHouse(game, el) {
       <div class="hdv-list-wrap" id="hdv-content-area">
         <div class="hdv-list" id="auction-offer-list"></div>
       </div>
-      <p class="hdv-tip">Vends tes récoltes à la <button type="button" class="link-btn" id="goto-bank">Banque</button> pour obtenir des Kirha.</p>
+      <p class="hdv-tip" ${hdvMainMode === 'players' ? 'hidden' : ''}>Vends tes récoltes à la <button type="button" class="link-btn" id="goto-bank">Banque</button> pour obtenir des Kirha.</p>
     </div>
   `;
 
   el.querySelectorAll('[data-hdv-mode]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      hdvMainMode = btn.dataset.hdvMode;
+      const next = btn.dataset.hdvMode;
+      if (hdvMainMode === 'players' && next !== 'players') teardownMarketP2pPanel();
+      hdvMainMode = next;
       renderAuctionHouse(game, el);
     });
   });

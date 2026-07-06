@@ -428,15 +428,19 @@ export class Game {
 
   scheduleSave() {
     clearTimeout(this.saveTimer);
-    this.saveTimer = setTimeout(async () => {
-      this.state.lastOnline = Date.now();
-      await SaveProvider.save(this.state, this.balance);
-      if (isRegisteredAccount()) {
-        const auth = getAuthState();
-        await saveCloudSave(auth.userId, this.state, this.balance);
-        submitLeaderboardSnapshot(this.state, this.getCharacterDisplayName()).catch(() => {});
-      }
-    }, 500);
+    this.saveTimer = setTimeout(() => this.flushSave(), 500);
+  }
+
+  /** Sauvegarde immédiate (local + cloud) — avant échanges HDV joueur. */
+  async flushSave() {
+    clearTimeout(this.saveTimer);
+    this.state.lastOnline = Date.now();
+    await SaveProvider.save(this.state, this.balance);
+    if (isRegisteredAccount()) {
+      const auth = getAuthState();
+      await saveCloudSave(auth.userId, this.state, this.balance);
+      submitLeaderboardSnapshot(this.state, this.getCharacterDisplayName()).catch(() => {});
+    }
   }
 
   canImportSave() {

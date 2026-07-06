@@ -160,6 +160,93 @@ body.auth-modal-open #career-choice-modal {
   border-color: var(--violet);
 }
 
+.hdv-main-tab--test.active {
+  background: #c9a227;
+  border-color: #c9a227;
+  color: #fff;
+}
+
+.hdv-main-tab--players.active {
+  background: var(--vert-foret);
+  border-color: var(--vert-foret);
+  color: #fff;
+}
+
+.hdv-banner-p2p {
+  background: rgba(45, 90, 39, 0.12);
+  border-color: rgba(45, 90, 39, 0.35);
+  color: var(--vert-foret);
+}
+
+.hdv-mode-test .hdv-sticky {
+  border-bottom-color: rgba(201, 162, 39, 0.25);
+}
+
+.hdv-mode-players .hdv-sticky {
+  border-bottom-color: rgba(45, 90, 39, 0.25);
+}
+
+.hdv-p2p-header {
+  padding: 0 0.25rem 0.5rem;
+}
+
+.hdv-p2p-desc {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--brun-doux);
+}
+
+.hdv-p2p-section-title {
+  margin: 1rem 0 0.35rem;
+  font-size: 0.9rem;
+  color: var(--brun);
+}
+
+.hdv-p2p-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.hdv-p2p-res {
+  font-weight: 600;
+}
+
+.hdv-p2p-meta,
+.hdv-p2p-seller {
+  font-size: 0.78rem;
+  color: var(--brun-doux);
+}
+
+.hdv-p2p-row-mine {
+  background: rgba(155, 89, 182, 0.06);
+  border-radius: 8px;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+}
+
+.hdv-p2p-badge {
+  font-size: 0.75rem;
+  color: var(--violet);
+  font-style: italic;
+}
+
+.hdv-p2p-badge.warn {
+  color: #b45309;
+}
+
+.hdv-p2p-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.hdv-p2p-loading {
+  padding: 1rem 0;
+}
+
 .leaderboard-tabs {
   display: flex;
   flex-wrap: wrap;
