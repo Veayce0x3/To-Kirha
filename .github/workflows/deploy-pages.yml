@@ -38,6 +38,10 @@ jobs:
         uses: actions/deploy-pages@v4
         continue-on-error: true
 
+      - name: Pause avant retry
+        if: steps.deploy1.outcome == 'failure'
+        run: sleep 20
+
       - name: Deploy (tentative 2)
         id: deploy2
         if: steps.deploy1.outcome == 'failure'
