@@ -387,9 +387,18 @@ export class Game {
     const auth = getAuthState();
     if (auth.mode === 'registered' && auth.userId && auth.userId !== 'dev_local_user') {
       const cloud = await loadCloudSave(auth.userId);
-      const merged = await mergeCloudAndLocal(cloud, localState, this.balance);
-      this.state = merged ? this.mergeState(merged) : localState;
-      syncAuthFromState(this.state);
+      const freshReset = SaveProvider.isFreshReset();
+      const hasLocalSave = !!localState;
+      const shouldMergeCloud = !freshReset && (
+        !hasLocalSave
+          ? !!cloud?.data
+          : !!localState?.careerChoice?.confirmed && !!cloud?.data
+      );
+      if (shouldMergeCloud) {
+        const merged = await mergeCloudAndLocal(cloud, localState, this.balance);
+        this.state = merged ? this.mergeState(merged) : localState;
+        syncAuthFromState(this.state);
+      }
     }
 
     if (this.balance.betaMode) applyBetaUnlocks(this.state, this.companions);
@@ -885,6 +894,7 @@ export class Game {
     ensureSlots(this.state, this.balance);
     ensureFarmSlots(this.state, this.farmData, this.balance);
     this.processQuests();
+    SaveProvider.clearFreshReset();
     SaveProvider.save(this.state);
     emit('careerChoiceApplied', result);
     emit('stateChange', this.state);
@@ -1750,11 +1760,18 @@ export class Game {
 
   resetSave() {
     const settings = this.state.settings;
+    const accountMeta = this.state.meta?.account
+      ? JSON.parse(JSON.stringify(this.state.meta.account))
+      : null;
     Object.values(this.harvestTimers).forEach(clearTimeout);
     this.harvestTimers = {};
     this.state = this.getDefaultState();
     this.state.settings = settings;
+    if (accountMeta?.mode) {
+      this.state.meta.account = accountMeta;
+    }
     if (this.balance.betaMode) applyBetaUnlocks(this.state, this.companions);
+    SaveProvider.markFreshReset();
     SaveProvider.save(this.state);
     emit('stateChange', this.state);
     return true;

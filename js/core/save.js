@@ -4,6 +4,7 @@ import { attachIntegrityMeta, verifySaveIntegrity, validateSaveSanity } from './
 
 const SAVE_KEY = 'tokirha_save';
 const RESET_FLAG_KEY = 'tokirha_resetting';
+const FRESH_RESET_KEY = 'tokirha_fresh_reset';
 
 function storageHasResetFlag() {
   try {
@@ -76,6 +77,27 @@ export const SaveProvider = {
   beginReset() {
     try {
       sessionStorage.setItem(RESET_FLAG_KEY, '1');
+      sessionStorage.setItem(FRESH_RESET_KEY, '1');
+    } catch {}
+  },
+
+  markFreshReset() {
+    try {
+      sessionStorage.setItem(FRESH_RESET_KEY, '1');
+    } catch {}
+  },
+
+  isFreshReset() {
+    try {
+      return sessionStorage.getItem(FRESH_RESET_KEY) === '1';
+    } catch {
+      return false;
+    }
+  },
+
+  clearFreshReset() {
+    try {
+      sessionStorage.removeItem(FRESH_RESET_KEY);
     } catch {}
   },
 

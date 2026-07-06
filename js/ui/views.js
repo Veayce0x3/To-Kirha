@@ -21,6 +21,7 @@ import { getDungeonKeyId } from '../systems/dungeonKeys.js';
 import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
 import { getTestHdvBanner, isTestHdvEnabled } from '../systems/testHdv.js';
 import { showCareerChoiceIfNeeded } from './careerChoiceUi.js';
+import { reconcileAuthAfterLocalReset } from '../core/resetAuth.js';
 import { renderGuestBanner, renderAccountPanel, showAccountRequiredModal } from './authUi.js';
 import { isRegisteredAccount, hasFreeRenameAvailable, applyServerDisplayNameToGame, refreshProfile } from '../core/auth.js';
 import { changeDisplayNameFree } from '../systems/accountProfile.js';
@@ -3083,6 +3084,7 @@ export function renderOptions(game, el) {
       hint('Réinitialisation…');
     }
     game.resetSave();
+    await reconcileAuthAfterLocalReset(game);
     showCareerChoiceIfNeeded(game);
     emit('navRefresh');
   });

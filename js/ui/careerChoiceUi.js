@@ -116,7 +116,7 @@ function renderCareerModal() {
       <h3>Pseudo</h3>
       <label class="career-nickname-label" for="career-nickname">Choisis ton nom en jeu</label>
       <input id="career-nickname" class="nickname-input career-nickname-input" type="text" maxlength="${maxNicknameLength}" value="${escapeHtml(selectedNickname)}" placeholder="Ex. Kira" autocomplete="nickname" />
-      <p class="nickname-hint">Maximum ${maxNicknameLength} caractères. Tu pourras le changer plus tard via le renommage.</p>
+      <p class="nickname-hint">Maximum ${maxNicknameLength} caractères.${needsNickname ? ' Tu pourras le changer plus tard via le renommage.' : ' Compte connecté : pseudo synchronisé avec ton profil (1 changement gratuit dans Personnage / Compte).'}</p>
     </section>
   ` : `
     <section class="career-section career-nickname-summary">
