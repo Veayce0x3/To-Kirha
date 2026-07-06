@@ -21,6 +21,16 @@ create table if not exists display_name_history (
 
 create index if not exists display_name_history_user_idx on display_name_history (user_id, created_at desc);
 
+alter table public.banned_emails enable row level security;
+alter table public.display_name_history enable row level security;
+
+drop policy if exists "display_name_history select own" on public.display_name_history;
+drop policy if exists "display_name_history staff select" on public.display_name_history;
+create policy "display_name_history select own" on public.display_name_history
+  for select using (auth.uid() = user_id);
+create policy "display_name_history staff select" on public.display_name_history
+  for select using (public.is_staff());
+
 -- Bloque nouvelle inscription avec email banni
 create or replace function public.check_email_not_banned()
 returns trigger language plpgsql security definer set search_path = public as $$
