@@ -22,6 +22,8 @@ import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerCh
 import { getTestHdvBanner, isTestHdvEnabled } from '../systems/testHdv.js';
 import { showCareerChoiceIfNeeded } from './careerChoiceUi.js';
 import { renderGuestBanner, renderAccountPanel, showAccountRequiredModal } from './authUi.js';
+import { isRegisteredAccount, hasFreeRenameAvailable, applyServerDisplayNameToGame, refreshProfile } from '../core/auth.js';
+import { changeDisplayNameFree } from '../systems/accountProfile.js';
 import { renderLeaderboard } from './leaderboardView.js';
 import { renderMarketP2pPanel } from './marketP2pView.js';
 import { renderAdmin } from './adminView.js';
@@ -424,6 +426,17 @@ function renderCharacter(game, el) {
         </div>
       </div>
     `;
+  } else if (hasFreeRenameAvailable() && nickInfo.hasNickname) {
+    nicknameHtml = `
+      <details class="nickname-rename-details">
+        <summary>Changer de pseudo (gratuit, 1 fois)</summary>
+        <p class="nickname-hint">Synchronisé avec ton compte, classement et HDV.</p>
+        <div class="nickname-row">
+          <input id="nickname-free-rename-input" class="nickname-input" type="text" maxlength="${maxLen}" placeholder="Nouveau pseudo" value="${displayName}" />
+          <button type="button" class="btn btn-small btn-craft" id="nickname-free-rename">Valider</button>
+        </div>
+      </details>
+    `;
   } else if (nickInfo.canRename) {
     nicknameHtml = `
       <details class="nickname-rename-details">
@@ -486,6 +499,22 @@ function renderCharacter(game, el) {
     const input = el.querySelector('#nickname-rename-input');
     const result = game.setCharacterNickname(input?.value || '', true);
     if (!result.ok && result.reason) emit('nicknameError', { reason: result.reason });
+  });
+
+  el.querySelector('#nickname-free-rename')?.addEventListener('click', async () => {
+    const input = el.querySelector('#nickname-free-rename-input');
+    const result = await changeDisplayNameFree(input?.value || '', game.characterConfig);
+    if (!result.ok) {
+      emit('nicknameError', { reason: result.reason });
+      return;
+    }
+    const name = result.data?.display_name || input?.value?.trim();
+    applyServerDisplayNameToGame(game, name);
+    await refreshProfile();
+    game.scheduleSave?.();
+    emit('nicknameChange', { name, renamed: true, free: true });
+    emit('stateChange', game.state);
+    renderCharacter(game, el);
   });
 
   el.querySelectorAll('.char-tab-btn').forEach((btn) => {

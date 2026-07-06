@@ -18,6 +18,7 @@ let authState = {
   isBanned: false,
   bannedReason: null,
   cheatFlagged: false,
+  freeRenameUsed: false,
   ready: false,
 };
 
@@ -100,6 +101,7 @@ export function applyGuestToState(state, displayName) {
     isBanned: false,
     bannedReason: null,
     cheatFlagged: false,
+    freeRenameUsed: false,
     ready: true,
   };
   try {
@@ -129,6 +131,7 @@ export function applyRegisteredToState(state, { userId, email, displayName }) {
     isBanned: false,
     bannedReason: null,
     cheatFlagged: false,
+    freeRenameUsed: false,
     ready: true,
   };
   try {
@@ -152,6 +155,7 @@ export function syncAuthFromState(state) {
       isBanned: false,
       bannedReason: null,
       cheatFlagged: false,
+      freeRenameUsed: false,
       ready: true,
     };
     return;
@@ -169,6 +173,7 @@ export function syncAuthFromState(state) {
       isBanned: false,
       bannedReason: null,
       cheatFlagged: false,
+      freeRenameUsed: false,
       ready: true,
     };
   }
@@ -185,6 +190,11 @@ function applyProfileData(profile) {
   if (profile.display_name) {
     authState.displayName = profile.display_name;
   }
+  authState.freeRenameUsed = !!profile.free_rename_used;
+}
+
+export function hasFreeRenameAvailable() {
+  return isRegisteredAccount() && !authState.freeRenameUsed;
 }
 
 /** Applique le pseudo serveur au personnage après connexion. */
@@ -373,7 +383,7 @@ export async function signOutAccount() {
   authState = {
     mode: null, userId: null, email: null, isGuest: true, displayName: null,
     role: 'player', adminAccess: false, profileSynced: false,
-    isBanned: false, bannedReason: null, cheatFlagged: false, ready: true,
+    isBanned: false, bannedReason: null, cheatFlagged: false, freeRenameUsed: false, ready: true,
   };
   try {
     sessionStorage.removeItem(AUTH_SESSION_KEY);

@@ -333,7 +333,7 @@ async function loadPlayerDetail(userId, detailEl) {
     detailEl.innerHTML = `<p class="admin-error">${res.reason}</p>`;
     return;
   }
-  const { profile, leaderboard, save_summary, market_sells_active, market_buys_active, reports_against, reports_by } = res.data;
+  const { profile, leaderboard, save_summary, market_sells_active, market_buys_active, reports_against, reports_by, name_history } = res.data;
   const canSetRole = isSuperAdmin();
   const canResetSave = isAdmin();
 
@@ -343,7 +343,7 @@ async function loadPlayerDetail(userId, detailEl) {
       <code id="admin-copy-uuid">${profile.user_id}</code>
       <button type="button" class="btn btn-muted btn-sm" id="admin-copy-btn">Copier UUID</button>
     </p>
-    <p class="view-desc">Inscrit le ${fmtDate(profile.created_at)}</p>
+    <p class="view-desc">Inscrit le ${fmtDate(profile.created_at)}${profile.email ? ` · ${profile.email}` : ''}</p>
     ${profile.is_banned ? `<p class="guest-banner warn">Banni · ${profile.banned_reason || '—'} · ${fmtDate(profile.banned_at)}</p>` : ''}
     ${profile.cheat_flagged ? `<p class="guest-banner warn">Flag triche · ${profile.cheat_notes || '—'}</p>` : ''}
     <div class="admin-detail-grid">
@@ -353,7 +353,24 @@ async function loadPlayerDetail(userId, detailEl) {
       <div><strong>Dernière activité</strong><br>${save_summary?.last_online ? fmtDate(save_summary.last_online) : '—'}</div>
       <div><strong>HDV</strong><br>${market_sells_active} vente(s) · ${market_buys_active} offre(s)</div>
       <div><strong>Signalements</strong><br>${reports_against} reçus · ${reports_by || 0} envoyés</div>
+      <div><strong>Renommage gratuit</strong><br>${profile.free_rename_used ? 'Utilisé' : 'Disponible'}</div>
     </div>
+    ${(name_history || []).length ? `
+      <h5 class="admin-section-title">Historique pseudo</h5>
+      <div class="admin-table-wrap">
+        <table class="admin-table admin-table-compact">
+          <thead><tr><th>Date</th><th>Ancien</th><th>Nouveau</th><th>Type</th></tr></thead>
+          <tbody>${name_history.map((h) => `
+            <tr>
+              <td>${fmtDate(h.created_at)}</td>
+              <td>${h.old_name}</td>
+              <td>${h.new_name}</td>
+              <td>${h.change_type}</td>
+            </tr>
+          `).join('')}</tbody>
+        </table>
+      </div>
+    ` : ''}
     <div class="admin-actions">
       ${profile.is_banned
         ? `<button type="button" class="btn btn-craft" id="admin-unban">Débannir</button>`

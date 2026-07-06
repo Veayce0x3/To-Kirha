@@ -4,14 +4,18 @@ import {
   completeRegisteredLogin,
   generateGuestDisplayName,
   getAuthState,
+  hasFreeRenameAvailable,
+  applyServerDisplayNameToGame,
+  refreshProfile,
   isSupabaseOnline,
   needsAuthChoice,
   signInWithEmail,
   signUpWithEmail,
-  syncProfileFromServer,
   isAccountBanned,
   canSeeAdminPanel,
+  signOutAccount,
 } from '../core/auth.js';
+import { changeDisplayNameFree, deleteMyAccount } from '../systems/accountProfile.js';
 
 let gameRef = null;
 let modalEl = null;
@@ -228,9 +232,20 @@ export function renderAccountPanel(game, container) {
       ` : auth.mode === 'registered' ? `
         <p class="view-desc">Connecté · ${auth.email || auth.userId}</p>
         <p class="view-desc">Pseudo : <strong>${game.getCharacterDisplayName()}</strong></p>
+        ${hasFreeRenameAvailable() ? `
+          <div class="account-free-rename">
+            <label class="auth-label" for="account-free-rename-input">Changer de pseudo (gratuit, 1 fois)</label>
+            <div class="nickname-row">
+              <input id="account-free-rename-input" class="auth-input" type="text" maxlength="20" value="${game.getCharacterDisplayName()}" />
+              <button type="button" class="btn btn-craft btn-sm" id="account-free-rename">Valider</button>
+            </div>
+          </div>
+        ` : ''}
         ${auth.isBanned ? '<p class="guest-banner warn">Compte suspendu</p>' : ''}
         ${canSeeAdminPanel() ? `<p class="view-desc"><button type="button" class="link-btn" id="account-goto-admin">Administration</button></p>` : ''}
         <button type="button" class="btn btn-muted" id="account-signout">Se déconnecter</button>
+        <button type="button" class="btn btn-danger btn-sm" id="account-delete">Supprimer mon compte</button>
+        <p class="view-desc account-delete-hint">Supprime définitivement ton compte et tes données en ligne. Tu pourras recréer un compte avec la même adresse email.</p>
       ` : `
         <p class="view-desc">Non connecté</p>
         <button type="button" class="btn btn-craft" id="account-login">Se connecter</button>
@@ -244,10 +259,38 @@ export function renderAccountPanel(game, container) {
     navigate('admin');
   });
   container.querySelector('#account-signout')?.addEventListener('click', async () => {
-    const { signOutAccount } = await import('../core/auth.js');
     await signOutAccount();
     delete game.state.meta?.account;
     location.reload();
+  });
+
+  container.querySelector('#account-free-rename')?.addEventListener('click', async () => {
+    const input = container.querySelector('#account-free-rename-input');
+    const result = await changeDisplayNameFree(input?.value || '', game.characterConfig);
+    if (!result.ok) {
+      emit('nicknameError', { reason: result.reason });
+      return;
+    }
+    const name = result.data?.display_name || input?.value?.trim();
+    applyServerDisplayNameToGame(game, name);
+    await refreshProfile();
+    game.scheduleSave?.();
+    emit('nicknameChange', { name, renamed: true, free: true });
+    emit('navRefresh');
+    renderAccountPanel(game, container);
+  });
+
+  container.querySelector('#account-delete')?.addEventListener('click', async () => {
+    const typed = prompt('Tape SUPPRIMER pour confirmer la suppression définitive de ton compte :');
+    if (typed !== 'SUPPRIMER') return;
+    const result = await deleteMyAccount();
+    if (!result.ok) {
+      emit('nicknameError', { reason: result.reason || 'Impossible de supprimer le compte.' });
+      return;
+    }
+    await signOutAccount();
+    delete game.state.meta?.account;
+    location.href = `${location.pathname}?newgame=1`;
   });
 }
 

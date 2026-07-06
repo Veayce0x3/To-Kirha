@@ -736,8 +736,14 @@ body.auth-modal-open #career-choice-modal {
   display: none;
 }
 
-.admin-refresh-btn {
-  margin-left: auto;
+.account-delete-hint {
+  font-size: 0.78rem;
+  opacity: 0.85;
+  margin-top: 0.35rem;
+}
+
+.account-free-rename {
+  margin: 0.65rem 0;
 }
 
 .admin-table-compact td,

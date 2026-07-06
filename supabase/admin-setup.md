@@ -56,6 +56,20 @@ where user_id = (
 
 Seul un **superadmin** peut modifier les rôles. Un admin peut modérer (ban, HDV, etc.) mais ne peut pas promouvoir d'autres admins.
 
+### Ban vs suppression de compte
+
+| Action | Effet |
+|--------|--------|
+| **Ban (admin)** | Compte suspendu + **email bloqué** (impossible de recréer un compte avec la même adresse) |
+| **Déban** | Retire le ban profil **et** l'email de la liste `banned_emails` |
+| **Supprimer mon compte** (joueur, Options → Compte) | Efface le compte auth + données ; **même email réutilisable** pour s'inscrire à nouveau |
+
+### Renommage gratuit (1×)
+
+- Chaque compte a **1 changement de pseudo gratuit** (Personnage ou Options → Compte)
+- Historique visible dans Admin → Joueurs → Voir → **Historique pseudo**
+- Ensuite : renommage payant en Kirha (comme avant)
+
 ### 3. Via SQL (secours)
 
 ```sql
@@ -85,7 +99,7 @@ update profiles set role = 'moderator' where user_id = 'uuid-du-joueur';
 
 ## Signalements joueurs
 
-Bouton 🚩 sur le classement → formulaire de signalement → file modération (onglet Signalements).
+Signalements via HDV P2P (si activés) → file modération (onglet Signalements). Le bouton classement est désactivé pour l'instant.
 
 ## Sécurité
 

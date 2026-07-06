@@ -5,10 +5,8 @@ import {
   submitLeaderboardSnapshot,
   buildLeaderboardSnapshot,
 } from '../systems/leaderboard.js';
-import { getAuthState } from '../core/auth.js';
+import { getAuthState, getOnlineBlockReason, canUseOnlineFeatures } from '../core/auth.js';
 import { showAccountRequiredModal } from './authUi.js';
-import { getOnlineBlockReason, canUseOnlineFeatures } from '../core/auth.js';
-import { renderReportPlayerForm } from './adminView.js';
 import { isLeaderboardEnabled, isMaintenanceMode } from '../systems/gameConfig.js';
 
 let activeLeaderboardTab = 'level';
@@ -59,12 +57,10 @@ export async function renderLeaderboard(game, el) {
             <span class="lb-rank">#${i + 1}</span>
             <span class="lb-name">${row.display_name || 'Voyageur'}</span>
             <span class="lb-value">${formatLeaderboardValue(activeLeaderboardTab, row)}</span>
-            ${row.user_id !== auth.userId ? `<button type="button" class="link-btn lb-report-btn" data-uid="${row.user_id}" data-name="${row.display_name || 'Joueur'}">🚩</button>` : ''}
           </li>
         `).join('') || '<li class="leaderboard-empty">Aucun joueur classé pour l\u2019instant.</li>'}
       </ol>
       ${mySnap ? `<p class="view-desc lb-you">Toi : ${formatLeaderboardValue(activeLeaderboardTab, { ...mySnap, display_name: game.getCharacterDisplayName() })}</p>` : ''}
-      <div id="lb-report-root"></div>
     </div>
   `;
 
@@ -72,13 +68,6 @@ export async function renderLeaderboard(game, el) {
     btn.addEventListener('click', () => {
       activeLeaderboardTab = btn.dataset.lbTab;
       renderLeaderboard(game, el);
-    });
-  });
-
-  el.querySelectorAll('.lb-report-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const root = el.querySelector('#lb-report-root');
-      renderReportPlayerForm(root, btn.dataset.uid, btn.dataset.name);
     });
   });
 }
