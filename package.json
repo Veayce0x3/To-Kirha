@@ -7,7 +7,8 @@
     "dev": "live-server --port=5173 --open=index.html --watch=.",
     "credits": "node scripts/cursor-credits.mjs",
     "credits:summary": "node scripts/cursor-credits.mjs summary",
-    "credits:events": "node scripts/cursor-credits.mjs events"
+    "credits:events": "node scripts/cursor-credits.mjs events",
+    "push": "bash scripts/push.sh"
   },
   "devDependencies": {
     "live-server": "^1.2.2"
