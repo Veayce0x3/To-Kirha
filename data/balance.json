@@ -7,10 +7,11 @@
   "testHdv": {
     "enabled": true,
     "startingKirha": 10000,
+    "flatUnitPrice": 10,
     "priceMultiplier": 1.2,
     "flatMaxPrice": 12,
     "bulkQuantities": [1, 5, 10, 25],
-    "banner": "Marché test — ressources métiers et ferme disponibles à prix réduits pour faciliter les tests. HDV joueur ↔ joueur bientôt."
+    "banner": "Marché test — toutes les ressources métiers/ferme à 10 💰/u (beta). HDV joueurs dans l’onglet Joueurs."
   },
   "goldNuggetExchange": {
     "scrollCost": 5,

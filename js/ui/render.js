@@ -18,6 +18,8 @@ import {
 } from './router.js';
 import { isRecipeEquipped } from '../systems/equipment.js';
 import { initCareerChoiceModal, showCareerChoiceIfNeeded } from './careerChoiceUi.js';
+import { initAuthModal, showAuthModalIfNeeded, showAccountRequiredModal } from './authUi.js';
+import { canUseOnlineFeatures, getOnlineBlockReason, canSeeAdminPanel } from '../core/auth.js';
 import {
   renderView,
   renderJobSwitcherDock,
@@ -49,11 +51,19 @@ import {
 export function initUI(game, audio) {
   initSakuraPetals();
   initCareerChoiceModal(game);
-  showCareerChoiceIfNeeded(game);
 
   setNavigateGuard((viewId) => {
-    if (!game.needsCareerChoice()) return true;
-    return viewId === 'character' || viewId === 'options';
+    if (!game.needsCareerChoice()) {
+      if ((viewId === 'auction_house' || viewId === 'leaderboard') && !canUseOnlineFeatures()) {
+        showAccountRequiredModal(getOnlineBlockReason());
+        return false;
+      }
+      if (viewId === 'admin' && !canSeeAdminPanel()) {
+        return false;
+      }
+      return true;
+    }
+    return viewId === 'character' || viewId === 'options' || (viewId === 'admin' && canSeeAdminPanel());
   });
 
   const els = {
@@ -194,6 +204,13 @@ export function initUI(game, audio) {
     for (const viewId of SIDEBAR_FOOTER) {
       const btn = createNavBtn(viewId, false);
       if (btn) els.sidebarFooter.appendChild(btn);
+    }
+    if (canSeeAdminPanel()) {
+      const adminBtn = createNavBtn('admin', false);
+      if (adminBtn) {
+        adminBtn.classList.add('nav-admin-btn');
+        els.sidebarFooter.appendChild(adminBtn);
+      }
     }
   }
 
@@ -448,7 +465,14 @@ export function initUI(game, audio) {
       showToast(els, `Salle ${(r.roomIndex ?? 0) + 1}/${r.roomCount || '?'} — ${r.foe?.emoji || '👾'} ${r.foe?.name || ''}${healNote}`, 'upgrade');
     }
   });
-  on('navRefresh', () => buildNav());
+  on('navRefresh', () => {
+    buildNav();
+    updateNavActive();
+  });
+  on('authChange', () => {
+    buildNav();
+    updateNavActive();
+  });
   on('careerChoiceApplied', () => {
     buildNav();
     refreshView();

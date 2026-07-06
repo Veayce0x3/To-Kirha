@@ -18,6 +18,7 @@
   <meta name="apple-mobile-web-app-title" content="To-Kirha">
   <link rel="stylesheet" href="./css/main.css?v=20260623-1929">
   <link rel="stylesheet" href="./css/layout.css?v=20260623-1929">
+  <link rel="stylesheet" href="./css/online.css?v=20260623-1929">
 </head>
 <body>
   <div class="sakura-bg"></div>
@@ -38,6 +39,7 @@
 
     <div class="main-area">
       <header class="top-bar">
+        <div id="global-banners" class="global-banners hidden" aria-live="polite"></div>
         <button class="burger-btn" id="burger-btn" type="button" aria-label="Menu">☰</button>
         <button class="top-quick-btn top-quick-options" id="quick-options" type="button" title="Options" aria-label="Options">
           <img class="quick-btn-icon" src="./asset%20to-kirha/divers%20icone/parametre_transparent.png" alt="" />
@@ -124,6 +126,12 @@
 
   <div class="picker-sheet-backdrop" id="picker-sheet-backdrop"></div>
   <div id="picker-sheet-portal"></div>
+
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal modal-auth">
+      <div id="auth-modal-body"></div>
+    </div>
+  </div>
 
   <script type="module" src="./js/main.js?v=20260623-1929"></script>
 </body>

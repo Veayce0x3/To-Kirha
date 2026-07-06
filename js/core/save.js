@@ -1,5 +1,7 @@
 import { getDefaultSettings } from '../systems/prestige.js';
 
+import { attachIntegrityMeta, verifySaveIntegrity, validateSaveSanity } from './saveIntegrity.js';
+
 const SAVE_KEY = 'tokirha_save';
 const RESET_FLAG_KEY = 'tokirha_resetting';
 
@@ -12,10 +14,17 @@ function storageHasResetFlag() {
 }
 
 export const SaveProvider = {
-  async save(data) {
+  async save(data, balance = null) {
     try {
       if (storageHasResetFlag()) return false;
-      const payload = { ...data, lastOnline: Date.now() };
+      const payload = await attachIntegrityMeta({ ...data, lastOnline: Date.now() });
+      if (balance) {
+        const sanity = validateSaveSanity(payload, balance);
+        if (!sanity.ok) {
+          console.warn('[Save] Sanity check failed:', sanity.reason);
+          return false;
+        }
+      }
       localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
       return true;
     } catch (err) {
@@ -24,7 +33,7 @@ export const SaveProvider = {
     }
   },
 
-  async load() {
+  async load(balance = null) {
     try {
       const resetRequested = typeof window !== 'undefined'
         && (new URLSearchParams(window.location.search).get('newgame') === '1' || storageHasResetFlag());
@@ -39,7 +48,21 @@ export const SaveProvider = {
         return null;
       }
       const raw = localStorage.getItem(SAVE_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      const integrity = await verifySaveIntegrity(data);
+      if (!integrity.ok) {
+        console.warn('[Save] Integrity failed:', integrity.reason);
+        return null;
+      }
+      if (balance) {
+        const sanity = validateSaveSanity(data, balance);
+        if (!sanity.ok) {
+          console.warn('[Save] Sanity failed:', sanity.reason);
+          return null;
+        }
+      }
+      return data;
     } catch (err) {
       console.error('Load failed:', err);
       return null;

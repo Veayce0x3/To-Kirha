@@ -1,5 +1,9 @@
 import { SaveProvider, mergeSettings } from './save.js';
 import { emit } from './events.js';
+import { isGuestAccount, isRegisteredAccount, getAuthState } from './auth.js';
+import { loadCloudSave, saveCloudSave, mergeCloudAndLocal } from './cloudSave.js';
+import { validateSaveSanity } from './saveIntegrity.js';
+import { submitLeaderboardSnapshot } from '../systems/leaderboard.js';
 import { sellResource } from '../systems/economy.js';
 import {
   getCraftSellBonus,
@@ -279,6 +283,7 @@ export class Game {
       combatMealBuff: null,
       bankProtected: [],
       careerChoice: null,
+      meta: {},
     };
     ensureSlots(state, this.balance);
     ensureFarmSlots(state, this.farmData, this.balance);
@@ -356,6 +361,7 @@ export class Game {
       quests: migrateQuests(saved.quests),
       bankProtected: saved.bankProtected || defaults.bankProtected,
       careerChoice: migrateCareerChoice(saved.careerChoice),
+      meta: { ...defaults.meta, ...(saved.meta || {}) },
     };
     ensureSlots(merged, this.balance);
     ensureFarmSlots(merged, this.farmData, this.balance);
@@ -369,8 +375,23 @@ export class Game {
   }
 
   async init() {
-    const saved = await SaveProvider.load();
-    this.state = saved ? this.mergeState(saved) : this.getDefaultState();
+    const saved = await SaveProvider.load(this.balance);
+    let localState = saved ? this.mergeState(saved) : null;
+    this.state = localState || this.getDefaultState();
+
+    const { initAuth, syncAuthFromState, getAuthState } = await import('./auth.js');
+    syncAuthFromState(this.state);
+    await initAuth(this);
+    localState = this.state;
+
+    const auth = getAuthState();
+    if (auth.mode === 'registered' && auth.userId && auth.userId !== 'dev_local_user') {
+      const cloud = await loadCloudSave(auth.userId);
+      const merged = await mergeCloudAndLocal(cloud, localState, this.balance);
+      this.state = merged ? this.mergeState(merged) : localState;
+      syncAuthFromState(this.state);
+    }
+
     if (this.balance.betaMode) applyBetaUnlocks(this.state, this.companions);
 
     const offlineResult = applyOfflineProgress(this.state, this.aides, this.balance);
@@ -398,10 +419,22 @@ export class Game {
 
   scheduleSave() {
     clearTimeout(this.saveTimer);
-    this.saveTimer = setTimeout(() => {
+    this.saveTimer = setTimeout(async () => {
       this.state.lastOnline = Date.now();
-      SaveProvider.save(this.state);
+      await SaveProvider.save(this.state, this.balance);
+      if (isRegisteredAccount()) {
+        const auth = getAuthState();
+        await saveCloudSave(auth.userId, this.state, this.balance);
+        submitLeaderboardSnapshot(this.state, this.getCharacterDisplayName()).catch(() => {});
+      }
     }, 500);
+  }
+
+  canImportSave() {
+    if (isGuestAccount()) {
+      return { ok: false, reason: 'Import désactivé en mode invité.' };
+    }
+    return { ok: true };
   }
 
   trackEarnings(amount) {
@@ -1695,14 +1728,18 @@ export class Game {
   }
 
   importSave(encoded) {
+    const gate = this.canImportSave();
+    if (!gate.ok) return { ok: false, error: gate.reason };
     try {
       const parsed = SaveProvider.decode(encoded);
+      const sanity = validateSaveSanity(parsed.data, this.balance);
+      if (!sanity.ok) return { ok: false, error: sanity.reason || 'Sauvegarde suspecte.' };
       Object.values(this.harvestTimers).forEach(clearTimeout);
       this.harvestTimers = {};
       this.state = this.mergeState(parsed.data);
       this.state.lastOnline = Date.now();
       this.restoreHarvestTimers();
-      SaveProvider.save(this.state);
+      SaveProvider.save(this.state, this.balance);
       emit('stateChange', this.state);
       emit('settingsChange', this.state.settings);
       return { ok: true };

@@ -21,6 +21,12 @@ import { getDungeonKeyId } from '../systems/dungeonKeys.js';
 import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
 import { getTestHdvBanner, isTestHdvEnabled } from '../systems/testHdv.js';
 import { showCareerChoiceIfNeeded } from './careerChoiceUi.js';
+import { renderGuestBanner, renderAccountPanel, showAccountRequiredModal } from './authUi.js';
+import { renderLeaderboard } from './leaderboardView.js';
+import { renderMarketP2pPanel } from './marketP2pView.js';
+import { renderAdmin } from './adminView.js';
+import { canUseOnlineFeatures, getOnlineBlockReason } from '../core/auth.js';
+import { isMaintenanceMode, isMarketP2pEnabled } from '../systems/gameConfig.js';
 
 let workshopTab = 'toolmaker';
 let charTab = 'bag';
@@ -31,6 +37,7 @@ function normalizeCharTab(tab) {
 }
 let auctionCategory = '';
 let auctionGroup = 'services';
+let hdvMainMode = 'npc';
 let auctionRootEl = null;
 let combatUi = { step: 'action', menu: 'main', pendingSkill: null, targetMode: null };
 
@@ -212,6 +219,8 @@ export function renderView(game, container, viewId) {
     job_alchemist: () => renderJob(game, container, 'alchemist'),
     inventory: renderInventory,
     auction_house: renderAuctionHouse,
+    leaderboard: renderLeaderboard,
+    admin: renderAdmin,
     options: renderOptions,
     combat: renderCombat,
   };
@@ -428,6 +437,7 @@ function renderCharacter(game, el) {
   }
 
   el.innerHTML = `
+    ${renderGuestBanner(game)}
     <div class="char-page">
       <div class="prestige-teaser" id="char-prestige-teaser"></div>
       <section class="char-hero panel-inner">
@@ -463,6 +473,7 @@ function renderCharacter(game, el) {
   renderCharDofusEquipGrid(game, el.querySelector('#char-dofus-equip'));
   renderPrestigeTeaser(game, el.querySelector('#char-prestige-teaser'));
 
+  el.querySelector('#guest-upgrade-hdv')?.addEventListener('click', () => showAccountRequiredModal(getOnlineBlockReason()));
   el.querySelector('#goto-combat')?.addEventListener('click', () => navigate('combat'));
 
   el.querySelector('#nickname-set')?.addEventListener('click', () => {
@@ -2348,8 +2359,19 @@ function pickDefaultAuctionCategory(vendorEntries, groupId = auctionGroup) {
   return group?.entries[0]?.[0] || vendorEntries[0]?.[0] || '';
 }
 
-function buildAuctionCatalog(game) {
-  const vendors = game.getMerchantVendors();
+function getVendorsForHdvMode(game, mode = hdvMainMode) {
+  const all = game.getMerchantVendors();
+  if (mode === 'test') {
+    return Object.fromEntries(Object.entries(all).filter(([, v]) => v.testHdv));
+  }
+  if (mode === 'npc') {
+    return Object.fromEntries(Object.entries(all).filter(([, v]) => !v.testHdv));
+  }
+  return all;
+}
+
+function buildAuctionCatalog(game, mode = hdvMainMode) {
+  const vendors = getVendorsForHdvMode(game, mode);
   const vendorEntries = Object.entries(vendors);
   const allOffers = [];
   for (const [vendorId, vendor] of vendorEntries) {
@@ -2496,7 +2518,7 @@ function renderAuctionOfferList(game, root) {
   const listEl = root.querySelector('#auction-offer-list');
   if (!listEl) return;
 
-  const { visibleOffers } = buildAuctionCatalog(game);
+  const { visibleOffers } = buildAuctionCatalog(game, hdvMainMode);
   listEl.replaceChildren();
 
   if (!visibleOffers.length) {
@@ -2546,7 +2568,7 @@ function renderAuctionOfferList(game, root) {
 }
 
 function mountAuctionNavigation(game, root) {
-  const { vendorGroups, activeGroup, activeVendor } = buildAuctionCatalog(game);
+  const { vendorGroups, activeGroup, activeVendor } = buildAuctionCatalog(game, hdvMainMode);
   const breadcrumb = root.querySelector('#hdv-breadcrumb');
   if (breadcrumb && activeVendor) {
     breadcrumb.textContent = `HDV › ${AUCTION_GROUP_LABELS[auctionGroup] || auctionGroup} › ${activeVendor.name}`;
@@ -2562,7 +2584,7 @@ function mountAuctionNavigation(game, root) {
     tabsEl.querySelectorAll('.hdv-tab').forEach((btn) => {
       btn.addEventListener('click', () => {
         auctionGroup = btn.dataset.auctionGroup || 'services';
-        auctionCategory = pickDefaultAuctionCategory(Object.entries(game.getMerchantVendors()), auctionGroup);
+        auctionCategory = pickDefaultAuctionCategory(Object.entries(getVendorsForHdvMode(game, hdvMainMode)), auctionGroup);
         mountAuctionNavigation(game, root);
         renderAuctionOfferList(game, root);
         root.querySelector('.hdv-list-wrap')?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2604,6 +2626,7 @@ function mountAuctionNavigation(game, root) {
 
 export function refreshAuctionHouseLight(game) {
   if (!auctionRootEl?.isConnected) return;
+  if (hdvMainMode === 'players') return;
   updateAuctionWallet(game, auctionRootEl);
   const nuggetInfo = game.getGoldNuggetExchangeInfo?.();
   if (nuggetInfo) {
@@ -2615,34 +2638,51 @@ export function refreshAuctionHouseLight(game) {
 
 export function renderAuctionHouse(game, el) {
   auctionRootEl = el;
-  const merchant = game.merchant;
+
+  if (!canUseOnlineFeatures()) {
+    el.innerHTML = `
+      <div class="view-header"><h2>Hôtel des Ventes</h2></div>
+      <div class="panel-inner">
+        <p class="view-desc">${getOnlineBlockReason()}</p>
+        <button type="button" class="btn btn-craft" id="hdv-need-account">Créer un compte</button>
+      </div>
+    `;
+    el.querySelector('#hdv-need-account')?.addEventListener('click', () => showAccountRequiredModal(getOnlineBlockReason()));
+    return;
+  }
+
   const scrollRes = game.resources.ancient_scroll;
   const nuggetRes = game.resources.gold_nugget;
   const nuggetInfo = game.getGoldNuggetExchangeInfo?.() || null;
   const testBanner = getTestHdvBanner(game.balance);
   const careerPending = isTestHdvEnabled(game.balance) && !game.state.careerChoice?.confirmed;
-  const catalog = buildAuctionCatalog(game);
-
-  if (!catalog.vendorEntries.length) {
-    el.innerHTML = '<p class="empty-text panel-inner">Aucune offre pour le moment.</p>';
-    return;
-  }
+  const showTest = isTestHdvEnabled(game.balance);
+  const maintenance = isMaintenanceMode();
+  const modes = [
+    { id: 'npc', label: 'Marchand' },
+    ...(showTest ? [{ id: 'test', label: 'Test 10💰' }] : []),
+    ...(isMarketP2pEnabled() && !maintenance ? [{ id: 'players', label: 'Joueurs' }] : []),
+  ];
+  if (!modes.some((m) => m.id === hdvMainMode)) hdvMainMode = 'npc';
 
   el.innerHTML = `
     <div class="hdv-view">
-      ${testBanner ? `<p class="hdv-banner">${testBanner}</p>` : ''}
+      ${maintenance ? '<p class="hdv-banner warn">Maintenance — HDV joueurs et classement limités.</p>' : ''}
+      ${testBanner && hdvMainMode !== 'players' ? `<p class="hdv-banner">${testBanner}</p>` : ''}
       ${careerPending ? '<p class="hdv-banner warn">Choisis ta voie pour débloquer les ressources des autres métiers.</p>' : ''}
+      <nav class="hdv-main-tabs" id="hdv-main-tabs">
+        ${modes.map((m) => `<button type="button" class="hdv-main-tab${hdvMainMode === m.id ? ' active' : ''}" data-hdv-mode="${m.id}">${m.label}</button>`).join('')}
+      </nav>
       <div class="hdv-sticky">
-        <p class="hdv-breadcrumb" id="hdv-breadcrumb">HDV</p>
         <div class="hdv-wallet" id="hdv-wallet">
           <span class="hdv-wallet-item"><strong id="hdv-wallet-kirha">${formatNumber(game.state.kirha || 0)}</strong> 💰</span>
           <span class="hdv-wallet-item"><span id="hdv-wallet-scroll-icon">${renderResourceIcon(scrollRes, 'hdv-wallet-icon')}</span> <strong id="hdv-wallet-scrolls">${game.getScrollCount()}</strong></span>
           ${nuggetRes ? `<span class="hdv-wallet-item"><span id="hdv-wallet-nugget-icon">${renderResourceIcon(nuggetRes, 'hdv-wallet-icon')}</span> <strong id="hdv-wallet-nuggets">${nuggetInfo?.owned || 0}</strong></span>` : ''}
         </div>
-        <nav class="hdv-tabs" id="hdv-group-tabs" aria-label="Type de marché"></nav>
-        <nav class="hdv-chips-scroll" id="hdv-vendor-chips" aria-label="Métier ou vendeur"></nav>
+        <nav class="hdv-tabs" id="hdv-group-tabs" aria-label="Type de marché" ${hdvMainMode === 'players' ? 'hidden' : ''}></nav>
+        <nav class="hdv-chips-scroll" id="hdv-vendor-chips" aria-label="Métier ou vendeur" ${hdvMainMode === 'players' ? 'hidden' : ''}></nav>
       </div>
-      ${nuggetInfo && nuggetRes ? `
+      ${nuggetInfo && nuggetRes && hdvMainMode === 'npc' ? `
       <details class="hdv-nuggets">
         <summary>Pépites d'or</summary>
         <div class="hdv-nugget-actions">
@@ -2651,12 +2691,19 @@ export function renderAuctionHouse(game, el) {
         </div>
       </details>` : ''}
       <p class="hdv-vendor-desc" id="hdv-vendor-desc" hidden></p>
-      <div class="hdv-list-wrap">
+      <div class="hdv-list-wrap" id="hdv-content-area">
         <div class="hdv-list" id="auction-offer-list"></div>
       </div>
       <p class="hdv-tip">Vends tes récoltes à la <button type="button" class="link-btn" id="goto-bank">Banque</button> pour obtenir des Kirha.</p>
     </div>
   `;
+
+  el.querySelectorAll('[data-hdv-mode]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      hdvMainMode = btn.dataset.hdvMode;
+      renderAuctionHouse(game, el);
+    });
+  });
 
   el.querySelector('#goto-bank')?.addEventListener('click', () => navigate('inventory'));
   el.querySelector('#nugget-to-scroll')?.addEventListener('click', () => {
@@ -2669,6 +2716,19 @@ export function renderAuctionHouse(game, el) {
     if (!result.ok) emit('farmBlocked', { message: result.reason || 'Échange impossible.' });
     else refreshAuctionHouseLight(game);
   });
+
+  if (hdvMainMode === 'players') {
+    const area = el.querySelector('#hdv-content-area');
+    area.innerHTML = '<div id="hdv-p2p-root"></div>';
+    renderMarketP2pPanel(game, area.querySelector('#hdv-p2p-root'));
+    return;
+  }
+
+  const catalog = buildAuctionCatalog(game, hdvMainMode);
+  if (!catalog.vendorEntries.length) {
+    el.querySelector('#hdv-content-area').innerHTML = '<p class="empty-text panel-inner">Aucune offre pour le moment.</p>';
+    return;
+  }
 
   mountAuctionNavigation(game, el);
   renderAuctionOfferList(game, el);
@@ -2890,6 +2950,7 @@ function emitPrestigeModal() {
 
 export function renderOptions(game, el) {
   const beta = !!game.balance.betaMode;
+  const importGate = game.canImportSave();
   const info = game.getPrestigeInfo();
   const caps = info.caps || game.getSeasonCapPreview();
   const p = game.state.prestige || {};
@@ -2899,6 +2960,7 @@ export function renderOptions(game, el) {
     : '';
   el.innerHTML = `
     <div class="view-header"><h2>${iconHtml(getNavIcon('options'), 'view-header-icon', 'Options')} Options</h2></div>
+    <div id="account-panel-root"></div>
     <div class="panel-inner"><div id="settings-grid" class="settings-grid"></div></div>
     <div class="panel-inner">
       <h3>🔄 Application</h3>
@@ -2928,11 +2990,12 @@ export function renderOptions(game, el) {
         <button type="button" class="btn btn-save" id="download-save">Télécharger</button>
       </div>
       <textarea class="save-textarea" id="save-data" rows="3" readonly placeholder="Code de sauvegarde…"></textarea>
+      ${importGate.ok ? `
       <details class="save-import-details">
         <summary>Restaurer une sauvegarde</summary>
         <textarea class="save-textarea" id="save-import-data" rows="3" placeholder="Colle un code exporté…"></textarea>
         <button type="button" class="btn btn-save btn-import" id="import-save">Importer</button>
-      </details>
+      </details>` : `<p class="save-warn">${importGate.reason}</p>`}
       ${beta ? '' : `
       <details class="save-danger-details">
         <summary>Nouvelle partie</summary>
@@ -2943,6 +3006,7 @@ export function renderOptions(game, el) {
     </div>
   `;
 
+  renderAccountPanel(game, el.querySelector('#account-panel-root'));
   renderSettingsIn(game, el.querySelector('#settings-grid'));
   el.querySelector('#reload-app')?.addEventListener('click', () => {
     forceAppRefresh(game);

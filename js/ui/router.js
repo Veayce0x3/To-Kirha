@@ -59,9 +59,11 @@ export const VIEWS = {
   inventory: { id: 'inventory', label: 'Banque', title: 'Banque' },
   auction_house: { id: 'auction_house', label: 'Hôtel des Ventes', title: 'Hôtel des Ventes' },
   combat: { id: 'combat', label: 'Combat', title: 'Combat' },
+  leaderboard: { id: 'leaderboard', label: 'Classement', title: 'Classement', emoji: '🏆' },
   workshop: { id: 'workshop', label: 'Atelier', title: 'Atelier' },
   cuisine: { id: 'cuisine', label: 'Cuisine', title: 'Cuisine', emoji: '👨‍🍳', job: 'cook' },
   options: { id: 'options', label: 'Options', title: 'Options' },
+  admin: { id: 'admin', label: 'Admin', title: 'Administration', emoji: '🛡️' },
   ...CRAFT_VIEWS,
   ...FARM_VIEWS,
 };
@@ -112,7 +114,7 @@ export const NAV_CATEGORIES = [
     label: 'Gestion',
     collapsible: true,
     defaultOpen: true,
-    items: ['inventory', 'auction_house', 'combat'],
+    items: ['inventory', 'auction_house', 'leaderboard', 'combat'],
   },
 ];
 

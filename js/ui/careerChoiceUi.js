@@ -12,6 +12,7 @@ import {
 } from '../systems/careerChoice.js';
 import { validateNickname } from '../systems/character.js';
 import { FARM_BUILDING_LABELS } from '../systems/farm.js';
+import { needsAuthChoice } from '../core/auth.js';
 
 let modalEl = null;
 let gameRef = null;
@@ -295,6 +296,10 @@ export function initCareerChoiceModal(game) {
 
 export function showCareerChoiceIfNeeded(game) {
   gameRef = game;
+  if (needsAuthChoice(game.state)) {
+    closeCareerModal();
+    return;
+  }
   if (!game.needsCareerChoice()) {
     closeCareerModal();
     return;

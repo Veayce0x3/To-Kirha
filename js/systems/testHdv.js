@@ -10,6 +10,7 @@ import {
   isFarmBuildingUnlocked,
 } from './careerChoice.js';
 import { FARM_BUILDING_LABELS } from './farm.js';
+import { isMaintenanceMode, isTestHdvLiveEnabled } from './gameConfig.js';
 
 const EXCLUDED_ID_PREFIXES = ['meal_', 'key_'];
 const EXCLUDED_IDS = new Set(['ancient_scroll', 'gold_nugget', 'kirha']);
@@ -19,11 +20,13 @@ function isTestHdvCfg(balance) {
 }
 
 export function isTestHdvEnabled(balance) {
+  if (isMaintenanceMode() || !isTestHdvLiveEnabled()) return false;
   return isTestHdvCfg(balance);
 }
 
 function calcUnitPrice(resource, balance) {
   const cfg = balance.testHdv || {};
+  if (cfg.flatUnitPrice != null) return Math.max(1, Math.floor(cfg.flatUnitPrice));
   const mult = cfg.priceMultiplier ?? 1.2;
   const maxPrice = cfg.flatMaxPrice ?? 12;
   const base = resource.sellPrice || 3;

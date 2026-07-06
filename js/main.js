@@ -2,6 +2,10 @@ import { Game } from './core/game.js';
 import { initUI } from './ui/render.js';
 import { SaveProvider } from './core/save.js';
 import { audio } from './core/audio.js';
+import { initAuthModal, showAuthModalIfNeeded, showBannedModalIfNeeded } from './ui/authUi.js';
+import { loadGameConfig, isMaintenanceMode } from './systems/gameConfig.js';
+import { mountAnnouncementBanner } from './ui/announcements.js';
+import { isAccountBanned, syncProfileFromServer } from './core/auth.js';
 
 const DATA_BASE = new URL('../data/', import.meta.url);
 
@@ -48,9 +52,34 @@ async function loadJSON(file) {
   );
   await game.init();
 
+  await loadGameConfig();
+
+  if (game.state?.meta?.account?.mode === 'registered') {
+    await syncProfileFromServer();
+  }
+
   document.documentElement.dataset.theme = game.state.settings?.darkMode ? 'dark' : '';
   audio.updateSettings(game.state.settings);
+  initAuthModal(game);
+  await showAuthModalIfNeeded(game);
+
+  if (isAccountBanned()) {
+    showBannedModalIfNeeded();
+  }
+
   initUI(game, audio);
+
+  const bannerEl = document.getElementById('global-banners');
+  if (bannerEl) {
+    if (isMaintenanceMode()) {
+      bannerEl.classList.remove('hidden');
+      bannerEl.innerHTML = '<div class="announcement-banner kind-maintenance" role="alert"><strong>Maintenance</strong> — Les fonctionnalités online sont temporairement limitées.</div>';
+    } else {
+      mountAnnouncementBanner(bannerEl);
+    }
+  }
+  const { showCareerChoiceIfNeeded } = await import('./ui/careerChoiceUi.js');
+  showCareerChoiceIfNeeded(game);
 
   const unlockAudio = () => {
     audio.init();
@@ -64,14 +93,14 @@ async function loadJSON(file) {
   window.addEventListener('beforeunload', () => {
     if (SaveProvider.isResetting()) return;
     game.state.lastOnline = Date.now();
-    SaveProvider.save(game.state);
+    SaveProvider.save(game.state, game.balance);
   });
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       if (SaveProvider.isResetting()) return;
       game.state.lastOnline = Date.now();
-      SaveProvider.save(game.state);
+      SaveProvider.save(game.state, game.balance);
     }
   });
 }
