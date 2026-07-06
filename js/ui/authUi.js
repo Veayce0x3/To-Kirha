@@ -1,19 +1,17 @@
 import { emit } from '../core/events.js';
 import {
   applyGuestToState,
-  applyRegisteredToState,
+  completeRegisteredLogin,
   generateGuestDisplayName,
   getAuthState,
   isSupabaseOnline,
   needsAuthChoice,
   signInWithEmail,
   signUpWithEmail,
-  ensureProfile,
   syncProfileFromServer,
   isAccountBanned,
   canSeeAdminPanel,
 } from '../core/auth.js';
-import { getSupabaseClient } from '../core/supabaseClient.js';
 
 let gameRef = null;
 let modalEl = null;
@@ -144,22 +142,13 @@ function renderAuthBody(mode) {
         showAuthError(body, result.message, 'info');
         return;
       }
-      applyRegisteredToState(gameRef.state, {
-        userId: result.user.id,
-        email: result.user.email,
-        displayName: name,
-      });
-      if (name) gameRef.setCharacterNickname(name, false, { silent: true });
-      const supabase = await getSupabaseClient();
-      if (supabase && result.user) await ensureProfile(supabase, result.user);
-      await syncProfileFromServer();
+      await completeRegisteredLogin(gameRef, result.user);
       if (isAccountBanned()) {
         showBannedModalIfNeeded();
         resolveAuthPromise?.(getAuthState());
         resolveAuthPromise = null;
         return;
       }
-      gameRef.scheduleSave?.();
       finishAuth();
     });
     body.querySelector('#auth-back')?.addEventListener('click', () => renderAuthBody('welcome'));
@@ -183,28 +172,13 @@ function renderAuthBody(mode) {
       const password = body.querySelector('#auth-login-password')?.value || '';
       const result = await signInWithEmail(email, password);
       if (!result.ok) return showAuthError(body, result.reason);
-      const displayName = gameRef.state.character?.nickname?.trim()
-        || result.user.user_metadata?.display_name
-        || result.user.email?.split('@')[0]
-        || 'Voyageur';
-      applyRegisteredToState(gameRef.state, {
-        userId: result.user.id,
-        email: result.user.email,
-        displayName,
-      });
-      if (!gameRef.state.character?.nickname?.trim()) {
-        gameRef.setCharacterNickname(displayName, false, { silent: true });
-      }
-      const supabase = await getSupabaseClient();
-      if (supabase) await ensureProfile(supabase, result.user);
-      await syncProfileFromServer();
+      await completeRegisteredLogin(gameRef, result.user);
       if (isAccountBanned()) {
         showBannedModalIfNeeded();
         resolveAuthPromise?.(getAuthState());
         resolveAuthPromise = null;
         return;
       }
-      gameRef.scheduleSave?.();
       finishAuth();
     });
     body.querySelector('#auth-back')?.addEventListener('click', () => renderAuthBody('welcome'));

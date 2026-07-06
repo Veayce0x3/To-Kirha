@@ -182,9 +182,18 @@ function applyProfileData(profile) {
   authState.isBanned = !!profile.is_banned;
   authState.bannedReason = profile.banned_reason || null;
   authState.cheatFlagged = !!profile.cheat_flagged;
-  if (profile.display_name && !authState.displayName) {
+  if (profile.display_name) {
     authState.displayName = profile.display_name;
   }
+}
+
+/** Applique le pseudo serveur au personnage après connexion. */
+export function applyServerDisplayNameToGame(game, displayName) {
+  const name = displayName?.trim();
+  if (!name || !game?.state) return;
+  game.state.character = game.state.character || { level: 1, xp: 0 };
+  game.state.character.nickname = name;
+  game.state.character.nicknameUpdatedAt = Date.now();
 }
 
 export async function syncProfileFromServer() {
@@ -214,27 +223,33 @@ export async function initAuth(game) {
     const supabase = await getSupabaseClient();
     const { data: { session } } = await supabase.auth.getSession();
     const localAcc = game.state?.meta?.account;
-    const canRestoreSession = session?.user
+    const sessionUser = session?.user;
+    const sessionMatchesLocal = sessionUser
       && localAcc?.mode === 'registered'
-      && localAcc.userId === session.user.id;
+      && localAcc.userId === sessionUser.id;
+    const shouldAdoptSession = sessionUser && (
+      !localAcc?.mode
+      || localAcc.mode === 'guest'
+      || (localAcc.mode === 'registered' && localAcc.userId !== sessionUser.id)
+    );
 
-    if (canRestoreSession) {
+    if (sessionMatchesLocal || shouldAdoptSession) {
       applyRegisteredToState(game.state, {
-        userId: session.user.id,
-        email: session.user.email,
-        displayName: game.state.character?.nickname || session.user.user_metadata?.display_name,
+        userId: sessionUser.id,
+        email: sessionUser.email,
+        displayName: null,
       });
-      if (!game.state.character?.nickname?.trim()) {
-        const fallback = session.user.user_metadata?.display_name
-          || session.user.email?.split('@')[0]
-          || 'Voyageur';
-        game.state.character = game.state.character || { level: 1, xp: 0 };
-        game.state.character.nickname = fallback;
-      }
-      await ensureProfile(supabase, session.user);
-      await syncProfileFromServer();
+      await ensureProfile(supabase, sessionUser);
+      const profile = await syncProfileFromServer();
+      const serverName = profile?.display_name
+        || sessionUser.user_metadata?.display_name
+        || sessionUser.email?.split('@')[0]
+        || 'Voyageur';
+      authState.displayName = serverName;
+      applyServerDisplayNameToGame(game, serverName);
       authState.ready = true;
       emit('authChange', getAuthState());
+      emit('nicknameChange', { name: serverName, renamed: false });
       return getAuthState();
     }
   }
@@ -268,12 +283,60 @@ export function needsAuthChoice(state) {
 }
 
 export async function ensureProfile(supabase, user) {
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (existing) return;
+
   const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'Voyageur';
-  await supabase.from('profiles').upsert({
+  await supabase.from('profiles').insert({
     user_id: user.id,
     display_name: displayName,
     updated_at: new Date().toISOString(),
-  }, { onConflict: 'user_id' });
+  });
+}
+
+/** Finalise connexion / inscription : profil serveur, pseudo, save cloud. */
+export async function completeRegisteredLogin(game, user) {
+  applyRegisteredToState(game.state, {
+    userId: user.id,
+    email: user.email,
+    displayName: null,
+  });
+  const supabase = await getSupabaseClient();
+  if (supabase) await ensureProfile(supabase, user);
+  const profile = await syncProfileFromServer();
+  const serverName = profile?.display_name
+    || user.user_metadata?.display_name
+    || user.email?.split('@')[0]
+    || 'Voyageur';
+  authState.displayName = serverName;
+  applyServerDisplayNameToGame(game, serverName);
+
+  const { loadCloudSave, mergeCloudAndLocal } = await import('./cloudSave.js');
+  const cloud = await loadCloudSave(user.id);
+  if (cloud?.data) {
+    const merged = await mergeCloudAndLocal(cloud, game.state, game.balance);
+    if (merged) {
+      game.state = game.mergeState(merged);
+      applyRegisteredToState(game.state, {
+        userId: user.id,
+        email: user.email,
+        displayName: serverName,
+      });
+      applyServerDisplayNameToGame(game, serverName);
+      await syncProfileFromServer();
+    }
+  }
+
+  game.scheduleSave?.();
+  emit('authChange', getAuthState());
+  emit('nicknameChange', { name: serverName, renamed: false });
+  emit('stateChange', game.state);
+  emit('navRefresh');
+  return profile;
 }
 
 export async function signUpWithEmail(email, password, displayName) {
