@@ -1,5 +1,6 @@
 /**
- * Copie ce fichier en js/config.js et remplis tes clés Supabase (ne pas committer config.js).
+ * Exemple — la config prod est dans js/config.js (clé anon publique, OK à committer).
+ * Ne jamais y mettre la service_role Supabase.
  */
 export const SUPABASE_URL = 'https://VOTRE_PROJECT.supabase.co';
 export const SUPABASE_ANON_KEY = 'eyJ...';

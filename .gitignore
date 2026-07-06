@@ -23,4 +23,3 @@ npm-debug.log*
 # Local dev artifacts
 dist/
 build/
-js/config.js
