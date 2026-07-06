@@ -14,6 +14,10 @@ Projet : **To-Kirha** (`jmakrpkocxlyykgfnmlv`)
 
 3. **(Optionnel dev)** Désactiver *Confirm email* sur le provider Email pour tester sans mail.
 
-## Config locale
+## Config
 
-Copier `js/config.example.js` → `js/config.js` avec URL et clé anon du projet.
+`js/config.js` est **dans le repo** (clé **anon** publique — nécessaire pour GitHub Pages).
+
+Pour un clone local : le fichier est déjà présent ; sinon copier `js/config.example.js` → `js/config.js` et remplir URL + clé anon du dashboard Supabase → Settings → API.
+
+**Ne jamais** y mettre la clé `service_role`.

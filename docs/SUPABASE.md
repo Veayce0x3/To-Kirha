@@ -1,84 +1,83 @@
-# Supabase — Préparation cloud save (Phase 5+)
+# Supabase — Online To-Kirha
 
-> Structure préparée, **non implémentée**. Ce doc sert de guide pour l'intégration future.
+> Comptes, save cloud, classement, HDV P2P, admin et config live — **implémenté** (beta).
 
-## Architecture actuelle
+## Architecture
 
 ```
-js/core/save.js
-├── SaveProvider        → localStorage (actif)
-├── CloudSaveProvider   → stub Supabase (inactif)
-└── createSaveProvider(type) → 'local' | 'cloud'
+js/config.js              → URL + clé anon (commitée, publique côté client)
+js/core/supabaseClient.js → client Supabase (ESM esm.sh)
+js/core/auth.js           → session, profil, rôles staff, ban
+js/core/cloudSave.js      → sync save ↔ table saves
+js/systems/leaderboard.js → classement serveur
+js/systems/marketP2p.js   → HDV joueurs
+js/systems/admin.js       → RPC modération / admin
+js/systems/gameConfig.js  → maintenance, toggles live
+supabase/*.sql            → schéma, RLS, RPC (à déployer dans le SQL Editor)
 ```
 
-## Migration prévue
+**Fallback local :** sans compte ou sans Supabase, le jeu tourne sur `localStorage` (`SaveProvider`).
 
-### 1. Config Supabase
-
-Créer un projet Supabase et une table `saves` :
-
-```sql
-create table saves (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users not null,
-  save_data jsonb not null,
-  updated_at timestamptz default now(),
-  unique(user_id)
-);
-```
-
-### 2. Variables d'environnement
+## Config (`js/config.js`)
 
 ```javascript
-// js/config.js (à créer)
 export const SUPABASE_URL = 'https://xxx.supabase.co';
-export const SUPABASE_ANON_KEY = 'eyJ...';
+export const SUPABASE_ANON_KEY = 'eyJ...';  // rôle "anon"
+export const DEV_FAKE_ACCOUNT = false;      // true = compte dev fictif sans serveur
 ```
 
-Ne jamais committer les clés — utiliser GitHub Secrets pour CI.
+| Clé | Dans Git ? | Sensible ? |
+|-----|------------|------------|
+| **anon** (`SUPABASE_ANON_KEY`) | **Oui** — requis pour GitHub Pages | **Non** — conçue pour le navigateur ; sécurité = **RLS + RPC** |
+| **service_role** | **Jamais** | **Oui** — bypass RLS ; dashboard Supabase / CI secrets uniquement |
+| Mots de passe joueurs | Jamais | Oui — gérés par Supabase Auth |
 
-### 3. Implémenter CloudSaveProvider
+La clé anon est visible dans le JS déployé (local ou `veayce0x3.github.io`) : c’est le modèle normal d’une SPA Supabase. Ne pas la traiter comme un secret ; traiter **RLS et policies** comme la vraie barrière.
+
+`js/config.example.js` sert de modèle si tu clones le repo sur une autre machine.
+
+## Déploiement SQL
+
+1. Exécuter `supabase/schema.sql` (tables de base)
+2. Exécuter `supabase/rpc_market.sql` si besoin (marché)
+3. Exécuter `supabase/admin_system.sql` (admin, signalements, config live)
+
+Voir aussi `supabase/auth-setup.md`, `supabase/admin-setup.md`, `scripts/deploy-admin-sql.md`.
+
+## Auth (email)
+
+- Inscription / connexion avant le choix de carrière si pas de compte
+- Profil `profiles` (pseudo unique)
+- Rôles staff : `moderator`, `admin`, `superadmin` — panneau in-game si `admin_access` serveur
+
+URLs redirect Supabase : ajouter `https://veayce0x3.github.io/To-Kirha/**` en prod.
+
+## Save cloud
+
+- Table `saves` (`save_data` jsonb, `user_id`)
+- Sync au login et périodiquement ; merge côté client
+- Validation serveur (`saveIntegrity`, RPC leaderboard) pour limiter la triche évidente
+
+## Ce qui ne doit jamais être commité
+
+- `service_role` / clé secrète Supabase
+- `.env`, tokens Cursor (`.cursor/`)
+- Mots de passe comptes admin ou joueurs
+
+## Fichiers clés
+
+| Fichier | Rôle |
+|---------|------|
+| `js/core/save.js` | Local + pont cloud |
+| `js/ui/authUi.js` | Modals connexion / invité |
+| `js/ui/adminView.js` | Panneau admin in-game |
+| `js/ui/leaderboardView.js` | Classement + signalements |
+| `js/ui/marketP2pView.js` | HDV P2P |
+
+## Dépendance
+
+Supabase JS chargé à la volée (pas de `npm install`) :
 
 ```javascript
-import { createClient } from '@supabase/supabase-js';
-
-export const CloudSaveProvider = {
-  async save(data) {
-    const { error } = await supabase
-      .from('saves')
-      .upsert({ user_id: userId, save_data: data, updated_at: new Date() });
-    return !error;
-  },
-  async load() {
-    const { data } = await supabase.from('saves').select('save_data').single();
-    return data?.save_data ?? null;
-  },
-};
-```
-
-### 4. Basculer le provider
-
-```javascript
-// js/main.js — futur
-const providerType = userLoggedIn ? 'cloud' : 'local';
-const saveProvider = createSaveProvider(providerType);
-```
-
-### 5. Sync local ↔ cloud
-
-- Au login : charger cloud, merge avec local si plus récent
-- À chaque save : local + cloud en parallèle
-- Au logout : garder local comme fallback
-
-## Fichiers à modifier (quand prêt)
-
-- `js/core/save.js` — implémenter CloudSaveProvider
-- `js/core/game.js` — injecter provider au constructeur
-- `js/ui/render.js` — écran login/compte
-- `index.html` — bouton connexion
-
-## Dépendances futures
-
-```bash
-npm install @supabase/supabase-js
+import('https://esm.sh/@supabase/supabase-js@2.49.8')
 ```
