@@ -4,6 +4,10 @@ export function buildDefaultQuestState() {
   return { completed: [], progress: {} };
 }
 
+export function areQuestsEnabled(balance) {
+  return balance?.questsEnabled === true;
+}
+
 export function migrateQuests(saved) {
   if (!saved) return buildDefaultQuestState();
   return {

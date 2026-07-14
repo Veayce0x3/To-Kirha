@@ -202,15 +202,19 @@ export function getViewTitle(viewId = currentView) {
   return VIEWS[viewId]?.title || 'To-Kirha';
 }
 
-export function getNavCategories(state = null) {
+export function getNavCategories(state = null, balance = null) {
   if (!state?.careerChoice?.confirmed) {
     return NAV_CATEGORIES.filter((cat) => cat.id === 'personnage');
   }
   const harvestItems = getVisibleHarvestViews(state);
   const farmItems = getVisibleFarmViews(state);
+  const questsOn = balance?.questsEnabled === true;
   return NAV_CATEGORIES.map((cat) => {
     if (cat.id === 'recolte') return { ...cat, items: harvestItems };
     if (cat.id === 'ferme') return { ...cat, items: farmItems };
+    if (cat.id === 'monde' && !questsOn) {
+      return { ...cat, items: cat.items.filter((id) => id !== 'missions') };
+    }
     return cat;
   });
 }

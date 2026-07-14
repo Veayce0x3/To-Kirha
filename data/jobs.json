@@ -69,8 +69,8 @@
     "name": "Outilleur",
     "emoji": "🛠️",
     "maxLevel": 200,
-    "xpPerLevel": 120,
-    "xpScaling": 1.1,
+    "xpPerLevel": 70,
+    "xpScaling": 1.06,
     "bonusesPerLevel": {
       "craftValueBonus": 0.008
     },
@@ -96,8 +96,8 @@
     "name": "Cuisinier",
     "emoji": "👨‍🍳",
     "maxLevel": 200,
-    "xpPerLevel": 120,
-    "xpScaling": 1.1,
+    "xpPerLevel": 70,
+    "xpScaling": 1.06,
     "bonusesPerLevel": {
       "craftValueBonus": 0.01
     },

@@ -1,4 +1,4 @@
-import { isChapterComplete } from './quests.js';
+import { isChapterComplete, areQuestsEnabled } from './quests.js';
 
 export function getPrestigeBonuses(state) {
   const p = state.prestige || {};
@@ -71,7 +71,7 @@ export function getPrestigeBlockers(state, balance, quests = {}, combatZones = {
     }
   }
 
-  if (req.requireQuestsChapter && !isChapterComplete(req.requireQuestsChapter, quests, state)) {
+  if (areQuestsEnabled(balance) && req.requireQuestsChapter && !isChapterComplete(req.requireQuestsChapter, quests, state)) {
     const label = balance.zones[req.requireQuestsChapter]?.name || req.requireQuestsChapter;
     blockers.push(`Missions ${label} incomplètes`);
   }
@@ -145,7 +145,7 @@ export function getPrestigeProgress(state, balance, quests = {}, combatZones = {
     });
   }
 
-  if (req.requireQuestsChapter) {
+  if (areQuestsEnabled(balance) && req.requireQuestsChapter) {
     const label = balance.zones[req.requireQuestsChapter]?.name || req.requireQuestsChapter;
     steps.push({
       id: 'quests',

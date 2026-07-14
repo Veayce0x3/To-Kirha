@@ -9,7 +9,7 @@ import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
 import { forceAppRefresh } from '../core/reload.js';
-import { getQuestStatusText, isQuestCompleted, isQuestReady, QUEST_CHAPTER_LABELS } from '../systems/quests.js';
+import { getQuestStatusText, isQuestCompleted, isQuestReady } from '../systems/quests.js';
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
 import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
@@ -1230,79 +1230,15 @@ function renderCharTeamTab(game, panel) {
 }
 
 function renderMissions(game, el) {
-  const season = game.state.season || 1;
-  const chapters = game.getQuestsByChapter();
-
   el.innerHTML = `
     <div class="view-header">
       <h2>${iconHtml(getNavIcon('missions'), 'view-header-icon', 'Missions')} Missions</h2>
-      <p class="view-desc">Saison ${season} — complète les quêtes pour gagner des récompenses.</p>
+      <p class="view-desc">Missions désactivées pour le moment.</p>
     </div>
-    <div class="panel-inner mission-current-panel" id="mission-current"></div>
-    <div id="mission-chapters"></div>
+    <div class="panel-inner mission-coming-soon">
+      <p class="empty-text">Les quêtes sont en pause pendant les tests. Progresse librement : récolte, ferme, cuisine, combats et donjons.</p>
+    </div>
   `;
-
-  renderObjectiveBanner(game, el.querySelector('#mission-current'));
-
-  const chaptersEl = el.querySelector('#mission-chapters');
-  const chapterIds = Object.keys(chapters);
-  if (!chapterIds.length) {
-    chaptersEl.innerHTML = '<div class="panel-inner"><p class="empty-text">Aucune mission disponible.</p></div>';
-    return;
-  }
-
-  for (const chapterId of chapterIds) {
-    const chapter = chapters[chapterId];
-    const label = QUEST_CHAPTER_LABELS[chapterId] || chapterId;
-    const section = document.createElement('div');
-    section.className = 'panel-inner mission-chapter';
-    section.innerHTML = `<h3 class="mission-chapter-title">${label}</h3>`;
-
-    const journal = document.createElement('div');
-    journal.className = 'mission-journal-slot';
-    section.appendChild(journal);
-    chaptersEl.appendChild(section);
-
-    const allQuests = [...chapter.available, ...chapter.completed];
-    if (!allQuests.length && chapter.locked.length) {
-      journal.innerHTML = `<p class="empty-text">${chapter.locked.length} mission(s) à débloquer.</p>`;
-      continue;
-    }
-    if (!allQuests.length) {
-      journal.innerHTML = '<p class="empty-text">Aucune mission dans ce chapitre.</p>';
-      continue;
-    }
-
-    const list = document.createElement('div');
-    list.className = 'quest-list';
-    for (const quest of allQuests.sort((a, b) => (a.order || 0) - (b.order || 0))) {
-      const done = isQuestCompleted(game.state, quest.id);
-      const ready = !done && isQuestReady(quest, game.state, game.recipes);
-      const row = document.createElement('div');
-      row.className = `quest-row${ready ? ' quest-ready' : ''}${done ? ' quest-done' : ''}`;
-      row.innerHTML = `
-        <div class="quest-row-head">
-          <strong>${quest.title}</strong>
-          <span class="quest-status">${getQuestStatusText(quest, game.state, game.recipes)}</span>
-        </div>
-        <p class="quest-desc">${quest.description}</p>
-        ${quest.rewardKirha ? `<p class="quest-reward">Récompense : ${quest.rewardKirha} 💰${quest.rewardScrolls ? ` · ${quest.rewardScrolls} 📜` : ''}</p>` : ''}
-      `;
-      if (!done && (quest.hintView || quest.hintJob)) {
-        const go = document.createElement('button');
-        go.type = 'button';
-        go.className = 'btn btn-small btn-muted quest-go';
-        go.textContent = quest.hintJob ? 'Récolter' : 'Y aller';
-        go.addEventListener('click', () => {
-          if (quest.hintView) navigate(quest.hintView === 'workshop' ? 'workshop' : quest.hintView);
-          else if (quest.hintJob) navigate(JOB_VIEW_MAP[quest.hintJob] || 'world');
-        });
-        row.appendChild(go);
-      }
-      list.appendChild(row);
-    }
-    journal.appendChild(list);
-  }
 }
 
 /* ── Monde ── */

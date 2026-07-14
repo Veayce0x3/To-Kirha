@@ -152,7 +152,7 @@ export function initUI(game, audio) {
     els.sidebarNav.innerHTML = '';
     els.sidebarFooter.innerHTML = '';
 
-    for (const cat of getNavCategories(game.state)) {
+    for (const cat of getNavCategories(game.state, game.balance)) {
       const section = document.createElement('div');
       section.className = 'nav-category';
 
@@ -592,6 +592,7 @@ export function initUI(game, audio) {
     showToast(els, `${prefix} ${zone.emoji} ${zone.name}`, 'zone');
   });
   on('questComplete', ({ quest }) => {
+    if (game.balance?.questsEnabled !== true) return;
     showToast(els, `📜 Quête terminée : ${quest.title}`, 'upgrade');
   });
   on('offlineProgress', (r) => showOfflineModal(game, els, r));

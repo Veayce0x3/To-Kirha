@@ -1,5 +1,5 @@
 import { canPrestige, getSeasonLevelCap } from './prestige.js';
-import { getNextQuest, isQuestReady, isQuestCompleted } from './quests.js';
+import { getNextQuest, isQuestReady, isQuestCompleted, areQuestsEnabled } from './quests.js';
 import { canPayUnlockZone } from './zoneProgress.js';
 import { getRecipeRequiredLevel } from './craft.js';
 import { getJobEquippedTool } from './equipment.js';
@@ -85,7 +85,7 @@ export function getCurrentObjective(ctx) {
     jobs,
   } = ctx;
 
-  const nextQuest = getNextQuest(quests, state, recipes);
+  const nextQuest = areQuestsEnabled(balance) ? getNextQuest(quests, state, recipes) : null;
   if (nextQuest && !isQuestCompleted(state, nextQuest.id)) {
     return objective(nextQuest.title, nextQuest.description, {
       hintView: nextQuest.hintView,

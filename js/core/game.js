@@ -118,6 +118,7 @@ import {
   isQuestCompleted,
   getQuestsByChapter,
   getQuestGuidance,
+  areQuestsEnabled,
 } from '../systems/quests.js';
 import {
   unlockWorldZone,
@@ -501,6 +502,7 @@ export class Game {
   }
 
   processQuests() {
+    if (!areQuestsEnabled(this.balance)) return false;
     let changed = false;
     for (const quest of Object.values(this.quests)) {
       if (isQuestCompleted(this.state, quest.id)) continue;
@@ -582,6 +584,7 @@ export class Game {
   }
 
   onHarvestForQuests(resourceId, yield_) {
+    if (!areQuestsEnabled(this.balance)) return;
     for (const quest of Object.values(this.quests)) {
       if (quest.type !== 'harvest_resource') continue;
       if (isQuestCompleted(this.state, quest.id)) continue;
@@ -594,13 +597,6 @@ export class Game {
 
   onCombatVictoryHooks(result) {
     const zoneId = result?.zoneId;
-    if (result?.isDungeon && zoneId) {
-      const zone = this.combatZones[zoneId];
-      const jobXpMap = zone?.jobXpReward || this.balance.combat?.dungeonJobXp?.default || {};
-      for (const [jobId, xp] of Object.entries(jobXpMap)) {
-        if (xp > 0) addJobXp(this.state, jobId, xp, this.jobs, this.balance);
-      }
-    }
     if (result?.isBoss && zoneId) {
       const unlocked = tryAutoUnlockFromBoss(zoneId, this.state, this.balance);
       if (unlocked) {

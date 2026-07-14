@@ -5,10 +5,6 @@
     "emoji": "🌸",
     "zone": "village_sakura",
     "requiredCharLevel": 1,
-    "jobXpReward": {
-      "toolmaker": 30,
-      "cook": 40
-    },
     "dropRates": {
       "equipmentMob": 0.14,
       "equipmentBoss": 0.4,
@@ -52,10 +48,6 @@
     "emoji": "🌿",
     "zone": "petal_forest",
     "requiredCharLevel": 10,
-    "jobXpReward": {
-      "toolmaker": 45,
-      "cook": 55
-    },
     "monsters": [
       {
         "enemyId": "wild_fox",
@@ -93,10 +85,6 @@
     "emoji": "⛩️",
     "zone": "jade_mountains",
     "requiredCharLevel": 25,
-    "jobXpReward": {
-      "toolmaker": 55,
-      "cook": 70
-    },
     "monsters": [
       {
         "enemyId": "cave_bat",
@@ -134,10 +122,6 @@
     "emoji": "🌫️",
     "zone": "mist_river",
     "requiredCharLevel": 20,
-    "jobXpReward": {
-      "toolmaker": 50,
-      "cook": 65
-    },
     "monsters": [
       {
         "enemyId": "mist_koi",
@@ -175,10 +159,6 @@
     "emoji": "🪷",
     "zone": "lotus_sanctuary",
     "requiredCharLevel": 35,
-    "jobXpReward": {
-      "toolmaker": 70,
-      "cook": 90
-    },
     "monsters": [
       {
         "enemyId": "lotus_guard",
