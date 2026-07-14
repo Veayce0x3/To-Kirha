@@ -1,5 +1,10 @@
 import { getNextRarity, getInstanceRarity, normalizeRarity, RARITY_LABELS } from './equipmentRarity.js';
-import { resolveItemId, findCombatItemOwner, unequipCombatSlot } from './combat.js';
+import {
+  resolveItemId,
+  findCombatItemOwner,
+  unequipCombatSlot,
+  getDefaultCombatEquipment,
+} from './combat.js';
 
 function releaseCombatRef(state, ref, combatItems) {
   const owner = findCombatItemOwner(state, ref);
@@ -15,6 +20,58 @@ function releaseCombatRef(state, ref, combatItems) {
   for (const [slot, equippedRef] of Object.entries(comp.equipment)) {
     if (equippedRef === ref) comp.equipment[slot] = null;
   }
+}
+
+/** Consomme d'abord les pièces en réserve, pas celles équipées. */
+function prioritizeUnequippedRefs(state, refs) {
+  return [...refs].sort((a, b) => {
+    const eqA = findCombatItemOwner(state, a) ? 1 : 0;
+    const eqB = findCombatItemOwner(state, b) ? 1 : 0;
+    return eqA - eqB;
+  });
+}
+
+function collectEquippedTargets(state, refs, combatItems) {
+  const heroSlots = [];
+  const companionTargets = [];
+  for (const ref of refs) {
+    const owner = findCombatItemOwner(state, ref);
+    if (owner === 'hero') {
+      const itemId = resolveItemId(state, ref, combatItems);
+      const slot = combatItems[itemId]?.slot;
+      if (slot && !heroSlots.includes(slot)) heroSlots.push(slot);
+    } else if (owner) {
+      for (const [slot, equippedRef] of Object.entries(state.companions?.[owner]?.equipment || {})) {
+        if (equippedRef === ref) {
+          companionTargets.push({ companionId: owner, slot });
+        }
+      }
+    }
+  }
+  return { heroSlots, companionTargets };
+}
+
+function autoEquipFusedItem(state, newRef, item, heroSlots, companionTargets) {
+  let autoEquipped = false;
+
+  if (item?.slot && heroSlots.length) {
+    const slot = heroSlots.find((s) => s === item.slot) || heroSlots[0];
+    if (!state.combatEquipment) state.combatEquipment = getDefaultCombatEquipment();
+    state.combatEquipment[slot] = newRef;
+    autoEquipped = true;
+  }
+
+  if (!autoEquipped && companionTargets.length) {
+    const { companionId, slot } = companionTargets[0];
+    const comp = state.companions?.[companionId];
+    if (comp) {
+      if (!comp.equipment) comp.equipment = {};
+      comp.equipment[slot] = newRef;
+      autoEquipped = true;
+    }
+  }
+
+  return autoEquipped;
 }
 
 export const FUSION_INPUT_COUNT = {
@@ -68,7 +125,9 @@ export function fuseEquipmentGroup(state, group, balance, combatItems, grantFn) 
     return { ok: false, reason: `Il faut ${check.kirhaCost} Kirha` };
   }
 
-  const toConsume = group.refs.slice(0, check.inputCount);
+  const sortedRefs = prioritizeUnequippedRefs(state, group.refs);
+  const toConsume = sortedRefs.slice(0, check.inputCount);
+  const equipTargets = collectEquippedTargets(state, toConsume, combatItems);
   state.kirha -= check.kirhaCost;
 
   for (const ref of toConsume) {
@@ -78,6 +137,13 @@ export function fuseEquipmentGroup(state, group, balance, combatItems, grantFn) 
   }
 
   const newRef = grantFn(state, group.itemId, combatItems, check.nextRarity);
+  const autoEquipped = autoEquipFusedItem(
+    state,
+    newRef,
+    group.item,
+    equipTargets.heroSlots,
+    equipTargets.companionTargets
+  );
   return {
     ok: true,
     itemId: group.itemId,
@@ -85,5 +151,6 @@ export function fuseEquipmentGroup(state, group, balance, combatItems, grantFn) 
     toRarity: check.nextRarity,
     kirhaCost: check.kirhaCost,
     instanceRef: newRef,
+    autoEquipped,
   };
 }
