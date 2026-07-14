@@ -2,6 +2,7 @@ import { emit } from './events.js';
 import { DEV_FAKE_ACCOUNT, SUPABASE_URL } from '../config.js';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient.js';
 import { validateNickname } from '../systems/character.js';
+import { checkDisplayNameAvailable, createProfileOnSignup } from '../systems/accountProfile.js';
 
 const GUEST_ADJECTIVES = ['Pétale', 'Brise', 'Jade', 'Lotus', 'Brume', 'Cerisier', 'Kiri', 'Zen'];
 const AUTH_SESSION_KEY = 'tokirha_auth_mode';
@@ -301,23 +302,8 @@ export async function ensureProfile(supabase, user) {
   if (existing) return;
 
   const displayName = (user.user_metadata?.display_name || user.email?.split('@')[0] || 'Voyageur').trim();
-  const { error: rpcErr } = await supabase.rpc('create_profile_on_signup', { p_display_name: displayName });
-  if (!rpcErr) return;
-
-  if (!rpcErr.message?.includes('Could not find the function')) {
-    throw rpcErr;
-  }
-
-  const { data: taken } = await supabase.rpc('check_display_name_available', { p_name: displayName }).catch(() => ({ data: true }));
-  if (taken === false) {
-    throw new Error('Pseudo déjà pris');
-  }
-  const { error } = await supabase.from('profiles').insert({
-    user_id: user.id,
-    display_name: displayName,
-    updated_at: new Date().toISOString(),
-  });
-  if (error) throw error;
+  const result = await createProfileOnSignup(supabase, user.id, displayName);
+  if (!result.ok) throw new Error(result.reason || 'Impossible de créer le profil');
 }
 
 /** Finalise connexion / inscription : profil serveur, pseudo, save cloud. */
@@ -370,11 +356,9 @@ export async function signUpWithEmail(email, password, displayName) {
   if (password.length < 6) return { ok: false, reason: 'Mot de passe : minimum 6 caractères.' };
   if (password.length > 72) return { ok: false, reason: 'Mot de passe : maximum 72 caractères.' };
 
-  const { data: available, error: availErr } = await supabase.rpc('check_display_name_available', { p_name: nickCheck.name });
-  if (availErr && !availErr.message?.includes('Could not find the function')) {
-    return { ok: false, reason: availErr.message };
-  }
-  if (available === false) return { ok: false, reason: 'Ce pseudo est déjà pris.' };
+  const avail = await checkDisplayNameAvailable(nickCheck.name);
+  if (!avail.ok) return { ok: false, reason: avail.reason };
+  if (!avail.available) return { ok: false, reason: 'Ce pseudo est déjà pris.' };
 
   const { data, error } = await supabase.auth.signUp({
     email,
