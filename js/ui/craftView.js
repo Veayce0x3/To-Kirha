@@ -158,7 +158,7 @@ function paintCraftPanel(game, craftJobId, panelEl, headerEl) {
   const body = [
     renderRecipeGroup('✅ Disponibles', groups.available, game),
     renderRecipeGroup('📦 Possédé', groups.owned, game),
-    renderRecipeGroup('🔒 Verrouillées', groups.locked, game),
+    !isTools ? renderRecipeGroup('🔒 Verrouillées', groups.locked, game) : '',
   ].filter(Boolean).join('');
 
   panelEl.innerHTML = `

@@ -233,6 +233,15 @@ export function inspectRecipe(recipeId, ctx) {
 }
 
 function isRecipeVisibleInWorkshop(recipeId, craftJobId, ctx) {
+  const recipe = ctx.recipes[recipeId];
+  if (!recipe) return false;
+
+  if (craftJobId === 'toolmaker') {
+    const craftJob = recipe.craftJob || 'toolmaker';
+    const required = recipe.requiredJobLevel ?? 1;
+    if (jobLevel(ctx.state, craftJob) < required) return false;
+  }
+
   if (craftJobId !== 'toolmaker') return true;
 
   const meta = ctx.equipment?.equipable?.[recipeId];
