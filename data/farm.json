@@ -8,6 +8,7 @@
       "emoji": "🪣",
       "toolJob": "breeder",
       "toolTier": 1,
+      "requiredFarmToolKind": "bucket",
       "cycleMs": 3500,
       "products": { "eau": 1 },
       "feed": {}
@@ -18,12 +19,12 @@
       "emoji": "🐔",
       "toolJob": "breeder",
       "toolTier": 1,
+      "requiredFarmToolKind": "basket",
       "requiresAnimal": true,
       "animalPurchase": { "kirha": 40, "ble": 5 },
       "cycleMs": 9000,
       "products": { "oeuf": 1, "plume": 1 },
-      "feed": { "ble": 2, "eau": 1 },
-      "feedEfficiency": { "ble": 1, "orge": 0.85, "houblon": 0.75, "avoine": 0.8 }
+      "feed": { "eau": 1 }
     },
     "barn": {
       "id": "barn",
@@ -31,10 +32,10 @@
       "emoji": "🐄",
       "toolJob": "breeder",
       "toolTier": 1,
+      "requiredFarmToolKind": "basket",
       "cycleMs": 12000,
       "products": { "lait": 1, "cuir": 1 },
-      "feed": { "orge": 2, "eau": 1 },
-      "feedEfficiency": { "orge": 1, "ble": 0.8, "avoine": 0.85, "houblon": 0.7 }
+      "feed": { "eau": 1 }
     },
     "sheepfold": {
       "id": "sheepfold",
@@ -42,10 +43,10 @@
       "emoji": "🐑",
       "toolJob": "breeder",
       "toolTier": 1,
+      "requiredFarmToolKind": "basket",
       "cycleMs": 11000,
       "products": { "laine": 1, "lait_brebis": 1 },
-      "feed": { "houblon": 2, "eau": 1 },
-      "feedEfficiency": { "houblon": 1, "ble": 0.75, "orge": 0.8 }
+      "feed": { "eau": 1 }
     },
     "pigsty": {
       "id": "pigsty",
@@ -53,10 +54,10 @@
       "emoji": "🐷",
       "toolJob": "breeder",
       "toolTier": 1,
+      "requiredFarmToolKind": "basket",
       "cycleMs": 14000,
       "products": { "bacon": 1, "jambon": 1 },
-      "feed": { "ble": 2, "goujon": 1, "eau": 1 },
-      "feedEfficiency": { "ble": 0.8, "goujon": 1, "orge": 0.7 }
+      "feed": { "eau": 1 }
     },
     "beehive": {
       "id": "beehive",
@@ -64,11 +65,11 @@
       "emoji": "🐝",
       "toolJob": "breeder",
       "toolTier": 1,
+      "requiredFarmToolKind": "basket",
       "cycleMs": 13000,
       "products": { "miel": 1, "gelee_royale": 1 },
-      "feed": { "ortie": 2 },
-      "feedEfficiency": { "ortie": 1, "sauge": 0.9, "ble": 0.4 }
+      "feed": { "eau": 1 }
     }
   },
-  "feedOptions": ["ble", "orge", "houblon", "avoine", "goujon", "ortie", "sauge", "eau"]
+  "feedOptions": ["eau"]
 }

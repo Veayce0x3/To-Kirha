@@ -52,6 +52,11 @@
       "slot": "weapon",
       "job": "breeder"
     },
+    "breeder_basket": {
+      "recipeId": "breeder_basket",
+      "slot": "weapon",
+      "job": "breeder"
+    },
     "recipe_bottes_cuir": {
       "recipeId": "recipe_bottes_cuir",
       "slot": "accessory",

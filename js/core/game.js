@@ -159,6 +159,7 @@ import {
   wearBreederTool,
 } from '../systems/farm.js';
 import { getFarmToolCheck, getHarvestToolCheck } from '../systems/toolTier.js';
+import { getFarmToolBlockReason } from '../systems/tools.js';
 import { migrateCombatDurability } from '../systems/combatDurability.js';
 import { clearCombatMealBuff, listOwnedMeals, peekMealHeal, consumeMealFromInventory, calcMealHealAmount } from '../systems/consumables.js';
 import {
@@ -762,7 +763,8 @@ export class Game {
       }
     }
 
-    const toolCheck = getFarmToolCheck(this.state, this.recipes, this.equipment);
+    const building = this.farmData.buildings?.[buildingId];
+    const toolCheck = getFarmToolCheck(this.state, this.recipes, this.equipment, building);
     if (!toolCheck.ok) {
       return { ok: false, reason: toolCheck.message };
     }
@@ -822,8 +824,8 @@ export class Game {
   getFarmToolBlockReason(buildingId) {
     const building = this.farmData.buildings?.[buildingId];
     if (!building) return null;
-    const check = getFarmToolCheck(this.state, this.recipes, this.equipment);
-    return check.ok ? null : check.message;
+    const block = getFarmToolBlockReason(building, this.state, this.recipes);
+    return block?.message || null;
   }
 
   getHarvestToolBlockReason(jobId, resourceId) {

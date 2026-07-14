@@ -1,6 +1,7 @@
 import { getJobEquippedTool } from './equipment.js';
 import { isDurabilityTool, isToolEffectActive } from './toolDurability.js';
 import { isStarterHarvestResource } from './zones.js';
+import { getFarmToolBlockReason } from './tools.js';
 
 export function getResourceHarvestTier(resource) {
   return Math.floor(((resource?.requiredJobLevel || 1) - 1) / 20) + 1;
@@ -52,16 +53,24 @@ export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentDa
   return { ok: true, recipe };
 }
 
-export function getFarmToolCheck(state, recipes, equipmentData) {
-  const recipe = getGatheringToolRecipe(state, 'breeder', recipes);
-  if (!recipe) {
-    return {
-      ok: false,
-      reason: 'no_tool',
-      message: 'Équipe un outil d\'éleveur sur Perso → Outils (seau, panier…).',
-    };
+export function getFarmToolCheck(state, recipes, equipmentData, building) {
+  if (!building) {
+    const recipe = getGatheringToolRecipe(state, 'breeder', recipes);
+    if (!recipe) {
+      return {
+        ok: false,
+        reason: 'no_tool',
+        message: 'Équipe un outil d\'éleveur sur Perso → Outils (seau ou panier).',
+      };
+    }
+    return { ok: true, recipe };
   }
-  return { ok: true, recipe };
+  const block = getFarmToolBlockReason(building, state, recipes);
+  if (block) {
+    return { ok: false, reason: block.type, message: block.message };
+  }
+  const recipeId = getJobEquippedTool(state, 'breeder');
+  return { ok: true, recipe: recipes[recipeId] };
 }
 
 export function listToolsForJob(recipes, jobId) {

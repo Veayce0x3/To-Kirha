@@ -176,10 +176,11 @@
     "id": "breeder_bucket",
     "name": "Seau de Frêne",
     "emoji": "🪣",
-    "description": "Palier 1 — élevage",
+    "description": "Palier 1 — puits uniquement",
     "kirhaCost": 5,
     "maxUses": 30,
     "toolTier": 1,
+    "farmToolKind": "bucket",
     "ingredients": {
       "frene": 4,
       "fer": 2
@@ -198,10 +199,11 @@
     "id": "breeder_bucket_iron",
     "name": "Seau de Fer",
     "emoji": "🪣",
-    "description": "Palier 2 — élevage",
+    "description": "Palier 2 — puits uniquement",
     "kirhaCost": 80,
     "maxUses": 55,
     "toolTier": 2,
+    "farmToolKind": "bucket",
     "ingredients": {
       "fer": 8,
       "frene": 4
@@ -215,6 +217,29 @@
     "craftJob": "toolmaker",
     "requiredJobLevel": 8,
     "jobXp": 22
+  },
+  "breeder_basket": {
+    "id": "breeder_basket",
+    "name": "Panier de Frêne",
+    "emoji": "🧺",
+    "description": "Palier 1 — poulailler, étable, bergerie…",
+    "kirhaCost": 5,
+    "maxUses": 30,
+    "toolTier": 1,
+    "farmToolKind": "basket",
+    "ingredients": {
+      "frene": 4,
+      "ble": 2
+    },
+    "effect": {
+      "type": "speed",
+      "job": "breeder",
+      "bonus": 0.05
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 1,
+    "jobXp": 10
   },
   "sequoia_axe": {
     "id": "sequoia_axe",
