@@ -347,6 +347,49 @@ body.auth-modal-open #career-choice-modal {
   border-color: var(--violet);
 }
 
+.hdv-p2p-sell-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.hdv-p2p-mode-btn {
+  min-height: 38px;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(74, 55, 40, 0.2);
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.hdv-p2p-mode-btn.active {
+  background: var(--vert-fonce);
+  color: #fff;
+  border-color: var(--vert-fonce);
+}
+
+.hdv-p2p-row-combat .hdv-p2p-res {
+  font-weight: 600;
+}
+
+.hdv-p2p-actions-combat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.hdv-p2p-instance-pick {
+  flex: 1 1 180px;
+  min-width: 0;
+  font-size: 0.78rem;
+}
+
 .hdv-p2p-row {
   display: flex;
   flex-wrap: wrap;
