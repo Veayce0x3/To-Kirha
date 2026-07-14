@@ -124,8 +124,10 @@ export function getNicknameRenameInfo(state, characterConfig) {
 
 export function validateNickname(raw, characterConfig) {
   const maxLen = characterConfig.nicknameMaxLength ?? 20;
+  const minLen = characterConfig.nicknameMinLength ?? 3;
   const name = (raw || '').trim();
   if (!name) return { ok: false, reason: 'Le pseudo ne peut pas être vide.' };
+  if (name.length < minLen) return { ok: false, reason: `Minimum ${minLen} caractères.` };
   if (name.length > maxLen) return { ok: false, reason: `Maximum ${maxLen} caractères.` };
   if (!/^[\p{L}\p{N}\s'_-]+$/u.test(name)) {
     return { ok: false, reason: 'Lettres, chiffres, espaces, tirets et apostrophes uniquement.' };

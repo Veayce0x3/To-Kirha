@@ -33,6 +33,19 @@
       "mystic": 1200
     },
     "soloXpMultiplier": 0.25,
+    "sellPrices": {
+      "common": 25,
+      "rare": 75,
+      "epic": 200,
+      "mystic": 600,
+      "legendary": 1800
+    },
+    "dungeonJobXp": {
+      "default": {
+        "toolmaker": 35,
+        "cook": 45
+      }
+    },
     "legendaryEquipCap": {
       "base": 2,
       "perPrestige": 1,

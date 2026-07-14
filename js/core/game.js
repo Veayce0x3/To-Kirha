@@ -168,6 +168,7 @@ import {
   migrateCareerChoice,
 } from '../systems/careerChoice.js';
 import { getFusionableGroups, fuseEquipmentGroup } from '../systems/equipmentFusion.js';
+import { sellCombatItem, getCombatItemSellPrice } from '../systems/combatSell.js';
 import { getDungeonKeyId, getKeyCount as countDungeonKeys } from '../systems/dungeonKeys.js';
 
 const LEGACY_COMBAT_RESOURCES = [
@@ -593,6 +594,13 @@ export class Game {
 
   onCombatVictoryHooks(result) {
     const zoneId = result?.zoneId;
+    if (result?.isDungeon && zoneId) {
+      const zone = this.combatZones[zoneId];
+      const jobXpMap = zone?.jobXpReward || this.balance.combat?.dungeonJobXp?.default || {};
+      for (const [jobId, xp] of Object.entries(jobXpMap)) {
+        if (xp > 0) addJobXp(this.state, jobId, xp, this.jobs, this.balance);
+      }
+    }
     if (result?.isBoss && zoneId) {
       const unlocked = tryAutoUnlockFromBoss(zoneId, this.state, this.balance);
       if (unlocked) {
@@ -923,6 +931,20 @@ export class Game {
     );
     if (result.ok) {
       emit('equipmentFused', result);
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
+    return result;
+  }
+
+  getCombatItemSellPrice(ref) {
+    return getCombatItemSellPrice(this.state, ref, this.combatEquipment.items, this.balance);
+  }
+
+  doSellCombatItem(ref) {
+    const result = sellCombatItem(this.state, ref, this.combatEquipment.items, this.balance);
+    if (result.ok) {
+      emit('combatItemSold', result);
       emit('stateChange', this.state);
       this.scheduleSave();
     }

@@ -99,6 +99,11 @@ export async function resetCloudSave(userId) {
   return rpc('admin_reset_cloud_save', { p_user_id: userId });
 }
 
+export async function grantAllJobsLevel(userId) {
+  if (!isAdmin()) return { ok: false, reason: 'Admin requis.' };
+  return rpc('admin_grant_all_jobs_level', { p_user_id: userId });
+}
+
 export async function fetchModerationLogs(limit = 50, action = null) {
   if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
   return rpc('admin_get_logs', { p_limit: limit, p_action: action || null });

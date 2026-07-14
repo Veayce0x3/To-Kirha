@@ -20,6 +20,7 @@ import {
   banUser,
   unbanUser,
   setUserRole,
+  grantAllJobsLevel,
   flagCheat,
   deleteLeaderboardEntry,
   wipePlayerMarket,
@@ -333,9 +334,22 @@ async function loadPlayerDetail(userId, detailEl) {
     detailEl.innerHTML = `<p class="admin-error">${res.reason}</p>`;
     return;
   }
-  const { profile, leaderboard, save_summary, market_sells_active, market_buys_active, reports_against, reports_by, name_history } = res.data;
+  const { profile, leaderboard, save_summary, market_sells_active, market_buys_active, reports_against, reports_by, name_history, inventory_summary, jobs_summary, combat_items } = res.data;
   const canSetRole = isSuperAdmin();
   const canResetSave = isAdmin();
+  const canGrantJobs = isAdmin();
+
+  const jobsHtml = jobs_summary && Object.keys(jobs_summary).length
+    ? Object.entries(jobs_summary).map(([id, lv]) => `<span class="admin-tag">${id} Nv.${lv}</span>`).join(' ')
+    : '—';
+
+  const invHtml = (inventory_summary || []).length
+    ? inventory_summary.map((r) => `<span class="admin-tag">${r.id} ×${r.qty}</span>`).join(' ')
+    : '—';
+
+  const combatHtml = (combat_items || []).length
+    ? combat_items.map((c) => `<span class="admin-tag">${c.item_id} ${c.rarity || ''}</span>`).join(' ')
+    : '—';
 
   detailEl.innerHTML = `
     <h4 class="admin-detail-title">${profile.display_name} ${roleBadge(profile.role)}</h4>
@@ -355,6 +369,12 @@ async function loadPlayerDetail(userId, detailEl) {
       <div><strong>Signalements</strong><br>${reports_against} reçus · ${reports_by || 0} envoyés</div>
       <div><strong>Renommage gratuit</strong><br>${profile.free_rename_used ? 'Utilisé' : 'Disponible'}</div>
     </div>
+    <h5 class="admin-section-title">Métiers (save cloud)</h5>
+    <div class="admin-inventory-wrap">${jobsHtml}</div>
+    <h5 class="admin-section-title">Ressources (top 30)</h5>
+    <div class="admin-inventory-wrap">${invHtml}</div>
+    <h5 class="admin-section-title">Équipement combat (${(combat_items || []).length})</h5>
+    <div class="admin-inventory-wrap">${combatHtml}</div>
     ${(name_history || []).length ? `
       <h5 class="admin-section-title">Historique pseudo</h5>
       <div class="admin-table-wrap">
@@ -379,7 +399,9 @@ async function loadPlayerDetail(userId, detailEl) {
       <button type="button" class="btn btn-muted" id="admin-del-lb">Retirer classement</button>
       <button type="button" class="btn btn-muted" id="admin-wipe-market">Vider HDV</button>
       ${canResetSave ? '<button type="button" class="btn btn-muted" id="admin-reset-save">Reset save cloud</button>' : ''}
+      ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs">+1 tous les métiers</button>' : ''}
       ${canSetRole ? `
+        <p class="view-desc admin-role-hint">Attribuer un rôle staff (modérateur, admin, superadmin) :</p>
         <select class="auth-input admin-role-select" id="admin-role-select">
           ${['player', 'moderator', 'admin', 'superadmin'].map((r) => `
             <option value="${r}" ${profile.role === r ? 'selected' : ''}>${ROLE_LABELS[r]}</option>
@@ -439,6 +461,13 @@ async function loadPlayerDetail(userId, detailEl) {
     if (!confirm('Supprimer la save cloud ? Irréversible.')) return;
     const r = await resetCloudSave(userId);
     setStatus(r.ok ? 'Save cloud supprimée.' : r.reason, !r.ok);
+    if (r.ok) loadPlayerDetail(userId, detailEl);
+  });
+
+  detailEl.querySelector('#admin-grant-jobs')?.addEventListener('click', async () => {
+    if (!confirm('Ajouter +1 niveau à tous les métiers de ce joueur (save cloud) ?')) return;
+    const r = await grantAllJobsLevel(userId);
+    setStatus(r.ok ? 'Tous les métiers +1.' : r.reason, !r.ok);
     if (r.ok) loadPlayerDetail(userId, detailEl);
   });
 

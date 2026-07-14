@@ -21,6 +21,15 @@ export async function changeDisplayNameFree(newName, characterConfig) {
   return rpc('change_my_display_name', { p_new_name: check.name });
 }
 
+export async function checkDisplayNameAvailable(name) {
+  if (!isSupabaseConfigured()) return { ok: true, available: true };
+  const check = validateNickname(name, { nicknameMaxLength: 20, nicknameMinLength: 3 });
+  if (!check.ok) return check;
+  const result = await rpc('check_display_name_available', { p_name: check.name });
+  if (!result.ok) return result;
+  return { ok: true, available: result.data === true };
+}
+
 export async function deleteMyAccount() {
   if (!isRegisteredAccount()) return { ok: false, reason: 'Compte requis.' };
   return rpc('delete_my_account');

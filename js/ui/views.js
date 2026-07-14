@@ -9,7 +9,7 @@ import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
 import { forceAppRefresh } from '../core/reload.js';
-import { getQuestStatusText, isQuestCompleted, isQuestReady } from '../systems/quests.js';
+import { getQuestStatusText, isQuestCompleted, isQuestReady, QUEST_CHAPTER_LABELS } from '../systems/quests.js';
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
 import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
@@ -759,7 +759,7 @@ function renderFusionPanel(game, container) {
   if (!container) return;
   const groups = game.getFusionGroups();
   if (!groups.length) {
-    container.innerHTML = '<h3>🔮 Fusion</h3><p class="view-desc">Aucune pièce en réserve.</p>';
+    container.innerHTML = '<h3>🔮 Fusion</h3><p class="view-desc">Aucune pièce fusionnable en réserve (armes et armures équipées comptent aussi).</p>';
     return;
   }
   container.innerHTML = '<h3>🔮 Fusion</h3>' + groups.map((g) => {
@@ -803,21 +803,37 @@ function renderCombatOwnedReserve(game, container) {
     const stats = item.stats
       ? [item.stats.hp ? `+${item.stats.hp} PV` : '', item.stats.atk ? `+${item.stats.atk} ATQ` : '', item.stats.def ? `+${item.stats.def} DEF` : ''].filter(Boolean).join(' · ')
       : '';
+    const rarity = getInstanceRarity(s.combatItemInstances?.find((i) => i.instanceId === ref));
+    const sellPrice = game.getCombatItemSellPrice(ref);
     wrap.innerHTML = `
       <div class="char-gear-row-main">
         <span class="char-gear-emoji">${item.emoji || '⚔️'}</span>
         <div>
-          <strong>${item.name}</strong>
+          <strong>${item.name}</strong> ${RARITY_EMOJI[rarity] || ''}
           ${stats ? `<span class="char-gear-stats">${stats}</span>` : ''}
         </div>
       </div>
     `;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn btn-small btn-craft';
-    btn.textContent = 'Équiper';
-    btn.addEventListener('click', () => game.doEquipCombat(ref));
-    wrap.appendChild(btn);
+    const equipBtn = document.createElement('button');
+    equipBtn.type = 'button';
+    equipBtn.className = 'btn btn-small btn-craft';
+    equipBtn.textContent = 'Équiper';
+    equipBtn.addEventListener('click', () => game.doEquipCombat(ref));
+    wrap.appendChild(equipBtn);
+    const sellBtn = document.createElement('button');
+    sellBtn.type = 'button';
+    sellBtn.className = 'btn btn-small btn-muted';
+    sellBtn.textContent = `Vendre (${sellPrice} 💰)`;
+    sellBtn.addEventListener('click', () => {
+      const result = game.doSellCombatItem(ref);
+      if (!result.ok) {
+        emit('farmBlocked', { message: result.reason || 'Vente impossible' });
+        return;
+      }
+      const viewEl = document.getElementById('view-container');
+      if (viewEl && getView() === 'character') renderCharacter(game, viewEl);
+    });
+    wrap.appendChild(sellBtn);
     container.appendChild(wrap);
   }
 }
@@ -916,6 +932,21 @@ function appendOwnedCombatItemsToGrid(game, container, filter) {
       refreshInventoryPanels(game);
     });
     cell.appendChild(equipBtn);
+    const sellPrice = game.getCombatItemSellPrice(ref);
+    const sellBtn = document.createElement('button');
+    sellBtn.type = 'button';
+    sellBtn.className = 'inventory-meal-heal-btn';
+    sellBtn.textContent = `Vendre ${sellPrice}💰`;
+    sellBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const result = game.doSellCombatItem(ref);
+      if (!result.ok) {
+        emit('farmBlocked', { message: result.reason || 'Vente impossible' });
+        return;
+      }
+      refreshInventoryPanels(game);
+    });
+    cell.appendChild(sellBtn);
     container.appendChild(cell);
   }
   return count;
@@ -1200,18 +1231,78 @@ function renderCharTeamTab(game, panel) {
 
 function renderMissions(game, el) {
   const season = game.state.season || 1;
+  const chapters = game.getQuestsByChapter();
 
   el.innerHTML = `
     <div class="view-header">
       <h2>${iconHtml(getNavIcon('missions'), 'view-header-icon', 'Missions')} Missions</h2>
-      <p class="view-desc">Saison ${season}</p>
+      <p class="view-desc">Saison ${season} — complète les quêtes pour gagner des récompenses.</p>
     </div>
-    <div class="panel-inner mission-coming-soon">
-      <h3>📜 Missions bientôt</h3>
-      <p class="view-desc">Les quêtes sont mises en pause pendant les tests. Elles reviendront plus tard avec une progression mieux adaptée au choix de voie, aux classes et au combat.</p>
-      <p class="empty-text">Pour le moment, progresse librement : récolte, ferme, équipe ton personnage, prépare de la nourriture et teste les combats.</p>
-    </div>
+    <div class="panel-inner mission-current-panel" id="mission-current"></div>
+    <div id="mission-chapters"></div>
   `;
+
+  renderObjectiveBanner(game, el.querySelector('#mission-current'));
+
+  const chaptersEl = el.querySelector('#mission-chapters');
+  const chapterIds = Object.keys(chapters);
+  if (!chapterIds.length) {
+    chaptersEl.innerHTML = '<div class="panel-inner"><p class="empty-text">Aucune mission disponible.</p></div>';
+    return;
+  }
+
+  for (const chapterId of chapterIds) {
+    const chapter = chapters[chapterId];
+    const label = QUEST_CHAPTER_LABELS[chapterId] || chapterId;
+    const section = document.createElement('div');
+    section.className = 'panel-inner mission-chapter';
+    section.innerHTML = `<h3 class="mission-chapter-title">${label}</h3>`;
+
+    const journal = document.createElement('div');
+    journal.className = 'mission-journal-slot';
+    section.appendChild(journal);
+    chaptersEl.appendChild(section);
+
+    const allQuests = [...chapter.available, ...chapter.completed];
+    if (!allQuests.length && chapter.locked.length) {
+      journal.innerHTML = `<p class="empty-text">${chapter.locked.length} mission(s) à débloquer.</p>`;
+      continue;
+    }
+    if (!allQuests.length) {
+      journal.innerHTML = '<p class="empty-text">Aucune mission dans ce chapitre.</p>';
+      continue;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'quest-list';
+    for (const quest of allQuests.sort((a, b) => (a.order || 0) - (b.order || 0))) {
+      const done = isQuestCompleted(game.state, quest.id);
+      const ready = !done && isQuestReady(quest, game.state, game.recipes);
+      const row = document.createElement('div');
+      row.className = `quest-row${ready ? ' quest-ready' : ''}${done ? ' quest-done' : ''}`;
+      row.innerHTML = `
+        <div class="quest-row-head">
+          <strong>${quest.title}</strong>
+          <span class="quest-status">${getQuestStatusText(quest, game.state, game.recipes)}</span>
+        </div>
+        <p class="quest-desc">${quest.description}</p>
+        ${quest.rewardKirha ? `<p class="quest-reward">Récompense : ${quest.rewardKirha} 💰${quest.rewardScrolls ? ` · ${quest.rewardScrolls} 📜` : ''}</p>` : ''}
+      `;
+      if (!done && (quest.hintView || quest.hintJob)) {
+        const go = document.createElement('button');
+        go.type = 'button';
+        go.className = 'btn btn-small btn-muted quest-go';
+        go.textContent = quest.hintJob ? 'Récolter' : 'Y aller';
+        go.addEventListener('click', () => {
+          if (quest.hintView) navigate(quest.hintView === 'workshop' ? 'workshop' : quest.hintView);
+          else if (quest.hintJob) navigate(JOB_VIEW_MAP[quest.hintJob] || 'world');
+        });
+        row.appendChild(go);
+      }
+      list.appendChild(row);
+    }
+    journal.appendChild(list);
+  }
 }
 
 /* ── Monde ── */
@@ -2982,8 +3073,6 @@ function emitPrestigeModal() {
 }
 
 export function renderOptions(game, el) {
-  const beta = !!game.balance.betaMode;
-  const importGate = game.canImportSave();
   const info = game.getPrestigeInfo();
   const caps = info.caps || game.getSeasonCapPreview();
   const p = game.state.prestige || {};
@@ -2991,6 +3080,7 @@ export function renderOptions(game, el) {
   const blockerHtml = info.blockers?.length
     ? `<ul class="prestige-blockers">${info.blockers.map((b) => `<li>${b}</li>`).join('')}</ul>`
     : '';
+  const isRegistered = game.state?.meta?.account?.mode === 'registered';
   el.innerHTML = `
     <div class="view-header"><h2>${iconHtml(getNavIcon('options'), 'view-header-icon', 'Options')} Options</h2></div>
     <div id="account-panel-root"></div>
@@ -3015,81 +3105,52 @@ export function renderOptions(game, el) {
       </div>
       <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
     </div>
-    <div class="panel-inner save-panel">
-      <h3>${iconHtml(UI.save, 'panel-title-icon', 'Sauvegarde')} Sauvegarde</h3>
-      <p class="save-info">Ta partie est <strong>sauvegardée automatiquement</strong> sur cet appareil. L'export ci-dessous sert de copie de secours.</p>
-      <div class="save-actions">
-        <button type="button" class="btn btn-save" id="export-save">Copier la sauvegarde</button>
-        <button type="button" class="btn btn-save" id="download-save">Télécharger</button>
-      </div>
-      <textarea class="save-textarea" id="save-data" rows="3" readonly placeholder="Code de sauvegarde…"></textarea>
-      ${importGate.ok ? `
-      <details class="save-import-details">
-        <summary>Restaurer une sauvegarde</summary>
-        <textarea class="save-textarea" id="save-import-data" rows="3" placeholder="Colle un code exporté…"></textarea>
-        <button type="button" class="btn btn-save btn-import" id="import-save">Importer</button>
-      </details>` : `<p class="save-warn">${importGate.reason}</p>`}
-      ${beta ? '' : `
-      <details class="save-danger-details">
-        <summary>Nouvelle partie</summary>
-        <p class="save-warn">Efface toute la progression sur cet appareil. Un export est proposé avant.</p>
-        <button type="button" class="btn btn-save btn-danger" id="reset-save">Réinitialiser</button>
-      </details>`}
+    <div class="panel-inner save-panel save-danger-zone">
+      <h3>⚠️ Zone sensible</h3>
+      <p class="save-info">Ta partie est <strong>sauvegardée automatiquement</strong> sur cet appareil${isRegistered ? ' et dans le cloud' : ''}.</p>
+      <p class="save-warn">Réinitialiser efface toute la progression locale et recommence à zéro.</p>
+      <button type="button" class="btn btn-danger" id="reset-save">Réinitialiser la partie</button>
+      ${isRegistered ? `
+        <hr class="options-divider" />
+        <p class="save-warn">Supprimer le compte efface définitivement ton compte et tes données en ligne.</p>
+        <button type="button" class="btn btn-danger btn-sm" id="options-delete-account">Supprimer mon compte</button>
+      ` : ''}
       <p class="save-hint" id="save-hint"></p>
     </div>
   `;
 
-  renderAccountPanel(game, el.querySelector('#account-panel-root'));
+  renderAccountPanel(game, el.querySelector('#account-panel-root'), { hideDelete: true });
   renderSettingsIn(game, el.querySelector('#settings-grid'));
   el.querySelector('#reload-app')?.addEventListener('click', () => {
     forceAppRefresh(game);
   });
   el.querySelector('#prestige-btn')?.addEventListener('click', () => emitPrestigeModal());
 
-  const hint = (msg) => { el.querySelector('#save-hint').textContent = msg; };
-
-  el.querySelector('#export-save')?.addEventListener('click', async () => {
-    const code = game.exportSave();
-    const ta = el.querySelector('#save-data');
-    ta.value = code;
-    try {
-      await navigator.clipboard.writeText(code);
-      hint('Sauvegarde copiée dans le presse-papiers !');
-    } catch {
-      ta.select();
-      hint('Sauvegarde affichée — copie-la manuellement.');
-    }
-  });
-
-  el.querySelector('#download-save')?.addEventListener('click', () => {
-    const code = game.exportSave();
-    const blob = new Blob([code], { type: 'text/plain' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `tokirha-save-${Date.now()}.txt`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    hint('Fichier téléchargé.');
-  });
-
-  el.querySelector('#import-save')?.addEventListener('click', () => {
-    const r = game.importSave(el.querySelector('#save-import-data').value);
-    hint(r.ok ? 'Sauvegarde restaurée !' : (r.error || 'Import impossible'));
-  });
+  const hint = (msg) => { const h = el.querySelector('#save-hint'); if (h) h.textContent = msg; };
 
   el.querySelector('#reset-save')?.addEventListener('click', async () => {
-    const step1 = confirm('Créer une nouvelle partie ? Ta progression actuelle sera perdue.');
+    const step1 = confirm('Réinitialiser la partie ? Toute ta progression sera effacée et tu recommenceras à zéro.');
     if (!step1) return;
-    try {
-      await navigator.clipboard.writeText(game.exportSave());
-      hint('Ancienne sauvegarde exportée dans le presse-papiers. Réinitialisation…');
-    } catch {
-      hint('Réinitialisation…');
-    }
     game.resetSave();
     await reconcileAuthAfterLocalReset(game);
     showCareerChoiceIfNeeded(game);
     emit('navRefresh');
+    hint('Partie réinitialisée.');
+  });
+
+  el.querySelector('#options-delete-account')?.addEventListener('click', async () => {
+    const typed = prompt('Tape SUPPRIMER pour confirmer la suppression définitive de ton compte :');
+    if (typed !== 'SUPPRIMER') return;
+    const { deleteMyAccount } = await import('../systems/accountProfile.js');
+    const { signOutAccount } = await import('../core/auth.js');
+    const result = await deleteMyAccount();
+    if (!result.ok) {
+      emit('nicknameError', { reason: result.reason || 'Impossible de supprimer le compte.' });
+      return;
+    }
+    await signOutAccount();
+    delete game.state.meta?.account;
+    location.href = `${location.pathname}?newgame=1`;
   });
 }
 

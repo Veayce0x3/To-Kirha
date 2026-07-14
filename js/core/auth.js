@@ -300,12 +300,24 @@ export async function ensureProfile(supabase, user) {
     .maybeSingle();
   if (existing) return;
 
-  const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'Voyageur';
-  await supabase.from('profiles').insert({
+  const displayName = (user.user_metadata?.display_name || user.email?.split('@')[0] || 'Voyageur').trim();
+  const { error: rpcErr } = await supabase.rpc('create_profile_on_signup', { p_display_name: displayName });
+  if (!rpcErr) return;
+
+  if (!rpcErr.message?.includes('Could not find the function')) {
+    throw rpcErr;
+  }
+
+  const { data: taken } = await supabase.rpc('check_display_name_available', { p_name: displayName }).catch(() => ({ data: true }));
+  if (taken === false) {
+    throw new Error('Pseudo déjà pris');
+  }
+  const { error } = await supabase.from('profiles').insert({
     user_id: user.id,
     display_name: displayName,
     updated_at: new Date().toISOString(),
   });
+  if (error) throw error;
 }
 
 /** Finalise connexion / inscription : profil serveur, pseudo, save cloud. */
@@ -352,8 +364,17 @@ export async function completeRegisteredLogin(game, user) {
 export async function signUpWithEmail(email, password, displayName) {
   const supabase = await getSupabaseClient();
   if (!supabase) return { ok: false, reason: 'Supabase non configuré (js/config.js).' };
-  const nickCheck = validateNickname(displayName, { nicknameMaxLength: 20 });
+  const nickCheck = validateNickname(displayName, { nicknameMaxLength: 20, nicknameMinLength: 3 });
   if (!nickCheck.ok) return nickCheck;
+
+  if (password.length < 6) return { ok: false, reason: 'Mot de passe : minimum 6 caractères.' };
+  if (password.length > 72) return { ok: false, reason: 'Mot de passe : maximum 72 caractères.' };
+
+  const { data: available, error: availErr } = await supabase.rpc('check_display_name_available', { p_name: nickCheck.name });
+  if (availErr && !availErr.message?.includes('Could not find the function')) {
+    return { ok: false, reason: availErr.message };
+  }
+  if (available === false) return { ok: false, reason: 'Ce pseudo est déjà pris.' };
 
   const { data, error } = await supabase.auth.signUp({
     email,

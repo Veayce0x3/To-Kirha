@@ -839,3 +839,58 @@ body.auth-modal-open #career-choice-modal {
   padding: 0.35rem 0.25rem;
 }
 
+.auth-hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+.auth-field-hint {
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.auth-field-hint.auth-info {
+  color: var(--vert-foret, #2d6a4f);
+}
+
+.options-divider {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 1rem 0;
+}
+
+.save-danger-zone .btn-danger {
+  margin-top: 0.5rem;
+}
+
+.admin-inventory-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-tag {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  background: rgba(155, 89, 182, 0.12);
+  font-size: 0.75rem;
+}
+
+.admin-role-hint {
+  width: 100%;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.mission-chapter-title {
+  margin-bottom: 0.5rem;
+}
+
+.quest-reward {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin: 0.25rem 0 0;
+}
+

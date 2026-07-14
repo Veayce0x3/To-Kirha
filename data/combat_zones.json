@@ -5,6 +5,10 @@
     "emoji": "🌸",
     "zone": "village_sakura",
     "requiredCharLevel": 1,
+    "jobXpReward": {
+      "toolmaker": 30,
+      "cook": 40
+    },
     "dropRates": {
       "equipmentMob": 0.14,
       "equipmentBoss": 0.4,
@@ -17,21 +21,21 @@
         "name": "Esprit Lanterne",
         "emoji": "👻",
         "drops": {},
-        "charXpReward": 12
+        "charXpReward": 6
       },
       {
         "enemyId": "petal_slime",
         "name": "Slime Pétale",
         "emoji": "🌸",
         "drops": {},
-        "charXpReward": 15
+        "charXpReward": 8
       },
       {
         "enemyId": "temple_guard",
         "name": "Garde du Temple",
         "emoji": "⛩️",
         "drops": {},
-        "charXpReward": 20
+        "charXpReward": 10
       }
     ],
     "boss": {
@@ -39,7 +43,7 @@
       "name": "Gardien du Cerisier",
       "emoji": "🌺",
       "drops": {},
-      "charXpReward": 150
+      "charXpReward": 70
     }
   },
   "petal_forest": {
@@ -48,27 +52,31 @@
     "emoji": "🌿",
     "zone": "petal_forest",
     "requiredCharLevel": 10,
+    "jobXpReward": {
+      "toolmaker": 45,
+      "cook": 55
+    },
     "monsters": [
       {
         "enemyId": "wild_fox",
         "name": "Renard des Bois",
         "emoji": "🦊",
         "drops": {},
-        "charXpReward": 30
+        "charXpReward": 15
       },
       {
         "enemyId": "thorn_beast",
         "name": "Bête Épine",
         "emoji": "🌹",
         "drops": {},
-        "charXpReward": 35
+        "charXpReward": 18
       },
       {
         "enemyId": "root_golem",
         "name": "Golem Racine",
         "emoji": "🌳",
         "drops": {},
-        "charXpReward": 42
+        "charXpReward": 21
       }
     ],
     "boss": {
@@ -76,7 +84,7 @@
       "name": "Esprit de la Forêt",
       "emoji": "🌺",
       "drops": {},
-      "charXpReward": 400
+      "charXpReward": 180
     }
   },
   "jade_mountains": {
@@ -85,27 +93,31 @@
     "emoji": "⛩️",
     "zone": "jade_mountains",
     "requiredCharLevel": 25,
+    "jobXpReward": {
+      "toolmaker": 55,
+      "cook": 70
+    },
     "monsters": [
       {
         "enemyId": "cave_bat",
         "name": "Chauve-souris des Cavernes",
         "emoji": "🦇",
         "drops": {},
-        "charXpReward": 50
+        "charXpReward": 25
       },
       {
         "enemyId": "crystal_sprite",
         "name": "Sprite de Cristal",
         "emoji": "💎",
         "drops": {},
-        "charXpReward": 58
+        "charXpReward": 29
       },
       {
         "enemyId": "stone_warden",
         "name": "Gardien de Pierre",
         "emoji": "🗿",
         "drops": {},
-        "charXpReward": 70
+        "charXpReward": 35
       }
     ],
     "boss": {
@@ -113,7 +125,7 @@
       "name": "Golem de Jade",
       "emoji": "🌙",
       "drops": {},
-      "charXpReward": 900
+      "charXpReward": 400
     }
   },
   "mist_river": {
@@ -122,27 +134,31 @@
     "emoji": "🌫️",
     "zone": "mist_river",
     "requiredCharLevel": 20,
+    "jobXpReward": {
+      "toolmaker": 50,
+      "cook": 65
+    },
     "monsters": [
       {
         "enemyId": "mist_koi",
         "name": "Koï de Brume",
         "emoji": "🐟",
         "drops": {},
-        "charXpReward": 45
+        "charXpReward": 22
       },
       {
         "enemyId": "mist_wisp",
         "name": "Feu follet",
         "emoji": "✨",
         "drops": {},
-        "charXpReward": 52
+        "charXpReward": 26
       },
       {
         "enemyId": "mist_serpent",
         "name": "Serpent brumeux",
         "emoji": "🐍",
         "drops": {},
-        "charXpReward": 60
+        "charXpReward": 30
       }
     ],
     "boss": {
@@ -150,7 +166,7 @@
       "name": "Seigneur de la Brume",
       "emoji": "🌫️",
       "drops": {},
-      "charXpReward": 650
+      "charXpReward": 300
     }
   },
   "lotus_sanctuary": {
@@ -159,27 +175,31 @@
     "emoji": "🪷",
     "zone": "lotus_sanctuary",
     "requiredCharLevel": 35,
+    "jobXpReward": {
+      "toolmaker": 70,
+      "cook": 90
+    },
     "monsters": [
       {
         "enemyId": "lotus_guard",
         "name": "Gardien du Lotus",
         "emoji": "🪷",
         "drops": {},
-        "charXpReward": 75
+        "charXpReward": 38
       },
       {
         "enemyId": "lotus_spirit",
         "name": "Esprit pétale",
         "emoji": "🌸",
         "drops": {},
-        "charXpReward": 85
+        "charXpReward": 42
       },
       {
         "enemyId": "lotus_monk",
         "name": "Moine du sanctuaire",
         "emoji": "🧘",
         "drops": {},
-        "charXpReward": 95
+        "charXpReward": 48
       }
     ],
     "boss": {
@@ -187,7 +207,7 @@
       "name": "Floraison Éternelle",
       "emoji": "🪷",
       "drops": {},
-      "charXpReward": 1200
+      "charXpReward": 500
     }
   }
 }

@@ -125,21 +125,53 @@ function renderAuthBody(mode) {
     body.innerHTML = `
       <h2 class="auth-title">Créer un compte</h2>
       <p class="auth-desc">Email et mot de passe</p>
-      <label class="auth-label">Pseudo</label>
-      <input type="text" class="nickname-input auth-input" id="auth-signup-name" maxlength="20" placeholder="Ex. Kira" />
+      <label class="auth-label">Pseudo <span class="auth-hint">(3–20 car., lettres/chiffres/espaces/tirets/apostrophes, unique)</span></label>
+      <input type="text" class="nickname-input auth-input" id="auth-signup-name" maxlength="20" minlength="3" placeholder="Ex. Kira" autocomplete="username" />
+      <p class="auth-field-hint" id="auth-name-hint" hidden></p>
       <label class="auth-label">Email</label>
       <input type="email" class="auth-input" id="auth-signup-email" autocomplete="email" />
-      <label class="auth-label">Mot de passe</label>
-      <input type="password" class="auth-input" id="auth-signup-password" autocomplete="new-password" minlength="6" />
+      <label class="auth-label">Mot de passe <span class="auth-hint">(6–72 car., tous caractères autorisés)</span></label>
+      <input type="password" class="auth-input" id="auth-signup-password" autocomplete="new-password" minlength="6" maxlength="72" />
+      <label class="auth-label">Confirmer le mot de passe</label>
+      <input type="password" class="auth-input" id="auth-signup-password-confirm" autocomplete="new-password" minlength="6" maxlength="72" />
       <p class="auth-error" id="auth-error" hidden></p>
       <button type="button" class="btn btn-craft" id="auth-signup-submit">Créer mon compte</button>
       <button type="button" class="btn btn-link auth-back" id="auth-back">← Retour</button>
     `;
     bindAuthError(body);
+    const nameInput = body.querySelector('#auth-signup-name');
+    let nameCheckTimer = null;
+    nameInput?.addEventListener('input', () => {
+      clearTimeout(nameCheckTimer);
+      nameCheckTimer = setTimeout(async () => {
+        const hint = body.querySelector('#auth-name-hint');
+        const name = nameInput.value?.trim() || '';
+        if (!name) { hint.hidden = true; return; }
+        const { validateNickname } = await import('../systems/character.js');
+        const format = validateNickname(name, { nicknameMaxLength: 20, nicknameMinLength: 3 });
+        if (!format.ok) {
+          hint.hidden = false;
+          hint.className = 'auth-field-hint auth-error';
+          hint.textContent = format.reason;
+          return;
+        }
+        const { checkDisplayNameAvailable } = await import('../systems/accountProfile.js');
+        const avail = await checkDisplayNameAvailable(format.name);
+        hint.hidden = false;
+        hint.className = avail.ok && avail.available ? 'auth-field-hint auth-info' : 'auth-field-hint auth-error';
+        hint.textContent = avail.ok
+          ? (avail.available ? 'Pseudo disponible ✓' : 'Ce pseudo est déjà pris')
+          : (avail.reason || 'Vérification impossible');
+      }, 400);
+    });
     body.querySelector('#auth-signup-submit')?.addEventListener('click', async () => {
       const name = body.querySelector('#auth-signup-name')?.value || '';
       const email = body.querySelector('#auth-signup-email')?.value || '';
       const password = body.querySelector('#auth-signup-password')?.value || '';
+      const passwordConfirm = body.querySelector('#auth-signup-password-confirm')?.value || '';
+      if (password !== passwordConfirm) {
+        return showAuthError(body, 'Les mots de passe ne correspondent pas.');
+      }
       const result = await signUpWithEmail(email, password, name);
       if (!result.ok) return showAuthError(body, result.reason);
       if (result.needsEmailConfirm) {
@@ -164,8 +196,8 @@ function renderAuthBody(mode) {
       <h2 class="auth-title">Connexion</h2>
       <label class="auth-label">Email</label>
       <input type="email" class="auth-input" id="auth-login-email" autocomplete="email" />
-      <label class="auth-label">Mot de passe</label>
-      <input type="password" class="auth-input" id="auth-login-password" autocomplete="current-password" />
+      <label class="auth-label">Mot de passe <span class="auth-hint">(6–72 car.)</span></label>
+      <input type="password" class="auth-input" id="auth-login-password" autocomplete="current-password" minlength="6" maxlength="72" />
       <p class="auth-error" id="auth-error" hidden></p>
       <button type="button" class="btn btn-craft" id="auth-login-submit">Se connecter</button>
       <button type="button" class="btn btn-link auth-back" id="auth-back">← Retour</button>
@@ -219,7 +251,7 @@ export function showAccountRequiredModal(reason) {
   body.querySelector('#auth-modal-close')?.addEventListener('click', closeAuthModal);
 }
 
-export function renderAccountPanel(game, container) {
+export function renderAccountPanel(game, container, { hideDelete = false } = {}) {
   const auth = getAuthState();
   const isGuest = auth.mode === 'guest';
   container.innerHTML = `
@@ -244,8 +276,10 @@ export function renderAccountPanel(game, container) {
         ${auth.isBanned ? '<p class="guest-banner warn">Compte suspendu</p>' : ''}
         ${canSeeAdminPanel() ? `<p class="view-desc"><button type="button" class="link-btn" id="account-goto-admin">Administration</button></p>` : ''}
         <button type="button" class="btn btn-muted" id="account-signout">Se déconnecter</button>
+        ${hideDelete ? '' : `
         <button type="button" class="btn btn-danger btn-sm" id="account-delete">Supprimer mon compte</button>
         <p class="view-desc account-delete-hint">Supprime définitivement ton compte et tes données en ligne. Tu pourras recréer un compte avec la même adresse email.</p>
+        `}
       ` : `
         <p class="view-desc">Non connecté</p>
         <button type="button" class="btn btn-craft" id="account-login">Se connecter</button>
