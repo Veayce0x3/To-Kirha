@@ -759,7 +759,7 @@ function renderFusionPanel(game, container) {
   if (!container) return;
   const groups = game.getFusionGroups();
   if (!groups.length) {
-    container.innerHTML = '<h3>🔮 Fusion</h3><p class="view-desc">Aucune pièce fusionnable en réserve (armes et armures équipées comptent aussi).</p>';
+    container.innerHTML = '<h3>🔮 Fusion</h3><p class="view-desc">Aucune pièce fusionnable (réserve ou équipée).</p>';
     return;
   }
   container.innerHTML = '<h3>🔮 Fusion</h3>' + groups.map((g) => {

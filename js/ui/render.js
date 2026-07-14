@@ -478,7 +478,12 @@ export function initUI(game, audio) {
     refreshView();
     refreshHeader(game.state);
   });
-  on('equipmentFused', (r) => { showToast(els, `Fusion : ${RARITY_LABELS[r.toRarity] || r.toRarity} !`, 'upgrade'); });
+  on('equipmentFused', (r) => {
+    const msg = r.autoEquipped
+      ? `Fusion ${RARITY_LABELS[r.toRarity] || r.toRarity} — rééquipé automatiquement !`
+      : `Fusion : ${RARITY_LABELS[r.toRarity] || r.toRarity} !`;
+    showToast(els, msg, 'upgrade');
+  });
   on('combatVictory', (r) => {
     closeDungeonCombatModal();
     showDungeonResult(game, r);
