@@ -27,22 +27,36 @@ export function calcMarketFee(total) {
   return Math.max(0, Math.floor(total * MARKET_FEE_RATE));
 }
 
-/** Applique kirha + inventaire depuis le cloud (après un échange HDV). */
+/** Applique kirha + inventaire + équipement combat depuis le cloud (après un échange HDV). */
 export async function syncMarketEconomy(game) {
   const auth = getAuthState();
   if (!auth.userId || !game?.state) return { ok: false, reason: 'Compte requis.' };
   const cloud = await loadCloudSave(auth.userId);
   if (!cloud?.data) return { ok: false, reason: 'Synchronisation impossible.' };
-  game.state.kirha = Number(cloud.data.kirha) || 0;
-  if (cloud.data.inventory && typeof cloud.data.inventory === 'object') {
-    game.state.inventory = { ...cloud.data.inventory };
-  }
+  applyCloudSaveSlice(game, cloud.data);
   game.scheduleSave?.();
   emit('stateChange', game.state);
   return { ok: true };
 }
 
-/** Applique le save partiel renvoyé par une RPC (kirha + clés inventaire touchées). */
+function applyCloudSaveSlice(game, saveData) {
+  if (!saveData || !game?.state) return;
+  if (saveData.kirha != null) game.state.kirha = Number(saveData.kirha) || 0;
+  if (saveData.inventory && typeof saveData.inventory === 'object') {
+    game.state.inventory = { ...saveData.inventory };
+  }
+  if (Array.isArray(saveData.ownedCombatItems)) {
+    game.state.ownedCombatItems = [...saveData.ownedCombatItems];
+  }
+  if (Array.isArray(saveData.combatItemInstances)) {
+    game.state.combatItemInstances = saveData.combatItemInstances.map((i) => ({ ...i }));
+  }
+  if (saveData.combatEquipment && typeof saveData.combatEquipment === 'object') {
+    game.state.combatEquipment = { ...game.state.combatEquipment, ...saveData.combatEquipment };
+  }
+}
+
+/** Applique le save partiel renvoyé par une RPC (kirha + clés inventaire / combat touchées). */
 export function applyServerSave(game, saveData) {
   if (!saveData || !game?.state) return { ok: false, reason: 'Save invalide.' };
   if (saveData.kirha != null) game.state.kirha = Number(saveData.kirha) || 0;
@@ -51,6 +65,15 @@ export function applyServerSave(game, saveData) {
       if (!qty || qty <= 0) delete game.state.inventory[id];
       else game.state.inventory[id] = qty;
     }
+  }
+  if (Array.isArray(saveData.ownedCombatItems)) {
+    game.state.ownedCombatItems = [...saveData.ownedCombatItems];
+  }
+  if (Array.isArray(saveData.combatItemInstances)) {
+    game.state.combatItemInstances = saveData.combatItemInstances.map((i) => ({ ...i }));
+  }
+  if (saveData.combatEquipment && typeof saveData.combatEquipment === 'object') {
+    game.state.combatEquipment = { ...game.state.combatEquipment, ...saveData.combatEquipment };
   }
   emit('stateChange', game.state);
   return { ok: true };
@@ -72,7 +95,7 @@ export async function fetchSellListings({ resourceId = null, limit = 100 } = {})
   const supabase = await getSupabaseClient();
   let q = supabase
     .from('market_sell_listings')
-    .select('id, seller_id, seller_name, resource_id, qty_remaining, unit_price, created_at, expires_at')
+    .select('id, seller_id, seller_name, resource_id, qty_remaining, unit_price, created_at, expires_at, listing_kind, combat_instance')
     .gt('qty_remaining', 0)
     .gt('expires_at', new Date().toISOString())
     .order('unit_price', { ascending: true })
@@ -87,7 +110,7 @@ export async function fetchBuyOffers({ resourceId = null, limit = 100 } = {}) {
   const supabase = await getSupabaseClient();
   let q = supabase
     .from('market_buy_offers')
-    .select('id, buyer_id, buyer_name, resource_id, qty_remaining, max_unit_price, kirha_escrowed, created_at, expires_at')
+    .select('id, buyer_id, buyer_name, resource_id, qty_remaining, max_unit_price, kirha_escrowed, created_at, expires_at, listing_kind, combat_item_id')
     .gt('qty_remaining', 0)
     .gt('expires_at', new Date().toISOString())
     .order('max_unit_price', { ascending: false })
@@ -140,15 +163,55 @@ export async function buyFromListing(listingId, qty) {
   return { ok: true, result: data };
 }
 
-export async function fillBuyOffer(offerId, qty) {
+export async function createCombatSellListing({ instanceId, unitPrice, sellerDisplayName }) {
   if (!isRegisteredAccount()) return { ok: false, reason: 'Compte requis.' };
   const blocked = marketOnlineBlocked();
   if (blocked) return { ok: false, reason: blocked };
   const supabase = await getSupabaseClient();
-  const { data, error } = await supabase.rpc('market_fill_buy_offer', {
-    p_offer_id: offerId,
-    p_qty: qty,
+  const { data, error } = await supabase.rpc('market_create_combat_sell_listing', {
+    p_instance_id: instanceId,
+    p_unit_price: unitPrice,
+    p_display_name: sellerDisplayName,
   });
+  if (error) {
+    const msg = error.message || '';
+    if (msg.includes('market_create_combat_sell_listing') || msg.includes('schema cache')) {
+      return { ok: false, reason: 'HDV équipement pas encore activé sur le serveur.' };
+    }
+    return { ok: false, reason: error.message };
+  }
+  return { ok: true, listingId: data?.listing_id, save: data?.save };
+}
+
+export async function createCombatBuyOffer({ itemId, qty, maxUnitPrice, buyerDisplayName }) {
+  if (!isRegisteredAccount()) return { ok: false, reason: 'Compte requis.' };
+  const blocked = marketOnlineBlocked();
+  if (blocked) return { ok: false, reason: blocked };
+  const supabase = await getSupabaseClient();
+  const { data, error } = await supabase.rpc('market_create_combat_buy_offer', {
+    p_item_id: itemId,
+    p_qty: qty,
+    p_max_unit_price: maxUnitPrice,
+    p_display_name: buyerDisplayName,
+  });
+  if (error) {
+    const msg = error.message || '';
+    if (msg.includes('market_create_combat_buy_offer') || msg.includes('schema cache')) {
+      return { ok: false, reason: 'HDV équipement pas encore activé sur le serveur.' };
+    }
+    return { ok: false, reason: error.message };
+  }
+  return { ok: true, offerId: data?.offer_id, save: data?.save };
+}
+
+export async function fillBuyOffer(offerId, qty, instanceId = null) {
+  if (!isRegisteredAccount()) return { ok: false, reason: 'Compte requis.' };
+  const blocked = marketOnlineBlocked();
+  if (blocked) return { ok: false, reason: blocked };
+  const supabase = await getSupabaseClient();
+  const args = { p_offer_id: offerId, p_qty: qty };
+  if (instanceId) args.p_instance_id = instanceId;
+  const { data, error } = await supabase.rpc('market_fill_buy_offer', args);
   if (error) return { ok: false, reason: error.message };
   return { ok: true, result: data };
 }
