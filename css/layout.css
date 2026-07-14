@@ -2819,6 +2819,17 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   text-align: center;
 }
 
+.harvest-slot.slot-locked.slot-unlock-ready {
+  opacity: 1;
+  border-color: var(--vert-clair);
+  border-style: solid;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.harvest-slot.slot-locked.slot-unlock-ready .tile-name {
+  color: var(--vert-fonce);
+}
+
 .slot-visual {
   position: relative;
   display: flex;
