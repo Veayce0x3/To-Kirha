@@ -13,7 +13,7 @@ import { getQuestStatusText, isQuestCompleted, isQuestReady } from '../systems/q
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
 import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
-import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
+import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, listFeedOptions, FARM_BUILDING_LABELS, isWaterOnlyFeed } from '../systems/farm.js';
 import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consumables.js';
 import { RARITY_LABELS, RARITY_EMOJI, getInstanceRarity } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
@@ -2036,11 +2036,14 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
   const slot = game.state.farmSlots?.[buildingId]?.[slotIndex];
   const active = !!slot?.active;
   const progress = active ? game.getFarmSlotProgress(buildingId, slotIndex) : 0;
-  const needsFeed = Object.keys(building.feed || {}).length > 0;
-  const feedUi = needsFeed ? buildFarmFeedPickerHtml(game, building, slot, active) : { pickerHtml: '', canAffordSelected: true };
+  const needsWater = isWaterOnlyFeed(building);
+  const needsFeedPicker = !needsWater && Object.keys(building.feed || {}).length > 0;
+  const feedUi = needsFeedPicker ? buildFarmFeedPickerHtml(game, building, slot, active) : { pickerHtml: '', canAffordSelected: true };
+  const waterCostHtml = needsWater ? buildFarmFeedCostHtml(game, building, 'eau') : '';
   const toolBlock = game.getFarmToolBlockReason(buildingId);
   const sprite = getFarmBuildingSprite(building);
-  const feedBlocked = needsFeed && (!slot?.feedId || !feedUi.canAffordSelected);
+  const waterBlocked = needsWater && !canAffordFeed(building, 'eau', game.state);
+  const feedBlocked = needsFeedPicker && (!slot?.feedId || !feedUi.canAffordSelected);
 
   const card = document.createElement('div');
   card.className = `farm-slot harvest-slot${active ? ' active-harvest' : ''}`;
@@ -2058,7 +2061,7 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
     animalHtml = buildFarmAnimalPurchaseHtml(game, animalCost);
   }
 
-  const produceBlocked = needsAnimal || feedBlocked || toolBlock;
+  const produceBlocked = needsAnimal || feedBlocked || waterBlocked || toolBlock;
 
   card.innerHTML = `
     <div class="slot-visual" data-state="${active ? 'harvesting' : 'available'}">
@@ -2066,7 +2069,8 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
     </div>
     <div class="slot-footer">
       ${animalHtml}
-      ${needsFeed ? feedUi.pickerHtml : ''}
+      ${needsFeedPicker ? feedUi.pickerHtml : ''}
+      ${waterCostHtml}
       ${active ? `<div class="xp-bar-container slot-progress"><div class="xp-bar" style="width:${getFarmProgressPct(progress)}%"></div></div>` : ''}
       ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
       <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${!active && !produceBlocked ? ' affordable' : ''}${active && progress >= 1 ? ' affordable' : ''}" ${active && progress < 1 || (!active && produceBlocked) ? 'disabled' : ''}>

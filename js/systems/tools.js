@@ -57,23 +57,37 @@ export function getHarvestToolBlockReason(resource, state, recipes, jobs, jobId)
 }
 
 export function canUseFarmTool(building, state, recipes) {
-  const jobId = building.toolJob || 'breeder';
-  const required = building.toolTier || 1;
-  return getEquippedToolTier(state, recipes, jobId) >= required;
+  return !getFarmToolBlockReason(building, state, recipes);
+}
+
+function farmToolKindLabel(kind) {
+  if (kind === 'bucket') return 'seau';
+  if (kind === 'basket') return 'panier';
+  return 'outil d\'élevage';
 }
 
 export function getFarmToolBlockReason(building, state, recipes) {
   const jobId = building.toolJob || 'breeder';
+  const requiredKind = building.requiredFarmToolKind || null;
   const recipeId = getJobEquippedTool(state, jobId);
+  const required = building.toolTier || 1;
+
   if (!recipeId) {
-    return { type: 'no_tool', message: 'Équipe un outil d\'Éleveur (seau, panier…)' };
+    const toolName = farmToolKindLabel(requiredKind);
+    return { type: 'no_tool', message: `Équipe un ${toolName} d'Éleveur sur Perso → Outils` };
   }
   const recipe = recipes[recipeId];
   if (!recipe || !hasWorkingTool(state, recipe.id, recipe)) {
-    return { type: 'broken', message: 'Outil d\'élevage usé — refabrique-le' };
+    return { type: 'broken', message: `${farmToolKindLabel(requiredKind || recipe?.farmToolKind)} usé — refabrique-le à l'Outilleur` };
+  }
+  const kind = recipe.farmToolKind;
+  if (requiredKind && kind !== requiredKind) {
+    if (requiredKind === 'bucket') {
+      return { type: 'wrong_tool', message: 'Équipe un seau au puits (le panier sert aux autres bâtiments)' };
+    }
+    return { type: 'wrong_tool', message: 'Équipe un panier ici (le seau est réservé au puits)' };
   }
   const tier = getRecipeToolTier(recipe);
-  const required = building.toolTier || 1;
   if (tier < required) {
     return { type: 'tier', message: `Outil palier ${required} requis pour ${building.name}` };
   }

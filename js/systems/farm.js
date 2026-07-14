@@ -106,7 +106,11 @@ export function ensureFarmSlots(state, farmData, balance) {
     const max = getMaxFarmSlots(state, farmData, balance, id);
     if (!state.farmSlots[id]) state.farmSlots[id] = [];
     while (state.farmSlots[id].length < max) {
-      state.farmSlots[id].push({ feedId: null, active: null });
+      const building = getBuildingDef(farmData, id);
+      state.farmSlots[id].push({
+        feedId: isWaterOnlyFeed(building) ? 'eau' : null,
+        active: null,
+      });
     }
     state.farmSlots[id] = state.farmSlots[id].slice(0, max);
   }
@@ -114,6 +118,18 @@ export function ensureFarmSlots(state, farmData, balance) {
 
 export function getBuildingDef(farmData, buildingId) {
   return farmData.buildings?.[buildingId] || null;
+}
+
+/** Bâtiment dont la production ne coûte que de l'eau (pas de ration à choisir). */
+export function isWaterOnlyFeed(building) {
+  const feed = building?.feed || {};
+  return Object.keys(feed).length === 1 && feed.eau != null;
+}
+
+export function getEffectiveFarmFeedId(building, slot) {
+  if (!building || Object.keys(building.feed || {}).length === 0) return null;
+  if (isWaterOnlyFeed(building)) return 'eau';
+  return slot?.feedId || null;
 }
 
 export function getFarmBuildingNavStatus(state, buildingId) {
@@ -139,14 +155,17 @@ export function getFeedEfficiency(building, feedId, state) {
 
 export function computeFarmDuration(building, feedId, state) {
   const base = building.cycleMs || 10000;
-  if (!feedId || Object.keys(building.feed || {}).length === 0) return base;
+  if (isWaterOnlyFeed(building) || Object.keys(building.feed || {}).length === 0) return base;
+  if (!feedId) return base;
   const eff = getFeedEfficiency(building, feedId, state);
   return Math.max(2000, Math.floor(base / Math.max(0.4, eff)));
 }
 
 export function canAffordFeed(building, feedId, state) {
   const cost = getFeedCost(building, feedId);
-  if (!cost) return Object.keys(building.feed || {}).length === 0;
+  if (!cost || Object.keys(cost).length === 0) {
+    return Object.keys(building.feed || {}).length === 0;
+  }
   for (const [resId, amt] of Object.entries(cost)) {
     if ((state.inventory[resId] || 0) < amt) return false;
   }
@@ -156,9 +175,9 @@ export function canAffordFeed(building, feedId, state) {
 export function getFeedCost(building, feedId) {
   const needs = building.feed || {};
   if (Object.keys(needs).length === 0) return {};
+  if (isWaterOnlyFeed(building)) return { eau: needs.eau };
   if (!feedId) return null;
   const cost = {};
-  if (feedId === 'eau') return null;
   if (needs[feedId] != null) {
     cost[feedId] = needs[feedId];
   } else if (building.feedEfficiency?.[feedId] != null) {
@@ -181,6 +200,7 @@ export function consumeFeed(building, feedId, state) {
 }
 
 export function listFeedOptions(building) {
+  if (isWaterOnlyFeed(building)) return [];
   if (Object.keys(building.feed || {}).length === 0) return [];
   return [...new Set([
     ...Object.keys(building.feed || {}).filter((k) => k !== 'eau'),
@@ -223,21 +243,22 @@ export function startFarmProduction(state, farmData, buildingId, slotIndex) {
   }
 
   const needsFeed = Object.keys(building.feed || {}).length > 0;
+  const feedId = getEffectiveFarmFeedId(building, slot);
   if (needsFeed) {
-    if (!slot.feedId || !canAffordFeed(building, slot.feedId, state)) {
-      return { ok: false, reason: 'Ration insuffisante' };
+    if (!feedId || !canAffordFeed(building, feedId, state)) {
+      return { ok: false, reason: 'Il te faut de l\'eau pour produire' };
     }
-    if (!consumeFeed(building, slot.feedId, state)) {
-      return { ok: false, reason: 'Ration insuffisante' };
+    if (!consumeFeed(building, feedId, state)) {
+      return { ok: false, reason: 'Il te faut de l\'eau pour produire' };
     }
   }
 
-  const duration = computeFarmDuration(building, slot.feedId, state);
+  const duration = computeFarmDuration(building, feedId, state);
   slot.active = {
     phase: 'producing',
     start: Date.now(),
     duration,
-    feedId: slot.feedId,
+    feedId,
   };
   return { ok: true, duration };
 }
