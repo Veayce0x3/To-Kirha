@@ -1,5 +1,6 @@
 import { getCraftBonus } from './craft.js';
 import { getPrestigeBonuses, getSeasonLevelCap } from './prestige.js';
+import { getEffectiveHarvestXp, getRegrowthTier } from './progression.js';
 
 const ZONE_REGROWTH_BONUS = {
   village_sakura: 0,
@@ -19,9 +20,9 @@ function getSpeedBonus(resource, state, jobs, balance) {
   return craftBonus + jobSpeedBonus;
 }
 
-export function getRegrowthTime(resource, state, jobs, balance) {
+export function getRegrowthTime(resource, state, jobs, balance, resources = null) {
   const cfg = balance?.harvest || {};
-  const tier = Math.floor((resource.requiredJobLevel - 1) / 20);
+  const tier = resources ? getRegrowthTier(resource, resources) : Math.floor((resource.requiredJobLevel - 1) / 20);
   const zoneBonus = ZONE_REGROWTH_BONUS[resource.zone] ?? 0;
   const base =
     resource.baseRegrowthTime ??
@@ -45,9 +46,10 @@ export function getHarvestYield(resource, state, jobs, balance) {
   return Math.max(1, Math.floor(resource.baseYield + craftBonus + jobYieldBonus));
 }
 
-export function getHarvestXp(resource, state, balance) {
+export function getHarvestXp(resource, state, balance, resources = null) {
   const prestigeBonus = getPrestigeBonuses(state).xp;
-  return Math.floor(resource.xpPerHarvest * prestigeBonus);
+  const base = resources ? getEffectiveHarvestXp(resource, resources) : resource.xpPerHarvest;
+  return Math.floor(base * prestigeBonus);
 }
 
 export function getXpForLevel(job, level) {

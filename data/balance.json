@@ -1,7 +1,7 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 26,
+  "saveVersion": 27,
   "betaMode": false,
   "questsEnabled": false,
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
@@ -21,10 +21,10 @@
   "combat": {
     "keyDrops": {
       "mobChance": 0.04,
-      "bossChance": 0.08
+      "bossChance": 0
     },
     "equipmentDrops": {
-      "mobChance": 0.05,
+      "mobChance": 0,
       "bossChance": 0.12
     },
     "fusionCosts": {
@@ -389,5 +389,115 @@
     "healPctBase": 30,
     "healPctStep": 5,
     "healPctMax": 60
+  },
+  "productionLines": {
+    "maxUnits": 10,
+    "unitUnlockCosts": [0, 0, 400, 1200, 3500, 8000, 20000, 50000, 120000, 300000],
+    "unitUnlockResourcesByJob": {
+      "farmer": {
+        "2": { "ble": 10 },
+        "3": { "orge": 10 },
+        "4": { "ble": 25 },
+        "5": { "orge": 25 }
+      },
+      "lumberjack": {
+        "2": { "frene": 10 },
+        "3": { "noyer": 10 }
+      },
+      "fisher": {
+        "2": { "goujon": 10 },
+        "3": { "truite": 10 }
+      },
+      "miner": {
+        "2": { "fer": 10 },
+        "3": { "bronze": 10 }
+      },
+      "alchemist": {
+        "2": { "ortie": 10 },
+        "3": { "trefle": 10 }
+      }
+    },
+    "farmUnitUnlockCosts": [0, 600, 2000, 6000, 15000, 40000, 100000, 250000, 600000, 1500000]
+  },
+  "jobUnlocks": {
+    "farmer": { "always": true },
+    "lumberjack": {
+      "when": { "jobLevel": { "farmer": 10 } },
+      "hint": "Atteins Paysan Nv.10 pour débloquer le Bûcheron."
+    },
+    "fisher": {
+      "when": { "jobLevel": { "farmer": 14 } },
+      "hint": "Atteins Paysan Nv.14 pour débloquer le Pêcheur."
+    },
+    "miner": {
+      "when": { "jobLevel": { "farmer": 18 } },
+      "hint": "Atteins Paysan Nv.18 pour débloquer le Mineur."
+    },
+    "alchemist": {
+      "when": { "jobLevel": { "farmer": 22 } },
+      "hint": "Atteins Paysan Nv.22 pour débloquer l'Alchimiste."
+    },
+    "combat": {
+      "when": { "jobLevel": { "farmer": 5 } },
+      "hint": "Atteins Paysan Nv.5 pour débloquer le Combat."
+    },
+    "toolmaker": {
+      "when": { "jobLevel": { "farmer": 8 } },
+      "hint": "Atteins Paysan Nv.8 pour débloquer l'Outilleur."
+    },
+    "cook": {
+      "when": { "jobLevel": { "farmer": 12 } },
+      "hint": "Atteins Paysan Nv.12 pour débloquer le Cuisinier."
+    },
+    "farm": {
+      "well": {
+        "when": { "jobLevel": { "farmer": 15 } },
+        "hint": "Atteins Paysan Nv.15 pour débloquer la Ferme (Puits)."
+      },
+      "chicken_coop": {
+        "when": { "jobLevel": { "farmer": 16 } },
+        "hint": "Atteins Paysan Nv.16 pour le Poulailler."
+      },
+      "barn": {
+        "when": { "jobLevel": { "farmer": 18 } },
+        "hint": "Atteins Paysan Nv.18 pour l'Étable."
+      },
+      "sheepfold": {
+        "when": { "jobLevel": { "farmer": 20 } },
+        "hint": "Atteins Paysan Nv.20 pour la Bergerie."
+      },
+      "pigsty": {
+        "when": { "jobLevel": { "farmer": 22 } },
+        "hint": "Atteins Paysan Nv.22 pour la Porcherie."
+      },
+      "beehive": {
+        "when": { "jobLevel": { "farmer": 24 } },
+        "hint": "Atteins Paysan Nv.24 pour les Ruches."
+      }
+    },
+    "farm_well": {
+      "when": { "jobLevel": { "farmer": 15 } },
+      "hint": "Atteins Paysan Nv.15 pour le Puits."
+    },
+    "farm_chicken_coop": {
+      "when": { "jobLevel": { "farmer": 16 } },
+      "hint": "Atteins Paysan Nv.16 pour le Poulailler."
+    },
+    "farm_barn": {
+      "when": { "jobLevel": { "farmer": 18 } },
+      "hint": "Atteins Paysan Nv.18 pour l'Étable."
+    },
+    "farm_sheepfold": {
+      "when": { "jobLevel": { "farmer": 20 } },
+      "hint": "Atteins Paysan Nv.20 pour la Bergerie."
+    },
+    "farm_pigsty": {
+      "when": { "jobLevel": { "farmer": 22 } },
+      "hint": "Atteins Paysan Nv.22 pour la Porcherie."
+    },
+    "farm_beehive": {
+      "when": { "jobLevel": { "farmer": 24 } },
+      "hint": "Atteins Paysan Nv.24 pour les Ruches."
+    }
   }
 }

@@ -1,7 +1,7 @@
 import { addJobXp } from './harvest.js';
 import { wearToolsForHarvest } from './toolDurability.js';
 
-import { isFarmBuildingUnlocked } from './careerChoice.js';
+import { isFarmBuildingUnlocked } from './jobUnlock.js';
 
 export const FARM_BUILDING_IDS = [
   'well',
@@ -21,10 +21,10 @@ export const FARM_BUILDING_LABELS = {
   beehive: 'Ruches',
 };
 
-export function normalizePurchasedFarmSlots(saved, farmData, state) {
+export function normalizePurchasedFarmSlots(saved, farmData, state, balance) {
   const starting = farmData.startingSlotsPerBuilding || 1;
   const out = {};
-  for (const id of FARM_BUILDING_IDS.filter((bid) => isFarmBuildingUnlocked(bid, state))) {
+  for (const id of FARM_BUILDING_IDS.filter((bid) => isFarmBuildingUnlocked(bid, state, balance))) {
     out[id] = saved?.[id] ?? starting;
   }
   return out;

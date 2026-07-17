@@ -5,7 +5,7 @@
     "emoji": "🪓",
     "maxLevel": 200,
     "xpPerLevel": 100,
-    "xpScaling": 1.08,
+    "xpScaling": 1.12,
     "bonusesPerLevel": {
       "speedBonus": 0.005,
       "yieldBonus": 0.003
@@ -18,7 +18,7 @@
     "emoji": "🎣",
     "maxLevel": 200,
     "xpPerLevel": 110,
-    "xpScaling": 1.08,
+    "xpScaling": 1.12,
     "bonusesPerLevel": {
       "speedBonus": 0.005,
       "yieldBonus": 0.003
@@ -31,7 +31,7 @@
     "emoji": "⛏️",
     "maxLevel": 200,
     "xpPerLevel": 120,
-    "xpScaling": 1.08,
+    "xpScaling": 1.12,
     "bonusesPerLevel": {
       "speedBonus": 0.005,
       "yieldBonus": 0.003
@@ -44,7 +44,7 @@
     "emoji": "🌾",
     "maxLevel": 200,
     "xpPerLevel": 100,
-    "xpScaling": 1.08,
+    "xpScaling": 1.12,
     "bonusesPerLevel": {
       "speedBonus": 0.005,
       "yieldBonus": 0.003
@@ -57,7 +57,7 @@
     "emoji": "🧪",
     "maxLevel": 200,
     "xpPerLevel": 115,
-    "xpScaling": 1.08,
+    "xpScaling": 1.12,
     "bonusesPerLevel": {
       "speedBonus": 0.005,
       "yieldBonus": 0.003
@@ -83,7 +83,7 @@
     "emoji": "🐄",
     "maxLevel": 200,
     "xpPerLevel": 100,
-    "xpScaling": 1.08,
+    "xpScaling": 1.12,
     "bonusesPerLevel": {
       "speedBonus": 0.005,
       "yieldBonus": 0.003
