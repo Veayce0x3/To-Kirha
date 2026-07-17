@@ -239,7 +239,7 @@ function isRecipeVisibleInWorkshop(recipeId, craftJobId, ctx) {
   if (!meta?.job) return true;
 
   if (GATHERING_JOB_IDS.includes(meta.job)) {
-    return isGatheringJobUnlocked(meta.job, ctx.state);
+    return isGatheringJobUnlocked(meta.job, ctx.state, ctx.balance);
   }
 
   // Breeder/cook/global helpers stay visible because the farm path is always part of a career.

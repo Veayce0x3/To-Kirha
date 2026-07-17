@@ -244,11 +244,11 @@ const JOB_SWITCHER_STATUS_CLASSES = [
   'nav-harvest-empty',
 ];
 
-function getJobSwitcherGroup(viewId, state) {
+function getJobSwitcherGroup(viewId, state, balance) {
   if (!viewId?.startsWith('job_') && !isFarmView(viewId)) return null;
   return {
     type: 'quick',
-    views: [...getVisibleHarvestViews(state), ...getVisibleFarmViews(state)],
+    views: [...getVisibleHarvestViews(state, balance), ...getVisibleFarmViews(state, balance)],
   };
 }
 
@@ -296,7 +296,7 @@ function getAdjacentVisibleView(viewId, visibleViews, direction) {
 export function renderJobSwitcherDock(game, el, viewId) {
   if (!el) return;
 
-  const group = getJobSwitcherGroup(viewId, game.state);
+  const group = getJobSwitcherGroup(viewId, game.state, game.balance);
   if (!group) {
     el.classList.add('hidden');
     el.innerHTML = '';
@@ -1615,24 +1615,21 @@ function renderHarvestSlot(game, jobId, slotIndex, container) {
   );
 }
 
-export function patchHarvestSlot(game, jobId, slotIndex) {
-  const container = document.getElementById('harvest-slots');
-  if (!container || VIEWS[getView()]?.job !== jobId) return;
-  const card = createHarvestSlotCard(game, jobId, slotIndex);
-  mountSlotCard(
-    container,
-    card,
-    slotIndex,
-    `.harvest-slot[data-job="${jobId}"][data-slot="${slotIndex}"]`
-  );
+export function patchHarvestSlot(game, jobId, unitIndex, resourceId) {
+  const viewJobId = VIEWS[getView()]?.job;
+  if (!viewJobId || viewJobId !== jobId) return;
+  const container = document.getElementById('view-container');
+  if (!container) return;
+  renderJobProduction(game, container, jobId);
 }
 
-/** Animation ponctuelle quand un slot redevient récoltable après repousse. */
-export function flashHarvestSlotReady(jobId, slotIndex) {
+/** Animation ponctuelle quand une unité redevient récoltable après repousse. */
+export function flashHarvestSlotReady(jobId, unitIndex, resourceId) {
   requestAnimationFrame(() => {
-    const card = document.querySelector(
-      `.harvest-slot[data-job="${jobId}"][data-slot="${slotIndex}"]`
-    );
+    const selector = resourceId
+      ? `.production-unit[data-job="${jobId}"][data-resource="${resourceId}"][data-unit="${unitIndex}"]`
+      : `.harvest-slot[data-job="${jobId}"][data-slot="${unitIndex}"]`;
+    const card = document.querySelector(selector);
     if (!card) return;
     card.classList.add('slot-just-ready');
     const done = () => card.classList.remove('slot-just-ready');

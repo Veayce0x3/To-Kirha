@@ -46,7 +46,7 @@ export function getSlotUnlockRequirements(jobId, slotIndex, balance) {
 }
 
 export function canBuySlot(state, balance, jobId) {
-  if (!isGatheringJobUnlocked(jobId, state)) return false;
+  if (!isGatheringJobUnlocked(jobId, state, balance)) return false;
   const current = getMaxSlots(state, balance, jobId);
   if (current >= balance.harvestSlots.maxSlots) return false;
   const { kirha, resources } = getSlotUnlockRequirements(jobId, current, balance);
@@ -87,7 +87,7 @@ export function buySlot(state, balance, jobId) {
 }
 
 export function ensureSlots(state, balance) {
-  const activeJobs = GATHERING_JOBS.filter((j) => isGatheringJobUnlocked(j, state));
+  const activeJobs = GATHERING_JOBS.filter((j) => isGatheringJobUnlocked(j, state, balance));
   if (!state.harvestSlots) state.harvestSlots = {};
   state.purchasedSlots = normalizePurchasedSlots(state.purchasedSlots, balance);
 

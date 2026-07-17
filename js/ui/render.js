@@ -35,6 +35,7 @@ import {
   syncStaleFarmSlots,
   refreshCharToolsIfVisible,
   patchHarvestSlot,
+  flashHarvestSlotReady,
   closeCharEquipPickerSheet,
   closeAllResourcePickers,
   isResourcePickerOpen,
@@ -391,16 +392,16 @@ export function initUI(game, audio) {
     patchFarmSlot(game, buildingId, slotIndex);
   });
 
-  on('harvestSlotAssign', ({ jobId, slotIndex }) => {
-    patchHarvestSlot(game, jobId, slotIndex);
+  on('harvestSlotAssign', ({ jobId, unitIndex, slotIndex, resourceId }) => {
+    patchHarvestSlot(game, jobId, unitIndex ?? slotIndex, resourceId);
   });
-  on('harvestStart', ({ jobId, slotIndex }) => {
-    patchHarvestSlot(game, jobId, slotIndex);
+  on('harvestStart', ({ jobId, unitIndex, slotIndex, resourceId }) => {
+    patchHarvestSlot(game, jobId, unitIndex ?? slotIndex, resourceId);
     tickHarvestUI();
     audio.playSfx('click');
   });
-  on('harvestComplete', ({ resourceId, jobId, slotIndex, yield: y, xp, levelResult, dailyBonus }) => {
-    patchHarvestSlot(game, jobId, slotIndex);
+  on('harvestComplete', ({ resourceId, jobId, unitIndex, slotIndex, yield: y, xp, levelResult, dailyBonus }) => {
+    patchHarvestSlot(game, jobId, unitIndex ?? slotIndex, resourceId);
     const resource = game.resources[resourceId];
     if (levelResult) {
       const job = game.jobs[levelResult.jobId];
@@ -415,13 +416,13 @@ export function initUI(game, audio) {
     }
     tickHarvestUI();
   });
-  on('regrowthStart', ({ jobId, slotIndex }) => {
-    patchHarvestSlot(game, jobId, slotIndex);
+  on('regrowthStart', ({ jobId, unitIndex, slotIndex, resourceId }) => {
+    patchHarvestSlot(game, jobId, unitIndex ?? slotIndex, resourceId);
     tickHarvestUI();
   });
-  on('regrowthComplete', ({ resourceId, jobId, slotIndex }) => {
-    patchHarvestSlot(game, jobId, slotIndex);
-    flashHarvestSlotReady(jobId, slotIndex);
+  on('regrowthComplete', ({ resourceId, jobId, unitIndex, slotIndex }) => {
+    patchHarvestSlot(game, jobId, unitIndex ?? slotIndex, resourceId);
+    flashHarvestSlotReady(jobId, unitIndex ?? slotIndex, resourceId);
     updateNavActive();
     if (game.isHarvesting()) tickHarvestUI();
     audio.playSfx('ready');

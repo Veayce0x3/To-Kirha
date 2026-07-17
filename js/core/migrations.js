@@ -6,15 +6,14 @@ function migrateCareerToProgressive(state) {
     state.careerChoice = { confirmed: false, starterWeaponsGranted: false };
     return;
   }
-  if (state.careerChoice.confirmed && state.careerChoice.gatheringJobs?.length) {
-    state.careerChoice = {
-      confirmed: true,
-      weaponType: state.careerChoice.weaponType,
-      teamWeaponTypes: state.careerChoice.teamWeaponTypes || [],
-      starterWeaponsGranted: state.careerChoice.starterWeaponsGranted ?? false,
-      legacyGatheringJobs: state.careerChoice.gatheringJobs,
-      legacyFarmBuildings: state.careerChoice.farmBuildings,
-    };
+  if (state.careerChoice?.confirmed) {
+    const cc = state.careerChoice;
+    if (cc.gatheringJobs?.length && !cc.legacyGatheringJobs) {
+      cc.legacyGatheringJobs = [...cc.gatheringJobs];
+      cc.legacyFarmBuildings = [...(cc.farmBuildings || [])];
+      delete cc.gatheringJobs;
+      delete cc.farmBuildings;
+    }
   }
 }
 

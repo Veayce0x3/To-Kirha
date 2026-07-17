@@ -5,10 +5,11 @@
 
 import {
   GATHERING_JOB_IDS,
-  FREE_FARM_BUILDING,
   isGatheringJobUnlocked,
   isFarmBuildingUnlocked,
 } from './careerChoice.js';
+
+const FREE_FARM_BUILDING = 'well';
 import { FARM_BUILDING_LABELS } from './farm.js';
 import { isMaintenanceMode, isTestHdvLiveEnabled } from './gameConfig.js';
 
@@ -80,7 +81,7 @@ export function buildTestHdvVendors(state, resources, farmData, balance, jobs) {
 
   for (const jobId of GATHERING_JOB_IDS) {
     const job = jobs[jobId];
-    const chosen = isGatheringJobUnlocked(jobId, state);
+    const chosen = isGatheringJobUnlocked(jobId, state, balance);
     const offers = {};
     for (const [id, resource] of Object.entries(resources)) {
       if (isExcludedResource(id, resource)) continue;
@@ -103,7 +104,7 @@ export function buildTestHdvVendors(state, resources, farmData, balance, jobs) {
 
   for (const [buildingId, building] of Object.entries(farmData?.buildings || {})) {
     if (buildingId === FREE_FARM_BUILDING) continue;
-    const chosen = isFarmBuildingUnlocked(buildingId, state);
+    const chosen = isFarmBuildingUnlocked(buildingId, state, balance);
 
     const offers = {};
     for (const productId of Object.keys(building.products || {})) {
