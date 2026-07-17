@@ -7,11 +7,7 @@ Jeu web idle/RPG **zen sakura** — récolte parallèle, métiers spécialisés,
 
 ## Jouer en ligne
 
-**Version actuelle (prod)** : **https://veayce0x3.github.io/To-Kirha/**
-
-**Preview overhaul (testeurs)** : **https://veayce0x3.github.io/To-Kirha/overhaul/**
-
-> La preview utilise une sauvegarde séparée — la prod à la racine `/` reste inchangée.
+**https://veayce0x3.github.io/To-Kirha/**
 
 > Local : `npm install` puis `npm run dev` → [http://localhost:5173](http://localhost:5173)  
 > Nouvelle partie : ajoute `?newgame=1` à l’URL pour voir le choix de carrière.

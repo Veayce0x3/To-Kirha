@@ -2,16 +2,9 @@ import { getDefaultSettings } from '../systems/prestige.js';
 
 import { attachIntegrityMeta, verifySaveIntegrity, validateSaveSanity } from './saveIntegrity.js';
 
-const SAVE_KEY_BASE = 'tokirha_save';
+const SAVE_KEY = 'tokirha_save';
 const RESET_FLAG_KEY = 'tokirha_resetting';
 const FRESH_RESET_KEY = 'tokirha_fresh_reset';
-
-function getSaveKey() {
-  if (typeof window !== 'undefined' && window.location.pathname.includes('/overhaul')) {
-    return `${SAVE_KEY_BASE}_overhaul_preview`;
-  }
-  return SAVE_KEY_BASE;
-}
 
 function storageHasResetFlag() {
   try {
@@ -33,7 +26,7 @@ export const SaveProvider = {
           return false;
         }
       }
-      localStorage.setItem(getSaveKey(), JSON.stringify(payload));
+      localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
       return true;
     } catch (err) {
       console.error('Save failed:', err);
@@ -46,7 +39,7 @@ export const SaveProvider = {
       const resetRequested = typeof window !== 'undefined'
         && (new URLSearchParams(window.location.search).get('newgame') === '1' || storageHasResetFlag());
       if (resetRequested) {
-        localStorage.removeItem(getSaveKey());
+        localStorage.removeItem(SAVE_KEY);
         try {
           sessionStorage.removeItem(RESET_FLAG_KEY);
         } catch {}
@@ -55,7 +48,7 @@ export const SaveProvider = {
         }
         return null;
       }
-      const raw = localStorage.getItem(getSaveKey());
+      const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return null;
       const data = JSON.parse(raw);
       const integrity = await verifySaveIntegrity(data);
