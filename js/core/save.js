@@ -71,7 +71,7 @@ export const SaveProvider = {
   },
 
   async clear() {
-    localStorage.removeItem(getSaveKey());
+    localStorage.removeItem(SAVE_KEY);
   },
 
   beginReset() {
