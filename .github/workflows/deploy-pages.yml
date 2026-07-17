@@ -1,9 +1,9 @@
-# Déploiement statique To-Kirha sur GitHub Pages (avec retry sur erreurs transitoires).
+# Déploiement GitHub Pages : prod (main) + preview overhaul (/overhaul/).
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, cursor/game-overhaul-3b9c]
   workflow_dispatch:
 
 permissions:
@@ -22,8 +22,17 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy1.outputs.page_url }}
     steps:
-      - name: Checkout
+      - name: Checkout main (prod)
         uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site
+
+      - name: Checkout overhaul (preview)
+        uses: actions/checkout@v4
+        with:
+          ref: cursor/game-overhaul-3b9c
+          path: site/overhaul
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -31,7 +40,7 @@ jobs:
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: site
 
       - name: Deploy (tentative 1)
         id: deploy1
