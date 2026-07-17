@@ -1,12 +1,10 @@
-import { isResourceUnlockedByJob } from '../systems/zones.js';
-import { getEffectiveRequiredJobLevel } from '../systems/progression.js';
-import { getHarvestXp } from '../systems/harvest.js';
 import { getResourceVisual, renderResourceIcon } from '../systems/resourceVisual.js';
 import { canAffordFeed, getBuildingDef, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
 import { getFarmBuildingIcon, iconHtml } from '../core/assets.js';
 import { emit } from '../core/events.js';
 import { navigate, getFarmViewForBuilding, getHarvestViewForJob } from './router.js';
 import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
+import { getVisibleProductionResources } from '../systems/productionLines.js';
 
 function formatNumber(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -68,9 +66,7 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   const line = game.state.productionLines?.harvest?.[jobId]?.[resourceId];
   if (!line) return;
   const qty = game.state.inventory[resourceId] || 0;
-  const maxUnits = game.balance.productionLines?.maxUnits ?? 10;
-  const canBuy = game.canBuyHarvestSlot(jobId, resourceId);
-  const preview = game.getLineUnitUnlockPreview(jobId, resourceId);
+  const maxUnits = game.balance.productionLines?.maxUnitsPerResource ?? 5;
 
   const section = document.createElement('div');
   section.className = 'production-line-section';
@@ -83,8 +79,7 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
         <span class="production-stock">Stock : ${qty}</span>
       </div>
       <div class="production-line-meta">
-        <span class="production-units">${line.units}/${maxUnits} unités</span>
-        ${line.units < maxUnits ? `<button type="button" class="btn btn-small btn-upgrade btn-buy-unit" ${canBuy ? '' : 'disabled'}>+1 unité · ${formatNumber(preview.kirha ?? 0)} 💰</button>` : ''}
+        <span class="production-units">${line.units}/${maxUnits}</span>
       </div>
     </div>
     <div class="slots-grid production-units-grid"></div>
@@ -93,21 +88,79 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   for (let i = 0; i < line.units; i++) {
     grid.appendChild(buildLineUnitCard(game, jobId, resourceId, i, resource));
   }
-  section.querySelector('.btn-buy-unit')?.addEventListener('click', () => {
-    if (game.buyHarvestSlot(jobId, resourceId)) {
-      renderJobProduction(game, container.parentElement || container, jobId);
+  container.appendChild(section);
+}
+
+function formatUnlockCost(game, preview) {
+  const parts = [];
+  if (preview.kirha > 0) {
+    const ok = (game.state.kirha || 0) >= preview.kirha;
+    parts.push(`<span class="${ok ? 'ing-ok' : 'ing-missing'}">${formatNumber(preview.kirha)} 💰</span>`);
+  }
+  if (preview.resources) {
+    for (const [resId, amt] of Object.entries(preview.resources)) {
+      const res = game.resources[resId];
+      const have = game.state.inventory[resId] || 0;
+      const cls = have >= amt ? 'ing-ok' : 'ing-missing';
+      parts.push(`<span class="${cls}">${renderResourceIcon(res, 'ing-icon') || ''} ${have}/${amt}</span>`);
+    }
+  }
+  return parts.join(' ');
+}
+
+function buildUnlockPanel(game, jobId) {
+  const preview = game.getNextProductionUnlockPreview(jobId);
+  const panel = document.createElement('div');
+  panel.className = 'production-unlock-panel';
+
+  if (!preview || preview.kind === 'maxed') {
+    panel.innerHTML = '<p class="empty-text">Toutes les lignes de ce métier sont débloquées.</p>';
+    return panel;
+  }
+
+  if (preview.kind === 'level_blocked') {
+    panel.innerHTML = `
+      <p class="production-unlock-hint">Prochaine ressource : <strong>${preview.resourceName}</strong></p>
+      <p class="empty-text">🔒 ${preview.jobName} Nv.${preview.requiredLevel} requis pour continuer.</p>
+    `;
+    return panel;
+  }
+
+  const canBuy = game.canBuyNextProductionUnlock(jobId);
+  const costHtml = formatUnlockCost(game, preview);
+  let label = '';
+  if (preview.kind === 'unit') {
+    label = `Débloquer ${preview.resourceName} (${preview.nextUnits}/${preview.maxUnits})`;
+  } else {
+    label = `Débloquer ${preview.resourceName}`;
+  }
+
+  panel.innerHTML = `
+    <div class="production-unlock-head">
+      <strong>Déblocage</strong>
+      <span class="production-unlock-cost">${costHtml}</span>
+    </div>
+    <button type="button" class="btn btn-upgrade btn-production-unlock"${canBuy ? '' : ' disabled'}>${label}</button>
+    <p class="production-unlock-desc">${preview.kind === 'unit'
+    ? 'Ajoute une unité de production sur la ressource en cours (max 5 par type).'
+    : `Ouvre la ressource ${preview.resourceName} avec 1 unité (après 5× ${preview.prevResourceName}).`}</p>
+  `;
+
+  panel.querySelector('.btn-production-unlock')?.addEventListener('click', () => {
+    if (game.buyNextProductionUnlock(jobId)) {
+      const container = document.getElementById('view-container');
+      if (container) renderJobProduction(game, container, jobId);
     }
   });
-  container.appendChild(section);
+
+  return panel;
 }
 
 export function renderJobProduction(game, el, jobId) {
   const job = game.jobs[jobId];
   const prog = game.getJobProgress(jobId);
   const pct = (prog.xp / prog.needed) * 100;
-  const resources = game.getAssignableResources(jobId);
-  const unlocked = resources.filter((r) => isResourceUnlockedByJob(r, game.state, game.resources));
-  const locked = resources.filter((r) => !isResourceUnlockedByJob(r, game.state, game.resources));
+  const unlocked = getVisibleProductionResources(game.state, game.resources, jobId);
   const visibleHarvestViews = getVisibleHarvestViews(game.state, game.balance);
   const currentView = getHarvestViewForJob(jobId);
   const prevView = getAdjacentVisibleView(currentView, visibleHarvestViews, -1);
@@ -128,10 +181,10 @@ export function renderJobProduction(game, el, jobId) {
     </div>
     <div class="panel-inner">
       <h3>Lignes de production</h3>
-      <p class="view-desc">Chaque ressource a ses unités de production. Clique pour récolter, achète des unités pour produire en parallèle.</p>
+      <p class="view-desc">La première ressource est offerte. Débloque jusqu'à 5 unités, puis passe à la ressource suivante quand ton niveau le permet.</p>
       <div id="production-lines"></div>
+      <div id="production-unlock"></div>
     </div>
-    ${locked.length ? `<div class="panel-inner panel-muted"><h3>Ressources verrouillées</h3><div class="resource-grid" id="locked-resources"></div></div>` : ''}
   `;
 
   el.querySelector('#job-prev')?.addEventListener('click', () => { if (prevView) navigate(prevView); });
@@ -142,16 +195,8 @@ export function renderJobProduction(game, el, jobId) {
     buildHarvestLineSection(game, jobId, resource.id, resource, linesEl);
   }
 
-  const lockedEl = el.querySelector('#locked-resources');
-  if (lockedEl) {
-    for (const resource of locked) {
-      const req = getEffectiveRequiredJobLevel(resource, game.resources);
-      const tile = document.createElement('div');
-      tile.className = 'resource-tile locked-res';
-      tile.innerHTML = `<div class="tile-name">${resource.name}</div><div class="tile-lock">🔒 ${job.name} Nv.${req}</div>`;
-      lockedEl.appendChild(tile);
-    }
-  }
+  const unlockEl = el.querySelector('#production-unlock');
+  if (unlockEl) unlockEl.appendChild(buildUnlockPanel(game, jobId));
 }
 
 function buildFarmUnitCard(game, buildingId, productId, unitIndex, building, resource) {

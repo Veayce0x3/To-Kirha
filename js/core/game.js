@@ -56,6 +56,9 @@ import {
   canBuyHarvestUnit,
   canBuyFarmUnit,
   getUnitUnlockRequirements,
+  getNextProductionUnlock,
+  canBuyNextProductionUnlock as checkCanBuyNextProductionUnlock,
+  buyNextProductionUnlock as applyNextProductionUnlock,
   getUnitProgress,
   isAnyProductionActive,
   isAnyHarvestActive,
@@ -647,7 +650,24 @@ export class Game {
   }
 
   getMaxHarvestSlots(_jobId) {
-    return this.balance.productionLines?.maxUnits ?? 10;
+    return this.balance.productionLines?.maxUnitsPerResource ?? this.balance.productionLines?.maxUnits ?? 5;
+  }
+
+  buyNextProductionUnlock(jobId) {
+    if (!applyNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs)) return false;
+    ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
+    emit('lineUnitUnlock', { jobId });
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return true;
+  }
+
+  getNextProductionUnlockPreview(jobId) {
+    return getNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs);
+  }
+
+  canBuyNextProductionUnlock(jobId) {
+    return checkCanBuyNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs);
   }
 
   buyHarvestSlot(jobId, resourceId) {

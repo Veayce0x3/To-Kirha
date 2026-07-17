@@ -5,6 +5,7 @@
 
 import { isGatheringJobUnlocked, isFarmBuildingUnlocked } from './jobUnlock.js';
 import { isResourceUnlockedByJob } from './zones.js';
+import { getEffectiveRequiredJobLevel } from './progression.js';
 import {
   getHarvestTime,
   getRegrowthTime,
@@ -28,7 +29,149 @@ function cfg(balance) {
 }
 
 export function getMaxUnits(balance) {
-  return cfg(balance).maxUnits ?? 10;
+  return cfg(balance).maxUnitsPerResource ?? cfg(balance).maxUnits ?? 5;
+}
+
+export function getMaxUnitsPerResource(balance) {
+  return cfg(balance).maxUnitsPerResource ?? 5;
+}
+
+export function getVisibleProductionResources(state, resources, jobId) {
+  const lines = state.productionLines?.harvest?.[jobId] || {};
+  const tiers = getJobHarvestResources(resources, jobId);
+  return tiers.filter((r) => lines[r.id]);
+}
+
+export function getUnitUnlockCost(unitIndex, balance) {
+  const costs = cfg(balance).unitUnlockCosts || [];
+  return costs[unitIndex] ?? null;
+}
+
+export function getUnitUnlockRequirements(jobId, resourceId, currentUnits, balance) {
+  const kirha = getUnitUnlockCost(currentUnits, balance);
+  const sameRes = cfg(balance).unitUnlockSameResource || [];
+  const amount = sameRes[currentUnits] ?? 0;
+  const resources = amount > 0 ? { [resourceId]: amount } : null;
+  return { kirha, resources };
+}
+
+export function getNewTierUnlockRequirements(_jobId, _resourceId, prevResourceId, tierIndex, balance) {
+  const c = cfg(balance);
+  const kirha = (c.newTierKirhaBase ?? 50) + tierIndex * (c.newTierKirhaStep ?? 40);
+  const amount = (c.newTierResourceBase ?? 25) + tierIndex * (c.newTierResourceStep ?? 15);
+  return { kirha, resources: { [prevResourceId]: amount } };
+}
+
+function canAffordRequirements(state, { kirha, resources }) {
+  if (kirha == null || (state.kirha || 0) < kirha) return false;
+  if (resources) {
+    for (const [resId, amount] of Object.entries(resources)) {
+      if ((state.inventory[resId] || 0) < amount) return false;
+    }
+  }
+  return true;
+}
+
+function deductRequirements(state, { kirha, resources }) {
+  if (kirha) state.kirha -= kirha;
+  if (resources) {
+    for (const [resId, amount] of Object.entries(resources)) {
+      state.inventory[resId] -= amount;
+    }
+  }
+}
+
+export function getNextProductionUnlock(state, balance, resources, jobId, jobs) {
+  const tiers = getJobHarvestResources(resources, jobId);
+  if (!tiers.length) return { kind: 'maxed' };
+
+  const lines = state.productionLines?.harvest?.[jobId] || {};
+  const maxPer = getMaxUnitsPerResource(balance);
+  const jobName = jobs?.[jobId]?.name || jobId;
+
+  let currentTierIndex = -1;
+  for (let i = tiers.length - 1; i >= 0; i--) {
+    if (lines[tiers[i].id]) {
+      currentTierIndex = i;
+      break;
+    }
+  }
+
+  if (currentTierIndex < 0) return { kind: 'maxed' };
+
+  const currentResource = tiers[currentTierIndex];
+  const currentLine = lines[currentResource.id];
+
+  if (currentLine.units < maxPer) {
+    const req = getUnitUnlockRequirements(jobId, currentResource.id, currentLine.units, balance);
+    if (req.kirha == null) return { kind: 'maxed' };
+    return {
+      kind: 'unit',
+      jobId,
+      resourceId: currentResource.id,
+      resourceName: currentResource.name,
+      nextUnits: currentLine.units + 1,
+      maxUnits: maxPer,
+      jobName,
+      ...req,
+    };
+  }
+
+  const nextTierIndex = currentTierIndex + 1;
+  if (nextTierIndex >= tiers.length) return { kind: 'maxed' };
+
+  const nextResource = tiers[nextTierIndex];
+  if (!isResourceUnlockedByJob(nextResource, state, resources)) {
+    return {
+      kind: 'level_blocked',
+      jobId,
+      resourceName: nextResource.name,
+      requiredLevel: getEffectiveRequiredJobLevel(nextResource, resources),
+      jobName,
+    };
+  }
+
+  const prevResource = tiers[currentTierIndex];
+  const req = getNewTierUnlockRequirements(jobId, nextResource.id, prevResource.id, nextTierIndex, balance);
+  return {
+    kind: 'tier',
+    jobId,
+    resourceId: nextResource.id,
+    resourceName: nextResource.name,
+    prevResourceId: prevResource.id,
+    prevResourceName: prevResource.name,
+    jobName,
+    ...req,
+  };
+}
+
+export function canBuyNextProductionUnlock(state, balance, resources, jobId, jobs) {
+  const preview = getNextProductionUnlock(state, balance, resources, jobId, jobs);
+  if (!preview || preview.kind === 'maxed' || preview.kind === 'level_blocked') return false;
+  return canAffordRequirements(state, preview);
+}
+
+export function buyNextProductionUnlock(state, balance, resources, jobId, jobs) {
+  const preview = getNextProductionUnlock(state, balance, resources, jobId, jobs);
+  if (!preview || preview.kind === 'maxed' || preview.kind === 'level_blocked') return false;
+  if (!canAffordRequirements(state, preview)) return false;
+
+  if (preview.kind === 'unit') {
+    const line = getHarvestLine(state, jobId, preview.resourceId);
+    if (!line || line.units >= getMaxUnitsPerResource(balance)) return false;
+    deductRequirements(state, preview);
+    line.units += 1;
+    line.slots.push(emptySlot());
+    return true;
+  }
+
+  if (preview.kind === 'tier') {
+    deductRequirements(state, preview);
+    setHarvestLine(state, jobId, preview.resourceId, normalizeLine({ units: 1 }, 1));
+    return true;
+  }
+
+  return false;
 }
 
 function emptySlot() {
@@ -68,48 +211,20 @@ export function getFarmBuildingMeta(state, buildingId) {
   return state.farmBuildingMeta[buildingId];
 }
 
-export function getUnitUnlockCost(unitIndex, balance) {
-  const costs = cfg(balance).unitUnlockCosts || [];
-  return costs[unitIndex] ?? null;
-}
-
-export function getUnitUnlockRequirements(jobId, resourceId, currentUnits, balance) {
-  const kirha = getUnitUnlockCost(currentUnits, balance);
-  const perJob = cfg(balance).unitUnlockResourcesByJob?.[jobId];
-  const resources = perJob?.[currentUnits] ? { ...perJob[currentUnits] } : null;
-  return { kirha, resources };
-}
-
 export function canBuyHarvestUnit(state, balance, jobId, resourceId) {
   const line = getHarvestLine(state, jobId, resourceId);
   if (!line) return false;
-  if (line.units >= getMaxUnits(balance)) return false;
-  const { kirha, resources } = getUnitUnlockRequirements(jobId, resourceId, line.units, balance);
-  if (kirha == null || (state.kirha || 0) < kirha) return false;
-  if (resources) {
-    for (const [resId, amount] of Object.entries(resources)) {
-      if ((state.inventory[resId] || 0) < amount) return false;
-    }
-  }
-  return true;
+  if (line.units >= getMaxUnitsPerResource(balance)) return false;
+  const req = getUnitUnlockRequirements(jobId, resourceId, line.units, balance);
+  return canAffordRequirements(state, req);
 }
 
 export function buyHarvestUnit(state, balance, jobId, resourceId) {
   const line = getHarvestLine(state, jobId, resourceId);
-  if (!line || line.units >= getMaxUnits(balance)) return false;
-  const { kirha, resources } = getUnitUnlockRequirements(jobId, resourceId, line.units, balance);
-  if (kirha == null || (state.kirha || 0) < kirha) return false;
-  if (resources) {
-    for (const [resId, amount] of Object.entries(resources)) {
-      if ((state.inventory[resId] || 0) < amount) return false;
-    }
-  }
-  state.kirha -= kirha;
-  if (resources) {
-    for (const [resId, amount] of Object.entries(resources)) {
-      state.inventory[resId] -= amount;
-    }
-  }
+  if (!line || line.units >= getMaxUnitsPerResource(balance)) return false;
+  const req = getUnitUnlockRequirements(jobId, resourceId, line.units, balance);
+  if (!canAffordRequirements(state, req)) return false;
+  deductRequirements(state, req);
   line.units += 1;
   line.slots.push(emptySlot());
   return true;
@@ -153,12 +268,17 @@ export function ensureProductionLines(state, resources, farmData, balance) {
     const jobResources = getJobHarvestResources(resources, jobId);
     if (!state.productionLines.harvest[jobId]) state.productionLines.harvest[jobId] = {};
 
-    for (const resource of jobResources) {
-      if (!isResourceUnlockedByJob(resource, state, resources)) continue;
-      const existing = state.productionLines.harvest[jobId][resource.id];
-      const isStarter = resource.id === 'ble' && jobId === 'farmer';
-      const defaultUnits = existing?.units ?? (isStarter ? 1 : 1);
-      state.productionLines.harvest[jobId][resource.id] = normalizeLine(existing || { units: defaultUnits }, defaultUnits);
+    const lines = state.productionLines.harvest[jobId];
+    const maxPer = getMaxUnitsPerResource(balance);
+
+    if (jobResources.length && Object.keys(lines).length === 0) {
+      const starter = jobResources[0];
+      lines[starter.id] = normalizeLine({ units: 1 }, 1);
+    }
+
+    for (const [resourceId, existing] of Object.entries({ ...lines })) {
+      const capped = Math.min(existing?.units || 1, maxPer);
+      lines[resourceId] = normalizeLine(existing, capped);
     }
   }
 

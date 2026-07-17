@@ -1,7 +1,7 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 27,
+  "saveVersion": 28,
   "betaMode": false,
   "questsEnabled": false,
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
@@ -391,32 +391,14 @@
     "healPctMax": 60
   },
   "productionLines": {
-    "maxUnits": 10,
-    "unitUnlockCosts": [0, 0, 400, 1200, 3500, 8000, 20000, 50000, 120000, 300000],
-    "unitUnlockResourcesByJob": {
-      "farmer": {
-        "2": { "ble": 10 },
-        "3": { "orge": 10 },
-        "4": { "ble": 25 },
-        "5": { "orge": 25 }
-      },
-      "lumberjack": {
-        "2": { "frene": 10 },
-        "3": { "noyer": 10 }
-      },
-      "fisher": {
-        "2": { "goujon": 10 },
-        "3": { "truite": 10 }
-      },
-      "miner": {
-        "2": { "fer": 10 },
-        "3": { "bronze": 10 }
-      },
-      "alchemist": {
-        "2": { "ortie": 10 },
-        "3": { "trefle": 10 }
-      }
-    },
+    "maxUnitsPerResource": 5,
+    "maxUnits": 5,
+    "unitUnlockCosts": [0, 10, 30, 80, 200],
+    "unitUnlockSameResource": [0, 10, 20, 35, 50],
+    "newTierKirhaBase": 50,
+    "newTierKirhaStep": 40,
+    "newTierResourceBase": 25,
+    "newTierResourceStep": 15,
     "farmUnitUnlockCosts": [0, 600, 2000, 6000, 15000, 40000, 100000, 250000, 600000, 1500000]
   },
   "jobUnlocks": {
