@@ -15,7 +15,7 @@ import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
 import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consumables.js';
-import { RARITY_LABELS, RARITY_EMOJI, getInstanceRarity } from '../systems/equipmentRarity.js';
+import { RARITY_LABELS, RARITY_EMOJI, getInstanceRarity, getNextRarity } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId } from '../systems/dungeonKeys.js';
 import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
@@ -767,7 +767,7 @@ function renderFusionPanel(game, container) {
     const need = getFusionInputCount(g.rarity);
     const check = canFuseGroup(g, game.balance);
     const cost = getFusionKirhaCost(g.rarity, game.balance);
-    const nextRarity = g.nextRarity || '—';
+    const nextRarity = getNextRarity(g.rarity) || '—';
     const item = g.item;
     const curStats = item?.stats ? `PV+${item.stats.hp || 0} ATQ+${item.stats.atk || 0} DEF+${item.stats.def || 0}` : '';
     return `<div class="fusion-row"><span>${g.item.emoji} ${g.item.name} ${RARITY_EMOJI[g.rarity] || ''} · ${g.refs.length}/${need}<br><small>${curStats} → ${RARITY_LABELS[nextRarity] || nextRarity}</small></span><button type="button" class="btn btn-craft btn-fusion" data-fusion="${key}" ${check.ok ? '' : 'disabled'}>Fusionner (${cost} 💰)</button></div>`;
