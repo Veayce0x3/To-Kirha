@@ -26,10 +26,10 @@ import { renderGuestBanner, renderAccountPanel, showAccountRequiredModal } from 
 import { isRegisteredAccount, hasFreeRenameAvailable, applyServerDisplayNameToGame, refreshProfile } from '../core/auth.js';
 import { changeDisplayNameFree } from '../systems/accountProfile.js';
 import { renderLeaderboard } from './leaderboardView.js';
-import { renderMarketP2pPanel, teardownMarketP2pPanel } from './marketP2pView.js';
+import { renderJobProduction, renderFarmProduction, updateProductionLineProgresses, updateFarmLineProgresses } from './productionLineView.js';
 import { renderAdmin } from './adminView.js';
 import { canUseOnlineFeatures, getOnlineBlockReason } from '../core/auth.js';
-import { isMaintenanceMode, isMarketP2pEnabled } from '../systems/gameConfig.js';
+import { isMaintenanceMode } from '../systems/gameConfig.js';
 
 let workshopTab = 'toolmaker';
 let charTab = 'bag';
@@ -762,12 +762,15 @@ function renderFusionPanel(game, container) {
     container.innerHTML = '<h3>🔮 Fusion</h3><p class="view-desc">Aucune pièce fusionnable (réserve ou équipée).</p>';
     return;
   }
-  container.innerHTML = '<h3>🔮 Fusion</h3>' + groups.map((g) => {
+  container.innerHTML = '<h3>🔮 Fusion</h3><p class="view-desc">Fusionne des pièces identiques pour monter en rareté — les stats augmentent à chaque palier.</p>' + groups.map((g) => {
     const key = `${g.itemId}::${g.rarity}`;
     const need = getFusionInputCount(g.rarity);
     const check = canFuseGroup(g, game.balance);
     const cost = getFusionKirhaCost(g.rarity, game.balance);
-    return `<div class="fusion-row"><span>${g.item.emoji} ${g.item.name} ${RARITY_EMOJI[g.rarity] || ''} · ${g.refs.length}/${need}</span><button type="button" class="btn btn-craft btn-fusion" data-fusion="${key}" ${check.ok ? '' : 'disabled'}>Fusionner (${cost} 💰)</button></div>`;
+    const nextRarity = g.nextRarity || '—';
+    const item = g.item;
+    const curStats = item?.stats ? `PV+${item.stats.hp || 0} ATQ+${item.stats.atk || 0} DEF+${item.stats.def || 0}` : '';
+    return `<div class="fusion-row"><span>${g.item.emoji} ${g.item.name} ${RARITY_EMOJI[g.rarity] || ''} · ${g.refs.length}/${need}<br><small>${curStats} → ${RARITY_LABELS[nextRarity] || nextRarity}</small></span><button type="button" class="btn btn-craft btn-fusion" data-fusion="${key}" ${check.ok ? '' : 'disabled'}>Fusionner (${cost} 💰)</button></div>`;
   }).join('');
   container.querySelectorAll('.btn-fusion').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -1641,68 +1644,7 @@ export function flashHarvestSlotReady(jobId, slotIndex) {
 export function updateHarvestSlotProgresses(game) {
   const viewJobId = VIEWS[getView()]?.job;
   if (!viewJobId) return;
-  const slots = game.state.harvestSlots?.[viewJobId] || [];
-  slots.forEach((slot, slotIndex) => {
-      if (!slot?.active) return;
-      const card = document.querySelector(
-        `.harvest-slot[data-job="${viewJobId}"][data-slot="${slotIndex}"]`
-      );
-      if (!card) return;
-
-      const progress = game.getSlotHarvestProgress(viewJobId, slotIndex);
-      const resource = slot.resourceId ? game.resources[slot.resourceId] : null;
-      const display = getSlotVisualDisplay(resource, slot, progress);
-
-      card.dataset.visualState = display.visualState;
-      card.classList.remove('state-available', 'state-regrowing', 'state-harvesting', 'state-empty');
-      card.classList.add(`state-${display.visualState}`);
-
-      const visual = card.querySelector('.slot-visual');
-      if (visual) {
-        visual.dataset.state = display.visualState;
-        let spriteEl = visual.querySelector('.slot-visual-sprite');
-        if (display.sprite) {
-          if (!spriteEl) {
-            visual.innerHTML = `<img class="slot-visual-sprite" src="${display.sprite}" alt="" />`;
-          } else {
-            spriteEl.src = display.sprite;
-          }
-        } else if (!visual.querySelector('.slot-visual-emoji')) {
-          visual.innerHTML = `<span class="slot-visual-emoji" aria-hidden="true">${display.emoji || '⬜'}</span>`;
-        }
-      }
-
-      const emojiEl = card.querySelector('.slot-visual-emoji');
-      if (emojiEl) emojiEl.textContent = display.emoji || '⬜';
-
-      const btn = card.querySelector('.btn-start');
-      if (btn) {
-        btn.textContent = getHarvestBtnLabel(display.phase, progress);
-        btn.classList.toggle('harvesting-btn', display.phase === 'harvesting');
-        btn.classList.toggle('regrowing-btn', display.phase === 'regrowing');
-        btn.disabled = !!display.phase || !slot.resourceId;
-      }
-
-      const picker = card.querySelector('.resource-picker.picker-slot');
-      if (picker) {
-        const assignable = game.getAssignableResources(viewJobId).filter((r) =>
-          isResourceUnlockedByJob(r, game.state)
-        );
-        syncPickerToggle(picker, slot.resourceId, assignable, slot, progress);
-
-        if (resource) {
-          const chip = getPickerChipVisual(resource, slot.resourceId, slot);
-          const selectedChip = picker.querySelector('.resource-pick-btn.selected');
-          if (selectedChip) {
-            selectedChip.className = `resource-pick-btn selected${chip.stateClass}`;
-            const iconWrap = selectedChip.querySelector('.pick-icon-wrap');
-            if (iconWrap) iconWrap.innerHTML = chip.icon;
-            const pickName = selectedChip.querySelector('.pick-name');
-            if (pickName) pickName.textContent = chip.name;
-          }
-        }
-      }
-  });
+  updateProductionLineProgresses(game, viewJobId);
 }
 
 function renderLockedHarvestSlot(game, jobId, slotIndex, container, showBuy) {
@@ -1889,6 +1831,10 @@ export function refreshJobViewLight(game, jobId) {
 }
 
 function renderJob(game, el, jobId) {
+  renderJobProduction(game, el, jobId);
+}
+
+function renderJobLegacyUnused(game, el, jobId) {
   const job = game.jobs[jobId];
   const prog = game.getJobProgress(jobId);
   const zone = game.getCurrentZone();
@@ -2229,32 +2175,15 @@ export function shouldPartialRefreshOnStateChange(view, game) {
 
 export function updateFarmSlotProgresses(game) {
   for (const buildingId of FARM_BUILDING_IDS) {
-    const slots = game.state.farmSlots?.[buildingId] || [];
-    slots.forEach((slot, slotIndex) => {
-      const card = document.querySelector(`.farm-slot[data-building="${buildingId}"][data-slot="${slotIndex}"]`);
-
-      if (!slot?.active) {
-        if (card?.classList.contains('active-harvest')) {
-          patchFarmSlot(game, buildingId, slotIndex);
-        }
-        return;
-      }
-
-      const progress = game.getFarmSlotProgress(buildingId, slotIndex);
-
-      if (progress >= 1) {
-        game.completeFarmSlot(buildingId, slotIndex);
-        patchFarmSlot(game, buildingId, slotIndex);
-        return;
-      }
-
-      if (card) updateFarmSlotCardProgress(card, progress);
-    });
+    updateFarmLineProgresses(game, buildingId);
   }
-  syncStaleFarmSlots(game);
 }
 
 function renderFarmBuilding(game, el, buildingId) {
+  renderFarmProduction(game, el, buildingId);
+}
+
+function renderFarmBuildingLegacyUnused(game, el, buildingId) {
   const building = getBuildingDef(game.farmData, buildingId);
   if (!building) return;
 
@@ -2684,7 +2613,7 @@ function mountAuctionNavigation(game, root) {
 export function refreshAuctionHouseLight(game) {
   if (!auctionRootEl?.isConnected) return;
   updateAuctionWallet(game, auctionRootEl);
-  if (hdvMainMode === 'players') return;
+  if (hdvMainMode !== 'npc' && hdvMainMode !== 'test') return;
   const nuggetInfo = game.getGoldNuggetExchangeInfo?.();
   if (nuggetInfo) {
     auctionRootEl.querySelector('#nugget-to-scroll')?.toggleAttribute('disabled', nuggetInfo.owned < nuggetInfo.scrollCost);
@@ -2718,16 +2647,15 @@ export function renderAuctionHouse(game, el) {
   const modes = [
     { id: 'npc', label: '📜 Marchand' },
     ...(showTest ? [{ id: 'test', label: '🧪 HDV Test' }] : []),
-    ...(isMarketP2pEnabled() && !maintenance ? [{ id: 'players', label: '👥 HDV Joueur' }] : []),
   ];
+  if (hdvMainMode === 'players') hdvMainMode = 'npc';
   if (!modes.some((m) => m.id === hdvMainMode)) hdvMainMode = 'npc';
 
   el.innerHTML = `
     <div class="hdv-view hdv-mode-${hdvMainMode}">
       ${maintenance ? '<p class="hdv-banner warn">Maintenance — HDV joueurs et classement limités.</p>' : ''}
       ${testBanner && hdvMainMode === 'test' ? `<p class="hdv-banner">${testBanner}</p>` : ''}
-      ${careerPending && hdvMainMode === 'test' ? '<p class="hdv-banner warn">Choisis ta voie pour débloquer les ressources des autres métiers.</p>' : ''}
-      ${hdvMainMode === 'players' ? '<p class="hdv-banner hdv-banner-p2p">Marché entre joueurs — achats et ventes instantanés.</p>' : ''}
+      ${careerPending && hdvMainMode === 'test' ? '<p class="hdv-banner warn">Termine l\'introduction pour accéder à toutes les ressources test.</p>' : ''}
       <nav class="hdv-main-tabs" id="hdv-main-tabs" aria-label="Type d\'HDV">
         ${modes.map((m) => `<button type="button" class="hdv-main-tab hdv-main-tab--${m.id}${hdvMainMode === m.id ? ' active' : ''}" data-hdv-mode="${m.id}">${m.label}</button>`).join('')}
       </nav>
@@ -2737,8 +2665,8 @@ export function renderAuctionHouse(game, el) {
           <span class="hdv-wallet-item"><span id="hdv-wallet-scroll-icon">${renderResourceIcon(scrollRes, 'hdv-wallet-icon')}</span> <strong id="hdv-wallet-scrolls">${game.getScrollCount()}</strong></span>
           ${nuggetRes ? `<span class="hdv-wallet-item"><span id="hdv-wallet-nugget-icon">${renderResourceIcon(nuggetRes, 'hdv-wallet-icon')}</span> <strong id="hdv-wallet-nuggets">${nuggetInfo?.owned || 0}</strong></span>` : ''}
         </div>
-        <nav class="hdv-tabs" id="hdv-group-tabs" aria-label="Type de marché" ${hdvMainMode === 'players' ? 'hidden' : ''}></nav>
-        <nav class="hdv-chips-scroll" id="hdv-vendor-chips" aria-label="Métier ou vendeur" ${hdvMainMode === 'players' ? 'hidden' : ''}></nav>
+        <nav class="hdv-tabs" id="hdv-group-tabs" aria-label="Type de marché"></nav>
+        <nav class="hdv-chips-scroll" id="hdv-vendor-chips" aria-label="Métier ou vendeur"></nav>
       </div>
       ${nuggetInfo && nuggetRes && hdvMainMode === 'npc' ? `
       <details class="hdv-nuggets">
@@ -2752,15 +2680,13 @@ export function renderAuctionHouse(game, el) {
       <div class="hdv-list-wrap" id="hdv-content-area">
         <div class="hdv-list" id="auction-offer-list"></div>
       </div>
-      <p class="hdv-tip" ${hdvMainMode === 'players' ? 'hidden' : ''}>Vends tes récoltes à la <button type="button" class="link-btn" id="goto-bank">Banque</button> pour obtenir des Kirha.</p>
+      <p class="hdv-tip">Vends tes récoltes à la <button type="button" class="link-btn" id="goto-bank">Banque</button> pour obtenir des Kirha.</p>
     </div>
   `;
 
   el.querySelectorAll('[data-hdv-mode]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const next = btn.dataset.hdvMode;
-      if (hdvMainMode === 'players' && next !== 'players') teardownMarketP2pPanel();
-      hdvMainMode = next;
+      hdvMainMode = btn.dataset.hdvMode;
       renderAuctionHouse(game, el);
     });
   });
@@ -2777,12 +2703,6 @@ export function renderAuctionHouse(game, el) {
     else refreshAuctionHouseLight(game);
   });
 
-  if (hdvMainMode === 'players') {
-    const area = el.querySelector('#hdv-content-area');
-    area.innerHTML = '<div id="hdv-p2p-root"></div>';
-    renderMarketP2pPanel(game, area.querySelector('#hdv-p2p-root'));
-    return;
-  }
 
   const catalog = buildAuctionCatalog(game, hdvMainMode);
   if (!catalog.vendorEntries.length) {
@@ -2939,10 +2859,10 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
     ? `<button class="btn btn-craft" id="modal-goto-auction">${iconHtml(getNavIcon('auction_house'), 'btn-inline-icon', 'HDV')} Hôtel des Ventes</button>`
     : `
       <button class="btn btn-sell" id="modal-sell-1">Vendre 1</button>
-      ${amount >= 5 ? '<button class="btn btn-sell" id="modal-sell-5">×5</button>' : ''}
-      ${amount >= 10 ? '<button class="btn btn-sell" id="modal-sell-10">×10</button>' : ''}
-      ${amount >= 100 ? '<button class="btn btn-sell" id="modal-sell-100">×100</button>' : ''}
-      <button class="btn btn-sell-all" id="modal-sell-all">Vendre tout (×${amount})</button>
+      ${amount >= 5 ? `<button class="btn btn-sell" id="modal-sell-5">×5 · ${formatNumber(unitPrice * 5)} 💰</button>` : ''}
+      ${amount >= 10 ? `<button class="btn btn-sell" id="modal-sell-10">×10 · ${formatNumber(unitPrice * Math.min(10, amount))} 💰</button>` : ''}
+      ${amount >= 100 ? `<button class="btn btn-sell" id="modal-sell-100">×100 · ${formatNumber(unitPrice * Math.min(100, amount))} 💰</button>` : ''}
+      <button class="btn btn-sell-all" id="modal-sell-all">Vendre tout (×${amount}) · ${formatNumber(unitPrice * amount)} 💰</button>
       <button class="btn btn-muted" id="modal-pin">${isProtected ? '📌 Retirer l\'épingle' : '📍 Épingler (exclure des ventes)'}</button>
     `;
 
@@ -3671,7 +3591,7 @@ export function showCombatResult(game, result) {
       <h2>${title}</h2>
       <div class="modal-gains">
         <div class="offline-gain-row">+${result.charXp || 0} XP personnage</div>
-        ${lootHtml || '<div class="offline-gain-row">Aucune pépite cette fois.</div>'}
+        ${lootHtml || '<div class="offline-gain-row">Aucun butin cette fois.</div>'}
       </div>
       ${result.levelResult ? `<p>🧘 Personnage Nv.${result.levelResult.level} !</p>` : ''}
       ${result.partyRestored ? '<p class="modal-desc">🌸 Équipe reposée — tous les PV ont été restaurés.</p>' : ''}

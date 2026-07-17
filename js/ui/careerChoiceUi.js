@@ -1,23 +1,18 @@
+/** Onboarding : pseudo + arme de départ (Paysan débloqué automatiquement). */
+
 import { emit } from '../core/events.js';
 import { SaveProvider } from '../core/save.js';
 import { forceAppRefresh, forceNewGameReload } from '../core/reload.js';
 import {
-  GATHERING_JOB_IDS,
-  PICKABLE_FARM_BUILDINGS,
-  CAREER_PICK_COUNTS,
   STARTER_WEAPON_CHOICES,
-  RECOMMENDED_FARM_BY_GATHERING,
-  getRecommendedFarmBuildingsForGathering,
-  validateCareerSelection,
+  STARTER_WEAPON_TYPES,
+  validateOnboarding,
 } from '../systems/careerChoice.js';
 import { validateNickname } from '../systems/character.js';
-import { FARM_BUILDING_LABELS } from '../systems/farm.js';
 import { needsAuthChoice } from '../core/auth.js';
 
 let modalEl = null;
 let gameRef = null;
-let selectedGathering = new Set();
-let selectedFarm = new Set();
 let selectedWeaponType = null;
 let selectedNickname = '';
 let listenersBound = false;
@@ -25,15 +20,6 @@ let listenersBound = false;
 function closeCareerModal() {
   document.body.classList.remove('career-choice-pending');
   modalEl?.classList.remove('active');
-}
-
-function togglePick(set, id, max) {
-  if (set.has(id)) {
-    set.delete(id);
-    return;
-  }
-  if (set.size >= max) return;
-  set.add(id);
 }
 
 function escapeHtml(value) {
@@ -49,33 +35,6 @@ function renderCareerModal() {
   if (!modalEl || !gameRef) return;
   const body = modalEl.querySelector('#career-choice-body');
   if (!body) return;
-
-  const gatheringHtml = GATHERING_JOB_IDS.map((id) => {
-    const job = gameRef.jobs[id];
-    const picked = selectedGathering.has(id);
-    return `<button type="button" class="career-pick-btn${picked ? ' picked' : ''}" data-gather="${id}">
-      ${job?.emoji || '⚒️'} ${job?.name || id}
-    </button>`;
-  }).join('');
-
-  const recommendedFarmIds = getRecommendedFarmBuildingsForGathering([...selectedGathering]);
-  const recommendedFarmSet = new Set(recommendedFarmIds);
-  const recommendationLines = [...selectedGathering].map((jobId) => {
-    const rec = RECOMMENDED_FARM_BY_GATHERING[jobId];
-    if (!rec) return '';
-    const job = gameRef.jobs[jobId];
-    const label = FARM_BUILDING_LABELS[rec.building] || rec.building;
-    return `${job?.emoji || ''} ${job?.name || jobId} → ${label} (${rec.reason})`;
-  }).filter(Boolean);
-
-  const farmHtml = PICKABLE_FARM_BUILDINGS.map((id) => {
-    const picked = selectedFarm.has(id);
-    const label = FARM_BUILDING_LABELS[id] || id;
-    const recommended = recommendedFarmSet.has(id);
-    return `<button type="button" class="career-pick-btn${picked ? ' picked' : ''}${recommended ? ' recommended' : ''}" data-farm="${id}">
-      ${label}${recommended ? '<span class="career-rec-badge">Conseillé</span>' : ''}
-    </button>`;
-  }).join('');
 
   const weaponHtml = STARTER_WEAPON_CHOICES.map((choice) => {
     const item = gameRef.combatEquipment?.items?.[choice.itemId];
@@ -94,63 +53,36 @@ function renderCareerModal() {
     </button>`;
   }).join('');
 
-  const check = validateCareerSelection([...selectedGathering], [...selectedFarm], selectedWeaponType);
+  const check = validateOnboarding(selectedWeaponType);
   const nickInfo = gameRef.getNicknameRenameInfo?.() || { hasNickname: false };
   const needsNickname = !nickInfo.hasNickname;
   const maxNicknameLength = gameRef.characterConfig?.nicknameMaxLength || 20;
   const nicknameCheck = needsNickname ? validateNickname(selectedNickname, gameRef.characterConfig) : { ok: true };
   const canConfirm = check.ok && nicknameCheck.ok;
-  const missingRecommended = recommendedFarmIds.filter((id) => !selectedFarm.has(id));
-  const recommendationHtml = recommendationLines.length
-    ? `<p class="career-recommendation">Conseillé : ${recommendationLines.join(' · ')}</p>`
-    : '<p class="career-recommendation">Choisis tes métiers de récolte pour voir les bâtiments de ferme conseillés.</p>';
-  const status = canConfirm
-    ? missingRecommended.length
-      ? `✅ Parcours valide. Conseil confort : remplace par ${missingRecommended.map((id) => FARM_BUILDING_LABELS[id] || id).join(' + ')} si tu veux un départ plus simple.`
-      : '✅ Tu peux valider ton parcours conseillé.'
-    : check.ok && !nicknameCheck.ok
-      ? nicknameCheck.reason
-    : check.reason || `Choisis ${CAREER_PICK_COUNTS.gathering} métiers de récolte, ${CAREER_PICK_COUNTS.farm} bâtiments de ferme et ton arme de départ. Le Puits est gratuit pour tous.`;
+
   const nicknameHtml = needsNickname ? `
     <section class="career-section">
       <h3>Pseudo</h3>
-      <label class="career-nickname-label" for="career-nickname">Choisis ton nom en jeu</label>
       <input id="career-nickname" class="nickname-input career-nickname-input" type="text" maxlength="${maxNicknameLength}" value="${escapeHtml(selectedNickname)}" placeholder="Ex. Kira" autocomplete="nickname" />
-      <p class="nickname-hint">Maximum ${maxNicknameLength} caractères.${needsNickname ? ' Tu pourras le changer plus tard via le renommage.' : ' Compte connecté : pseudo synchronisé avec ton profil (1 changement gratuit dans Personnage / Compte).'}</p>
     </section>
-  ` : `
-    <section class="career-section career-nickname-summary">
-      <h3>Pseudo</h3>
-      <p class="view-desc">Tu joues avec <strong>${escapeHtml(gameRef.getCharacterDisplayName())}</strong>.</p>
-    </section>
-  `;
+  ` : `<section class="career-section"><p>Tu joues avec <strong>${escapeHtml(gameRef.getCharacterDisplayName())}</strong>.</p></section>`;
 
   body.innerHTML = `
-    <h2>🌸 Choisis ta voie</h2>
-    <p class="modal-desc">Spécialise-toi pour l'économie : tu produiras pour le marché, le reste s'achète à l'Hôtel des Ventes.</p>
+    <h2>🌸 Bienvenue à To-Kirha</h2>
+    <p class="modal-desc">Tu commences en tant que <strong>Paysan</strong> avec une ligne de production de Blé. Les autres métiers se débloquent en progressant.</p>
     ${nicknameHtml}
     <section class="career-section">
-      <h3>Récolte (${selectedGathering.size}/${CAREER_PICK_COUNTS.gathering})</h3>
-      <div class="career-pick-grid">${gatheringHtml}</div>
-    </section>
-    <section class="career-section">
-      <h3>Ferme (${selectedFarm.size}/${CAREER_PICK_COUNTS.farm}) + 🪣 Puits gratuit</h3>
-      ${recommendationHtml}
-      <div class="career-pick-grid">${farmHtml}</div>
-    </section>
-    <section class="career-section">
       <h3>Arme de départ</h3>
-      <p class="view-desc">Ton héros garde cette arme. Les deux équipiers recevront automatiquement les deux autres rôles pour former une équipe Guerrier + Archer + Mage.</p>
+      <p class="view-desc">Ton héros et tes équipiers recevront automatiquement les trois rôles (Guerrier, Archer, Mage).</p>
       <div class="career-weapon-grid">${weaponHtml}</div>
     </section>
-    <p class="career-status" id="career-status">${status}</p>
+    <p class="career-status">${canConfirm ? '✅ Tu peux commencer !' : (check.reason || nicknameCheck.reason || 'Choisis ton arme.')}</p>
     <p class="career-error save-warn hidden" id="career-error" role="alert"></p>
     <div class="career-actions">
-      <button type="button" class="btn btn-prestige" id="career-confirm" aria-disabled="${canConfirm ? 'false' : 'true'}">Commencer l'aventure</button>
-      <button type="button" class="btn btn-muted" id="career-reload">Actualiser la page</button>
-      <button type="button" class="btn btn-muted" id="career-reset">Réinitialiser la partie</button>
+      <button type="button" class="btn btn-prestige" id="career-confirm" ${canConfirm ? '' : 'disabled'}>Commencer l'aventure</button>
+      <button type="button" class="btn btn-muted" id="career-reload">Actualiser</button>
+      <button type="button" class="btn btn-muted" id="career-reset">Réinitialiser</button>
     </div>
-    <p class="view-desc career-reset-hint">Bloqué ou sauvegarde abîmée ? Actualise la page, ou réinitialise pour repartir de zéro.</p>
   `;
 }
 
@@ -170,7 +102,7 @@ async function confirmCareerChoice() {
   if (!gameRef) return;
   try {
     setCareerError('');
-    const check = validateCareerSelection([...selectedGathering], [...selectedFarm], selectedWeaponType);
+    const check = validateOnboarding(selectedWeaponType);
     if (!check.ok) {
       renderCareerModal();
       setCareerError(check.reason || 'Sélection incomplète.');
@@ -191,9 +123,9 @@ async function confirmCareerChoice() {
       }
     }
 
-    const result = gameRef.doApplyCareerChoice([...selectedGathering], [...selectedFarm], selectedWeaponType);
+    const result = gameRef.doApplyCareerChoice(null, null, selectedWeaponType);
     if (!result.ok) {
-      setCareerError(result.reason || 'Impossible de valider ton parcours.');
+      setCareerError(result.reason || 'Impossible de valider.');
       return;
     }
 
@@ -201,28 +133,8 @@ async function confirmCareerChoice() {
     emit('nicknameChange', { name: gameRef.getCharacterDisplayName(), renamed: false });
     emit('navRefresh');
   } catch (err) {
-    console.error('Career choice failed:', err);
-    setCareerError('Erreur pendant la validation. Actualise la page puis réessaie.');
-  }
-}
-
-async function resetFromCareerModal() {
-  if (!gameRef) return;
-  const ok = confirm('Réinitialiser toute la progression et recommencer une nouvelle partie ?');
-  if (!ok) return;
-
-  try {
-    SaveProvider.beginReset();
-    await SaveProvider.clear();
-    selectedGathering = new Set();
-    selectedFarm = new Set();
-    selectedWeaponType = null;
-    selectedNickname = '';
-    setCareerError('');
-    await forceNewGameReload();
-  } catch (err) {
-    console.error('Reset failed:', err);
-    setCareerError('Réinitialisation impossible. Essaie depuis Options ou actualise la page.');
+    console.error('Onboarding failed:', err);
+    setCareerError('Erreur pendant la validation. Actualise la page.');
   }
 }
 
@@ -231,55 +143,30 @@ function bindCareerModalListeners() {
   listenersBound = true;
 
   modalEl.addEventListener('click', (e) => {
-    const gatherBtn = e.target.closest('[data-gather]');
-    if (gatherBtn) {
-      togglePick(selectedGathering, gatherBtn.dataset.gather, CAREER_PICK_COUNTS.gathering);
-      renderCareerModal();
-      return;
-    }
-
-    const farmBtn = e.target.closest('[data-farm]');
-    if (farmBtn) {
-      togglePick(selectedFarm, farmBtn.dataset.farm, CAREER_PICK_COUNTS.farm);
-      renderCareerModal();
-      return;
-    }
-
     const weaponBtn = e.target.closest('[data-weapon-type]');
     if (weaponBtn) {
       selectedWeaponType = weaponBtn.dataset.weaponType;
       renderCareerModal();
       return;
     }
-
     if (e.target.closest('#career-confirm')) {
-      e.preventDefault();
       confirmCareerChoice();
       return;
     }
-
     if (e.target.closest('#career-reload')) {
       forceAppRefresh(gameRef);
       return;
     }
-
     if (e.target.closest('#career-reset')) {
-      resetFromCareerModal();
+      SaveProvider.beginReset();
+      SaveProvider.clear().then(() => forceNewGameReload());
     }
   });
 
   modalEl.addEventListener('input', (e) => {
-    const nicknameInput = e.target.closest('#career-nickname');
-    if (!nicknameInput) return;
-    selectedNickname = nicknameInput.value;
-    const check = validateCareerSelection([...selectedGathering], [...selectedFarm], selectedWeaponType);
-    const nicknameCheck = validateNickname(selectedNickname, gameRef.characterConfig);
-    const confirmBtn = modalEl.querySelector('#career-confirm');
-    if (confirmBtn) confirmBtn.setAttribute('aria-disabled', check.ok && nicknameCheck.ok ? 'false' : 'true');
-    const statusEl = modalEl.querySelector('#career-status');
-    if (statusEl && check.ok) {
-      statusEl.textContent = nicknameCheck.ok ? '✅ Tu peux valider ton parcours.' : nicknameCheck.reason;
-    }
+    if (!e.target.closest('#career-nickname')) return;
+    selectedNickname = e.target.value;
+    renderCareerModal();
   });
 }
 
@@ -288,8 +175,6 @@ export function initCareerChoiceModal(game) {
   modalEl = document.getElementById('career-choice-modal');
   if (!modalEl) return;
   bindCareerModalListeners();
-  selectedGathering = new Set();
-  selectedFarm = new Set();
   selectedWeaponType = null;
   selectedNickname = '';
 }
@@ -304,8 +189,6 @@ export function showCareerChoiceIfNeeded(game) {
     closeCareerModal();
     return;
   }
-  selectedGathering = new Set(game.state.careerChoice?.gatheringJobs || []);
-  selectedFarm = new Set(game.state.careerChoice?.farmBuildings || []);
   selectedWeaponType = game.state.careerChoice?.weaponType || null;
   selectedNickname = game.state.character?.nickname?.trim() || '';
   document.body.classList.add('career-choice-pending');

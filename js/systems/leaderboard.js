@@ -5,6 +5,7 @@ import { isLeaderboardEnabled, isMaintenanceMode } from './gameConfig.js';
 
 export const LEADERBOARD_TABS = [
   { id: 'level', label: 'Niveau', sortKey: 'char_level', desc: true },
+  { id: 'jobs', label: 'Métiers', sortKey: 'max_job_level', desc: true },
   { id: 'fortune', label: 'Fortune', sortKey: 'total_earned', desc: true },
   { id: 'seasons', label: 'Renaissance', sortKey: 'seasons_completed', desc: true },
   { id: 'harvest', label: 'Récolte', sortKey: 'total_harvests', desc: true },
@@ -13,8 +14,10 @@ export const LEADERBOARD_TABS = [
 
 export function buildLeaderboardSnapshot(state) {
   const bossKills = Object.values(state.bossKills || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+  const maxJobLevel = Math.max(1, ...Object.values(state.jobs || {}).map((j) => j?.level || 1));
   return {
     char_level: state.character?.level || 1,
+    max_job_level: maxJobLevel,
     season: state.season || 1,
     total_earned: state.lifetimeStats?.totalEarned || 0,
     seasons_completed: state.lifetimeStats?.seasonsCompleted || 0,
@@ -70,6 +73,7 @@ export async function fetchLeaderboard(sortKey = 'char_level', limit = 50, local
 export function formatLeaderboardValue(tabId, row) {
   switch (tabId) {
     case 'level': return `Nv.${row.char_level} · S${row.season}`;
+    case 'jobs': return `Métier max Nv.${row.max_job_level || 1}`;
     case 'fortune': return `${Number(row.total_earned || 0).toLocaleString('fr-FR')} 💰`;
     case 'seasons': return `${row.seasons_completed || 0} saison(s)`;
     case 'harvest': return `${Number(row.total_harvests || 0).toLocaleString('fr-FR')} récoltes`;

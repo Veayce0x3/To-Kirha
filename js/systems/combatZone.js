@@ -184,14 +184,12 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, c
 
   const zoneMap = combatZone ? { [zoneId]: combatZone } : null;
   let keyDropped = false;
-  if (rollKeyDrop(isBoss, balance, zoneId, zoneMap)) {
+  if (!isBoss && rollKeyDrop(isBoss, balance, zoneId, zoneMap)) {
     grantDungeonKey(state, zoneId);
     keyDropped = true;
   }
 
-  const equipDrop = combatItems
-    ? rollEquipmentDrop(zoneId, isBoss, state, combatItems, balance, combatZone)
-    : null;
+  const equipDrop = null;
 
   if (combatItems) wearAfterCombat(state, combatItems);
 
@@ -256,7 +254,9 @@ function advanceDungeonRoom(run, state, characterConfig, enemies, balance, comba
   run.dungeonCharXp = (run.dungeonCharXp || 0) + (run.foe.charXpReward || 0);
   recordKill(state, run.zoneId, run.foe, run.isBoss);
 
-  const equipDrop = rollEquipmentDrop(run.zoneId, run.isBoss, state, combatItems, balance, run.combatZone);
+  const equipDrop = run.isBoss
+    ? rollEquipmentDrop(run.zoneId, true, state, combatItems, balance, run.combatZone)
+    : null;
   if (equipDrop) {
     if (!run.dungeonEquipmentDrops) run.dungeonEquipmentDrops = [];
     run.dungeonEquipmentDrops.push(equipDrop);

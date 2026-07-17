@@ -44,19 +44,31 @@ import {
   shouldShowPrestigeTeaser,
   getDefaultSettings,
 } from '../systems/prestige.js';
+import { runSaveMigrations } from './migrations.js';
 import {
-  ensureSlots,
-  getMaxSlots,
-  buySlot,
-  assignSlotResource,
-  clearSlotAssignment,
-  getSlotProgress,
-  canBuySlot,
-  getSlotUnlockCost,
-  getSlotUnlockRequirements,
-  normalizePurchasedSlots,
-} from '../systems/slots.js';
-import { getJobHarvestNavStatus } from '../systems/resourceVisual.js';
+  ensureProductionLines,
+  startHarvestUnit,
+  completeHarvestUnit,
+  startFarmUnit,
+  completeFarmUnit,
+  buyHarvestUnit,
+  buyFarmUnit,
+  canBuyHarvestUnit,
+  canBuyFarmUnit,
+  getUnitUnlockRequirements,
+  getUnitProgress,
+  isAnyProductionActive,
+  isAnyHarvestActive,
+  isAnyFarmLineActive,
+  getJobHarvestNavStatus as computeJobHarvestNavStatus,
+  getFarmBuildingNavStatus as computeFarmBuildingNavStatus,
+  buyFarmAnimal,
+  setFarmLineFeed,
+  getFarmBuildingMeta,
+  listActiveProductionTimers,
+  getJobHarvestResources,
+} from '../systems/productionLines.js';
+import { isCraftJobUnlocked, isCombatUnlocked } from '../systems/jobUnlock.js';
 import {
   getCharacterProgress,
   getCombatStats,
@@ -123,7 +135,6 @@ import {
 import {
   unlockWorldZone,
   canPayUnlockZone,
-  tryAutoUnlockFromBoss,
   getZoneUnlockHint,
   formatZoneUnlockRequirements,
 } from '../systems/zoneProgress.js';
@@ -154,7 +165,6 @@ import {
   canBuyFarmSlot as checkCanBuyFarmSlot,
   getFarmSlotUnlockRequirements,
   getMaxFarmSlots as getMaxFarmSlotsForBuilding,
-  getFarmBuildingNavStatus,
   syncExpiredFarmSlots,
   wearBreederTool,
 } from '../systems/farm.js';
@@ -261,8 +271,11 @@ export class Game {
       equipment: getDefaultEquipment(),
       combatEquipment: getDefaultCombatEquipment(),
       ownedCombatItems: [],
-      purchasedSlots: normalizePurchasedSlots(null, this.balance),
+      purchasedSlots: {},
       harvestSlots: {},
+      productionLines: { harvest: {}, farm: {} },
+      farmBuildingMeta: {},
+      saveVersion: this.balance.saveVersion || 27,
       aides: {},
       bossKills: {},
       combatKillStats: {},
@@ -287,8 +300,7 @@ export class Game {
       careerChoice: null,
       meta: {},
     };
-    ensureSlots(state, this.balance);
-    ensureFarmSlots(state, this.farmData, this.balance);
+    ensureProductionLines(state, this.resources, this.farmData, this.balance);
     return state;
   }
 
@@ -339,7 +351,10 @@ export class Game {
       combatEquipment: migrateCombatEquipment(saved.combatEquipment),
       ownedCombatItems: saved.ownedCombatItems || [],
       combatItemInstances: saved.combatItemInstances || [],
-      purchasedSlots: normalizePurchasedSlots(saved.purchasedSlots, this.balance),
+      purchasedSlots: saved.purchasedSlots || {},
+      productionLines: saved.productionLines || defaults.productionLines,
+      farmBuildingMeta: saved.farmBuildingMeta || {},
+      saveVersion: saved.saveVersion ?? 0,
       aides: saved.aides || {},
       bossKills: saved.bossKills || saved.dungeonClears || {},
       combatKillStats: saved.combatKillStats || {},
@@ -355,7 +370,7 @@ export class Game {
       lifetimeStats: { ...defaults.lifetimeStats, ...(saved.lifetimeStats || {}) },
       settings: mergeSettings(saved.settings),
       stats: { ...defaults.stats, ...(saved.stats || {}) },
-      harvestSlots: this.migrateHarvestSlots(saved.harvestSlots),
+      harvestSlots: saved.harvestSlots || {},
       farmSlots: saved.farmSlots || {},
       purchasedFarmSlots: saved.purchasedFarmSlots || {},
       activeMeal: saved.activeMeal || null,
@@ -365,8 +380,12 @@ export class Game {
       careerChoice: migrateCareerChoice(saved.careerChoice),
       meta: { ...defaults.meta, ...(saved.meta || {}) },
     };
-    ensureSlots(merged, this.balance);
-    ensureFarmSlots(merged, this.farmData, this.balance);
+    runSaveMigrations(merged, {
+      balance: this.balance,
+      resources: this.resources,
+      farmData: this.farmData,
+    });
+    ensureProductionLines(merged, this.resources, this.farmData, this.balance);
     migrateCombatItemInstances(merged, this.combatEquipment.items);
     migrateCombatDurability(merged, this.combatEquipment.items);
     migrateLegacyCombatResources(merged);
@@ -470,11 +489,7 @@ export class Game {
   }
 
   getAssignableResources(jobId) {
-    return Object.values(this.resources).filter((r) => {
-      if (r.craftOnly || r.combatOnly || r.job !== jobId) return false;
-      if (!isZoneUnlocked(r.zone, this.state, this.balance)) return false;
-      return r.zone === this.state.zone;
-    }).sort((a, b) => (a.requiredJobLevel || 1) - (b.requiredJobLevel || 1));
+    return getJobHarvestResources(this.resources, jobId);
   }
 
   unlockZone(zoneId) {
@@ -597,13 +612,6 @@ export class Game {
 
   onCombatVictoryHooks(result) {
     const zoneId = result?.zoneId;
-    if (result?.isBoss && zoneId) {
-      const unlocked = tryAutoUnlockFromBoss(zoneId, this.state, this.balance);
-      if (unlocked) {
-        const zone = this.balance.zones[unlocked];
-        emit('zoneUnlock', { zoneId: unlocked, zone, auto: true });
-      }
-    }
     clearCombatMealBuff(this.state);
     this.processQuests();
   }
@@ -638,56 +646,45 @@ export class Game {
     return true;
   }
 
-  getMaxHarvestSlots(jobId) {
-    return getMaxSlots(this.state, this.balance, jobId);
+  getMaxHarvestSlots(_jobId) {
+    return this.balance.productionLines?.maxUnits ?? 10;
   }
 
-  buyHarvestSlot(jobId) {
-    if (!buySlot(this.state, this.balance, jobId)) return false;
-    emit('slotUnlock', { slots: getMaxSlots(this.state, this.balance, jobId), jobId });
+  buyHarvestSlot(jobId, resourceId) {
+    if (!buyHarvestUnit(this.state, this.balance, jobId, resourceId)) return false;
+    emit('lineUnitUnlock', { jobId, resourceId });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
   }
 
-  getNextSlotCost(jobId) {
-    const current = getMaxSlots(this.state, this.balance, jobId);
-    return getSlotUnlockCost(current, this.balance);
+  getLineUnitUnlockPreview(jobId, resourceId) {
+    const line = this.state.productionLines?.harvest?.[jobId]?.[resourceId];
+    const current = line?.units ?? 1;
+    return getUnitUnlockRequirements(jobId, resourceId, current, this.balance);
   }
 
-  getSlotUnlockPreview(jobId) {
-    const current = getMaxSlots(this.state, this.balance, jobId);
-    return getSlotUnlockRequirements(jobId, current, this.balance);
+  canBuyHarvestSlot(jobId, resourceId) {
+    return canBuyHarvestUnit(this.state, this.balance, jobId, resourceId);
   }
 
-  canBuyHarvestSlot(jobId) {
-    return canBuySlot(this.state, this.balance, jobId);
-  }
-
-  assignResourceToSlot(jobId, slotIndex, resourceId) {
-    const resource = this.resources[resourceId];
-    if (!resource || !isResourceHarvestable(resource, this.state, this.balance)) return false;
-    if (resource.job !== jobId) return false;
-    if (!assignSlotResource(this.state, jobId, slotIndex, resourceId)) return false;
-    emit('harvestSlotAssign', { jobId, slotIndex });
-    emit('stateChange', this.state);
-    this.scheduleSave();
+  assignResourceToSlot(_jobId, _slotIndex, _resourceId) {
     return true;
   }
 
-  clearSlot(jobId, slotIndex) {
-    if (!clearSlotAssignment(this.state, jobId, slotIndex)) return false;
-    emit('harvestSlotAssign', { jobId, slotIndex });
-    emit('stateChange', this.state);
-    this.scheduleSave();
+  clearSlot(_jobId, _slotIndex) {
     return true;
   }
 
-  scheduleHarvestTimer(jobId, slotIndex, delayMs) {
-    const timerKey = `${jobId}_${slotIndex}`;
+  scheduleProductionTimer(kind, ids, unitIndex, delayMs) {
+    const timerKey = kind === 'harvest'
+      ? `h_${ids.jobId}_${ids.resourceId}_${unitIndex}`
+      : `f_${ids.buildingId}_${ids.productId}_${unitIndex}`;
     clearTimeout(this.harvestTimers[timerKey]);
     this.harvestTimers[timerKey] = setTimeout(
-      () => this.completeSlotHarvest(jobId, slotIndex),
+      () => (kind === 'harvest'
+        ? this.completeHarvestLine(ids.jobId, ids.resourceId, unitIndex)
+        : this.completeFarmLine(ids.buildingId, ids.productId, unitIndex)),
       Math.max(0, delayMs)
     );
   }
@@ -696,66 +693,42 @@ export class Game {
     Object.values(this.harvestTimers).forEach(clearTimeout);
     this.harvestTimers = {};
 
-    for (const [jobId, slots] of Object.entries(this.state.harvestSlots || {})) {
-      slots.forEach((slot, slotIndex) => {
-        if (!slot?.active) return;
-        if (!slot.active.phase) slot.active.phase = 'harvesting';
-        const elapsed = Date.now() - slot.active.start;
-        const remaining = slot.active.duration - elapsed;
-        if (remaining <= 0) {
-          this.completeSlotHarvest(jobId, slotIndex);
-        } else {
-          this.scheduleHarvestTimer(jobId, slotIndex, remaining);
-        }
-      });
+    for (const timer of listActiveProductionTimers(this.state)) {
+      const elapsed = Date.now() - timer.slot.active.start;
+      const remaining = timer.slot.active.duration - elapsed;
+      const ids = timer.kind === 'harvest'
+        ? { jobId: timer.jobId, resourceId: timer.resourceId }
+        : { buildingId: timer.buildingId, productId: timer.productId };
+      if (remaining <= 0) {
+        if (timer.kind === 'harvest') this.completeHarvestLine(timer.jobId, timer.resourceId, timer.unitIndex);
+        else this.completeFarmLine(timer.buildingId, timer.productId, timer.unitIndex);
+      } else {
+        this.scheduleProductionTimer(timer.kind, ids, timer.unitIndex, remaining);
+      }
     }
   }
 
   restoreFarmTimers() {
-    Object.values(this.farmTimers).forEach(clearTimeout);
-    this.farmTimers = {};
-
-    for (const [buildingId, slots] of Object.entries(this.state.farmSlots || {})) {
-      slots.forEach((slot, slotIndex) => {
-        if (!slot?.active) return;
-        const elapsed = Date.now() - slot.active.start;
-        const remaining = slot.active.duration - elapsed;
-        if (remaining <= 0) {
-          this.completeFarmSlot(buildingId, slotIndex);
-        } else {
-          this.scheduleFarmTimer(buildingId, slotIndex, remaining);
-        }
-      });
-    }
+    this.restoreHarvestTimers();
   }
 
-  scheduleFarmTimer(buildingId, slotIndex, delayMs) {
-    const key = `farm_${buildingId}_${slotIndex}`;
-    clearTimeout(this.farmTimers[key]);
-    this.farmTimers[key] = setTimeout(
-      () => this.completeFarmSlot(buildingId, slotIndex),
-      Math.max(0, delayMs)
-    );
-  }
-
-  setFarmFeed(buildingId, slotIndex, feedId) {
-    const slot = this.state.farmSlots?.[buildingId]?.[slotIndex];
-    if (!slot || slot.active) return false;
-    slot.feedId = feedId || null;
-    emit('farmFeedChange', { buildingId, slotIndex });
+  setFarmFeed(buildingId, feedId) {
+    setFarmLineFeed(this.state, buildingId, feedId);
+    emit('farmFeedChange', { buildingId });
     this.scheduleSave();
     return true;
   }
 
-  startFarmSlot(buildingId, slotIndex) {
+  startFarmSlot(buildingId, productId, unitIndex = 0) {
     const building = this.farmData.buildings?.[buildingId];
     if (!building) return { ok: false, reason: 'Bâtiment inconnu' };
 
-    const slot = this.state.farmSlots?.[buildingId]?.[slotIndex];
+    const line = this.state.productionLines?.farm?.[buildingId]?.[productId];
+    const slot = line?.slots?.[unitIndex];
     if (slot?.active) {
-      const progress = this.getFarmSlotProgress(buildingId, slotIndex);
+      const progress = this.getFarmLineProgress(buildingId, productId, unitIndex);
       if (progress >= 1) {
-        this.completeFarmSlot(buildingId, slotIndex);
+        this.completeFarmLine(buildingId, productId, unitIndex);
       } else {
         const pct = Math.min(99, Math.floor(progress * 100));
         return { ok: false, reason: `Production en cours (${pct} %)` };
@@ -767,34 +740,34 @@ export class Game {
       return { ok: false, reason: toolCheck.message };
     }
 
-    const result = startFarmProduction(this.state, this.farmData, buildingId, slotIndex);
+    const result = startFarmUnit(this.state, this.farmData, this.jobs, this.balance, buildingId, productId, unitIndex);
     if (!result.ok) return result;
 
-    const duration = result.duration;
-
-    this.scheduleFarmTimer(buildingId, slotIndex, duration);
-    emit('farmStart', { buildingId, slotIndex, duration });
+    this.scheduleProductionTimer('farm', { buildingId, productId }, unitIndex, result.duration);
+    emit('farmStart', { buildingId, productId, unitIndex, duration: result.duration });
     emit('stateChange', this.state);
     this.scheduleSave();
     return { ok: true };
   }
 
-  completeFarmSlot(buildingId, slotIndex) {
-    const key = `farm_${buildingId}_${slotIndex}`;
-    delete this.farmTimers[key];
+  completeFarmLine(buildingId, productId, unitIndex) {
+    const timerKey = `f_${buildingId}_${productId}_${unitIndex}`;
+    delete this.harvestTimers[timerKey];
 
-    const outcome = completeFarmProduction(
+    const outcome = completeFarmUnit(
       this.state,
       this.farmData,
-      buildingId,
-      slotIndex,
       this.jobs,
-      this.balance
+      this.balance,
+      buildingId,
+      productId,
+      unitIndex,
+      this.recipes,
+      this.equipment
     );
     if (!outcome) return;
 
-    const wornTools = wearBreederTool(this.state, this.recipes, this.equipment);
-    for (const { recipeId, remaining } of wornTools) {
+    for (const { recipeId, remaining } of outcome.wornTools || []) {
       if (remaining <= 0) {
         const recipe = this.recipes[recipeId];
         emit('toolBroken', { recipeId, name: recipe?.name || recipeId });
@@ -810,13 +783,23 @@ export class Game {
     this.scheduleSave();
   }
 
-  getFarmSlotProgress(buildingId, slotIndex) {
-    const slot = this.state.farmSlots?.[buildingId]?.[slotIndex];
-    return getFarmSlotProgress(slot);
+  completeFarmSlot(buildingId, productId, unitIndex = 0) {
+    this.completeFarmLine(buildingId, productId, unitIndex);
+  }
+
+  getFarmLineProgress(buildingId, productId, unitIndex) {
+    const slot = this.state.productionLines?.farm?.[buildingId]?.[productId]?.slots?.[unitIndex];
+    return getUnitProgress(slot);
+  }
+
+  getFarmSlotProgress(buildingId, _slotIndex) {
+    const building = this.farmData.buildings?.[buildingId];
+    const productId = Object.keys(building?.products || {})[0];
+    return productId ? this.getFarmLineProgress(buildingId, productId, 0) : 0;
   }
 
   isFarmActive() {
-    return isAnyFarmActive(this.state);
+    return isAnyProductionActive(this.state);
   }
 
   getFarmToolBlockReason(buildingId) {
@@ -895,12 +878,11 @@ export class Game {
     this.state.careerChoice.starterWeaponsGranted = true;
   }
 
-  doApplyCareerChoice(gatheringJobs, farmBuildings, weaponType) {
-    const result = applyCareerChoice(this.state, gatheringJobs, farmBuildings, weaponType);
+  doApplyCareerChoice(_gatheringJobs, _farmBuildings, weaponType) {
+    const result = applyCareerChoice(this.state, null, null, weaponType);
     if (!result.ok) return result;
     this.applyStarterWeaponTeam(result.careerChoice.weaponType);
-    ensureSlots(this.state, this.balance);
-    ensureFarmSlots(this.state, this.farmData, this.balance);
+    ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
     this.processQuests();
     SaveProvider.clearFreshReset();
     SaveProvider.save(this.state);
@@ -965,18 +947,18 @@ export class Game {
     return getFarmSlotUnlockRequirements(buildingId, current, this.balance);
   }
 
-  buyFarmSlot(buildingId) {
-    if (!purchaseFarmSlot(this.state, this.farmData, this.balance, buildingId)) return false;
-    emit('farmSlotUnlock', { buildingId, slots: this.getMaxFarmSlots(buildingId) });
+  buyFarmSlot(buildingId, productId) {
+    if (!buyFarmUnit(this.state, this.balance, buildingId, productId)) return false;
+    emit('lineUnitUnlock', { buildingId, productId });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
   }
 
-  buyFarmAnimal(buildingId, slotIndex) {
-    const result = purchaseFarmAnimal(this.state, this.farmData, buildingId, slotIndex);
+  buyFarmAnimal(buildingId) {
+    const result = buyFarmAnimal(this.state, this.farmData, buildingId);
     if (!result.ok) return result;
-    emit('farmFeedChange', { buildingId, slotIndex });
+    emit('farmFeedChange', { buildingId });
     this.scheduleSave();
     return result;
   }
@@ -1045,19 +1027,23 @@ export class Game {
   }
 
   getFarmBuildingNavStatus(buildingId) {
-    return getFarmBuildingNavStatus(this.state, buildingId);
+    return computeFarmBuildingNavStatus(this.state, buildingId);
   }
 
   isFarmBuildingActive(buildingId) {
-    return (this.state.farmSlots?.[buildingId] || []).some((s) => s.active);
+    return isAnyFarmLineActive(this.state, buildingId);
   }
 
-  startSlotHarvest(jobId, slotIndex) {
-    const slot = this.state.harvestSlots?.[jobId]?.[slotIndex];
-    if (!slot || slot.active || !slot.resourceId) return false;
+  startLineHarvest(jobId, resourceId, unitIndex = 0) {
+    const resource = this.resources[resourceId];
+    if (!resource || !isResourceHarvestable(resource, this.state, this.balance, this.resources)) {
+      return false;
+    }
+    if (resource.job !== jobId) return false;
 
-    const resource = this.resources[slot.resourceId];
-    if (!resource || !isResourceHarvestable(resource, this.state, this.balance)) return false;
+    const line = this.state.productionLines?.harvest?.[jobId]?.[resourceId];
+    const slot = line?.slots?.[unitIndex];
+    if (slot?.active) return false;
 
     const toolCheck = getHarvestToolCheck(
       this.state,
@@ -1068,105 +1054,124 @@ export class Game {
       this.resources
     );
     if (!toolCheck.ok) {
-      emit('harvestBlocked', { jobId, slotIndex, resourceId: resource.id, message: toolCheck.message });
+      emit('harvestBlocked', { jobId, resourceId, unitIndex, message: toolCheck.message });
       return false;
     }
 
-    const duration = getHarvestTime(resource, this.state, this.jobs, this.balance);
-    slot.active = { phase: 'harvesting', start: Date.now(), duration, resourceId: resource.id };
-    this.scheduleHarvestTimer(jobId, slotIndex, duration);
+    const result = startHarvestUnit(this.state, this.resources, this.jobs, this.balance, jobId, resourceId, unitIndex);
+    if (!result.ok) return false;
 
-    emit('harvestStart', { resourceId: resource.id, jobId, slotIndex, duration, phase: 'harvesting' });
+    this.scheduleProductionTimer('harvest', { jobId, resourceId }, unitIndex, result.duration);
+    emit('harvestStart', { resourceId, jobId, unitIndex, duration: result.duration, phase: 'harvesting' });
     emit('stateChange', this.state);
     return true;
   }
 
-  completeSlotHarvest(jobId, slotIndex) {
-    const slot = this.state.harvestSlots?.[jobId]?.[slotIndex];
-    if (!slot?.active) return;
+  startSlotHarvest(jobId, resourceId, unitIndex = 0) {
+    return this.startLineHarvest(jobId, resourceId, unitIndex);
+  }
 
-    const timerKey = `${jobId}_${slotIndex}`;
+  completeHarvestLine(jobId, resourceId, unitIndex) {
+    const timerKey = `h_${jobId}_${resourceId}_${unitIndex}`;
     delete this.harvestTimers[timerKey];
 
-    const resourceId = slot.active.resourceId;
-    const resource = this.resources[resourceId];
-    const phase = slot.active.phase || 'harvesting';
+    const outcome = completeHarvestUnit(
+      this.state,
+      this.resources,
+      this.jobs,
+      this.balance,
+      jobId,
+      resourceId,
+      unitIndex,
+      this.recipes,
+      this.equipment
+    );
+    if (!outcome) return;
 
-    if (phase === 'harvesting') {
-      const today = new Date().toISOString().slice(0, 10);
-      if (!this.state.dailyHarvest || this.state.dailyHarvest.date !== today) {
-        this.state.dailyHarvest = { date: today, bonusUsed: false };
-      }
-      let yield_ = getHarvestYield(resource, this.state, this.jobs, this.balance);
-      let dailyBonus = false;
-      if (!this.state.dailyHarvest.bonusUsed) {
-        this.state.dailyHarvest.bonusUsed = true;
-        yield_ *= 2;
-        dailyBonus = true;
-      }
-      const xp = getHarvestXp(resource, this.state, this.balance);
-
-      this.state.inventory[resourceId] = (this.state.inventory[resourceId] || 0) + yield_;
-      const levelResult = addJobXp(this.state, jobId, xp, this.jobs, this.balance);
-      this.state.stats.totalHarvests++;
-      this.onHarvestForQuests(resourceId, yield_);
-      const wornTools = wearToolsForHarvest(this.state, this.recipes, this.equipment, jobId);
-      for (const { recipeId, remaining } of wornTools) {
+    if (outcome.phase === 'harvested') {
+      for (const { recipeId, remaining } of outcome.wornTools || []) {
         if (remaining <= 0) {
           const recipe = this.recipes[recipeId];
           emit('toolBroken', { recipeId, name: recipe?.name || recipeId });
         }
       }
-
-      const regrowthDuration = getRegrowthTime(resource, this.state, this.jobs, this.balance);
-      slot.active = {
-        phase: 'regrowing',
-        start: Date.now(),
-        duration: regrowthDuration,
+      this.onHarvestForQuests(resourceId, outcome.yield);
+      this.scheduleProductionTimer('harvest', { jobId, resourceId }, unitIndex, outcome.regrowthDuration);
+      emit('harvestComplete', {
         resourceId,
-      };
-      this.scheduleHarvestTimer(jobId, slotIndex, regrowthDuration);
-
-      emit('harvestComplete', { resourceId, jobId, slotIndex, yield: yield_, xp, levelResult, dailyBonus });
-      emit('regrowthStart', { resourceId, jobId, slotIndex, duration: regrowthDuration });
-      emit('stateChange', this.state);
-      this.scheduleSave();
-      return;
+        jobId,
+        unitIndex,
+        yield: outcome.yield,
+        xp: outcome.xp,
+        levelResult: outcome.levelResult,
+        dailyBonus: outcome.dailyBonus,
+      });
+      emit('regrowthStart', { resourceId, jobId, unitIndex, duration: outcome.regrowthDuration });
+      ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
+    } else if (outcome.phase === 'ready') {
+      emit('regrowthComplete', { resourceId, jobId, unitIndex });
     }
 
-    slot.active = null;
-    emit('regrowthComplete', { resourceId, jobId, slotIndex });
     emit('stateChange', this.state);
     this.scheduleSave();
   }
 
-  getSlotHarvestProgress(jobId, slotIndex) {
-    const slot = this.state.harvestSlots?.[jobId]?.[slotIndex];
-    return getSlotProgress(slot);
+  completeSlotHarvest(jobId, resourceId, unitIndex = 0) {
+    this.completeHarvestLine(jobId, resourceId, unitIndex);
+  }
+
+  getLineHarvestProgress(jobId, resourceId, unitIndex) {
+    const slot = this.state.productionLines?.harvest?.[jobId]?.[resourceId]?.slots?.[unitIndex];
+    return getUnitProgress(slot);
+  }
+
+  getSlotHarvestProgress(jobId, resourceId, unitIndex = 0) {
+    return this.getLineHarvestProgress(jobId, resourceId, unitIndex);
   }
 
   isJobHarvesting(jobId) {
-    return (this.state.harvestSlots?.[jobId] || []).some((s) => s.active);
+    return isAnyHarvestActive(this.state, jobId);
   }
 
   getJobHarvestNavStatus(jobId) {
-    return getJobHarvestNavStatus(this.state, jobId);
+    return computeJobHarvestNavStatus(this.state, jobId);
   }
 
   isHarvesting() {
-    return Object.values(this.state.harvestSlots || {}).some((slots) =>
-      slots.some((s) => s.active)
-    );
+    return isAnyProductionActive(this.state);
   }
 
   getActiveHarvests() {
     const active = {};
-    for (const [jobId, slots] of Object.entries(this.state.harvestSlots || {})) {
-      slots.forEach((s, i) => {
-        if (s.active) active[`${jobId}_${i}`] = s.active;
-      });
+    for (const timer of listActiveProductionTimers(this.state)) {
+      if (timer.kind !== 'harvest') continue;
+      active[`${timer.jobId}_${timer.resourceId}_${timer.unitIndex}`] = timer.slot.active;
     }
     return active;
+  }
+
+  getProductionLinesForJob(jobId) {
+    return this.state.productionLines?.harvest?.[jobId] || {};
+  }
+
+  getProductionLinesForFarm(buildingId) {
+    return this.state.productionLines?.farm?.[buildingId] || {};
+  }
+
+  getFarmMeta(buildingId) {
+    return getFarmBuildingMeta(this.state, buildingId);
+  }
+
+  isCraftUnlocked() {
+    return isCraftJobUnlocked('toolmaker', this.state, this.balance);
+  }
+
+  isCookUnlocked() {
+    return isCraftJobUnlocked('cook', this.state, this.balance);
+  }
+
+  isCombatViewUnlocked() {
+    return isCombatUnlocked(this.state, this.balance);
   }
 
   sell(resourceId, amount = null) {

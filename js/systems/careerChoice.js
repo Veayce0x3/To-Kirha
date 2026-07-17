@@ -1,42 +1,6 @@
-/** Choix de carrière au lancement : 2 récolte + 2 bâtiments ferme (puits gratuit). */
+/** Onboarding simplifié : pseudo + arme. Déblocages progressifs via jobUnlock.js */
 
 export const GATHERING_JOB_IDS = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist'];
-
-/** Bâtiments choisissables (hors puits). */
-export const PICKABLE_FARM_BUILDINGS = ['chicken_coop', 'barn', 'sheepfold', 'pigsty', 'beehive'];
-
-export const FREE_FARM_BUILDING = 'well';
-
-export const CAREER_PICK_COUNTS = { gathering: 2, farm: 2 };
-
-export const RECOMMENDED_FARM_BY_GATHERING = {
-  lumberjack: {
-    building: 'barn',
-    reason: 'cuir et lait utiles aux crafts, bon complément du bois'
-  },
-  fisher: {
-    building: 'pigsty',
-    reason: 'le Goujon nourrit la porcherie'
-  },
-  miner: {
-    building: 'sheepfold',
-    reason: 'la laine et le lait de brebis reviennent souvent avec les minerais'
-  },
-  farmer: {
-    building: 'chicken_coop',
-    reason: 'le Blé nourrit le poulailler dès le début'
-  },
-  alchemist: {
-    building: 'beehive',
-    reason: "l'Ortie nourrit les ruches"
-  },
-};
-
-export function getRecommendedFarmBuildingsForGathering(gatheringJobs) {
-  return [...new Set((gatheringJobs || [])
-    .map((jobId) => RECOMMENDED_FARM_BY_GATHERING[jobId]?.building)
-    .filter(Boolean))];
-}
 
 export const STARTER_WEAPON_CHOICES = [
   {
@@ -45,7 +9,7 @@ export const STARTER_WEAPON_CHOICES = [
     label: 'Guerrier',
     emoji: '🛡️',
     bonus: 'Bonus défense',
-    description: 'Épée + bouclier pour encaisser les gros combats.'
+    description: 'Épée + bouclier pour encaisser les gros combats.',
   },
   {
     weaponType: 'bow',
@@ -53,7 +17,7 @@ export const STARTER_WEAPON_CHOICES = [
     label: 'Archer',
     emoji: '🏹',
     bonus: 'Bonus attaque',
-    description: 'Arc pour frapper fort et vite.'
+    description: 'Arc pour frapper fort et vite.',
   },
   {
     weaponType: 'staff',
@@ -61,66 +25,67 @@ export const STARTER_WEAPON_CHOICES = [
     label: 'Mage',
     emoji: '🪄',
     bonus: 'Bonus mixte',
-    description: 'Bâton pour mélanger dégâts, contrôle et soin.'
+    description: 'Bâton pour mélanger dégâts, contrôle et soin.',
   },
 ];
 
 export const STARTER_WEAPON_TYPES = STARTER_WEAPON_CHOICES.map((choice) => choice.weaponType);
 
+export {
+  isGatheringJobUnlocked,
+  isFarmBuildingUnlocked,
+  getUnlockedGatheringJobs,
+  getUnlockedFarmBuildings,
+  getVisibleHarvestViews,
+  getVisibleFarmViews,
+  isCraftJobUnlocked,
+  isCombatUnlocked,
+} from './jobUnlock.js';
+
 export function needsCareerChoice(state) {
   return !isCareerChoiceComplete(state.careerChoice);
 }
 
-/** Sauvegarde valide uniquement si confirmé avec sélection complète. */
 export function isCareerChoiceComplete(careerChoice) {
   if (!careerChoice?.confirmed) return false;
   if (!careerChoice.starterWeaponsGranted) return false;
-  const check = validateCareerSelection(
-    careerChoice.gatheringJobs,
-    careerChoice.farmBuildings,
-    careerChoice.weaponType
-  );
-  return check.ok;
+  return STARTER_WEAPON_TYPES.includes(careerChoice.weaponType);
 }
 
 export function migrateCareerChoice(saved) {
   if (!saved) return null;
-  if (isCareerChoiceComplete(saved)) return saved;
-  const legacyCheck = validateCareerSelection(saved.gatheringJobs, saved.farmBuildings, 'sword_shield');
-  if (legacyCheck.ok && saved.confirmed) {
+  if (isCareerChoiceComplete(saved)) {
     return {
-      ...saved,
-      weaponType: null,
-      teamWeaponTypes: [],
-      starterWeaponsGranted: false,
+      confirmed: true,
+      weaponType: saved.weaponType,
+      teamWeaponTypes: saved.teamWeaponTypes || [],
+      starterWeaponsGranted: saved.starterWeaponsGranted,
+      legacyGatheringJobs: saved.gatheringJobs || saved.legacyGatheringJobs,
+      legacyFarmBuildings: saved.farmBuildings || saved.legacyFarmBuildings,
+    };
+  }
+  if (saved.confirmed && saved.gatheringJobs?.length && saved.weaponType) {
+    return {
+      confirmed: true,
+      weaponType: saved.weaponType,
+      teamWeaponTypes: saved.teamWeaponTypes || [],
+      starterWeaponsGranted: saved.starterWeaponsGranted ?? false,
+      legacyGatheringJobs: saved.gatheringJobs,
+      legacyFarmBuildings: saved.farmBuildings,
     };
   }
   return null;
 }
 
-export function validateCareerSelection(gatheringJobs, farmBuildings, weaponType) {
-  const g = [...new Set(gatheringJobs || [])];
-  const f = [...new Set(farmBuildings || [])];
-  if (g.length !== CAREER_PICK_COUNTS.gathering) {
-    return { ok: false, reason: `Choisis exactement ${CAREER_PICK_COUNTS.gathering} métiers de récolte.` };
-  }
-  if (f.length !== CAREER_PICK_COUNTS.farm) {
-    return { ok: false, reason: `Choisis exactement ${CAREER_PICK_COUNTS.farm} bâtiments de ferme.` };
-  }
-  if (!g.every((id) => GATHERING_JOB_IDS.includes(id))) {
-    return { ok: false, reason: 'Métier de récolte invalide.' };
-  }
-  if (!f.every((id) => PICKABLE_FARM_BUILDINGS.includes(id))) {
-    return { ok: false, reason: 'Bâtiment de ferme invalide.' };
-  }
+export function validateOnboarding(weaponType) {
   if (!STARTER_WEAPON_TYPES.includes(weaponType)) {
     return { ok: false, reason: 'Choisis ton arme de départ.' };
   }
-  return { ok: true, gatheringJobs: g, farmBuildings: f, weaponType };
+  return { ok: true, weaponType };
 }
 
-export function applyCareerChoice(state, gatheringJobs, farmBuildings, weaponType) {
-  const check = validateCareerSelection(gatheringJobs, farmBuildings, weaponType);
+export function applyCareerChoice(state, _gatheringJobs, _farmBuildings, weaponType) {
+  const check = validateOnboarding(weaponType);
   if (!check.ok) return check;
   const teamWeaponTypes = [
     check.weaponType,
@@ -128,40 +93,9 @@ export function applyCareerChoice(state, gatheringJobs, farmBuildings, weaponTyp
   ];
   state.careerChoice = {
     confirmed: true,
-    gatheringJobs: check.gatheringJobs,
-    farmBuildings: check.farmBuildings,
     weaponType: check.weaponType,
     teamWeaponTypes,
     starterWeaponsGranted: false,
   };
   return { ok: true, careerChoice: state.careerChoice };
-}
-
-export function isGatheringJobUnlocked(jobId, state) {
-  if (!state.careerChoice?.confirmed) return false;
-  return state.careerChoice.gatheringJobs.includes(jobId);
-}
-
-export function isFarmBuildingUnlocked(buildingId, state) {
-  if (!state.careerChoice?.confirmed) return false;
-  if (buildingId === FREE_FARM_BUILDING) return true;
-  return state.careerChoice.farmBuildings.includes(buildingId);
-}
-
-export function getUnlockedGatheringJobs(state) {
-  if (!state.careerChoice?.confirmed) return [];
-  return state.careerChoice.gatheringJobs;
-}
-
-export function getUnlockedFarmBuildings(state) {
-  if (!state.careerChoice?.confirmed) return [];
-  return [FREE_FARM_BUILDING, ...state.careerChoice.farmBuildings];
-}
-
-export function getVisibleHarvestViews(state) {
-  return getUnlockedGatheringJobs(state).map((id) => `job_${id}`);
-}
-
-export function getVisibleFarmViews(state) {
-  return getUnlockedFarmBuildings(state).map((id) => `farm_${id}`);
 }

@@ -58,6 +58,9 @@ export function initUI(game, audio) {
         showAccountRequiredModal(getOnlineBlockReason());
         return false;
       }
+      if (viewId === 'combat' && !game.isCombatViewUnlocked()) return false;
+      if ((viewId === 'workshop' || viewId.startsWith('workshop_')) && !game.isCraftUnlocked()) return false;
+      if (viewId === 'cuisine' && !game.isCookUnlocked()) return false;
       if (viewId === 'admin' && !canSeeAdminPanel()) {
         return false;
       }
