@@ -1,7 +1,10 @@
 /** Déblocages progressifs des métiers, bâtiments et vues. */
 
 import { GATHERING_JOB_IDS } from './careerChoice.js';
-import { FARM_BUILDING_IDS } from './farm.js';
+import { FARM_BUILDING_IDS, FARM_BUILDING_LABELS } from './farm.js';
+
+const FEATURE_UNLOCK_IDS = ['combat', 'toolmaker', 'cook'];
+const FEATURE_VIEW_IDS = { combat: 'combat', toolmaker: 'workshop', cook: 'cuisine' };
 
 export const CRAFT_JOB_IDS = ['toolmaker', 'cook'];
 export const SPECIAL_VIEWS = ['combat', 'workshop', 'cuisine'];
@@ -154,4 +157,99 @@ export function getUpcomingGatheringJobUnlocks(state, balance, jobs, limit = 4) 
 
 export function getNextGatheringJobUnlock(state, balance, jobs) {
   return getUpcomingGatheringJobUnlocks(state, balance, jobs, 1)[0] || null;
+}
+
+/** Entrées nav Récolte : métiers débloqués + prochain métier verrouillé juste après Paysan. */
+export function getRecolteNavItems(state, balance, jobs = {}) {
+  const unlockedViews = getUnlockedGatheringJobs(state, balance).map((id) => `job_${id}`);
+  const next = getNextGatheringJobUnlock(state, balance, jobs);
+  const items = [];
+
+  for (const viewId of unlockedViews) {
+    items.push({ kind: 'view', viewId });
+    if (viewId === 'job_farmer' && next) {
+      items.push({ kind: 'lockedJob', entry: next });
+    }
+  }
+
+  return items;
+}
+
+/** Progression vers le déblocage d'une fonctionnalité (combat, atelier, cuisine). */
+export function getFeatureUnlockProgress(featureId, state, balance, jobs = {}) {
+  if (!FEATURE_UNLOCK_IDS.includes(featureId)) return null;
+  if (isJobUnlocked(featureId, state, balance)) return null;
+
+  const rule = getJobUnlockRules(balance)[featureId];
+  if (!rule) return null;
+
+  const when = rule.when || {};
+  const gates = [];
+
+  if (when.jobLevel) {
+    for (const [jobId, requiredLevel] of Object.entries(when.jobLevel)) {
+      const currentLevel = state.jobs?.[jobId]?.level || 1;
+      gates.push({
+        type: 'jobLevel',
+        jobId,
+        jobName: jobs[jobId]?.name || jobId,
+        requiredLevel,
+        currentLevel,
+        progress: Math.min(1, currentLevel / requiredLevel),
+        ready: currentLevel >= requiredLevel,
+      });
+    }
+  }
+
+  if (when.buildingUnlocked) {
+    const buildingId = when.buildingUnlocked;
+    const ready = isFarmBuildingUnlocked(buildingId, state, balance);
+    const buildingRule = getJobUnlockRules(balance).farm?.[buildingId];
+    const buildingGate = parseJobLevelGate(buildingRule);
+    let progress = ready ? 1 : 0;
+    let currentLevel = null;
+    let requiredLevel = null;
+    if (buildingGate && !ready) {
+      currentLevel = state.jobs?.[buildingGate.gateJob]?.level || 1;
+      requiredLevel = buildingGate.requiredLevel;
+      progress = Math.min(1, currentLevel / requiredLevel);
+    }
+    gates.push({
+      type: 'building',
+      buildingId,
+      buildingName: FARM_BUILDING_LABELS[buildingId] || buildingId,
+      gateJob: buildingGate?.gateJob || null,
+      requiredLevel,
+      currentLevel,
+      progress,
+      ready,
+    });
+  }
+
+  const ready = gates.every((gate) => gate.ready);
+  const progress = gates.length
+    ? gates.reduce((sum, gate) => sum + gate.progress, 0) / gates.length
+    : 0;
+
+  const labels = {
+    combat: 'Combat',
+    toolmaker: jobs.toolmaker?.name || 'Outilleur',
+    cook: jobs.cook?.name || 'Cuisine',
+  };
+  const emojis = {
+    combat: '⚔️',
+    toolmaker: jobs.toolmaker?.emoji || '🛠️',
+    cook: jobs.cook?.emoji || '👨‍🍳',
+  };
+
+  return {
+    featureId,
+    viewId: FEATURE_VIEW_IDS[featureId],
+    label: labels[featureId],
+    emoji: emojis[featureId],
+    hint: rule.hint || null,
+    gates,
+    ready,
+    progress,
+  };
 }

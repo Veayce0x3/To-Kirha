@@ -28,7 +28,7 @@ import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consu
 import { RARITY_LABELS, RARITY_EMOJI, getInstanceRarity, getNextRarity } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId } from '../systems/dungeonKeys.js';
-import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
+import { getVisibleHarvestViews, getVisibleFarmViews, isGatheringJobUnlocked, getGatheringJobUnlockProgress, getFeatureUnlockProgress } from '../systems/careerChoice.js';
 import { getTestHdvBanner, isTestHdvEnabled } from '../systems/testHdv.js';
 import { showCareerChoiceIfNeeded } from './careerChoiceUi.js';
 import { reconcileAuthAfterLocalReset } from '../core/resetAuth.js';
@@ -63,6 +63,66 @@ function resetCombatUiTurn() {
 }
 
 const SET_LABELS = { sakura: 'Sakura', petal: 'Pétale', jade: 'Jade' };
+
+function renderLockedUnlockPanel(game, el, entry) {
+  const pct = Math.floor((entry.progress || 0) * 100);
+  const icon = entry.featureId
+    ? (getNavIcon(entry.viewId) || null)
+    : getJobIcon(entry.jobId);
+  const iconPart = icon
+    ? iconHtml(icon, 'feature-locked-icon-img', entry.label)
+    : `<span class="feature-locked-emoji">${entry.emoji || '🔒'}</span>`;
+
+  let gatesHtml = '';
+  if (entry.gates?.length) {
+    gatesHtml = entry.gates.map((gate) => {
+      const gatePct = Math.floor((gate.progress || 0) * 100);
+      const label = gate.type === 'building'
+        ? gate.buildingName
+        : gate.jobName;
+      const meta = gate.ready
+        ? '✓ Atteint'
+        : gate.type === 'building' && gate.requiredLevel == null
+          ? 'Non débloqué'
+          : `Nv.${gate.currentLevel} / ${gate.requiredLevel}`;
+      return `
+        <div class="feature-locked-gate${gate.ready ? ' feature-locked-gate-ready' : ''}">
+          <div class="feature-locked-gate-head">
+            <strong>${label}</strong>
+            <span>${meta}</span>
+          </div>
+          <div class="xp-bar-container"><div class="xp-bar" style="width:${gatePct}%"></div></div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    const gateName = game.jobs[entry.gateJob]?.name || entry.gateJob;
+    gatesHtml = `
+      <div class="feature-locked-gate${entry.ready ? ' feature-locked-gate-ready' : ''}">
+        <div class="feature-locked-gate-head">
+          <strong>${gateName}</strong>
+          <span>${entry.ready ? '✓ Atteint' : `Nv.${entry.currentLevel} / ${entry.requiredLevel}`}</span>
+        </div>
+        <div class="xp-bar-container"><div class="xp-bar" style="width:${pct}%"></div></div>
+      </div>
+    `;
+  }
+
+  const farmerView = getHarvestViewForJob('farmer');
+  el.innerHTML = `
+    <div class="feature-locked-panel">
+      <div class="feature-locked-icon">${iconPart}</div>
+      <h2>${entry.label}</h2>
+      <p class="feature-locked-badge">🔒 Se débloque plus tard dans le jeu</p>
+      ${entry.hint ? `<p class="view-desc feature-locked-hint">${entry.hint}</p>` : ''}
+      <div class="feature-locked-gates">${gatesHtml}</div>
+      <p class="view-desc feature-locked-progress">Progression globale : ${pct}%</p>
+      ${farmerView ? `<button type="button" class="btn btn-craft btn-small" id="locked-go-farmer">Continuer en Paysan</button>` : ''}
+    </div>
+  `;
+
+  el.querySelector('#locked-go-farmer')?.addEventListener('click', () => navigate(farmerView));
+}
 
 function navigateObjective(game, objective) {
   if (!objective) return;
@@ -1897,6 +1957,18 @@ export function refreshJobViewLight(game, jobId) {
 }
 
 function renderJob(game, el, jobId) {
+  if (!isGatheringJobUnlocked(jobId, game.state, game.balance)) {
+    const progress = getGatheringJobUnlockProgress(jobId, game.state, game.balance);
+    if (progress) {
+      renderLockedUnlockPanel(game, el, {
+        ...progress,
+        label: game.jobs[jobId]?.name || jobId,
+        emoji: game.jobs[jobId]?.emoji || '🔒',
+        viewId: `job_${jobId}`,
+      });
+      return;
+    }
+  }
   renderJobProduction(game, el, jobId);
 }
 
@@ -2319,6 +2391,13 @@ function renderFarmBuildingLegacyUnused(game, el, buildingId) {
 
 /* ── Ateliers (métiers craft) ── */
 function renderWorkshopHub(game, el) {
+  if (!game.isCraftUnlocked()) {
+    const progress = getFeatureUnlockProgress('toolmaker', game.state, game.balance, game.jobs);
+    if (progress) {
+      renderLockedUnlockPanel(game, el, progress);
+      return;
+    }
+  }
   if (workshopTab === 'cook') workshopTab = 'toolmaker';
   el.innerHTML = `
     <div class="view-header">
@@ -2358,6 +2437,13 @@ function mountWorkshopContent(game, container) {
 }
 
 function renderCuisine(game, el) {
+  if (!game.isCookUnlocked()) {
+    const progress = getFeatureUnlockProgress('cook', game.state, game.balance, game.jobs);
+    if (progress) {
+      renderLockedUnlockPanel(game, el, progress);
+      return;
+    }
+  }
   const job = game.jobs.cook;
   el.innerHTML = `
     <div class="view-header">
@@ -3103,6 +3189,13 @@ function formatDropList(drops, resources) {
 }
 
 function renderCombat(game, el) {
+  if (!game.isCombatViewUnlocked()) {
+    const progress = getFeatureUnlockProgress('combat', game.state, game.balance, game.jobs);
+    if (progress) {
+      renderLockedUnlockPanel(game, el, progress);
+      return;
+    }
+  }
   const stats = game.getCharacterStats();
   const charProg = game.getCharacterProgress();
   const weaponRef = game.state.combatEquipment?.weapon;

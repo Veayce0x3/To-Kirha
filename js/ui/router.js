@@ -1,6 +1,6 @@
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, FARM_BUILDING_LABELS } from '../systems/farm.js';
-import { getVisibleHarvestViews, getVisibleFarmViews, isCraftJobUnlocked, isCombatUnlocked } from '../systems/careerChoice.js';
+import { getRecolteNavItems, getVisibleFarmViews } from '../systems/careerChoice.js';
 
 let currentView = 'character';
 let navigateGuard = null;
@@ -203,32 +203,21 @@ export function getViewTitle(viewId = currentView) {
   return VIEWS[viewId]?.title || 'To-Kirha';
 }
 
-export function getNavCategories(state = null, balance = null) {
+export function getNavCategories(state = null, balance = null, jobs = null) {
   if (!state?.careerChoice?.confirmed) {
     return NAV_CATEGORIES.filter((cat) => cat.id === 'personnage');
   }
-  const harvestItems = getVisibleHarvestViews(state, balance);
+  const harvestItems = jobs
+    ? getRecolteNavItems(state, balance, jobs)
+    : getRecolteNavItems(state, balance);
   const farmItems = getVisibleFarmViews(state, balance);
   const achievementsOn = balance?.achievementsEnabled === true || balance?.questsEnabled === true;
-  const combatOn = isCombatUnlocked(state, balance);
-  const toolmakerOn = isCraftJobUnlocked('toolmaker', state, balance);
-  const cookOn = isCraftJobUnlocked('cook', state, balance);
 
   return NAV_CATEGORIES.map((cat) => {
     if (cat.id === 'recolte') return { ...cat, items: harvestItems };
     if (cat.id === 'ferme') return { ...cat, items: farmItems };
     if (cat.id === 'monde' && !achievementsOn) {
       return { ...cat, items: cat.items.filter((id) => id !== 'achievements') };
-    }
-    if (cat.id === 'gestion') {
-      const items = cat.items.filter((id) => combatOn || id !== 'combat');
-      return { ...cat, items };
-    }
-    if (cat.id === 'artisanat') {
-      return toolmakerOn ? cat : { ...cat, items: [] };
-    }
-    if (cat.id === 'cuisine') {
-      return cookOn ? cat : { ...cat, items: [] };
     }
     return cat;
   }).filter((cat) => cat.items?.length !== 0 || !cat.collapsible);

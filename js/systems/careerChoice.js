@@ -42,6 +42,9 @@ export {
   isCombatUnlocked,
   getNextGatheringJobUnlock,
   getUpcomingGatheringJobUnlocks,
+  getRecolteNavItems,
+  getFeatureUnlockProgress,
+  getGatheringJobUnlockProgress,
 } from './jobUnlock.js';
 
 export function needsCareerChoice(state) {

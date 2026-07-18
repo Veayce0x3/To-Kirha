@@ -20,7 +20,7 @@ import { isRecipeEquipped } from '../systems/equipment.js';
 import { initCareerChoiceModal, showCareerChoiceIfNeeded } from './careerChoiceUi.js';
 import { initAuthModal, showAuthModalIfNeeded, showAccountRequiredModal } from './authUi.js';
 import { canUseOnlineFeatures, getOnlineBlockReason, canSeeAdminPanel } from '../core/auth.js';
-import { getUpcomingGatheringJobUnlocks, getUnlockedGatheringJobs } from '../systems/careerChoice.js';
+import { getFeatureUnlockProgress, getUnlockedGatheringJobs } from '../systems/careerChoice.js';
 import {
   renderView,
   renderJobSwitcherDock,
@@ -60,9 +60,6 @@ export function initUI(game, audio) {
         showAccountRequiredModal(getOnlineBlockReason());
         return false;
       }
-      if (viewId === 'combat' && !game.isCombatViewUnlocked()) return false;
-      if ((viewId === 'workshop' || viewId.startsWith('workshop_')) && !game.isCraftUnlocked()) return false;
-      if (viewId === 'cuisine' && !game.isCookUnlocked()) return false;
       if (viewId === 'admin' && !canSeeAdminPanel()) {
         return false;
       }
@@ -153,15 +150,48 @@ export function initUI(game, audio) {
     return btn;
   }
 
-  function createLockedNavBtn(entry) {
-    const pct = Math.floor(entry.progress * 100);
+  function getLockedFeatureNavEntry(viewId) {
+    const featureByView = { combat: 'combat', workshop: 'toolmaker', cuisine: 'cook' };
+    const featureId = featureByView[viewId];
+    if (!featureId) return null;
+    if (featureId === 'combat' && game.isCombatViewUnlocked()) return null;
+    if (featureId === 'toolmaker' && game.isCraftUnlocked()) return null;
+    if (featureId === 'cook' && game.isCookUnlocked()) return null;
+    return getFeatureUnlockProgress(featureId, game.state, game.balance, game.jobs);
+  }
+
+  function formatLockedNavMeta(entry) {
+    if (entry.ready) return 'Prêt !';
+    if (entry.gates?.length) {
+      const pending = entry.gates.find((gate) => !gate.ready);
+      if (!pending) return 'Prêt !';
+      if (pending.type === 'jobLevel') {
+        return `${pending.jobName} Nv.${pending.currentLevel}/${pending.requiredLevel}`;
+      }
+      if (pending.type === 'building') {
+        if (pending.requiredLevel != null) {
+          return `${pending.buildingName} Nv.${pending.currentLevel}/${pending.requiredLevel}`;
+        }
+        return `${pending.buildingName} 🔒`;
+      }
+    }
     const gateName = game.jobs[entry.gateJob]?.name || entry.gateJob;
-    const btn = document.createElement('div');
+    return entry.gateJob
+      ? `${gateName} Nv.${entry.currentLevel}/${entry.requiredLevel}`
+      : `Nv.${entry.currentLevel}/${entry.requiredLevel}`;
+  }
+
+  function createLockedNavBtn(entry) {
+    const pct = Math.floor((entry.progress || 0) * 100);
+    const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = `nav-btn nav-btn-locked${entry.ready ? ' nav-btn-unlock-ready' : ''}`;
     btn.dataset.view = entry.viewId;
-    btn.title = entry.hint || `${entry.label} — ${gateName} Nv.${entry.requiredLevel}`;
+    btn.title = entry.hint || formatLockedNavMeta(entry);
 
-    const navIcon = getJobIcon(entry.jobId);
+    const navIcon = entry.featureId
+      ? (getNavIcon(entry.viewId) || null)
+      : getJobIcon(entry.jobId);
     const iconPart = navIcon
       ? iconHtml(navIcon, 'nav-icon nav-icon-locked', entry.label)
       : `<span class="nav-emoji">${entry.emoji}</span>`;
@@ -169,9 +199,13 @@ export function initUI(game, audio) {
     btn.innerHTML = `
       ${iconPart}
       <span class="nav-label">${entry.label}</span>
-      <span class="nav-lock-meta">${entry.ready ? 'Prêt !' : `Nv.${entry.currentLevel}/${entry.requiredLevel}`}</span>
+      <span class="nav-lock-meta">${formatLockedNavMeta(entry)}</span>
       <div class="nav-unlock-bar"><div class="nav-unlock-fill" style="width:${pct}%"></div></div>
     `;
+    btn.addEventListener('click', () => {
+      closeSidebar();
+      navigate(entry.viewId);
+    });
     return btn;
   }
 
@@ -199,7 +233,7 @@ export function initUI(game, audio) {
     els.sidebarNav.innerHTML = '';
     els.sidebarFooter.innerHTML = '';
 
-    for (const cat of getNavCategories(game.state, game.balance)) {
+    for (const cat of getNavCategories(game.state, game.balance, game.jobs)) {
       const section = document.createElement('div');
       section.className = 'nav-category';
 
@@ -230,16 +264,19 @@ export function initUI(game, audio) {
       const items = document.createElement('div');
       items.className = `nav-cat-items${isCategoryCollapsed(cat.id) ? ' collapsed' : ''}`;
 
-      for (const viewId of cat.items) {
+      for (const item of cat.items) {
+        if (item?.kind === 'lockedJob') {
+          items.appendChild(createLockedNavBtn(item.entry));
+          continue;
+        }
+        const viewId = item?.viewId || item;
+        const lockedFeature = getLockedFeatureNavEntry(viewId);
+        if (lockedFeature) {
+          items.appendChild(createLockedNavBtn(lockedFeature));
+          continue;
+        }
         const btn = createNavBtn(viewId);
         if (btn) items.appendChild(btn);
-      }
-
-      if (cat.id === 'recolte') {
-        const upcoming = getUpcomingGatheringJobUnlocks(game.state, game.balance, game.jobs, 2);
-        for (const entry of upcoming) {
-          items.appendChild(createLockedNavBtn(entry));
-        }
       }
 
       if (cat.id === 'recolte' || cat.id === 'ferme') {

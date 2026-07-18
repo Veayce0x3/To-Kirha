@@ -2981,12 +2981,86 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .nav-btn-locked {
-  opacity: 0.65;
-  cursor: default;
-  pointer-events: none;
+  opacity: 0.72;
+  cursor: pointer;
   position: relative;
   flex-wrap: wrap;
   padding-bottom: 0.35rem;
+}
+
+.feature-locked-panel {
+  max-width: 28rem;
+  margin: 1.5rem auto;
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--surface-elevated, rgba(255, 255, 255, 0.92));
+  border: 1px solid var(--border-soft, rgba(0, 0, 0, 0.08));
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.feature-locked-icon {
+  margin-bottom: 0.75rem;
+}
+
+.feature-locked-icon-img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: grayscale(0.45);
+  opacity: 0.85;
+}
+
+.feature-locked-emoji {
+  font-size: 3rem;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+.feature-locked-badge {
+  display: inline-block;
+  margin: 0.5rem 0 1rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.feature-locked-hint {
+  margin-bottom: 1rem;
+}
+
+.feature-locked-gates {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.feature-locked-gate {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.feature-locked-gate-ready {
+  opacity: 0.75;
+}
+
+.feature-locked-gate-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.feature-locked-progress {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  opacity: 0.85;
 }
 
 .nav-btn-unlock-ready {
