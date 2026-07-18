@@ -169,7 +169,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 30,
+    "requiredJobLevel": 18,
     "jobXp": 45
   },
   "breeder_bucket": {
@@ -220,7 +220,7 @@
     "id": "sequoia_axe",
     "name": "Hache de Séquoia",
     "emoji": "🪓",
-    "description": "Palier 2 — bûcheron Nv.20",
+    "description": "Palier 2 — bûcheron Nv.14",
     "kirhaCost": 120,
     "maxUses": 50,
     "toolTier": 2,
@@ -234,20 +234,18 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 20,
+    "requiredJobLevel": 14,
     "jobXp": 18
   },
   "recipe_onigiri": {
     "id": "recipe_onigiri",
     "name": "Onigiri",
     "emoji": "🍙",
-    "description": "Repas niv. 1–9 : soin % PV max en donjon",
-    "kirhaCost": 20,
+    "description": "Repas niv. 1–9 : soin % PV max — Blé + Œuf du Poulailler",
+    "kirhaCost": 10,
     "ingredients": {
-      "goujon": 5,
-      "ble": 4,
-      "eau": 2,
-      "ancient_scroll": 1
+      "ble": 6,
+      "oeuf": 2
     },
     "output": "meal_onigiri",
     "outputAmount": 1,
@@ -261,19 +259,17 @@
     "name": "Poisson grillé",
     "emoji": "🐟",
     "description": "Repas niv. 10–19 : soin % PV max en donjon",
-    "kirhaCost": 80,
+    "kirhaCost": 40,
     "ingredients": {
-      "truite": 4,
-      "orge": 3,
-      "eau": 2,
-      "ancient_scroll": 2,
+      "goujon": 6,
+      "ble": 4,
       "meal_onigiri": 1
     },
     "output": "meal_poisson",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 10,
+    "requiredJobLevel": 8,
     "jobXp": 21
   },
   "recipe_gateau": {
@@ -286,14 +282,13 @@
       "miel": 4,
       "avoine": 4,
       "oeuf": 3,
-      "ancient_scroll": 2,
       "meal_poisson": 1
     },
     "output": "meal_gateau",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 20,
+    "requiredJobLevel": 14,
     "jobXp": 29
   },
   "recipe_festin": {
@@ -307,14 +302,13 @@
       "lait": 4,
       "noyer": 3,
       "ortie": 4,
-      "ancient_scroll": 3,
       "meal_gateau": 1
     },
     "output": "meal_festin",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 30,
+    "requiredJobLevel": 18,
     "jobXp": 38
   },
   "recipe_bento": {
@@ -335,7 +329,7 @@
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 40,
+    "requiredJobLevel": 20,
     "jobXp": 46
   },
   "recipe_ramen": {
@@ -377,7 +371,7 @@
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 60,
+    "requiredJobLevel": 28,
     "jobXp": 63
   },
   "recipe_tempura": {
@@ -419,7 +413,7 @@
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 80,
+    "requiredJobLevel": 36,
     "jobXp": 80
   },
   "recipe_yakitori": {
@@ -461,7 +455,7 @@
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 100,
+    "requiredJobLevel": 44,
     "jobXp": 97
   },
   "recipe_mochi": {
@@ -503,7 +497,7 @@
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 120,
+    "requiredJobLevel": 52,
     "jobXp": 114
   },
   "recipe_miso": {
@@ -672,7 +666,7 @@
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 200,
+    "requiredJobLevel": 70,
     "jobXp": 182
   },
   "coal_pickaxe": {
@@ -693,7 +687,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 20,
+    "requiredJobLevel": 14,
     "jobXp": 18
   },
   "oak_axe": {
@@ -714,7 +708,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 40,
+    "requiredJobLevel": 20,
     "jobXp": 21
   },
   "birch_axe": {
@@ -735,7 +729,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 60,
+    "requiredJobLevel": 28,
     "jobXp": 24
   },
   "maple_axe": {
@@ -756,7 +750,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 80,
+    "requiredJobLevel": 36,
     "jobXp": 27
   },
   "bamboo_axe": {
@@ -777,7 +771,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 100,
+    "requiredJobLevel": 44,
     "jobXp": 30
   },
   "sakura_wood_axe": {
@@ -798,7 +792,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 120,
+    "requiredJobLevel": 52,
     "jobXp": 33
   },
   "millennium_axe": {
@@ -819,7 +813,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 200,
+    "requiredJobLevel": 70,
     "jobXp": 42
   },
   "carpe_rod": {
@@ -840,7 +834,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 20,
+    "requiredJobLevel": 14,
     "jobXp": 18
   },
   "salmon_rod": {
@@ -861,7 +855,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 40,
+    "requiredJobLevel": 20,
     "jobXp": 21
   },
   "lobster_rod": {
@@ -882,7 +876,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 60,
+    "requiredJobLevel": 28,
     "jobXp": 24
   },
   "naso_rod": {
@@ -903,7 +897,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 80,
+    "requiredJobLevel": 36,
     "jobXp": 27
   },
   "octopus_rod": {
@@ -924,7 +918,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 100,
+    "requiredJobLevel": 44,
     "jobXp": 30
   },
   "koi_rod": {
@@ -945,7 +939,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 120,
+    "requiredJobLevel": 52,
     "jobXp": 33
   },
   "dragon_rod": {
@@ -966,7 +960,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 200,
+    "requiredJobLevel": 70,
     "jobXp": 42
   },
   "copper_pickaxe": {
@@ -987,7 +981,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 40,
+    "requiredJobLevel": 20,
     "jobXp": 21
   },
   "iron_depth_pickaxe": {
@@ -1008,7 +1002,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 60,
+    "requiredJobLevel": 28,
     "jobXp": 24
   },
   "diamond_pickaxe": {
@@ -1029,7 +1023,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 80,
+    "requiredJobLevel": 36,
     "jobXp": 27
   },
   "emerald_pickaxe": {
@@ -1050,7 +1044,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 100,
+    "requiredJobLevel": 44,
     "jobXp": 30
   },
   "koi_crystal_pickaxe": {
@@ -1071,7 +1065,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 120,
+    "requiredJobLevel": 52,
     "jobXp": 33
   },
   "temple_pickaxe": {
@@ -1092,7 +1086,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 200,
+    "requiredJobLevel": 70,
     "jobXp": 42
   },
   "orge_sickle": {
@@ -1113,7 +1107,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 20,
+    "requiredJobLevel": 14,
     "jobXp": 18
   },
   "seigle_sickle": {
@@ -1134,7 +1128,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 40,
+    "requiredJobLevel": 20,
     "jobXp": 21
   },
   "avoine_sickle": {
@@ -1155,7 +1149,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 60,
+    "requiredJobLevel": 28,
     "jobXp": 24
   },
   "mais_sickle": {
@@ -1176,7 +1170,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 80,
+    "requiredJobLevel": 36,
     "jobXp": 27
   },
   "riz_sickle": {
@@ -1197,7 +1191,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 100,
+    "requiredJobLevel": 44,
     "jobXp": 30
   },
   "lotus_sickle": {
@@ -1218,7 +1212,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 120,
+    "requiredJobLevel": 52,
     "jobXp": 33
   },
   "eternal_sickle": {
@@ -1239,7 +1233,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 200,
+    "requiredJobLevel": 70,
     "jobXp": 42
   },
   "mint_gloves": {
@@ -1260,7 +1254,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 20,
+    "requiredJobLevel": 14,
     "jobXp": 18
   },
   "nettle_gloves": {
@@ -1281,7 +1275,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 40,
+    "requiredJobLevel": 20,
     "jobXp": 21
   },
   "lavender_gloves": {
@@ -1302,7 +1296,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 60,
+    "requiredJobLevel": 28,
     "jobXp": 24
   },
   "peony_gloves": {
@@ -1323,7 +1317,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 80,
+    "requiredJobLevel": 36,
     "jobXp": 27
   },
   "wisteria_gloves": {
@@ -1344,7 +1338,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 100,
+    "requiredJobLevel": 44,
     "jobXp": 30
   },
   "koi_herb_gloves": {
@@ -1365,7 +1359,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 120,
+    "requiredJobLevel": 52,
     "jobXp": 33
   },
   "essence_gloves": {
@@ -1386,7 +1380,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 200,
+    "requiredJobLevel": 70,
     "jobXp": 42
   }
 }

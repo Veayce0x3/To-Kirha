@@ -278,7 +278,7 @@ export class Game {
       harvestSlots: {},
       productionLines: { harvest: {}, farm: {} },
       farmBuildingMeta: {},
-      saveVersion: this.balance.saveVersion || 27,
+      saveVersion: this.balance.saveVersion || 29,
       aides: {},
       bossKills: {},
       combatKillStats: {},

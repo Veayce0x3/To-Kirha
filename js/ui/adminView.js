@@ -400,6 +400,7 @@ async function loadPlayerDetail(userId, detailEl) {
       <button type="button" class="btn btn-muted" id="admin-wipe-market">Vider HDV</button>
       ${canResetSave ? '<button type="button" class="btn btn-muted" id="admin-reset-save">Reset save cloud</button>' : ''}
       ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs">+1 tous les métiers</button>' : ''}
+      ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs-5">+5 tous les métiers</button>' : ''}
       ${canSetRole ? `
         <p class="view-desc admin-role-hint">Attribuer un rôle staff (modérateur, admin, superadmin) :</p>
         <select class="auth-input admin-role-select" id="admin-role-select">
@@ -469,6 +470,22 @@ async function loadPlayerDetail(userId, detailEl) {
     const r = await grantAllJobsLevel(userId);
     setStatus(r.ok ? 'Tous les métiers +1.' : r.reason, !r.ok);
     if (r.ok) loadPlayerDetail(userId, detailEl);
+  });
+
+  detailEl.querySelector('#admin-grant-jobs-5')?.addEventListener('click', async () => {
+    if (!confirm('Ajouter +5 niveaux à tous les métiers (5× +1) ?')) return;
+    let ok = true;
+    let lastReason = '';
+    for (let i = 0; i < 5; i++) {
+      const r = await grantAllJobsLevel(userId);
+      if (!r.ok) {
+        ok = false;
+        lastReason = r.reason;
+        break;
+      }
+    }
+    setStatus(ok ? 'Tous les métiers +5.' : lastReason, !ok);
+    if (ok) loadPlayerDetail(userId, detailEl);
   });
 
   detailEl.querySelector('#admin-set-role')?.addEventListener('click', async () => {
@@ -788,6 +805,11 @@ async function renderConfig(container) {
         `;
       }).join('')}
     </div>
+    <section class="admin-dash-section">
+      <h4 class="admin-section-title">🧪 Beta testeurs (save v29)</h4>
+      <p class="view-desc">Mise à jour progression : les saves migrent vers 1 ressource starter par métier. Pour repartir de zéro : <code>?newgame=1</code> ou « Reset save cloud » sur la fiche joueur.</p>
+      <p class="view-desc">Pour remonter un testeur : fiche joueur → « +1 tous les métiers » (plusieurs fois) ou reset save.</p>
+    </section>
     <button type="button" class="btn btn-craft" id="admin-save-config">Enregistrer la config</button>
     <p class="view-desc admin-hint">Les changements s'appliquent immédiatement aux joueurs connectés (rechargement config).</p>
   `;

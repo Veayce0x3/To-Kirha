@@ -1,7 +1,7 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 28,
+  "saveVersion": 29,
   "betaMode": false,
   "questsEnabled": false,
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
@@ -26,6 +26,11 @@
     "equipmentDrops": {
       "mobChance": 0,
       "bossChance": 0.12
+    },
+    "dungeonGate": {
+      "firstDungeonId": "village_sakura",
+      "requireCookUnlocked": true,
+      "hint": "Débloque la Cuisine (Poulailler Éleveur Nv.6) pour préparer des repas avant le donjon."
     },
     "fusionCosts": {
       "common": 50,
@@ -428,17 +433,20 @@
       "hint": "Atteins Paysan Nv.8 pour débloquer l'Outilleur."
     },
     "cook": {
-      "when": { "jobLevel": { "farmer": 12 } },
-      "hint": "Atteins Paysan Nv.12 pour débloquer le Cuisinier."
+      "when": {
+        "jobLevel": { "farmer": 6, "breeder": 6 },
+        "buildingUnlocked": "chicken_coop"
+      },
+      "hint": "Atteins Paysan Nv.6, débloque le Poulailler puis monte Éleveur Nv.6 pour la Cuisine."
     },
     "farm": {
-      "well": {
-        "when": { "jobLevel": { "farmer": 15 } },
-        "hint": "Atteins Paysan Nv.15 pour débloquer la Ferme (Puits)."
-      },
       "chicken_coop": {
-        "when": { "jobLevel": { "farmer": 16 } },
-        "hint": "Atteins Paysan Nv.16 pour le Poulailler."
+        "when": { "jobLevel": { "farmer": 6 } },
+        "hint": "Atteins Paysan Nv.6 pour débloquer le Poulailler."
+      },
+      "well": {
+        "when": { "jobLevel": { "farmer": 12 } },
+        "hint": "Atteins Paysan Nv.12 pour débloquer le Puits."
       },
       "barn": {
         "when": { "jobLevel": { "farmer": 18 } },
@@ -457,13 +465,13 @@
         "hint": "Atteins Paysan Nv.24 pour les Ruches."
       }
     },
-    "farm_well": {
-      "when": { "jobLevel": { "farmer": 15 } },
-      "hint": "Atteins Paysan Nv.15 pour le Puits."
-    },
     "farm_chicken_coop": {
-      "when": { "jobLevel": { "farmer": 16 } },
-      "hint": "Atteins Paysan Nv.16 pour le Poulailler."
+      "when": { "jobLevel": { "farmer": 6 } },
+      "hint": "Atteins Paysan Nv.6 pour le Poulailler."
+    },
+    "farm_well": {
+      "when": { "jobLevel": { "farmer": 12 } },
+      "hint": "Atteins Paysan Nv.12 pour le Puits."
     },
     "farm_barn": {
       "when": { "jobLevel": { "farmer": 18 } },

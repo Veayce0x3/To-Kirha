@@ -1,4 +1,8 @@
-import { migrateSlotsToProductionLines, getMaxUnitsPerResource } from '../systems/productionLines.js';
+import {
+  migrateSlotsToProductionLines,
+  getMaxUnitsPerResource,
+  getJobHarvestResources,
+} from '../systems/productionLines.js';
 import { clearProgressionCache } from '../systems/progression.js';
 
 function migrateCareerToProgressive(state) {
@@ -27,6 +31,21 @@ function migrateProgressiveProductionUnlock(state, ctx) {
   }
 }
 
+function resetHarvestLinesForBeta(state, ctx) {
+  if (!state.productionLines) state.productionLines = { harvest: {}, farm: {} };
+  const jobs = ['farmer', 'lumberjack', 'fisher', 'miner', 'alchemist'];
+  for (const jobId of jobs) {
+    const tiers = getJobHarvestResources(ctx.resources, jobId);
+    if (!tiers.length) continue;
+    state.productionLines.harvest[jobId] = {
+      [tiers[0].id]: { units: 1, slots: [{ active: null }] },
+    };
+  }
+  // Reset farm lines except unlocked buildings get starter from ensureProductionLines on next init
+  state.productionLines.farm = {};
+  state.farmBuildingMeta = {};
+}
+
 const MIGRATIONS = {
   27(state, ctx) {
     migrateSlotsToProductionLines(state, ctx.resources, ctx.farmData, ctx.balance);
@@ -37,10 +56,14 @@ const MIGRATIONS = {
     migrateProgressiveProductionUnlock(state, ctx);
     clearProgressionCache();
   },
+  29(state, ctx) {
+    resetHarvestLinesForBeta(state, ctx);
+    clearProgressionCache();
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 28;
+  const target = ctx.balance?.saveVersion ?? 29;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

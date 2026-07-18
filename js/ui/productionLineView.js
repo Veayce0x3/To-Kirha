@@ -34,29 +34,41 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
   const phase = slot?.active?.phase;
   const toolBlock = !active ? game.getHarvestToolBlockReason(jobId, resourceId) : null;
   const canHarvest = !active && !toolBlock;
+  const canComplete = active && progress >= 1 && phase === 'regrowing';
   const vis = getResourceVisual(resource, active ? (phase === 'regrowing' ? 'regrowing' : 'harvesting') : 'available');
   const spriteHtml = vis.sprite
     ? `<img class="slot-visual-sprite" src="${vis.sprite}" alt="" />`
     : `<span class="slot-visual-emoji">${vis.emoji || resource.emoji || '🌾'}</span>`;
 
+  const progressPct = Math.floor(progress * 100);
+  const statusLabel = active
+    ? (phase === 'regrowing' && progress >= 1 ? 'Prêt !' : getHarvestBtnLabel(phase, progress))
+    : (canHarvest ? 'Prêt' : '');
+
   const card = document.createElement('div');
-  card.className = `harvest-slot production-unit${active ? ' active-harvest' : ''}${canHarvest ? ' slot-can-harvest' : ''}`;
+  card.className = `harvest-slot production-unit production-unit-tap${active ? ' active-harvest' : ''}${canHarvest || canComplete ? ' slot-can-harvest' : ''}`;
   card.dataset.job = jobId;
   card.dataset.resource = resourceId;
   card.dataset.unit = String(unitIndex);
   card.innerHTML = `
-    <div class="slot-visual">${spriteHtml}</div>
-    <div class="slot-footer">
-      ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
-      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${canHarvest ? ' affordable' : ''}" ${!canHarvest && active && progress < 1 ? 'disabled' : ''}>
-        ${canHarvest ? 'Récolter !' : getHarvestBtnLabel(phase, progress)}
-      </button>
+    <div class="slot-visual slot-visual-tap" role="button" tabindex="0" aria-label="${resource.name}${statusLabel ? ` — ${statusLabel}` : ''}">
+      ${canHarvest ? '<span class="slot-ready-badge">Prêt</span>' : ''}
+      ${spriteHtml}
+      ${active ? `<div class="slot-progress-overlay"><div class="slot-progress-fill" style="width:${progressPct}%"></div><span class="slot-progress-label">${statusLabel}</span></div>` : ''}
     </div>
+    ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
   `;
-  card.querySelector('.btn-start')?.addEventListener('click', () => {
+
+  const onTap = () => {
     if (canHarvest) game.startLineHarvest(jobId, resourceId, unitIndex);
-    else if (active && progress >= 1 && phase === 'regrowing') {
-      game.completeHarvestLine(jobId, resourceId, unitIndex);
+    else if (canComplete) game.completeHarvestLine(jobId, resourceId, unitIndex);
+  };
+
+  card.querySelector('.slot-visual-tap')?.addEventListener('click', onTap);
+  card.querySelector('.slot-visual-tap')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onTap();
     }
   });
   return card;
@@ -121,6 +133,7 @@ function buildUnlockPanel(game, jobId) {
   if (preview.kind === 'level_blocked') {
     panel.innerHTML = `
       <p class="production-unlock-hint">Prochaine ressource : <strong>${preview.resourceName}</strong></p>
+      <button type="button" class="btn btn-upgrade btn-production-unlock" disabled>Débloquer ${preview.resourceName}</button>
       <p class="empty-text">🔒 ${preview.jobName} Nv.${preview.requiredLevel} requis pour continuer.</p>
     `;
     return panel;
@@ -312,10 +325,18 @@ export function updateProductionLineProgresses(game, jobId) {
       const progress = game.getLineHarvestProgress(jobId, resourceId, unitIndex);
       const card = document.querySelector(`.production-unit[data-job="${jobId}"][data-resource="${resourceId}"][data-unit="${unitIndex}"]`);
       if (!card) return;
-      const btn = card.querySelector('.btn-start');
-      if (btn) {
-        btn.textContent = getHarvestBtnLabel(slot.active.phase, progress);
-        btn.disabled = progress < 1 && slot.active.phase !== 'harvesting' ? false : progress < 1;
+      const pct = Math.floor(progress * 100);
+      const fill = card.querySelector('.slot-progress-fill');
+      const label = card.querySelector('.slot-progress-label');
+      const phase = slot.active.phase;
+      if (fill) fill.style.width = `${pct}%`;
+      if (label) {
+        label.textContent = phase === 'regrowing' && progress >= 1
+          ? 'Prêt !'
+          : getHarvestBtnLabel(phase, progress);
+      }
+      if (progress >= 1 && phase === 'regrowing') {
+        card.classList.add('slot-can-harvest');
       }
       if (progress >= 1 && slot.active.phase === 'regrowing') {
         game.completeHarvestLine(jobId, resourceId, unitIndex);

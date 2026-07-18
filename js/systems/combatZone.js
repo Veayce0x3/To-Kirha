@@ -39,6 +39,22 @@ import {
   pickRandomDropItem,
   RARITY_LABELS,
 } from './equipmentRarity.js';
+import { isCraftJobUnlocked } from './jobUnlock.js';
+
+function getDungeonGate(balance) {
+  return balance?.combat?.dungeonGate || {};
+}
+
+function checkDungeonGate(combatZone, state, balance) {
+  const gate = getDungeonGate(balance);
+  if (!gate.requireCookUnlocked) return { ok: true };
+  const firstId = gate.firstDungeonId || 'village_sakura';
+  if (combatZone.id !== firstId && combatZone.zone !== firstId) return { ok: true };
+  if (!isCraftJobUnlocked('cook', state, balance)) {
+    return { ok: false, reason: gate.hint || 'Débloque la Cuisine pour préparer des repas avant le donjon.' };
+  }
+  return { ok: true };
+}
 
 function isZoneUnlocked(zoneId, state, balance) {
   if (balance.zones[zoneId]?.unlocked) return true;
@@ -78,6 +94,8 @@ export function canEnterDungeon(combatZone, state, balance, characterConfig) {
     const keyId = getDungeonKeyId(combatZone.id);
     return { ok: false, reason: `Il te faut 1 clé de donjon (${keyId || '?'}) — farm en combat rapide ou achète à la HdV.` };
   }
+  const gateCheck = checkDungeonGate(combatZone, state, balance);
+  if (!gateCheck.ok) return gateCheck;
   return { ok: true, roomCount: rooms.length };
 }
 

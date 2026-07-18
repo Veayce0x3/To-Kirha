@@ -55,7 +55,11 @@ export function isJobUnlocked(jobId, state, balance) {
   const rule = rules[jobId];
   if (!rule) return false;
   if (rule.always) return true;
-  return meetsCondition(state, rule.when);
+  if (!meetsCondition(state, rule.when)) return false;
+  if (rule.when?.buildingUnlocked && !isFarmBuildingUnlocked(rule.when.buildingUnlocked, state, balance)) {
+    return false;
+  }
+  return true;
 }
 
 export function isGatheringJobUnlocked(jobId, state, balance) {
