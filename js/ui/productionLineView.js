@@ -287,16 +287,16 @@ export function renderJobProduction(game, el, jobId) {
           <div class="skill-header-title">${job.name}</div>
           <div class="skill-header-meta">Niveau ${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}</div>
         </div>
-        ${nextUnlock ? `
-          <button type="button" class="job-inline-unlock" id="job-next-unlock" title="${nextUnlock.hint || ''}">
-            ${getJobIcon(nextUnlock.jobId) ? iconHtml(getJobIcon(nextUnlock.jobId), 'job-inline-unlock-icon', nextUnlock.label) : nextUnlock.emoji}
-            <span class="job-inline-unlock-label">${nextUnlock.label}</span>
-            <span class="job-inline-unlock-meta">${nextUnlock.ready ? 'Prêt' : `${(nextUnlock.gates || []).filter((gate) => gate.ready).length}/${nextUnlock.gates?.length || 0} prérequis`}</span>
-            <span class="job-inline-unlock-bar"><span class="job-inline-unlock-fill" style="width:${Math.floor(nextUnlock.progress * 100)}%"></span></span>
-          </button>
-        ` : ''}
         <button type="button" class="btn btn-muted btn-job-nav" id="job-next" ${nextView ? '' : 'disabled'}>›</button>
       </div>
+      ${nextUnlock ? `
+        <button type="button" class="job-inline-unlock" id="job-next-unlock" title="${nextUnlock.hint || ''}">
+          ${getJobIcon(nextUnlock.jobId) ? iconHtml(getJobIcon(nextUnlock.jobId), 'job-inline-unlock-icon', nextUnlock.label) : nextUnlock.emoji}
+          <span class="job-inline-unlock-label">${nextUnlock.label}</span>
+          <span class="job-inline-unlock-meta">${nextUnlock.ready ? 'Prêt' : `${(nextUnlock.gates || []).filter((gate) => gate.ready).length}/${nextUnlock.gates?.length || 0} prérequis`}</span>
+          <span class="job-inline-unlock-bar"><span class="job-inline-unlock-fill" style="width:${Math.floor(nextUnlock.progress * 100)}%"></span></span>
+        </button>
+      ` : ''}
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
       <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${prog.xp} / ${prog.needed} XP`}</p>
     </div>
