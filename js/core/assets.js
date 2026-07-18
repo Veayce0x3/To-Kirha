@@ -25,6 +25,7 @@ export const UI = {
 export const NAV_ICONS = {
   character: asset(V, 'maison_transparent.png'),
   world: asset(V, 'kirha_city_transparent.png'),
+  achievements: asset(D, 'parchemin ancien transparent.png'),
   missions: asset(D, 'parchemin ancien transparent.png'),
   job_lumberjack: asset(B, 'icone_bucheron_transparent.png'),
   job_fisher: asset('metiers/pecheur', 'icone_pecheur_transparent.png'),

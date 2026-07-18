@@ -1,10 +1,25 @@
-import { isChapterComplete, areQuestsEnabled } from './quests.js';
+import { isChapterComplete, areAchievementsEnabled, isAchievementCompleted } from './achievements.js';
+
+function getPrestigeReqForSeason(balance, season) {
+  const base = balance?.prestige || {};
+  const override = base.seasonRequirements?.[String(season)] || {};
+  return {
+    ...base,
+    minTotalEarned: override.minTotalEarned ?? base.minTotalEarned,
+    requiredZones: override.requiredZones ?? base.requiredZones ?? [],
+    minBossKills: override.minBossKills ?? base.minBossKills ?? {},
+    requireAchievements: override.requireAchievements ?? base.requireAchievements ?? [],
+    requireQuestsChapter: override.requireQuestsChapter ?? base.requireQuestsChapter,
+    requireAtSeasonCap: override.requireAtSeasonCap ?? base.requireAtSeasonCap ?? true,
+  };
+}
 
 export function getPrestigeBonuses(state) {
   const p = state.prestige || {};
+  const ach = state.achievements?.bonuses || state.quests?.bonuses || {};
   return {
-    kirha: 1 + (p.kirhaBonus || 0),
-    xp: 1 + (p.xpBonus || 0),
+    kirha: 1 + (p.kirhaBonus || 0) + (ach.kirha || 0),
+    xp: 1 + (p.xpBonus || 0) + (ach.xp || 0),
   };
 }
 
@@ -46,11 +61,19 @@ export function getSeasonCapPreview(state, balance) {
   };
 }
 
-export function getPrestigeBlockers(state, balance, quests = {}, combatZones = {}) {
-  const req = balance.prestige;
+export function getPrestigeBlockers(state, balance, achievements = {}, combatZones = {}) {
+  const season = state.season || 1;
+  const req = getPrestigeReqForSeason(balance, season);
   if (!req) return ['Configuration prestige manquante'];
 
   const blockers = [];
+
+  if (req.requireAtSeasonCap !== false) {
+    const proximity = getSeasonCapProximity(state, balance);
+    if (!proximity.atCap) {
+      blockers.push(`Plafond Saison ${season} non atteint (perso ou métier)`);
+    }
+  }
 
   for (const z of req.requiredZones || []) {
     const ok = balance.zones[z]?.unlocked || (state.unlockedZones || []).includes(z);
@@ -58,8 +81,8 @@ export function getPrestigeBlockers(state, balance, quests = {}, combatZones = {
   }
 
   const earned = state.lifetimeStats?.totalEarned || 0;
-  if (earned < req.minTotalEarned) {
-    blockers.push(`${(req.minTotalEarned - earned).toLocaleString('fr-FR')} 💰 à gagner encore (total vie)`);
+  if (earned < (req.minTotalEarned || 0)) {
+    blockers.push(`${((req.minTotalEarned || 0) - earned).toLocaleString('fr-FR')} 💰 à gagner encore (total vie)`);
   }
 
   for (const [zoneId, min] of Object.entries(req.minBossKills || {})) {
@@ -71,9 +94,17 @@ export function getPrestigeBlockers(state, balance, quests = {}, combatZones = {
     }
   }
 
-  if (areQuestsEnabled(balance) && req.requireQuestsChapter && !isChapterComplete(req.requireQuestsChapter, quests, state)) {
+  if (areAchievementsEnabled(balance) && req.requireAchievements?.length) {
+    for (const id of req.requireAchievements) {
+      if (!isAchievementCompleted(state, id)) {
+        const def = achievements[id];
+        blockers.push(`Succès : ${def?.title || id}`);
+      }
+    }
+  } else if (areAchievementsEnabled(balance) && req.requireQuestsChapter
+    && !isChapterComplete(req.requireQuestsChapter, achievements, state)) {
     const label = balance.zones[req.requireQuestsChapter]?.name || req.requireQuestsChapter;
-    blockers.push(`Missions ${label} incomplètes`);
+    blockers.push(`Succès ${label} incomplets`);
   }
 
   return blockers;
@@ -110,13 +141,23 @@ export function getSeasonCapProximity(state, balance) {
   };
 }
 
-export function getPrestigeProgress(state, balance, quests = {}, combatZones = {}) {
-  const req = balance?.prestige;
+export function getPrestigeProgress(state, balance, achievements = {}, combatZones = {}) {
+  const season = state.season || 1;
+  const req = getPrestigeReqForSeason(balance, season);
   if (!req) {
     return { steps: [], completed: 0, total: 0, percent: 0, canDo: false };
   }
 
   const steps = [];
+
+  if (req.requireAtSeasonCap !== false) {
+    const proximity = getSeasonCapProximity(state, balance);
+    steps.push({
+      id: 'season_cap',
+      label: `Plafond Saison ${season} (perso ${proximity.charLevel}/${proximity.charCap} ou métier ${proximity.maxJobLevel}/${proximity.jobsCap})`,
+      done: proximity.atCap,
+    });
+  }
 
   for (const z of req.requiredZones || []) {
     const ok = balance.zones[z]?.unlocked || (state.unlockedZones || []).includes(z);
@@ -145,12 +186,21 @@ export function getPrestigeProgress(state, balance, quests = {}, combatZones = {
     });
   }
 
-  if (areQuestsEnabled(balance) && req.requireQuestsChapter) {
+  if (areAchievementsEnabled(balance) && req.requireAchievements?.length) {
+    for (const id of req.requireAchievements) {
+      const def = achievements[id];
+      steps.push({
+        id: `ach_${id}`,
+        label: `Succès : ${def?.title || id}`,
+        done: isAchievementCompleted(state, id),
+      });
+    }
+  } else if (areAchievementsEnabled(balance) && req.requireQuestsChapter) {
     const label = balance.zones[req.requireQuestsChapter]?.name || req.requireQuestsChapter;
     steps.push({
       id: 'quests',
-      label: `Missions ${label}`,
-      done: isChapterComplete(req.requireQuestsChapter, quests, state),
+      label: `Succès ${label}`,
+      done: isChapterComplete(req.requireQuestsChapter, achievements, state),
     });
   }
 
@@ -177,13 +227,13 @@ export function shouldShowPrestigeTeaser(state, balance, quests = {}, combatZone
     || (state.season || 1) > 1;
 }
 
-export function getPrestigePreview(state, balance, quests = {}, combatZones = {}) {
-  const req = balance.prestige;
-  const bonuses = req.bonusesPerSeason;
-  const current = state.prestige || {};
+export function getPrestigePreview(state, balance, achievements = {}, combatZones = {}) {
   const season = state.season || 1;
+  const req = getPrestigeReqForSeason(balance, season);
+  const bonuses = req.bonusesPerSeason || balance.prestige?.bonusesPerSeason;
+  const current = state.prestige || {};
   const caps = getSeasonCapPreview(state, balance);
-  const blockers = getPrestigeBlockers(state, balance, quests, combatZones);
+  const blockers = getPrestigeBlockers(state, balance, achievements, combatZones);
 
   return {
     currentSeason: season,
@@ -204,8 +254,8 @@ export function getPrestigePreview(state, balance, quests = {}, combatZones = {}
   };
 }
 
-export function applyPrestige(state, balance, getFreshState) {
-  if (!canPrestige(state, balance)) return false;
+export function applyPrestige(state, balance, getFreshState, achievements = {}, combatZones = {}) {
+  if (!canPrestige(state, balance, achievements, combatZones)) return false;
 
   const req = balance.prestige;
   const bonuses = req.bonusesPerSeason;
@@ -225,6 +275,7 @@ export function applyPrestige(state, balance, getFreshState) {
 
   const season = (state.season || 1) + 1;
   const settings = state.settings || getDefaultSettings();
+  const preservedAchievements = state.achievements || state.quests;
 
   const fresh = typeof getFreshState === 'function' ? getFreshState() : getFreshProgress(balance);
   return {
@@ -232,6 +283,7 @@ export function applyPrestige(state, balance, getFreshState) {
     season,
     prestige: newPrestige,
     lifetimeStats,
+    achievements: preservedAchievements,
     settings,
     lastOnline: Date.now(),
   };

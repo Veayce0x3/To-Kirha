@@ -1,20 +1,6 @@
-/** Paliers de déblocage et XP fixes par tier de ressource. */
-
-const TIER_UNLOCK_BASE = 10;
-const TIER_UNLOCK_STEP = 4;
-const TIER_XP_BASE = 10;
-const TIER_XP_STEP = 4;
+/** Paliers ressources : déblocage métier et XP récolte sont séparés. */
 
 const tierCache = new Map();
-
-export function getLineUnlockLevel(tierIndex) {
-  if (tierIndex <= 0) return 1;
-  return TIER_UNLOCK_BASE + (tierIndex - 1) * TIER_UNLOCK_STEP;
-}
-
-export function getTierXp(tierIndex) {
-  return TIER_XP_BASE + tierIndex * TIER_XP_STEP;
-}
 
 function harvestableResourcesForJob(resources, jobId) {
   return Object.values(resources)
@@ -38,12 +24,22 @@ export function getResourceTierIndex(resource, resources) {
   return idx;
 }
 
-export function getEffectiveRequiredJobLevel(resource, resources) {
-  return getLineUnlockLevel(getResourceTierIndex(resource, resources));
+/** Niveau métier requis pour récolter / débloquer la ressource (≠ XP récolte). */
+export function getResourceUnlockJobLevel(resource, resources, balance) {
+  const tier = getResourceTierIndex(resource, resources);
+  if (tier <= 0) return balance?.resourceUnlock?.starterLevel ?? 1;
+  const cfg = balance?.resourceUnlock || { baseLevel: 12, perTierStep: 6 };
+  return cfg.baseLevel + (tier - 1) * cfg.perTierStep;
 }
 
-export function getEffectiveHarvestXp(resource, resources) {
-  return getTierXp(getResourceTierIndex(resource, resources));
+/** XP fixe par récolte — indépendant du coût pour monter de niveau. */
+export function getHarvestXpForResource(resource, resources, balance) {
+  const cfg = balance?.harvestXpByTier || { base: 10, step: 4 };
+  const tier = getResourceTierIndex(resource, resources);
+  if (cfg.useResourceData && resource?.xpPerHarvest != null) {
+    return resource.xpPerHarvest;
+  }
+  return cfg.base + tier * cfg.step;
 }
 
 export function getRegrowthTier(resource, resources) {
@@ -52,4 +48,20 @@ export function getRegrowthTier(resource, resources) {
 
 export function clearProgressionCache() {
   tierCache.clear();
+}
+
+/** @deprecated Utiliser getResourceUnlockJobLevel */
+export function getEffectiveRequiredJobLevel(resource, resources, balance = null) {
+  return getResourceUnlockJobLevel(resource, resources, balance || {});
+}
+
+/** @deprecated Utiliser getHarvestXpForResource */
+export function getEffectiveHarvestXp(resource, resources, balance = null) {
+  return getHarvestXpForResource(resource, resources, balance || {});
+}
+
+/** @deprecated Ancienne échelle 10/14/18 — ne plus utiliser pour les déblocages */
+export function getLineUnlockLevel(tierIndex) {
+  if (tierIndex <= 0) return 1;
+  return 12 + (tierIndex - 1) * 6;
 }

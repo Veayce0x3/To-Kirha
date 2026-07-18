@@ -1,0 +1,89 @@
+{
+  "ach_s1_harvest_30": {
+    "id": "ach_s1_harvest_30",
+    "order": 1,
+    "category": "season_1",
+    "title": "Première moisson",
+    "description": "Récolte 30 ressources (tous métiers).",
+    "type": "harvest_total",
+    "target": 30,
+    "rewardKirha": 50,
+    "rewardBonus": { "xp": 0.01 },
+    "hintView": "job_farmer"
+  },
+  "ach_s1_farmer_12": {
+    "id": "ach_s1_farmer_12",
+    "order": 2,
+    "category": "season_1",
+    "title": "Paysan confirmé",
+    "description": "Atteins Paysan Nv.12.",
+    "type": "job_level",
+    "jobId": "farmer",
+    "target": 12,
+    "rewardBonus": { "harvestSpeed": 0.01 },
+    "hintView": "job_farmer"
+  },
+  "ach_s1_first_tool": {
+    "id": "ach_s1_first_tool",
+    "order": 3,
+    "category": "season_1",
+    "title": "Outil du village",
+    "description": "Fabrique un outil de récolte à l'Outilleur.",
+    "type": "craft_job",
+    "jobId": "toolmaker",
+    "target": 1,
+    "requires": { "achievementId": "ach_s1_harvest_30" },
+    "rewardScrolls": 1,
+    "rewardBonus": { "kirha": 0.01 },
+    "hintView": "workshop"
+  },
+  "ach_s1_chicken_coop": {
+    "id": "ach_s1_chicken_coop",
+    "order": 4,
+    "category": "season_1",
+    "title": "Poulailler actif",
+    "description": "Débloque le Poulailler (Paysan Nv.6).",
+    "type": "building_unlocked",
+    "buildingId": "chicken_coop",
+    "target": 1,
+    "rewardKirha": 80,
+    "hintView": "farm_chicken_coop"
+  },
+  "ach_s1_first_meal": {
+    "id": "ach_s1_first_meal",
+    "order": 5,
+    "category": "season_1",
+    "title": "Premier repas",
+    "description": "Craft un repas à la Cuisine.",
+    "type": "craft_meal",
+    "target": 1,
+    "requires": { "achievementId": "ach_s1_chicken_coop" },
+    "rewardBonus": { "xp": 0.02 },
+    "hintView": "cuisine"
+  },
+  "ach_s1_combat_5": {
+    "id": "ach_s1_combat_5",
+    "order": 6,
+    "category": "season_1",
+    "title": "Initiation au combat",
+    "description": "Gagne 5 combats rapides.",
+    "type": "combat_total",
+    "target": 5,
+    "requires": { "achievementId": "ach_s1_first_tool" },
+    "rewardKirha": 100,
+    "rewardBonus": { "kirha": 0.01 },
+    "hintView": "combat"
+  },
+  "ach_s2_lotus_boss": {
+    "id": "ach_s2_lotus_boss",
+    "order": 20,
+    "category": "season_meta",
+    "title": "Floraison du Lotus",
+    "description": "Vaincs le boss du Sanctuaire du Lotus.",
+    "type": "boss_kill",
+    "combatZoneId": "lotus_sanctuary",
+    "target": 1,
+    "rewardBonus": { "xp": 0.05 },
+    "hintView": "combat"
+  }
+}

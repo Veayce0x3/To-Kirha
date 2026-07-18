@@ -50,7 +50,8 @@ const FARM_VIEWS = Object.fromEntries(
 export const VIEWS = {
   character: { id: 'character', label: 'Perso', title: 'Personnage' },
   world: { id: 'world', label: 'Monde', title: 'Monde' },
-  missions: { id: 'missions', label: 'Missions', title: 'Missions' },
+  achievements: { id: 'achievements', label: 'Succès', title: 'Succès' },
+  missions: { id: 'achievements', label: 'Succès', title: 'Succès' },
   job_lumberjack: { id: 'job_lumberjack', label: 'Bûcheron', title: 'Bûcheron', job: 'lumberjack' },
   job_fisher: { id: 'job_fisher', label: 'Pêcheur', title: 'Pêcheur', job: 'fisher' },
   job_miner: { id: 'job_miner', label: 'Mineur', title: 'Mineur', job: 'miner' },
@@ -81,7 +82,7 @@ export const NAV_CATEGORIES = [
     id: 'monde',
     label: 'Monde',
     collapsible: false,
-    items: ['missions'],
+    items: ['achievements'],
   },
   {
     id: 'recolte',
@@ -208,7 +209,7 @@ export function getNavCategories(state = null, balance = null) {
   }
   const harvestItems = getVisibleHarvestViews(state, balance);
   const farmItems = getVisibleFarmViews(state, balance);
-  const questsOn = balance?.questsEnabled === true;
+  const achievementsOn = balance?.achievementsEnabled === true || balance?.questsEnabled === true;
   const combatOn = isCombatUnlocked(state, balance);
   const toolmakerOn = isCraftJobUnlocked('toolmaker', state, balance);
   const cookOn = isCraftJobUnlocked('cook', state, balance);
@@ -216,8 +217,8 @@ export function getNavCategories(state = null, balance = null) {
   return NAV_CATEGORIES.map((cat) => {
     if (cat.id === 'recolte') return { ...cat, items: harvestItems };
     if (cat.id === 'ferme') return { ...cat, items: farmItems };
-    if (cat.id === 'monde' && !questsOn) {
-      return { ...cat, items: cat.items.filter((id) => id !== 'missions') };
+    if (cat.id === 'monde' && !achievementsOn) {
+      return { ...cat, items: cat.items.filter((id) => id !== 'achievements') };
     }
     if (cat.id === 'gestion') {
       const items = cat.items.filter((id) => combatOn || id !== 'combat');

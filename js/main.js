@@ -19,7 +19,7 @@ async function loadJSON(file) {
   const [
     resources, jobs, balance, recipes, aides, equipment, farmData,
     characterConfig, combatEquipment, combatZones, enemies, merchant,
-    combatSkills, combatResources, companions, quests, weaponRoles,
+    combatSkills, combatResources, companions, achievements, weaponRoles,
   ] = await Promise.all([
     loadJSON('resources.json'),
     loadJSON('jobs.json'),
@@ -36,7 +36,7 @@ async function loadJSON(file) {
     loadJSON('combat_skills.json'),
     loadJSON('combat_resources.json'),
     loadJSON('companions.json'),
-    loadJSON('quests.json'),
+    loadJSON('achievements.json'),
     loadJSON('weapon_roles.json'),
   ]);
 
@@ -47,7 +47,7 @@ async function loadJSON(file) {
 
   const game = new Game(
     resources, jobs, balance, recipes, aides, equipment, farmData,
-    characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, quests,
+    characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, achievements,
     weaponRoles
   );
   await game.init();

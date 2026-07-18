@@ -601,8 +601,13 @@ export function initUI(game, audio) {
     showToast(els, `${prefix} ${zone.emoji} ${zone.name}`, 'zone');
   });
   on('questComplete', ({ quest }) => {
-    if (game.balance?.questsEnabled !== true) return;
-    showToast(els, `📜 Quête terminée : ${quest.title}`, 'upgrade');
+    if (game.balance?.achievementsEnabled !== true && game.balance?.questsEnabled !== true) return;
+    showToast(els, `🏆 Succès : ${quest.title}`, 'upgrade');
+  });
+
+  on('achievementComplete', ({ achievement }) => {
+    if (game.balance?.achievementsEnabled !== true && game.balance?.questsEnabled !== true) return;
+    showToast(els, `🏆 Succès : ${achievement.title}`, 'upgrade');
   });
   on('offlineProgress', (r) => showOfflineModal(game, els, r));
   on('prestige', ({ season }) => showToast(els, `🌸 Saison ${season} !`, 'prestige'));

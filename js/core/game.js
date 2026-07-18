@@ -124,17 +124,32 @@ import {
 import {
   buildDefaultQuestState,
   migrateQuests,
+  migrateAchievements,
+  buildDefaultAchievementState,
   isQuestReady,
+  isAchievementReady,
   completeQuest,
+  completeAchievement,
   incrementQuestProgress,
+  incrementAchievementProgress,
   applyQuestRewards,
+  applyAchievementRewards,
   getActiveQuests,
+  getActiveAchievements,
   getNextQuest,
+  getNextAchievement,
   isQuestCompleted,
+  isAchievementCompleted,
   getQuestsByChapter,
+  getAchievementsByCategory,
   getQuestGuidance,
+  getAchievementGuidance,
+  getAchievementStatusText,
+  getAchievementBonuses,
+  ACHIEVEMENT_CATEGORY_LABELS,
   areQuestsEnabled,
-} from '../systems/quests.js';
+  areAchievementsEnabled,
+} from '../systems/achievements.js';
 import {
   unlockWorldZone,
   canPayUnlockZone,
@@ -216,7 +231,7 @@ function migrateLegacyCombatResources(state) {
 }
 
 export class Game {
-  constructor(resources, jobs, balance, recipes, aides, equipment, farmData, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, quests, weaponRoles) {
+  constructor(resources, jobs, balance, recipes, aides, equipment, farmData, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, achievements, weaponRoles) {
     this.resources = resources;
     this.jobs = jobs;
     this.balance = balance;
@@ -232,7 +247,8 @@ export class Game {
     this.merchant = merchant;
     this.combatSkills = combatSkills;
     this.companions = companions;
-    this.quests = quests || {};
+    this.achievements = achievements || {};
+    this.quests = this.achievements;
     this.weaponRoles = weaponRoles || {};
     this.state = null;
     this.harvestTimers = {};
@@ -278,7 +294,7 @@ export class Game {
       harvestSlots: {},
       productionLines: { harvest: {}, farm: {} },
       farmBuildingMeta: {},
-      saveVersion: this.balance.saveVersion || 30,
+      saveVersion: this.balance.saveVersion || 31,
       aides: {},
       bossKills: {},
       combatKillStats: {},
@@ -294,7 +310,7 @@ export class Game {
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
       stats: { totalHarvests: 0, totalEarned: 0, passiveHarvests: 0, offlineHarvests: 0 },
-      quests: buildDefaultQuestState(),
+      achievements: buildDefaultAchievementState(),
       farmSlots: {},
       purchasedFarmSlots: {},
       activeMeal: null,
@@ -378,7 +394,7 @@ export class Game {
       purchasedFarmSlots: saved.purchasedFarmSlots || {},
       activeMeal: saved.activeMeal || null,
       combatMealBuff: null,
-      quests: migrateQuests(saved.quests),
+      achievements: migrateAchievements(saved.achievements || saved.quests),
       bankProtected: saved.bankProtected || defaults.bankProtected,
       careerChoice: migrateCareerChoice(saved.careerChoice),
       meta: { ...defaults.meta, ...(saved.meta || {}) },
@@ -520,14 +536,20 @@ export class Game {
   }
 
   processQuests() {
-    if (!areQuestsEnabled(this.balance)) return false;
+    return this.processAchievements();
+  }
+
+  processAchievements() {
+    if (!areAchievementsEnabled(this.balance)) return false;
     let changed = false;
-    for (const quest of Object.values(this.quests)) {
-      if (isQuestCompleted(this.state, quest.id)) continue;
-      if (!isQuestReady(quest, this.state, this.recipes)) continue;
-      if (!completeQuest(quest.id, this.state)) continue;
-      applyQuestRewards(this.state, quest, this.balance);
-      emit('questComplete', { questId: quest.id, quest });
+    for (const ach of Object.values(this.achievements)) {
+      if (ach.hidden) continue;
+      if (isAchievementCompleted(this.state, ach.id)) continue;
+      if (!isAchievementReady(ach, this.state, this.recipes)) continue;
+      if (!completeAchievement(ach.id, this.state)) continue;
+      applyAchievementRewards(this.state, ach, this.balance);
+      emit('achievementComplete', { achievementId: ach.id, achievement: ach });
+      emit('questComplete', { questId: ach.id, quest: ach });
       changed = true;
     }
     return changed;
@@ -602,21 +624,25 @@ export class Game {
   }
 
   onHarvestForQuests(resourceId, yield_) {
-    if (!areQuestsEnabled(this.balance)) return;
-    for (const quest of Object.values(this.quests)) {
-      if (quest.type !== 'harvest_resource') continue;
-      if (isQuestCompleted(this.state, quest.id)) continue;
-      const ids = quest.resourceIds || (quest.resourceId ? [quest.resourceId] : []);
-      if (!ids.includes(resourceId)) continue;
-      incrementQuestProgress(this.state, quest.id, yield_ || 1);
+    if (!areAchievementsEnabled(this.balance)) return;
+    for (const ach of Object.values(this.achievements)) {
+      if (ach.type === 'harvest_resource') {
+        if (isAchievementCompleted(this.state, ach.id)) continue;
+        const ids = ach.resourceIds || (ach.resourceId ? [ach.resourceId] : []);
+        if (!ids.includes(resourceId)) continue;
+        incrementAchievementProgress(this.state, ach.id, yield_ || 1);
+      }
     }
-    this.processQuests();
+    this.processAchievements();
   }
 
   onCombatVictoryHooks(result) {
     const zoneId = result?.zoneId;
+    void zoneId;
+    if (!this.state.stats) this.state.stats = {};
+    this.state.stats.combatFights = (this.state.stats.combatFights || 0) + 1;
     clearCombatMealBuff(this.state);
-    this.processQuests();
+    this.processAchievements();
   }
 
   setCompanionNickname(companionId, name, isRename = false) {
@@ -1744,7 +1770,13 @@ export class Game {
     Object.values(this.harvestTimers).forEach(clearTimeout);
     this.harvestTimers = {};
 
-    const newState = applyPrestige(this.state, this.balance, () => this.getDefaultState());
+    const newState = applyPrestige(
+      this.state,
+      this.balance,
+      () => this.getDefaultState(),
+      this.achievements,
+      this.combatZones
+    );
     const season = newState.season;
     this.state = this.mergeState(newState);
     this.passiveAccum = {};

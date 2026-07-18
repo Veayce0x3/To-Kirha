@@ -1,9 +1,10 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 30,
+  "saveVersion": 31,
   "betaMode": false,
-  "questsEnabled": false,
+  "achievementsEnabled": true,
+  "questsEnabled": true,
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
   "testHdv": {
     "enabled": true,
@@ -63,6 +64,17 @@
     "regrowthBaseMs": 11000,
     "regrowthPerTierMs": 2000,
     "minRegrowthTimeMs": 3000
+  },
+  "harvestXpByTier": {
+    "base": 10,
+    "step": 4,
+    "comment": "Blé=10, Orge=14, tier+1=+4 XP fixe par récolte (≠ niveau requis)"
+  },
+  "resourceUnlock": {
+    "starterLevel": 1,
+    "baseLevel": 12,
+    "perTierStep": 6,
+    "comment": "Ressource tier 1→Nv.12, tier 2→Nv.18, tier 3→Nv.24… (≠ XP récolte)"
   },
   "harvestSlots": {
     "startingSlots": 2,
@@ -250,13 +262,24 @@
   },
   "prestige": {
     "minTotalEarned": 100000,
-    "requiredZones": [
-      "lotus_sanctuary"
-    ],
-    "minBossKills": {
-      "lotus_sanctuary": 1
-    },
+    "requiredZones": ["lotus_sanctuary"],
+    "minBossKills": { "lotus_sanctuary": 1 },
     "requireQuestsChapter": "lotus_sanctuary",
+    "seasonRequirements": {
+      "1": {
+        "minTotalEarned": 2500,
+        "requiredZones": [],
+        "minBossKills": {},
+        "requireAchievements": [
+          "ach_s1_harvest_30",
+          "ach_s1_farmer_12",
+          "ach_s1_first_tool",
+          "ach_s1_first_meal",
+          "ach_s1_combat_5"
+        ],
+        "requireAtSeasonCap": false
+      }
+    },
     "bonusesPerSeason": {
       "kirhaMultiplier": 0.05,
       "xpMultiplier": 0.05

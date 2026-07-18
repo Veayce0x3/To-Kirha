@@ -54,11 +54,16 @@ Config : `balance.prestige.levelCaps`.
 
 ### Renaissance — prérequis
 
+**Saison 1 → 2** (`prestige.seasonRequirements["1"]`) :
+- 2 500 💰 total vie
+- 5 succès Saison 1 (récoltes, Paysan 12, outil, repas, combats)
+
+**Saison 2+** (défaut) :
 - Zone Lotus débloquée
 - **100 000** Kirha gagnés (total vie)
 - Boss Lotus vaincu ≥ 1×
-- Missions chapitre Lotus terminées
-- Bonus par saison : +5 % Kirha · +5 % XP (cumulatif, pas de passif)
+- Succès fin de parcours (ex-chapitre Lotus)
+- Bonus par saison : +5 % Kirha · +5 % XP (cumulatif)
 
 ### Durée cible (joueur ~1 h/j)
 
@@ -70,6 +75,17 @@ Config : `balance.prestige.levelCaps`.
 | Vision 10 ans | saisons + extensions contenu (paliers > 200) |
 
 Leviers anti-rush : `minTotalEarned`, coûts zones, `regrowthBaseMs` (11 s).
+
+## XP récolte vs niveau métier
+
+| Concept | Exemple Paysan | Config |
+|---------|----------------|--------|
+| XP par récolte Blé | **10** fixe | `harvestXpByTier` |
+| XP par récolte Orge | **14** fixe | tier+1 → +4 |
+| Niveau pour débloquer Orge | **Nv.12** métier | `resourceUnlock` |
+| XP pour Paysan 1→2 | **100** puis ×1.12 | `jobs.json` |
+
+Voir **`docs/progression-design.md`** pour le détail complet.
 
 ## Résumé par palier
 

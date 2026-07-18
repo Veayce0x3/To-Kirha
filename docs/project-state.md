@@ -1,42 +1,47 @@
-# 🌸 TO-KIRHA — Project State v1.6
+# 🌸 TO-KIRHA — Project State v1.7
 
-> État actuel du projet. Voir aussi `HANDOFF.md` pour reprendre une session.  
-> `saveVersion` : **26** · jeu en ligne : [veayce0x3.github.io/To-Kirha](https://veayce0x3.github.io/To-Kirha/)
+> État actuel du projet. Voir **`docs/progression-design.md`** pour XP, déblocages et succès.  
+> `saveVersion` : **31** · jeu en ligne : [veayce0x3.github.io/To-Kirha](https://veayce0x3.github.io/To-Kirha/)
 
 ## Vision
 
-Jeu web idle/RPG **zen sakura** pensé pour **durer des années** : récolte parallèle active, **économie spécialisée** (choix de carrière obligatoire), craft ciblé (outils + cuisine), ferme éleveur, **Cuisine au cœur du donjon**, combat DQ à 3, saisons / prestige.
+Jeu web idle/RPG **zen sakura** : récolte parallèle, progression Paysan → métiers, craft (outils + cuisine), ferme, combat DQ, **succès** et saisons.
 
-## Boucle économique (phase 1 — beta)
+## Boucle économique (beta)
 
 ```
-Choix carrière (2 récolte + 2 bâtiments + type d'arme)
-  → produire / vendre / HDV test (ressources manquantes)
-  → parchemins (HDV) + ingrédients
-  → Cuisine (repas coûteux, parchemins obligatoires)
-  → Combat rapide (clés) → Donjon (clé consommée, repas en combat)
-  → Équipement (drops combat + donjon) → fusion → progression
+Onboarding (arme) → Paysan seul → déblocages progressifs
+  → production (coûts cumulatifs) → outils / cuisine
+  → succès (bonus permanents) → Saison 2+
+  → combat → donjons (repas) → équipement
 ```
 
-## Choix de carrière
+## Progression (beta v31)
 
-- Au **premier lancement** (ou après reset) : modal **« Choisis ta voie »** — **obligatoire**
-- Tant que non confirmé : navigation limitée à **Perso** et **Options** ; métiers et ferme **invisibles / verrouillés**
-- Choix : **2 métiers récolte** + **2 bâtiments ferme** + **type d'arme de départ** (+ **Puits** gratuit pour tous)
-- Métiers / bâtiments non choisis : inaccessibles en récolte/ferme → **HDV test**
-- Fichiers : `js/systems/careerChoice.js`, `js/systems/testHdv.js`, `js/ui/careerChoiceUi.js`, garde nav dans `js/ui/render.js`
+- **Démarrage** : Paysan seul → métiers via `jobUnlocks`
+- **XP récolte** : fixe 10, 14, 18… (`harvestXpByTier`)
+- **Niveau métier** : `xpPerLevel` × `xpScaling` (`jobs.json`)
+- **Ressource suivante** : Nv. 12, 18, 24… (`resourceUnlock`)
+- **Succès** : bonus permanents + prérequis Saison 1→2
+- **Carrière 2+2** : obsolète (migration v30)
+
+## Choix de départ (onboarding)
+
+- Pseudo + **arme** (Guerrier / Archer / Mage)
+- Fichiers : `careerChoice.js`, `careerChoiceUi.js`
 
 ## Progression (3 axes)
 
-1. **Personnage** — XP combat, stats HP/ATK/DEF, équipement (10 slots), plafond par saison
-2. **Métiers** — récolte (2 choisis) + éleveur (2 bâtiments + puits) + **Outilleur** + **Cuisinier**
-3. **Économie** — Kirha, **5 zones** monde, Renaissance, parchemins, HDV
+1. **Personnage** — XP combat, stats, équipement, plafond saison
+2. **Métiers** — récolte progressive + éleveur + Outilleur + Cuisinier
+3. **Économie** — Kirha, zones, succès, Renaissance
 
 ### Saisons
 
 - Cap S1 : perso **55**, métiers **95**
-- Prestige : Lotus, 100k Kirha vie, boss Lotus, missions Lotus
-- Voir `docs/progression-matrix.md`
+- **Saison 1→2 (beta)** : succès S1 + 2 500 💰 (sans plafond obligatoire)
+- **Saison 2+** : Lotus, 100k Kirha, boss Lotus, succès fin de jeu
+- Voir `docs/progression-design.md` et `docs/progression-matrix.md`
 
 ## Métiers & craft
 

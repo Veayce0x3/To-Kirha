@@ -9,7 +9,17 @@ import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
 import { forceAppRefresh } from '../core/reload.js';
-import { getQuestStatusText, isQuestCompleted, isQuestReady } from '../systems/quests.js';
+import {
+  getQuestStatusText,
+  getAchievementStatusText,
+  isQuestCompleted,
+  isAchievementCompleted,
+  isQuestReady,
+  isAchievementReady,
+  getAchievementsByCategory,
+  ACHIEVEMENT_CATEGORY_LABELS,
+  getAchievementBonuses,
+} from '../systems/achievements.js';
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
 import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
@@ -213,7 +223,8 @@ export function renderView(game, container, viewId) {
 
   const renderers = {
     character: renderCharacter,
-    missions: renderMissions,
+    achievements: renderAchievements,
+    missions: renderAchievements,
     world: renderWorld,
     job_lumberjack: () => renderJob(game, container, 'lumberjack'),
     job_fisher: () => renderJob(game, container, 'fisher'),
@@ -1232,16 +1243,74 @@ function renderCharTeamTab(game, panel) {
   }
 }
 
-function renderMissions(game, el) {
+function renderAchievements(game, el) {
+  const byCat = getAchievementsByCategory(game.achievements, game.state, game.recipes);
+  const bonuses = getAchievementBonuses(game.state);
+  const bonusLine = (bonuses.kirha || bonuses.xp || bonuses.harvestSpeed)
+    ? `<p class="view-desc">Bonus actifs : ${bonuses.kirha ? `+${(bonuses.kirha * 100).toFixed(0)} % Kirha ` : ''}${bonuses.xp ? `+${(bonuses.xp * 100).toFixed(0)} % XP ` : ''}${bonuses.harvestSpeed ? `+${(bonuses.harvestSpeed * 100).toFixed(0)} % vitesse récolte` : ''}</p>`
+    : '';
+
   el.innerHTML = `
     <div class="view-header">
-      <h2>${iconHtml(getNavIcon('missions'), 'view-header-icon', 'Missions')} Missions</h2>
-      <p class="view-desc">Missions désactivées pour le moment.</p>
+      <h2>🏆 Succès</h2>
+      <p class="view-desc">Objectifs permanents — petits bonus cumulatifs. Certains succès Saison 1 sont requis pour passer à la Saison 2.</p>
+      ${bonusLine}
     </div>
-    <div class="panel-inner mission-coming-soon">
-      <p class="empty-text">Les quêtes sont en pause pendant les tests. Progresse librement : récolte, ferme, cuisine, combats et donjons.</p>
-    </div>
+    <div id="achievements-list" class="panel-inner"></div>
   `;
+
+  const list = el.querySelector('#achievements-list');
+  const order = ['season_1', 'season_meta', 'harvest', 'craft', 'combat'];
+
+  for (const catId of order) {
+    const cat = byCat[catId];
+    if (!cat) continue;
+    const all = [...cat.available, ...cat.completed].filter((a) => !a.hidden);
+    if (!all.length) continue;
+
+    const section = document.createElement('section');
+    section.className = 'achievement-category';
+    section.innerHTML = `<h3>${ACHIEVEMENT_CATEGORY_LABELS[catId] || catId}</h3>`;
+    const grid = document.createElement('div');
+    grid.className = 'quest-list';
+
+    for (const ach of all) {
+      const done = isAchievementCompleted(game.state, ach.id);
+      const ready = !done && isAchievementReady(ach, game.state, game.recipes);
+      const row = document.createElement('div');
+      row.className = `quest-row${ready ? ' quest-ready' : ''}${done ? ' quest-done' : ''}`;
+      const bonus = ach.rewardBonus || ach.permanentBonus;
+      const bonusTxt = bonus
+        ? ` · Bonus : ${bonus.kirha ? `+${(bonus.kirha * 100).toFixed(0)}% 💰 ` : ''}${bonus.xp ? `+${(bonus.xp * 100).toFixed(0)}% XP ` : ''}${bonus.harvestSpeed ? `+${(bonus.harvestSpeed * 100).toFixed(0)}% vitesse` : ''}`
+        : '';
+      row.innerHTML = `
+        <div class="quest-row-head">
+          <strong>${ach.title}</strong>
+          <span class="quest-status">${getAchievementStatusText(ach, game.state, game.recipes)}</span>
+        </div>
+        <p class="quest-desc">${ach.description}${bonusTxt}</p>
+      `;
+      if (ach.hintView && ready) {
+        const go = document.createElement('button');
+        go.type = 'button';
+        go.className = 'btn btn-small btn-muted quest-go';
+        go.textContent = 'Y aller';
+        go.addEventListener('click', () => navigate(ach.hintView === 'workshop' ? 'workshop' : ach.hintView));
+        row.appendChild(go);
+      }
+      grid.appendChild(row);
+    }
+    section.appendChild(grid);
+    list.appendChild(section);
+  }
+
+  if (!list.children.length) {
+    list.innerHTML = '<p class="empty-text">Aucun succès disponible pour le moment.</p>';
+  }
+}
+
+function renderMissions(game, el) {
+  renderAchievements(game, el);
 }
 
 /* ── Monde ── */

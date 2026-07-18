@@ -1,4 +1,4 @@
-import { getEffectiveRequiredJobLevel } from './progression.js';
+import { getResourceUnlockJobLevel } from './progression.js';
 
 export function isZoneUnlocked(zoneId, state, balance) {
   if (balance.zones[zoneId]?.unlocked) return true;
@@ -17,9 +17,9 @@ export function getJobLevel(state, jobId) {
   return state.jobs[jobId]?.level || 1;
 }
 
-export function isResourceUnlockedByJob(resource, state, resources = null) {
+export function isResourceUnlockedByJob(resource, state, resources = null, balance = null) {
   const required = resources
-    ? getEffectiveRequiredJobLevel(resource, resources)
+    ? getResourceUnlockJobLevel(resource, resources, balance || {})
     : (resource.requiredJobLevel || 1);
   return getJobLevel(state, resource.job) >= required;
 }

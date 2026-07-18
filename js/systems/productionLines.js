@@ -5,7 +5,7 @@
 
 import { isGatheringJobUnlocked, isFarmBuildingUnlocked } from './jobUnlock.js';
 import { isResourceUnlockedByJob } from './zones.js';
-import { getEffectiveRequiredJobLevel } from './progression.js';
+import { getResourceUnlockJobLevel } from './progression.js';
 import {
   getHarvestTime,
   getRegrowthTime,
@@ -147,12 +147,12 @@ export function getNextProductionUnlock(state, balance, resources, jobId, jobs) 
   if (nextTierIndex >= tiers.length) return { kind: 'maxed' };
 
   const nextResource = tiers[nextTierIndex];
-  if (!isResourceUnlockedByJob(nextResource, state, resources)) {
+  if (!isResourceUnlockedByJob(nextResource, state, resources, balance)) {
     return {
       kind: 'level_blocked',
       jobId,
       resourceName: nextResource.name,
-      requiredLevel: getEffectiveRequiredJobLevel(nextResource, resources),
+      requiredLevel: getResourceUnlockJobLevel(nextResource, resources, balance),
       jobName,
     };
   }

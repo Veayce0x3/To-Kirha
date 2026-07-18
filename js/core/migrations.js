@@ -5,6 +5,7 @@ import {
 } from '../systems/productionLines.js';
 import { clearProgressionCache } from '../systems/progression.js';
 import { isJobUnlocked } from '../systems/jobUnlock.js';
+import { migrateAchievements } from '../systems/achievements.js';
 
 function migrateCareerToProgressive(state) {
   if (!state.careerChoice) {
@@ -78,10 +79,20 @@ const MIGRATIONS = {
     clearLegacyCareerUnlocks(state, ctx);
     clearProgressionCache();
   },
+  31(state, ctx) {
+    if (state.quests && !state.achievements) {
+      state.achievements = migrateAchievements(state.quests);
+      delete state.quests;
+    }
+    if (!state.achievements) {
+      state.achievements = { completed: [], progress: {}, bonuses: { kirha: 0, xp: 0, harvestSpeed: 0 } };
+    }
+    clearProgressionCache();
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 30;
+  const target = ctx.balance?.saveVersion ?? 31;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

@@ -54,7 +54,8 @@ Carrière → récolte/ferme (2+2) → vendre / HDV test
 
 ```
 data/
-  balance.json              # saveVersion: 26, testHdv, meals, combat keys/fusion
+  balance.json              # saveVersion: 31, harvestXpByTier, resourceUnlock, achievements
+  achievements.json         # Succès S1 + meta saison
   resources.json            # mealTier, ressources récolte/ferme
   recipes.json              # repas, outils ; combatItem = drop only
   merchant.json             # parchemins
@@ -80,7 +81,8 @@ js/
 ## État technique
 
 - Vanilla JS (ES modules)
-- Save : `localStorage` + export/import · `saveVersion` **26**
+- Save : `localStorage` + export/import · `saveVersion` **31**
+- Progression : voir **`docs/progression-design.md`**
 - GitHub Pages live (parfois redeploy manuel si GitHub échoue)
 - `CloudSaveProvider` = stub (`docs/SUPABASE.md`)
 
