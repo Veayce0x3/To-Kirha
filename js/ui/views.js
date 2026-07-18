@@ -9,6 +9,7 @@ import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
 import { forceAppRefresh } from '../core/reload.js';
+import { getAppBuildId, getLastSeenBuildId } from '../core/startupRefresh.js';
 import {
   getQuestStatusText,
   getAchievementStatusText,
@@ -3192,10 +3193,11 @@ export function renderOptions(game, el) {
     <div class="view-header"><h2>${iconHtml(getNavIcon('options'), 'view-header-icon', 'Options')} Options</h2></div>
     <div id="account-panel-root"></div>
     <div class="panel-inner"><div id="settings-grid" class="settings-grid"></div></div>
-    <div class="panel-inner">
-      <h3>🔄 Application</h3>
-      <p class="view-desc">Recharge la page si l'interface semble bloquée (utile en mode épinglé sur l'écran d'accueil).</p>
-      <button type="button" class="btn btn-muted" id="reload-app">Recharger le jeu</button>
+    <div class="panel-inner panel-refresh">
+      <h3>🔄 Actualisation forcée</h3>
+      <p class="view-desc">Vide le cache navigateur et recharge la dernière version du jeu (même action que la popup au lancement).</p>
+      <p class="startup-refresh-version" id="options-build-id"></p>
+      <button type="button" class="btn btn-prestige" id="reload-app">Vider le cache et actualiser</button>
     </div>
     <div class="panel-inner panel-prestige">
       <h3>🌸 Nouvelle Saison</h3>
@@ -3228,8 +3230,31 @@ export function renderOptions(game, el) {
 
   renderAccountPanel(game, el.querySelector('#account-panel-root'), { hideDelete: true });
   renderSettingsIn(game, el.querySelector('#settings-grid'));
-  el.querySelector('#reload-app')?.addEventListener('click', () => {
-    forceAppRefresh(game);
+
+  const buildEl = el.querySelector('#options-build-id');
+  if (buildEl) {
+    const current = getAppBuildId(game.balance);
+    const last = getLastSeenBuildId();
+    buildEl.textContent = last && last !== current
+      ? `Build actuelle : ${current} · Dernière session : ${last} (obsolète)`
+      : `Build actuelle : ${current}`;
+  }
+
+  el.querySelector('#reload-app')?.addEventListener('click', async () => {
+    const btn = el.querySelector('#reload-app');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Vidage du cache…';
+    }
+    try {
+      await forceAppRefresh(game);
+    } catch {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Vider le cache et actualiser';
+      }
+      window.location.reload();
+    }
   });
   el.querySelector('#prestige-btn')?.addEventListener('click', () => emitPrestigeModal());
 
