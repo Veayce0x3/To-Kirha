@@ -1,10 +1,11 @@
 import { forceAppRefresh } from '../core/reload.js';
 
 const THRESHOLD_PX = 90;
-const HINT_NEAR_PX = 24;
+const HINT_NEAR_PX = 8;
 
 /**
- * Tire vers le haut en bas de page → hard-refresh (mobile + molette).
+ * Tire vers le bas en haut de page → hard-refresh (mobile + molette).
+ * Indicateur en overlay (hors flux flex) pour ne pas casser le layout.
  * @param {HTMLElement} scrollEl — `.content-wrapper`
  * @param {object} game
  */
@@ -13,39 +14,42 @@ export function initBottomPullRefresh(scrollEl, game) {
   scrollEl.dataset.pullRefreshBound = '1';
 
   const indicator = document.createElement('div');
-  indicator.className = 'bottom-pull-refresh';
+  indicator.className = 'top-pull-refresh';
   indicator.setAttribute('aria-hidden', 'true');
   indicator.innerHTML = `
-    <div class="bottom-pull-refresh-inner">
-      <span class="bottom-pull-refresh-icon" aria-hidden="true">🔄</span>
-      <span class="bottom-pull-refresh-label">Tire pour actualiser</span>
+    <div class="top-pull-refresh-inner">
+      <span class="top-pull-refresh-icon" aria-hidden="true">↓</span>
+      <span class="top-pull-refresh-label">Tire vers le bas pour actualiser</span>
     </div>
   `;
   scrollEl.appendChild(indicator);
 
-  const labelEl = indicator.querySelector('.bottom-pull-refresh-label');
+  const labelEl = indicator.querySelector('.top-pull-refresh-label');
+  const iconEl = indicator.querySelector('.top-pull-refresh-icon');
   let startY = 0;
   let pulling = false;
   let pullDist = 0;
   let armed = false;
   let refreshing = false;
   let wheelAcc = 0;
+  let wheelResetTimer = 0;
 
-  function atBottom() {
-    return scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - HINT_NEAR_PX;
+  function atTop() {
+    return scrollEl.scrollTop <= HINT_NEAR_PX;
   }
 
   function setPullUI(dist) {
     const progress = Math.min(1, dist / THRESHOLD_PX);
     indicator.style.setProperty('--pull', String(progress));
-    indicator.classList.toggle('visible', dist > 8 || atBottom());
+    indicator.classList.toggle('visible', dist > 6);
     indicator.classList.toggle('armed', dist >= THRESHOLD_PX);
     if (labelEl) {
       labelEl.textContent = dist >= THRESHOLD_PX
         ? 'Relâche pour actualiser'
-        : atBottom() && dist <= 8
-          ? 'Tire vers le bas pour actualiser'
-          : 'Continue de tirer…';
+        : 'Continue de tirer…';
+    }
+    if (iconEl) {
+      iconEl.textContent = dist >= THRESHOLD_PX ? '↻' : '↓';
     }
   }
 
@@ -53,14 +57,10 @@ export function initBottomPullRefresh(scrollEl, game) {
     pullDist = 0;
     wheelAcc = 0;
     armed = false;
-    indicator.classList.remove('armed', 'refreshing');
+    indicator.classList.remove('visible', 'armed', 'refreshing');
     indicator.style.setProperty('--pull', '0');
-    if (atBottom()) {
-      indicator.classList.add('visible');
-      if (labelEl) labelEl.textContent = 'Tire vers le bas pour actualiser';
-    } else {
-      indicator.classList.remove('visible');
-    }
+    if (labelEl) labelEl.textContent = 'Tire vers le bas pour actualiser';
+    if (iconEl) iconEl.textContent = '↓';
   }
 
   async function triggerRefresh() {
@@ -68,6 +68,7 @@ export function initBottomPullRefresh(scrollEl, game) {
     refreshing = true;
     indicator.classList.add('visible', 'refreshing', 'armed');
     if (labelEl) labelEl.textContent = 'Actualisation…';
+    if (iconEl) iconEl.textContent = '↻';
     try {
       await forceAppRefresh(game);
     } catch {
@@ -75,18 +76,8 @@ export function initBottomPullRefresh(scrollEl, game) {
     }
   }
 
-  scrollEl.addEventListener('scroll', () => {
-    if (refreshing || pulling) return;
-    if (atBottom()) {
-      indicator.classList.add('visible');
-      if (labelEl && pullDist < 8) labelEl.textContent = 'Tire vers le bas pour actualiser';
-    } else {
-      resetUI();
-    }
-  }, { passive: true });
-
   scrollEl.addEventListener('touchstart', (e) => {
-    if (refreshing || !atBottom()) return;
+    if (refreshing || !atTop()) return;
     startY = e.touches[0].clientY;
     pulling = true;
     pullDist = 0;
@@ -95,9 +86,9 @@ export function initBottomPullRefresh(scrollEl, game) {
 
   scrollEl.addEventListener('touchmove', (e) => {
     if (!pulling || refreshing) return;
-    // Doigt vers le haut = tire le contenu du bas
-    const dy = startY - e.touches[0].clientY;
-    if (dy <= 0 || !atBottom()) {
+    // Doigt vers le bas = tire depuis le haut
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0 || !atTop()) {
       pullDist = 0;
       setPullUI(0);
       return;
@@ -122,15 +113,20 @@ export function initBottomPullRefresh(scrollEl, game) {
     resetUI();
   }, { passive: true });
 
-  // Desktop : molette en bas de page
+  // Desktop : molette vers le haut en haut de page
   scrollEl.addEventListener('wheel', (e) => {
-    if (refreshing || e.deltaY <= 0 || !atBottom()) {
+    if (refreshing || e.deltaY >= 0 || !atTop()) {
       wheelAcc = 0;
       return;
     }
-    wheelAcc += e.deltaY;
+    wheelAcc += -e.deltaY;
     setPullUI(Math.min(wheelAcc, THRESHOLD_PX * 1.2));
+    window.clearTimeout(wheelResetTimer);
+    wheelResetTimer = window.setTimeout(() => {
+      if (!refreshing) resetUI();
+    }, 400);
     if (wheelAcc >= THRESHOLD_PX * 1.5) {
+      window.clearTimeout(wheelResetTimer);
       triggerRefresh();
     }
   }, { passive: true });

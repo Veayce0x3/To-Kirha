@@ -722,42 +722,38 @@
   align-items: flex-start;
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior-y: none;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   position: relative;
 }
 
-.bottom-pull-refresh {
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  z-index: 20;
+/* Overlay hors flux flex — ne doit pas devenir un 3e enfant de layout */
+.top-pull-refresh {
+  position: absolute;
+  top: 0.65rem;
+  left: 50%;
+  z-index: 30;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  padding: 0.35rem 1rem 1rem;
+  transform: translate(-50%, calc(-8px + var(--pull, 0) * 18px));
+  transition: opacity 0.15s ease;
+  width: min(calc(100% - 2rem), 320px);
   box-sizing: border-box;
 }
 
-.bottom-pull-refresh.visible {
+.top-pull-refresh.visible {
   opacity: 1;
-  transform: translateY(0);
 }
 
-.bottom-pull-refresh-inner {
+.top-pull-refresh-inner {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
   min-height: 44px;
-  margin: 0 auto;
-  max-width: 760px;
   padding: 0.55rem 0.85rem;
   border-radius: 999px;
-  background: rgba(248, 232, 238, 0.95);
+  background: rgba(248, 232, 238, 0.96);
   border: 1.5px solid rgba(155, 89, 182, 0.28);
   box-shadow: 0 4px 16px rgba(74, 55, 40, 0.12);
   color: var(--brun, #4A3728);
@@ -765,22 +761,21 @@
   font-weight: 600;
 }
 
-.bottom-pull-refresh.armed .bottom-pull-refresh-inner {
+.top-pull-refresh.armed .top-pull-refresh-inner {
   border-color: var(--violet-sakura, #9B59B6);
   background: linear-gradient(135deg, rgba(155, 89, 182, 0.18), rgba(248, 232, 238, 0.98));
 }
 
-.bottom-pull-refresh.refreshing .bottom-pull-refresh-icon {
-  animation: bottom-pull-spin 0.8s linear infinite;
+.top-pull-refresh.refreshing .top-pull-refresh-icon {
+  animation: top-pull-spin 0.8s linear infinite;
 }
 
-.bottom-pull-refresh-icon {
+.top-pull-refresh-icon {
   font-size: 1.05rem;
-  transform: rotate(calc(var(--pull, 0) * 180deg));
-  transition: transform 0.05s linear;
+  line-height: 1;
 }
 
-@keyframes bottom-pull-spin {
+@keyframes top-pull-spin {
   to { transform: rotate(360deg); }
 }
 
