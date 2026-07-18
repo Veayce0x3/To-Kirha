@@ -8,8 +8,16 @@ const ZONE_REGROWTH_BONUS = {
   jade_mountains: 8000,
 };
 
-export function getHarvestTime(_resource, _state, _jobs, balance) {
-  return balance?.harvest?.baseHarvestTimeMs ?? 3000;
+export function getHarvestTime(resource, state, jobs, balance, resources = null) {
+  const cfg = balance?.harvest || {};
+  const base = cfg.baseHarvestTimeMs ?? 3000;
+  const tier = resources ? getRegrowthTier(resource, resources) : Math.floor((resource.requiredJobLevel - 1) / 20);
+  const perTier = cfg.harvestPerTierMs ?? 500;
+  const tierTime = base + tier * perTier;
+
+  const speedBonus = getSpeedBonus(resource, state, jobs, balance);
+  const time = tierTime * (1 - Math.min(speedBonus, 0.85));
+  return Math.max(time, cfg.minHarvestTimeMs ?? 1500);
 }
 
 function getSpeedBonus(resource, state, jobs, balance) {

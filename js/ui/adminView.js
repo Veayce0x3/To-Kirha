@@ -806,8 +806,8 @@ async function renderConfig(container) {
       }).join('')}
     </div>
     <section class="admin-dash-section">
-      <h4 class="admin-section-title">🧪 Beta testeurs (save v29)</h4>
-      <p class="view-desc">Mise à jour progression : les saves migrent vers 1 ressource starter par métier. Pour repartir de zéro : <code>?newgame=1</code> ou « Reset save cloud » sur la fiche joueur.</p>
+      <h4 class="admin-section-title">🧪 Beta testeurs (save v30)</h4>
+      <p class="view-desc">Progression Paysan-only : les anciens métiers choisis (legacy) sont effacés à la migration v30. Repartir de zéro : <code>?newgame=1</code> ou « Reset save cloud ».</p>
       <p class="view-desc">Pour remonter un testeur : fiche joueur → « +1 tous les métiers » (plusieurs fois) ou reset save.</p>
     </section>
     <button type="button" class="btn btn-craft" id="admin-save-config">Enregistrer la config</button>

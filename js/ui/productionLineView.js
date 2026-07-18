@@ -5,6 +5,10 @@ import { emit } from '../core/events.js';
 import { navigate, getFarmViewForBuilding, getHarvestViewForJob } from './router.js';
 import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
 import { getVisibleProductionResources } from '../systems/productionLines.js';
+import { getHarvestXp, getHarvestTime } from '../systems/harvest.js';
+import { getHarvestToolCheck } from '../systems/toolTier.js';
+import { getToolUsesRemaining, isDurabilityTool } from '../systems/toolDurability.js';
+import { getJobEquippedTool } from '../systems/equipment.js';
 
 function formatNumber(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -74,11 +78,32 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
   return card;
 }
 
+function getLineToolDurability(game, jobId, resource) {
+  const check = getHarvestToolCheck(
+    game.state,
+    jobId,
+    resource,
+    game.recipes,
+    game.equipment,
+    game.resources
+  );
+  if (!check.ok || !check.recipe) return null;
+  const recipeId = getJobEquippedTool(game.state, jobId);
+  if (!recipeId || !isDurabilityTool(check.recipe)) return null;
+  const remaining = getToolUsesRemaining(game.state, recipeId);
+  const max = check.recipe.maxUses;
+  if (remaining == null || !max) return null;
+  return `${remaining}/${max}`;
+}
+
 function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   const line = game.state.productionLines?.harvest?.[jobId]?.[resourceId];
   if (!line) return;
   const qty = game.state.inventory[resourceId] || 0;
   const maxUnits = game.balance.productionLines?.maxUnitsPerResource ?? 5;
+  const xpPerHarvest = getHarvestXp(resource, game.state, game.balance, game.resources);
+  const harvestMs = Math.round(getHarvestTime(resource, game.state, game.jobs, game.balance, game.resources) / 1000);
+  const toolDurability = getLineToolDurability(game, jobId, resource);
 
   const section = document.createElement('div');
   section.className = 'production-line-section';
@@ -89,9 +114,12 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
         ${renderResourceIcon(resource, 'tile-resource-icon')}
         <strong>${resource.name}</strong>
         <span class="production-stock">Stock : ${qty}</span>
+        <span class="production-xp">+${xpPerHarvest} XP</span>
+        ${toolDurability ? `<span class="production-tool-dur">🛠️ ${toolDurability}</span>` : ''}
       </div>
       <div class="production-line-meta">
         <span class="production-units">${line.units}/${maxUnits}</span>
+        <span class="production-harvest-time">${harvestMs}s/récolte</span>
       </div>
     </div>
     <div class="slots-grid production-units-grid"></div>
@@ -155,7 +183,7 @@ function buildUnlockPanel(game, jobId) {
     </div>
     <button type="button" class="btn btn-upgrade btn-production-unlock"${canBuy ? '' : ' disabled'}>${label}</button>
     <p class="production-unlock-desc">${preview.kind === 'unit'
-    ? 'Ajoute une unité de production sur la ressource en cours (max 5 par type).'
+    ? 'Ajoute une unité de production sur la ressource en cours (max 5 par type). Les coûts augmentent sans reset entre les ressources.'
     : `Ouvre la ressource ${preview.resourceName} avec 1 unité (après 5× ${preview.prevResourceName}).`}</p>
   `;
 

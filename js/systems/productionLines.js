@@ -44,15 +44,41 @@ export function getVisibleProductionResources(state, resources, jobId) {
 
 export function getUnitUnlockCost(unitIndex, balance) {
   const costs = cfg(balance).unitUnlockCosts || [];
-  return costs[unitIndex] ?? null;
+  return extrapolateCost(unitIndex, costs);
 }
 
-export function getUnitUnlockRequirements(jobId, resourceId, currentUnits, balance) {
-  const kirha = getUnitUnlockCost(currentUnits, balance);
+function extrapolateCost(index, costs) {
+  if (!costs.length) return null;
+  if (index < costs.length) return costs[index];
+  const last = costs[costs.length - 1];
+  const prev = costs[costs.length - 2] ?? last;
+  const ratio = prev > 0 ? last / prev : 2;
+  return Math.floor(last * Math.pow(Math.max(ratio, 1.4), index - costs.length + 1));
+}
+
+export function getCumulativeUnitIndex(tiers, lines, resourceId) {
+  let index = 0;
+  for (const tier of tiers) {
+    const line = lines[tier.id];
+    if (!line) continue;
+    if (tier.id === resourceId) {
+      index += line.units;
+      break;
+    }
+    index += line.units;
+  }
+  return index;
+}
+
+export function getUnitUnlockRequirements(jobId, resourceId, state, balance, resources) {
+  const tiers = getJobHarvestResources(resources, jobId);
+  const lines = state.productionLines?.harvest?.[jobId] || {};
+  const cumulativeIndex = getCumulativeUnitIndex(tiers, lines, resourceId);
+  const kirha = getUnitUnlockCost(cumulativeIndex, balance);
   const sameRes = cfg(balance).unitUnlockSameResource || [];
-  const amount = sameRes[currentUnits] ?? 0;
-  const resources = amount > 0 ? { [resourceId]: amount } : null;
-  return { kirha, resources };
+  const amount = extrapolateCost(cumulativeIndex, sameRes) ?? 0;
+  const resAmount = amount > 0 ? { [resourceId]: amount } : null;
+  return { kirha, resources: resAmount };
 }
 
 export function getNewTierUnlockRequirements(_jobId, _resourceId, prevResourceId, tierIndex, balance) {
@@ -103,7 +129,7 @@ export function getNextProductionUnlock(state, balance, resources, jobId, jobs) 
   const currentLine = lines[currentResource.id];
 
   if (currentLine.units < maxPer) {
-    const req = getUnitUnlockRequirements(jobId, currentResource.id, currentLine.units, balance);
+    const req = getUnitUnlockRequirements(jobId, currentResource.id, state, balance, resources);
     if (req.kirha == null) return { kind: 'maxed' };
     return {
       kind: 'unit',
@@ -211,18 +237,18 @@ export function getFarmBuildingMeta(state, buildingId) {
   return state.farmBuildingMeta[buildingId];
 }
 
-export function canBuyHarvestUnit(state, balance, jobId, resourceId) {
+export function canBuyHarvestUnit(state, balance, jobId, resourceId, resources) {
   const line = getHarvestLine(state, jobId, resourceId);
   if (!line) return false;
   if (line.units >= getMaxUnitsPerResource(balance)) return false;
-  const req = getUnitUnlockRequirements(jobId, resourceId, line.units, balance);
+  const req = getUnitUnlockRequirements(jobId, resourceId, state, balance, resources);
   return canAffordRequirements(state, req);
 }
 
-export function buyHarvestUnit(state, balance, jobId, resourceId) {
+export function buyHarvestUnit(state, balance, jobId, resourceId, resources) {
   const line = getHarvestLine(state, jobId, resourceId);
   if (!line || line.units >= getMaxUnitsPerResource(balance)) return false;
-  const req = getUnitUnlockRequirements(jobId, resourceId, line.units, balance);
+  const req = getUnitUnlockRequirements(jobId, resourceId, state, balance, resources);
   if (!canAffordRequirements(state, req)) return false;
   deductRequirements(state, req);
   line.units += 1;
@@ -359,7 +385,7 @@ export function startHarvestUnit(state, resources, jobs, balance, jobId, resourc
   const resource = resources[resourceId];
   if (!slot || slot.active || !resource) return { ok: false, reason: 'Indisponible' };
 
-  const duration = getHarvestTime(resource, state, jobs, balance);
+  const duration = getHarvestTime(resource, state, jobs, balance, resources);
   slot.active = { phase: 'harvesting', start: Date.now(), duration, resourceId };
   return { ok: true, duration, jobId, resourceId, unitIndex };
 }
@@ -397,7 +423,7 @@ export function completeHarvestUnit(state, resources, jobs, balance, jobId, reso
       resourceId,
     };
 
-    const wornTools = wearToolsForHarvest(state, recipes, equipment, jobId);
+    const wornTools = wearToolsForHarvest(state, recipes, equipment, jobId, resourceId, resources);
     return {
       phase: 'harvested',
       resourceId,

@@ -1,7 +1,6 @@
 /** Déblocages progressifs des métiers, bâtiments et vues. */
 
 import { GATHERING_JOB_IDS } from './careerChoice.js';
-import { FARM_BUILDING_IDS } from './farm.js';
 
 export const CRAFT_JOB_IDS = ['toolmaker', 'cook'];
 export const SPECIAL_VIEWS = ['combat', 'workshop', 'cuisine'];
@@ -27,30 +26,8 @@ function meetsCondition(state, condition) {
   return true;
 }
 
-function getLegacyGatheringJobs(state) {
-  const cc = state.careerChoice;
-  if (!cc?.confirmed) return ['farmer'];
-  const legacy = cc.legacyGatheringJobs || cc.gatheringJobs || [];
-  return [...new Set(['farmer', ...legacy.filter((id) => GATHERING_JOB_IDS.includes(id))])];
-}
-
-function getLegacyFarmBuildings(state) {
-  const cc = state.careerChoice;
-  if (!cc?.confirmed) return [];
-  const legacy = cc.legacyFarmBuildings || cc.farmBuildings || [];
-  return [...new Set(['well', ...legacy.filter((id) => FARM_BUILDING_IDS.includes(id))])];
-}
-
-function hasLegacyCareer(state) {
-  const cc = state.careerChoice;
-  return !!(cc?.legacyGatheringJobs?.length || cc?.gatheringJobs?.length);
-}
-
 export function isJobUnlocked(jobId, state, balance) {
   if (jobId === 'farmer') return true;
-  if (hasLegacyCareer(state) && ['combat', 'toolmaker', 'cook'].includes(jobId)) {
-    return true;
-  }
   const rules = getJobUnlockRules(balance);
   const rule = rules[jobId];
   if (!rule) return false;
@@ -64,12 +41,10 @@ export function isJobUnlocked(jobId, state, balance) {
 
 export function isGatheringJobUnlocked(jobId, state, balance) {
   if (!GATHERING_JOB_IDS.includes(jobId)) return false;
-  if (getLegacyGatheringJobs(state).includes(jobId)) return true;
   return isJobUnlocked(jobId, state, balance);
 }
 
 export function isFarmBuildingUnlocked(buildingId, state, balance) {
-  if (getLegacyFarmBuildings(state).includes(buildingId)) return true;
   const rules = getJobUnlockRules(balance);
   const rule = rules[`farm_${buildingId}`] || rules.farm?.[buildingId];
   if (!rule) return false;

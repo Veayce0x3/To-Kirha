@@ -708,7 +708,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 20,
+    "requiredJobLevel": 15,
     "jobXp": 21
   },
   "birch_axe": {

@@ -60,18 +60,14 @@ export function migrateCareerChoice(saved) {
       weaponType: saved.weaponType,
       teamWeaponTypes: saved.teamWeaponTypes || [],
       starterWeaponsGranted: saved.starterWeaponsGranted,
-      legacyGatheringJobs: saved.gatheringJobs || saved.legacyGatheringJobs,
-      legacyFarmBuildings: saved.farmBuildings || saved.legacyFarmBuildings,
     };
   }
-  if (saved.confirmed && saved.gatheringJobs?.length && saved.weaponType) {
+  if (saved.confirmed && saved.weaponType) {
     return {
       confirmed: true,
       weaponType: saved.weaponType,
       teamWeaponTypes: saved.teamWeaponTypes || [],
       starterWeaponsGranted: saved.starterWeaponsGranted ?? false,
-      legacyGatheringJobs: saved.gatheringJobs,
-      legacyFarmBuildings: saved.farmBuildings,
     };
   }
   return null;

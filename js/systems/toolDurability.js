@@ -1,3 +1,5 @@
+import { toolMatchesResourceTier } from './toolTier.js';
+
 export function getToolUsesRemaining(state, recipeId) {
   const val = state.toolDurability?.[recipeId];
   return val === undefined ? null : val;
@@ -39,10 +41,11 @@ export function migrateToolDurability(state, recipes) {
   }
 }
 
-export function wearToolsForHarvest(state, recipes, equipmentData, jobId) {
+export function wearToolsForHarvest(state, recipes, equipmentData, jobId, resourceId = null, resources = null) {
   const eq = state.equipment;
   if (!eq?.jobs) return [];
 
+  const resource = resourceId && resources ? resources[resourceId] : null;
   const worn = [];
   const checkIds = new Set([
     eq.jobs[jobId],
@@ -56,6 +59,10 @@ export function wearToolsForHarvest(state, recipes, equipmentData, jobId) {
 
     const eff = recipe.effect;
     if (eff?.job != null && eff.job !== jobId) continue;
+
+    if (resource && resources && recipe.toolTier && !toolMatchesResourceTier(recipe, resource, resources)) {
+      continue;
+    }
 
     const remaining = getToolUsesRemaining(state, recipeId);
     if (remaining === null || remaining <= 0) continue;

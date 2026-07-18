@@ -1,8 +1,12 @@
 import { getJobEquippedTool } from './equipment.js';
 import { isDurabilityTool, isToolEffectActive } from './toolDurability.js';
+import { getResourceTierIndex } from './progression.js';
 import { isStarterHarvestResource } from './zones.js';
 
-export function getResourceHarvestTier(resource) {
+export function getResourceHarvestTier(resource, resources = null) {
+  if (resources && resource) {
+    return getResourceTierIndex(resource, resources) + 1;
+  }
   return Math.floor(((resource?.requiredJobLevel || 1) - 1) / 20) + 1;
 }
 
@@ -25,11 +29,12 @@ export function getGatheringToolRecipe(state, jobId, recipes) {
 
 export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentData, resources = null) {
   const recipe = getGatheringToolRecipe(state, jobId, recipes);
+  const resourceTier = getResourceHarvestTier(resource, resources);
+
   if (!recipe) {
     if (resources && isStarterHarvestResource(resource, resources)) {
       return { ok: true };
     }
-    const resourceTier = getResourceHarvestTier(resource);
     return {
       ok: false,
       reason: 'no_tool',
@@ -39,13 +44,14 @@ export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentDa
     };
   }
 
-  const resourceTier = getResourceHarvestTier(resource);
   const toolTier = getRecipeToolTier(recipe);
-  if (toolTier < resourceTier) {
+  if (toolTier !== resourceTier) {
     return {
       ok: false,
-      reason: 'tier',
-      message: `Outil insuffisant (palier ${toolTier}) pour ${resource.name} (palier ${resourceTier}).`,
+      reason: toolTier < resourceTier ? 'tier' : 'wrong_tier',
+      message: toolTier < resourceTier
+        ? `Outil insuffisant (palier ${toolTier}) pour ${resource.name} (palier ${resourceTier}).`
+        : `Outil palier ${toolTier} inadapté pour ${resource.name} (palier ${resourceTier} requis).`,
     };
   }
 
@@ -68,4 +74,9 @@ export function listToolsForJob(recipes, jobId) {
   return Object.entries(recipes)
     .filter(([, r]) => r.effect?.job === jobId && isDurabilityTool(r))
     .map(([id, r]) => ({ id, recipe: r, tier: getRecipeToolTier(r) }));
+}
+
+export function toolMatchesResourceTier(recipe, resource, resources) {
+  if (!recipe?.toolTier || !resource) return true;
+  return getRecipeToolTier(recipe) === getResourceHarvestTier(resource, resources);
 }

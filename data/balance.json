@@ -1,7 +1,7 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 29,
+  "saveVersion": 30,
   "betaMode": false,
   "questsEnabled": false,
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
@@ -58,6 +58,8 @@
   "offlineCapMs": 21600000,
   "harvest": {
     "baseHarvestTimeMs": 3000,
+    "harvestPerTierMs": 500,
+    "minHarvestTimeMs": 1500,
     "regrowthBaseMs": 11000,
     "regrowthPerTierMs": 2000,
     "minRegrowthTimeMs": 3000

@@ -278,7 +278,7 @@ export class Game {
       harvestSlots: {},
       productionLines: { harvest: {}, farm: {} },
       farmBuildingMeta: {},
-      saveVersion: this.balance.saveVersion || 29,
+      saveVersion: this.balance.saveVersion || 30,
       aides: {},
       bossKills: {},
       combatKillStats: {},
@@ -671,7 +671,7 @@ export class Game {
   }
 
   buyHarvestSlot(jobId, resourceId) {
-    if (!buyHarvestUnit(this.state, this.balance, jobId, resourceId)) return false;
+    if (!buyHarvestUnit(this.state, this.balance, jobId, resourceId, this.resources)) return false;
     emit('lineUnitUnlock', { jobId, resourceId });
     emit('stateChange', this.state);
     this.scheduleSave();
@@ -679,13 +679,11 @@ export class Game {
   }
 
   getLineUnitUnlockPreview(jobId, resourceId) {
-    const line = this.state.productionLines?.harvest?.[jobId]?.[resourceId];
-    const current = line?.units ?? 1;
-    return getUnitUnlockRequirements(jobId, resourceId, current, this.balance);
+    return getUnitUnlockRequirements(jobId, resourceId, this.state, this.balance, this.resources);
   }
 
   canBuyHarvestSlot(jobId, resourceId) {
-    return canBuyHarvestUnit(this.state, this.balance, jobId, resourceId);
+    return canBuyHarvestUnit(this.state, this.balance, jobId, resourceId, this.resources);
   }
 
   assignResourceToSlot(_jobId, _slotIndex, _resourceId) {

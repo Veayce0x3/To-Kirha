@@ -2949,6 +2949,17 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   opacity: 0.85;
 }
 
+.production-xp,
+.production-tool-dur,
+.production-harvest-time {
+  font-size: 0.78rem;
+  opacity: 0.8;
+}
+
+.production-tool-dur {
+  font-weight: 600;
+}
+
 .production-units {
   font-size: 0.82rem;
   font-weight: 600;
