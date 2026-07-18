@@ -43,6 +43,7 @@ export {
   getNextGatheringJobUnlock,
   getUpcomingGatheringJobUnlocks,
   getRecolteNavItems,
+  getJobSwitcherItems,
   getFeatureUnlockProgress,
   getGatheringJobUnlockProgress,
 } from './jobUnlock.js';

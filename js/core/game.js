@@ -185,6 +185,8 @@ import {
   getMaxFarmSlots as getMaxFarmSlotsForBuilding,
   syncExpiredFarmSlots,
   wearBreederTool,
+  getBuildingDef,
+  isUnifiedFarmBuilding,
 } from '../systems/farm.js';
 import { getFarmToolCheck, getHarvestToolCheck } from '../systems/toolTier.js';
 import { migrateCombatDurability } from '../systems/combatDurability.js';
@@ -726,9 +728,16 @@ export class Game {
       : `f_${ids.buildingId}_${ids.productId}_${unitIndex}`;
     clearTimeout(this.harvestTimers[timerKey]);
     this.harvestTimers[timerKey] = setTimeout(
-      () => (kind === 'harvest'
-        ? this.completeHarvestLine(ids.jobId, ids.resourceId, unitIndex)
-        : this.completeFarmLine(ids.buildingId, ids.productId, unitIndex)),
+      () => {
+        if (kind === 'harvest') {
+          this.completeHarvestLine(ids.jobId, ids.resourceId, unitIndex);
+          return;
+        }
+        const building = getBuildingDef(this.farmData, ids.buildingId);
+        if (!isUnifiedFarmBuilding(building)) {
+          this.completeFarmLine(ids.buildingId, ids.productId, unitIndex);
+        }
+      },
       Math.max(0, delayMs)
     );
   }
@@ -744,8 +753,14 @@ export class Game {
         ? { jobId: timer.jobId, resourceId: timer.resourceId }
         : { buildingId: timer.buildingId, productId: timer.productId };
       if (remaining <= 0) {
-        if (timer.kind === 'harvest') this.completeHarvestLine(timer.jobId, timer.resourceId, timer.unitIndex);
-        else this.completeFarmLine(timer.buildingId, timer.productId, timer.unitIndex);
+        if (timer.kind === 'harvest') {
+          this.completeHarvestLine(timer.jobId, timer.resourceId, timer.unitIndex);
+        } else {
+          const building = getBuildingDef(this.farmData, timer.buildingId);
+          if (!isUnifiedFarmBuilding(building)) {
+            this.completeFarmLine(timer.buildingId, timer.productId, timer.unitIndex);
+          }
+        }
       } else {
         this.scheduleProductionTimer(timer.kind, ids, timer.unitIndex, remaining);
       }
@@ -787,7 +802,9 @@ export class Game {
     const result = startFarmUnit(this.state, this.farmData, this.jobs, this.balance, buildingId, productId, unitIndex);
     if (!result.ok) return result;
 
-    this.scheduleProductionTimer('farm', { buildingId, productId }, unitIndex, result.duration);
+    if (!isUnifiedFarmBuilding(building)) {
+      this.scheduleProductionTimer('farm', { buildingId, productId }, unitIndex, result.duration);
+    }
     emit('farmStart', { buildingId, productId, unitIndex, duration: result.duration });
     emit('stateChange', this.state);
     this.scheduleSave();

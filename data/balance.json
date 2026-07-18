@@ -1,7 +1,7 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 31,
+  "saveVersion": 32,
   "betaMode": false,
   "achievementsEnabled": true,
   "questsEnabled": true,

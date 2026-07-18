@@ -159,6 +159,14 @@ export function getNextGatheringJobUnlock(state, balance, jobs) {
   return getUpcomingGatheringJobUnlocks(state, balance, jobs, 1)[0] || null;
 }
 
+/** Dock horizontal récolte + ferme (prochain métier verrouillé après Paysan). */
+export function getJobSwitcherItems(state, balance, jobs = {}) {
+  return [
+    ...getRecolteNavItems(state, balance, jobs),
+    ...getVisibleFarmViews(state, balance).map((viewId) => ({ kind: 'view', viewId })),
+  ];
+}
+
 /** Entrées nav Récolte : métiers débloqués + prochain métier verrouillé juste après Paysan. */
 export function getRecolteNavItems(state, balance, jobs = {}) {
   const unlockedViews = getUnlockedGatheringJobs(state, balance).map((id) => `job_${id}`);

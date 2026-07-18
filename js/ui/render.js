@@ -658,7 +658,16 @@ export function initUI(game, audio) {
   on('mealUsed', ({ mealName, healed, hp, maxHp }) => {
     showToast(els, `🍙 ${mealName} : +${healed} PV (${hp}/${maxHp})`, 'upgrade');
   });
-  on('farmComplete', ({ buildingId }) => {
+  on('farmComplete', (outcome) => {
+    const { buildingId, products } = outcome || {};
+    if (products && Object.keys(products).length) {
+      const parts = Object.entries(products).map(([resId, qty]) => {
+        const res = game.resources[resId];
+        return `+${qty} ${res?.emoji || ''}${res?.name || resId}`.trim();
+      });
+      showToast(els, parts.join(' · '), 'harvest');
+      audio.playSfx('harvest');
+    }
     if (buildingId != null) {
       patchFarmBuildingSlots(game, buildingId);
     }

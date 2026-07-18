@@ -1,12 +1,31 @@
 import { getResourceVisual, renderResourceIcon } from '../systems/resourceVisual.js';
-import { canAffordFeed, getBuildingDef, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
+import {
+  canAffordFeed,
+  getBuildingDef,
+  listFeedOptions,
+  isUnifiedFarmBuilding,
+  getUnifiedFarmLineKey,
+  getFarmProductionLineIds,
+} from '../systems/farm.js';
 import { getFarmBuildingIcon, getJobIcon, iconHtml } from '../core/assets.js';
 import { getVisibleProductionResources } from '../systems/productionLines.js';
-import { getHarvestXp, getHarvestTime } from '../systems/harvest.js';
+import { getHarvestTime } from '../systems/harvest.js';
 import { getHarvestXpForResource } from '../systems/progression.js';
 import { getHarvestToolCheck } from '../systems/toolTier.js';
 import { getToolUsesRemaining, isDurabilityTool } from '../systems/toolDurability.js';
 import { getJobEquippedTool } from '../systems/equipment.js';
+import { emit } from '../core/events.js';
+import {
+  navigate,
+  getHarvestViewForJob,
+  getFarmViewForBuilding,
+} from './router.js';
+import {
+  getVisibleHarvestViews,
+  getVisibleFarmViews,
+  getUpcomingGatheringJobUnlocks,
+  getNextGatheringJobUnlock,
+} from '../systems/careerChoice.js';
 
 function formatNumber(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -237,6 +256,10 @@ export function renderJobProduction(game, el, jobId) {
   const prevView = getAdjacentVisibleView(currentView, visibleHarvestViews, -1);
   const nextView = getAdjacentVisibleView(currentView, visibleHarvestViews, 1);
 
+  const nextUnlock = jobId === 'farmer'
+    ? getNextGatheringJobUnlock(game.state, game.balance, game.jobs)
+    : null;
+
   el.innerHTML = `
     <div class="skill-header">
       <div class="skill-header-top job-nav-header">
@@ -245,6 +268,14 @@ export function renderJobProduction(game, el, jobId) {
           <div class="skill-header-title">${job.name}</div>
           <div class="skill-header-meta">Niveau ${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}</div>
         </div>
+        ${nextUnlock ? `
+          <button type="button" class="job-inline-unlock" id="job-next-unlock" title="${nextUnlock.hint || ''}">
+            ${getJobIcon(nextUnlock.jobId) ? iconHtml(getJobIcon(nextUnlock.jobId), 'job-inline-unlock-icon', nextUnlock.label) : nextUnlock.emoji}
+            <span class="job-inline-unlock-label">${nextUnlock.label}</span>
+            <span class="job-inline-unlock-meta">${nextUnlock.ready ? 'Prêt' : `Nv.${nextUnlock.currentLevel}/${nextUnlock.requiredLevel}`}</span>
+            <span class="job-inline-unlock-bar"><span class="job-inline-unlock-fill" style="width:${Math.floor(nextUnlock.progress * 100)}%"></span></span>
+          </button>
+        ` : ''}
         <button type="button" class="btn btn-muted btn-job-nav" id="job-next" ${nextView ? '' : 'disabled'}>›</button>
       </div>
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
@@ -261,6 +292,7 @@ export function renderJobProduction(game, el, jobId) {
 
   el.querySelector('#job-prev')?.addEventListener('click', () => { if (prevView) navigate(prevView); });
   el.querySelector('#job-next')?.addEventListener('click', () => { if (nextView) navigate(nextView); });
+  el.querySelector('#job-next-unlock')?.addEventListener('click', () => navigate(nextUnlock.viewId));
 
   const bannerSlot = el.querySelector('#job-unlock-banner');
   const banner = buildJobUnlockBanner(game);
@@ -276,9 +308,15 @@ export function renderJobProduction(game, el, jobId) {
   if (unlockEl) unlockEl.appendChild(buildUnlockPanel(game, jobId));
 }
 
-function buildFarmUnitCard(game, buildingId, productId, unitIndex, building, resource) {
-  const progress = game.getFarmLineProgress(buildingId, productId, unitIndex);
-  const line = game.state.productionLines?.farm?.[buildingId]?.[productId];
+function getFarmBtnLabel(progress = 0) {
+  const pct = Math.floor(progress * 100);
+  if (progress >= 1) return 'Prêt !';
+  return `Production ${pct}%`;
+}
+
+function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
+  const progress = game.getFarmLineProgress(buildingId, lineKey, unitIndex);
+  const line = game.state.productionLines?.farm?.[buildingId]?.[lineKey];
   const slot = line?.slots?.[unitIndex];
   const active = !!slot?.active;
   const meta = game.getFarmMeta(buildingId);
@@ -288,31 +326,117 @@ function buildFarmUnitCard(game, buildingId, productId, unitIndex, building, res
   const feedBlocked = needsFeed && (!meta.feedId || !canAffordFeed(building, meta.feedId, game.state));
   const blocked = needsAnimal || feedBlocked || toolBlock;
   const canStart = !active && !blocked;
+  const canCollect = active && progress >= 1;
+  const unified = isUnifiedFarmBuilding(building);
+
+  const buildingIcon = getFarmBuildingIcon(buildingId);
+  const spriteHtml = buildingIcon
+    ? `<img class="slot-visual-sprite" src="${buildingIcon}" alt="" />`
+    : `<span class="slot-visual-emoji">${building.emoji || '🏠'}</span>`;
+
+  const progressPct = Math.floor(progress * 100);
+  const statusLabel = active
+    ? getFarmBtnLabel(progress)
+    : (canStart ? 'Produire' : '');
 
   const card = document.createElement('div');
-  card.className = `farm-slot harvest-slot production-unit${active ? ' active-harvest' : ''}`;
+  card.className = `farm-slot harvest-slot production-unit${unified ? ' production-unit-tap' : ''}${active ? ' active-harvest' : ''}${canStart || canCollect ? ' slot-can-harvest' : ''}`;
   card.dataset.building = buildingId;
-  card.dataset.product = productId;
+  card.dataset.product = lineKey;
   card.dataset.unit = String(unitIndex);
+
+  if (unified) {
+    card.innerHTML = `
+      <div class="slot-visual slot-visual-tap" role="button" tabindex="0" aria-label="${building.name}${statusLabel ? ` — ${statusLabel}` : ''}">
+        ${canStart ? '<span class="slot-ready-badge">Prêt</span>' : ''}
+        ${spriteHtml}
+        ${active ? `<div class="slot-progress-overlay"><div class="slot-progress-fill" style="width:${progressPct}%"></div><span class="slot-progress-label">${statusLabel}</span></div>` : ''}
+      </div>
+      ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
+      ${needsAnimal ? '<p class="slot-tool-hint">Achète un animal pour produire</p>' : ''}
+      ${feedBlocked && !needsAnimal ? '<p class="slot-tool-hint">Choisis une ration</p>' : ''}
+    `;
+
+    const onTap = () => {
+      if (canStart) {
+        const result = game.startFarmSlot(buildingId, lineKey, unitIndex);
+        if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
+      } else if (canCollect) {
+        game.completeFarmLine(buildingId, lineKey, unitIndex);
+      }
+    };
+
+    card.querySelector('.slot-visual-tap')?.addEventListener('click', onTap);
+    card.querySelector('.slot-visual-tap')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onTap();
+      }
+    });
+    return card;
+  }
+
+  const resource = game.resources[lineKey];
   card.innerHTML = `
     <div class="slot-visual"><span class="slot-visual-emoji">${resource?.emoji || building.emoji || '🏠'}</span></div>
     <div class="slot-footer">
-      ${active ? `<div class="xp-bar-container slot-progress"><div class="xp-bar" style="width:${Math.floor(progress * 100)}%"></div></div>` : ''}
+      ${active ? `<div class="xp-bar-container slot-progress"><div class="xp-bar" style="width:${progressPct}%"></div></div>` : ''}
       ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
-      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${canStart || (active && progress >= 1) ? ' affordable' : ''}" ${active && progress < 1 || (!active && blocked) ? 'disabled' : ''}>
-        ${active ? (progress >= 1 ? 'Collecter' : `Production ${Math.floor(progress * 100)}%`) : 'Produire'}
+      <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${canStart || canCollect ? ' affordable' : ''}" ${active && progress < 1 || (!active && blocked) ? 'disabled' : ''}>
+        ${active ? (progress >= 1 ? 'Collecter' : `Production ${progressPct}%`) : 'Produire'}
       </button>
     </div>
   `;
   card.querySelector('.btn-start')?.addEventListener('click', () => {
     if (canStart) {
-      const result = game.startFarmSlot(buildingId, productId, unitIndex);
+      const result = game.startFarmSlot(buildingId, lineKey, unitIndex);
       if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
-    } else if (active && progress >= 1) {
-      game.completeFarmLine(buildingId, productId, unitIndex);
+    } else if (canCollect) {
+      game.completeFarmLine(buildingId, lineKey, unitIndex);
     }
   });
   return card;
+}
+
+function buildUnifiedFarmSection(game, buildingId, building, container) {
+  const lineKey = getUnifiedFarmLineKey(building);
+  const line = game.state.productionLines?.farm?.[buildingId]?.[lineKey];
+  if (!line) return;
+
+  const productIds = Object.keys(building.products || {});
+  const stockParts = productIds.map((id) => {
+    const res = game.resources[id];
+    return `${renderResourceIcon(res, 'tile-resource-icon') || ''}${res?.name || id} : ${game.state.inventory[id] || 0}`;
+  });
+  const cycleSec = Math.round((building.cycleMs || 10000) / 1000);
+  const bonusHint = building.productChances?.plume
+    ? ` · Plume ~${Math.round(building.productChances.plume * 100)}%`
+    : '';
+
+  const section = document.createElement('div');
+  section.className = 'production-line-section';
+  section.dataset.building = buildingId;
+  section.innerHTML = `
+    <div class="production-line-head">
+      <div class="production-line-title">
+        ${getFarmBuildingIcon(buildingId) ? iconHtml(getFarmBuildingIcon(buildingId), 'tile-resource-icon', building.name) : `<span>${building.emoji || '🏠'}</span>`}
+        <strong>${building.name}</strong>
+        <span class="production-stock">${stockParts.join(' · ')}</span>
+      </div>
+      <div class="production-line-meta">
+        <span class="production-units">${line.units} animal(aux)</span>
+        <span class="production-harvest-time">${cycleSec}s/production${bonusHint}</span>
+      </div>
+    </div>
+    <p class="view-desc">Tape sur l'animal pour lancer une production. L'œuf est garanti, la plume est aléatoire.</p>
+    <div class="slots-grid production-units-grid"></div>
+  `;
+
+  const grid = section.querySelector('.production-units-grid');
+  for (let i = 0; i < line.units; i++) {
+    grid.appendChild(buildFarmUnitCard(game, buildingId, lineKey, i, building));
+  }
+  container.appendChild(section);
 }
 
 export function renderFarmProduction(game, el, buildingId) {
@@ -366,7 +490,12 @@ export function renderFarmProduction(game, el, buildingId) {
   });
 
   const container = el.querySelector('#farm-production-lines');
-  for (const productId of productIds) {
+  if (isUnifiedFarmBuilding(building)) {
+    buildUnifiedFarmSection(game, buildingId, building, container);
+    return;
+  }
+
+  for (const productId of getFarmProductionLineIds(building)) {
     const resource = game.resources[productId];
     const line = game.state.productionLines?.farm?.[buildingId]?.[productId];
     if (!line) continue;
@@ -375,7 +504,7 @@ export function renderFarmProduction(game, el, buildingId) {
     section.innerHTML = `<div class="production-line-head"><strong>${resource?.name || productId}</strong> · Stock ${game.state.inventory[productId] || 0} · ${line.units} unité(s)</div><div class="slots-grid"></div>`;
     const grid = section.querySelector('.slots-grid');
     for (let i = 0; i < line.units; i++) {
-      grid.appendChild(buildFarmUnitCard(game, buildingId, productId, i, building, resource));
+      grid.appendChild(buildFarmUnitCard(game, buildingId, productId, i, building));
     }
     container.appendChild(section);
   }
@@ -410,13 +539,33 @@ export function updateProductionLineProgresses(game, jobId) {
 }
 
 export function updateFarmLineProgresses(game, buildingId) {
-  const lines = game.state.productionLines?.farm?.[buildingId] || {};
-  for (const [productId, line] of Object.entries(lines)) {
+  const building = getBuildingDef(game.farmData, buildingId);
+  if (!building) return;
+
+  const lineKeys = getFarmProductionLineIds(building);
+  for (const lineKey of lineKeys) {
+    const line = game.state.productionLines?.farm?.[buildingId]?.[lineKey];
+    if (!line) continue;
+
     line.slots.forEach((slot, unitIndex) => {
       if (!slot?.active) return;
-      const progress = game.getFarmLineProgress(buildingId, productId, unitIndex);
+      const progress = game.getFarmLineProgress(buildingId, lineKey, unitIndex);
+      const pct = Math.floor(progress * 100);
+      const card = document.querySelector(`.production-unit[data-building="${buildingId}"][data-product="${lineKey}"][data-unit="${unitIndex}"]`);
+      if (!card) return;
+
+      if (isUnifiedFarmBuilding(building)) {
+        const fill = card.querySelector('.slot-progress-fill');
+        const label = card.querySelector('.slot-progress-label');
+        const statusLabel = getFarmBtnLabel(progress);
+        if (fill) fill.style.width = `${pct}%`;
+        if (label) label.textContent = statusLabel;
+        if (progress >= 1) card.classList.add('slot-can-harvest');
+        return;
+      }
+
       if (progress >= 1) {
-        game.completeFarmLine(buildingId, productId, unitIndex);
+        game.completeFarmLine(buildingId, lineKey, unitIndex);
       }
     });
   }

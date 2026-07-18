@@ -28,7 +28,7 @@ import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consu
 import { RARITY_LABELS, RARITY_EMOJI, getInstanceRarity, getNextRarity } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId } from '../systems/dungeonKeys.js';
-import { getVisibleHarvestViews, getVisibleFarmViews, isGatheringJobUnlocked, getGatheringJobUnlockProgress, getFeatureUnlockProgress } from '../systems/careerChoice.js';
+import { getVisibleHarvestViews, getVisibleFarmViews, isGatheringJobUnlocked, getGatheringJobUnlockProgress, getFeatureUnlockProgress, getJobSwitcherItems } from '../systems/careerChoice.js';
 import { getTestHdvBanner, isTestHdvEnabled } from '../systems/testHdv.js';
 import { showCareerChoiceIfNeeded } from './careerChoiceUi.js';
 import { reconcileAuthAfterLocalReset } from '../core/resetAuth.js';
@@ -315,12 +315,32 @@ const JOB_SWITCHER_STATUS_CLASSES = [
   'nav-harvest-empty',
 ];
 
-function getJobSwitcherGroup(viewId, state, balance) {
+function getJobSwitcherGroup(viewId, state, balance, jobs = {}) {
   if (!viewId?.startsWith('job_') && !isFarmView(viewId)) return null;
   return {
     type: 'quick',
-    views: [...getVisibleHarvestViews(state, balance), ...getVisibleFarmViews(state, balance)],
+    items: getJobSwitcherItems(state, balance, jobs),
   };
+}
+
+function renderJobSwitcherLockedChip(game, entry) {
+  const pct = Math.floor((entry.progress || 0) * 100);
+  const gateName = game.jobs[entry.gateJob]?.name || entry.gateJob;
+  const icon = getJobIcon(entry.jobId);
+  const iconPart = icon
+    ? iconHtml(icon, 'job-switcher-icon job-switcher-icon-locked', entry.label)
+    : `<span class="job-switcher-emoji">${entry.emoji || '🔒'}</span>`;
+
+  return `
+    <button type="button" class="job-switcher-chip job-switcher-chip-locked${entry.ready ? ' job-switcher-chip-ready' : ''}" data-view="${entry.viewId}" aria-label="${entry.label} — ${gateName} Nv.${entry.currentLevel}/${entry.requiredLevel}" title="${entry.hint || ''}">
+      <span class="job-switcher-chip-inner">
+        ${iconPart}
+        <span class="job-switcher-label">${entry.label}</span>
+        <span class="job-switcher-level">${entry.ready ? 'Prêt' : `${entry.currentLevel}/${entry.requiredLevel}`}</span>
+        <span class="job-switcher-unlock-bar"><span class="job-switcher-unlock-fill" style="width:${pct}%"></span></span>
+      </span>
+    </button>
+  `;
 }
 
 function renderJobSwitcherChip(game, viewId, activeViewId) {
@@ -367,7 +387,7 @@ function getAdjacentVisibleView(viewId, visibleViews, direction) {
 export function renderJobSwitcherDock(game, el, viewId) {
   if (!el) return;
 
-  const group = getJobSwitcherGroup(viewId, game.state, game.balance);
+  const group = getJobSwitcherGroup(viewId, game.state, game.balance, game.jobs);
   if (!group) {
     el.classList.add('hidden');
     el.innerHTML = '';
@@ -383,7 +403,12 @@ export function renderJobSwitcherDock(game, el, viewId) {
     'Accès rapide récolte et ferme'
   );
 
-  el.innerHTML = `<div class="job-switcher-scroll" role="list">${group.views.map((vid) => renderJobSwitcherChip(game, vid, viewId)).join('')}</div>`;
+  const chipsHtml = group.items.map((item) => {
+    if (item.kind === 'lockedJob') return renderJobSwitcherLockedChip(game, item.entry);
+    return renderJobSwitcherChip(game, item.viewId, viewId);
+  }).join('');
+
+  el.innerHTML = `<div class="job-switcher-scroll" role="list">${chipsHtml}</div>`;
 
   el.querySelectorAll('.job-switcher-chip').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -404,6 +429,8 @@ export function updateJobSwitcherDockStatus(game) {
   const view = getView();
   el.querySelectorAll('.job-switcher-chip').forEach((btn) => {
     const vid = btn.dataset.view;
+    if (btn.classList.contains('job-switcher-chip-locked')) return;
+
     const viewDef = VIEWS[vid];
     const isActive = vid === view;
 

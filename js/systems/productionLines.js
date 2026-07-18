@@ -22,6 +22,9 @@ import {
   computeFarmDuration,
   listFeedOptions,
   wearBreederTool,
+  isUnifiedFarmBuilding,
+  getUnifiedFarmLineKey,
+  rollFarmProductDrops,
 } from './farm.js';
 
 function cfg(balance) {
@@ -278,6 +281,39 @@ export function buyFarmUnit(state, balance, buildingId, productId) {
   return true;
 }
 
+function normalizeUnifiedFarmBuilding(state, buildingId, building, balance) {
+  if (!isUnifiedFarmBuilding(building)) return;
+
+  const lineKey = getUnifiedFarmLineKey(building);
+  if (!state.productionLines.farm[buildingId]) state.productionLines.farm[buildingId] = {};
+  const lines = state.productionLines.farm[buildingId];
+  const productIds = Object.keys(building.products || {});
+
+  let unified = lines[lineKey];
+  if (!unified) {
+    unified = lines[productIds[0]] || normalizeLine({ units: 1 }, 1);
+  }
+
+  for (const productId of productIds) {
+    if (productId === lineKey) continue;
+    const other = lines[productId];
+    if (!other) continue;
+    unified.units = Math.max(unified.units, other.units);
+    while (unified.slots.length < unified.units) unified.slots.push(emptySlot());
+    other.slots.forEach((slot, index) => {
+      if (slot?.active && unified.slots[index] && !unified.slots[index].active) {
+        unified.slots[index].active = { ...slot.active, productId: lineKey };
+      }
+    });
+    delete lines[productId];
+  }
+
+  lines[lineKey] = normalizeLine(unified, unified.units || 1);
+  for (const productId of productIds) {
+    if (productId !== lineKey && lines[productId]) delete lines[productId];
+  }
+}
+
 export function ensureProductionLines(state, resources, farmData, balance) {
   if (!state.productionLines) state.productionLines = { harvest: {}, farm: {} };
   if (!state.productionLines.harvest) state.productionLines.harvest = {};
@@ -319,6 +355,15 @@ export function ensureProductionLines(state, resources, farmData, balance) {
     const building = getBuildingDef(farmData, buildingId);
     if (!building) continue;
     if (!state.productionLines.farm[buildingId]) state.productionLines.farm[buildingId] = {};
+
+    if (isUnifiedFarmBuilding(building)) {
+      normalizeUnifiedFarmBuilding(state, buildingId, building, balance);
+      const lineKey = getUnifiedFarmLineKey(building);
+      const existing = state.productionLines.farm[buildingId][lineKey];
+      state.productionLines.farm[buildingId][lineKey] = normalizeLine(existing || { units: 1 }, existing?.units || 1);
+      continue;
+    }
+
     for (const productId of Object.keys(building.products || {})) {
       const existing = state.productionLines.farm[buildingId][productId];
       state.productionLines.farm[buildingId][productId] = normalizeLine(existing || { units: 1 }, existing?.units || 1);
@@ -502,11 +547,25 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
   const slot = line?.slots?.[unitIndex];
   if (!slot?.active) return null;
 
-  const qty = building?.products?.[productId] || 1;
   const breederLv = state.jobs?.breeder?.level || 1;
   const yieldBonus = Math.floor((breederLv - 1) * 0.02);
-  const amount = qty + (yieldBonus > 0 && Math.random() < yieldBonus ? 1 : 0);
-  state.inventory[productId] = (state.inventory[productId] || 0) + amount;
+
+  let products;
+  if (isUnifiedFarmBuilding(building)) {
+    products = rollFarmProductDrops(building);
+    for (const [resId, qty] of Object.entries(products)) {
+      const bonus = yieldBonus > 0 && Math.random() < yieldBonus ? 1 : 0;
+      products[resId] = qty + bonus;
+    }
+  } else {
+    const qty = building?.products?.[productId] || 1;
+    const amount = qty + (yieldBonus > 0 && Math.random() < yieldBonus ? 1 : 0);
+    products = { [productId]: amount };
+  }
+
+  for (const [resId, amount] of Object.entries(products)) {
+    state.inventory[resId] = (state.inventory[resId] || 0) + amount;
+  }
 
   const xp = Math.floor(8 + (building.cycleMs || 10000) / 2000);
   const levelResult = addJobXp(state, 'breeder', xp, jobs, balance);
@@ -515,7 +574,7 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
 
   const wornTools = wearBreederTool(state, recipes, equipment);
   return {
-    products: { [productId]: amount },
+    products,
     xp,
     levelResult,
     buildingId,

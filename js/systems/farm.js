@@ -293,3 +293,34 @@ export function syncExpiredFarmSlots(state, onComplete) {
 export function wearBreederTool(state, recipes, equipment) {
   return wearToolsForHarvest(state, recipes, equipment, 'breeder');
 }
+
+export function isUnifiedFarmBuilding(building) {
+  return building?.unifiedProduction === true;
+}
+
+export function getUnifiedFarmLineKey(building) {
+  return building?.productionLineKey || 'animal';
+}
+
+export function getFarmProductionLineIds(building) {
+  if (isUnifiedFarmBuilding(building)) return [getUnifiedFarmLineKey(building)];
+  return Object.keys(building?.products || {});
+}
+
+/** Tire les produits d'une production unifiée (ex. œuf garanti, plume ~33 %). */
+export function rollFarmProductDrops(building) {
+  const chances = building?.productChances;
+  if (!chances) {
+    return { ...(building?.products || {}) };
+  }
+
+  const granted = {};
+  for (const [productId, chance] of Object.entries(chances)) {
+    const threshold = chance <= 1 ? chance : 1;
+    const qty = chance > 1 ? Math.floor(chance) : 1;
+    if (threshold >= 1 || Math.random() < threshold) {
+      granted[productId] = (granted[productId] || 0) + qty;
+    }
+  }
+  return granted;
+}

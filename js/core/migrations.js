@@ -2,6 +2,7 @@ import {
   migrateSlotsToProductionLines,
   getMaxUnitsPerResource,
   getJobHarvestResources,
+  ensureProductionLines,
 } from '../systems/productionLines.js';
 import { clearProgressionCache } from '../systems/progression.js';
 import { isJobUnlocked } from '../systems/jobUnlock.js';
@@ -89,10 +90,14 @@ const MIGRATIONS = {
     }
     clearProgressionCache();
   },
+  32(state, ctx) {
+    ensureProductionLines(state, ctx.resources, ctx.farmData, ctx.balance);
+    clearProgressionCache();
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 31;
+  const target = ctx.balance?.saveVersion ?? 32;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;
