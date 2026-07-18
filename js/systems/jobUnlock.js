@@ -100,3 +100,58 @@ export function getJobUnlockHint(jobId, balance) {
   const rules = getJobUnlockRules(balance);
   return rules[jobId]?.hint || null;
 }
+
+function parseJobLevelGate(rule) {
+  const levels = rule?.when?.jobLevel;
+  if (!levels || typeof levels !== 'object') return null;
+  const [gateJob, requiredLevel] = Object.entries(levels)[0] || [];
+  if (!gateJob || requiredLevel == null) return null;
+  return { gateJob, requiredLevel };
+}
+
+/** Progression vers le déblocage d'un métier de récolte verrouillé. */
+export function getGatheringJobUnlockProgress(jobId, state, balance) {
+  if (!GATHERING_JOB_IDS.includes(jobId) || jobId === 'farmer') return null;
+  if (isGatheringJobUnlocked(jobId, state, balance)) return null;
+
+  const rule = getJobUnlockRules(balance)[jobId];
+  const gate = parseJobLevelGate(rule);
+  if (!gate) return null;
+
+  const currentLevel = state.jobs?.[gate.gateJob]?.level || 1;
+  const remaining = Math.max(0, gate.requiredLevel - currentLevel);
+
+  return {
+    jobId,
+    gateJob: gate.gateJob,
+    requiredLevel: gate.requiredLevel,
+    currentLevel,
+    remaining,
+    progress: Math.min(1, currentLevel / gate.requiredLevel),
+    ready: currentLevel >= gate.requiredLevel,
+    hint: rule?.hint || null,
+  };
+}
+
+/** Prochains métiers de récolte à débloquer (triés par niveau requis). */
+export function getUpcomingGatheringJobUnlocks(state, balance, jobs, limit = 4) {
+  return GATHERING_JOB_IDS
+    .filter((id) => id !== 'farmer' && !isGatheringJobUnlocked(id, state, balance))
+    .map((id) => {
+      const progress = getGatheringJobUnlockProgress(id, state, balance);
+      if (!progress) return null;
+      return {
+        ...progress,
+        label: jobs[id]?.name || id,
+        emoji: jobs[id]?.emoji || '🔒',
+        viewId: `job_${id}`,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.requiredLevel - b.requiredLevel)
+    .slice(0, limit);
+}
+
+export function getNextGatheringJobUnlock(state, balance, jobs) {
+  return getUpcomingGatheringJobUnlocks(state, balance, jobs, 1)[0] || null;
+}

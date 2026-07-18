@@ -2861,19 +2861,19 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   object-fit: contain;
 }
 
-/* Lignes de production — unités plus compactes (arbres / ressources) */
+/* Lignes de production — sprites récolte agrandis */
 .production-units-grid {
-  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
-  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 0.55rem;
 }
 
 .production-units-grid .harvest-slot {
-  padding: 0.35rem;
+  padding: 0.4rem;
 }
 
 .production-units-grid .slot-visual {
-  min-height: 96px;
-  padding: 0.25rem;
+  min-height: 148px;
+  padding: 0.35rem;
   cursor: default;
 }
 
@@ -2886,11 +2886,143 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .production-units-grid .slot-visual-sprite {
-  max-height: 72px;
+  max-height: 128px;
+  max-width: 128px;
 }
 
 .production-units-grid .slot-visual-emoji {
-  font-size: 2rem;
+  font-size: 3.25rem;
+}
+
+/* Prochains métiers — bannière + nav */
+.job-unlock-banner {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(155, 89, 182, 0.25);
+}
+
+.job-unlock-banner-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.job-unlock-row {
+  padding: 0.45rem 0;
+  border-top: 1px solid rgba(232, 180, 203, 0.35);
+}
+
+.job-unlock-row:first-of-type {
+  border-top: none;
+}
+
+.job-unlock-row-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.job-unlock-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.55;
+}
+
+.job-unlock-ready .job-unlock-icon {
+  opacity: 1;
+}
+
+.job-unlock-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.job-unlock-info strong {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.job-unlock-req {
+  font-size: 0.78rem;
+  opacity: 0.8;
+}
+
+.job-unlock-pct {
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.job-unlock-bar {
+  height: 6px;
+  margin-top: 0.15rem;
+}
+
+.job-unlock-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.job-unlock-ready {
+  animation: job-unlock-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes job-unlock-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.nav-btn-locked {
+  opacity: 0.65;
+  cursor: default;
+  pointer-events: none;
+  position: relative;
+  flex-wrap: wrap;
+  padding-bottom: 0.35rem;
+}
+
+.nav-btn-unlock-ready {
+  opacity: 0.95;
+  border-color: var(--vert-clair);
+  animation: job-unlock-pulse 1.2s ease-in-out infinite;
+}
+
+.nav-icon-locked {
+  filter: grayscale(0.6);
+  opacity: 0.7;
+}
+
+.nav-lock-meta {
+  font-size: 0.65rem;
+  opacity: 0.8;
+  width: 100%;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.nav-unlock-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+.nav-unlock-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--violet-principal), var(--vert-clair));
+  transition: width 0.3s ease;
 }
 
 .slot-progress-overlay {
@@ -6107,6 +6239,24 @@ body.picker-sheet-open #picker-sheet-portal .picker-sheet-header {
   }
 
   .slot-visual-emoji {
+    font-size: 2.75rem;
+  }
+
+  .production-units-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .production-units-grid .slot-visual {
+    min-height: 120px;
+  }
+
+  .production-units-grid .slot-visual-sprite {
+    max-height: 100px;
+    max-width: 100px;
+  }
+
+  .production-units-grid .slot-visual-emoji {
     font-size: 2.75rem;
   }
 

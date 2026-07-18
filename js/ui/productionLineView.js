@@ -1,9 +1,6 @@
 import { getResourceVisual, renderResourceIcon } from '../systems/resourceVisual.js';
 import { canAffordFeed, getBuildingDef, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
-import { getFarmBuildingIcon, iconHtml } from '../core/assets.js';
-import { emit } from '../core/events.js';
-import { navigate, getFarmViewForBuilding, getHarvestViewForJob } from './router.js';
-import { getVisibleHarvestViews, getVisibleFarmViews } from '../systems/careerChoice.js';
+import { getFarmBuildingIcon, getJobIcon, iconHtml } from '../core/assets.js';
 import { getVisibleProductionResources } from '../systems/productionLines.js';
 import { getHarvestXp, getHarvestTime } from '../systems/harvest.js';
 import { getHarvestXpForResource } from '../systems/progression.js';
@@ -198,6 +195,38 @@ function buildUnlockPanel(game, jobId) {
   return panel;
 }
 
+function buildJobUnlockBanner(game) {
+  const upcoming = getUpcomingGatheringJobUnlocks(game.state, game.balance, game.jobs, 3);
+  if (!upcoming.length) return null;
+
+  const panel = document.createElement('div');
+  panel.className = 'job-unlock-banner';
+  panel.innerHTML = '<h4 class="job-unlock-banner-title">Prochains métiers</h4>';
+
+  for (const entry of upcoming) {
+    const pct = Math.floor(entry.progress * 100);
+    const gateName = game.jobs[entry.gateJob]?.name || entry.gateJob;
+    const icon = getJobIcon(entry.jobId);
+    const row = document.createElement('div');
+    row.className = `job-unlock-row${entry.ready ? ' job-unlock-ready' : ''}`;
+    row.innerHTML = `
+      <div class="job-unlock-row-head">
+        <span class="job-unlock-icon">${icon ? iconHtml(icon, 'job-unlock-img', entry.label) : entry.emoji}</span>
+        <div class="job-unlock-info">
+          <strong>${entry.label}</strong>
+          <span class="job-unlock-req">${entry.ready ? 'Débloqué !' : `${gateName} Nv.${entry.currentLevel} / ${entry.requiredLevel}`}</span>
+        </div>
+        <span class="job-unlock-pct">${pct}%</span>
+      </div>
+      <div class="xp-bar-container job-unlock-bar"><div class="xp-bar" style="width:${pct}%"></div></div>
+      ${entry.hint && !entry.ready ? `<p class="job-unlock-hint">${entry.hint}</p>` : ''}
+    `;
+    panel.appendChild(row);
+  }
+
+  return panel;
+}
+
 export function renderJobProduction(game, el, jobId) {
   const job = game.jobs[jobId];
   const prog = game.getJobProgress(jobId);
@@ -222,6 +251,7 @@ export function renderJobProduction(game, el, jobId) {
       <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${prog.xp} / ${prog.needed} XP`}</p>
     </div>
     <div class="panel-inner">
+      <div id="job-unlock-banner"></div>
       <h3>Lignes de production</h3>
       <p class="view-desc">La première ressource est offerte. Débloque jusqu'à 5 unités, puis passe à la ressource suivante quand ton niveau le permet.</p>
       <div id="production-lines"></div>
@@ -231,6 +261,11 @@ export function renderJobProduction(game, el, jobId) {
 
   el.querySelector('#job-prev')?.addEventListener('click', () => { if (prevView) navigate(prevView); });
   el.querySelector('#job-next')?.addEventListener('click', () => { if (nextView) navigate(nextView); });
+
+  const bannerSlot = el.querySelector('#job-unlock-banner');
+  const banner = buildJobUnlockBanner(game);
+  if (bannerSlot && banner) bannerSlot.appendChild(banner);
+  else if (bannerSlot) bannerSlot.remove();
 
   const linesEl = el.querySelector('#production-lines');
   for (const resource of unlocked) {

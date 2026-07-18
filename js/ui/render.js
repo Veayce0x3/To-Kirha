@@ -20,6 +20,7 @@ import { isRecipeEquipped } from '../systems/equipment.js';
 import { initCareerChoiceModal, showCareerChoiceIfNeeded } from './careerChoiceUi.js';
 import { initAuthModal, showAuthModalIfNeeded, showAccountRequiredModal } from './authUi.js';
 import { canUseOnlineFeatures, getOnlineBlockReason, canSeeAdminPanel } from '../core/auth.js';
+import { getUpcomingGatheringJobUnlocks, getUnlockedGatheringJobs } from '../systems/careerChoice.js';
 import {
   renderView,
   renderJobSwitcherDock,
@@ -152,6 +153,48 @@ export function initUI(game, audio) {
     return btn;
   }
 
+  function createLockedNavBtn(entry) {
+    const pct = Math.floor(entry.progress * 100);
+    const gateName = game.jobs[entry.gateJob]?.name || entry.gateJob;
+    const btn = document.createElement('div');
+    btn.className = `nav-btn nav-btn-locked${entry.ready ? ' nav-btn-unlock-ready' : ''}`;
+    btn.dataset.view = entry.viewId;
+    btn.title = entry.hint || `${entry.label} — ${gateName} Nv.${entry.requiredLevel}`;
+
+    const navIcon = getJobIcon(entry.jobId);
+    const iconPart = navIcon
+      ? iconHtml(navIcon, 'nav-icon nav-icon-locked', entry.label)
+      : `<span class="nav-emoji">${entry.emoji}</span>`;
+
+    btn.innerHTML = `
+      ${iconPart}
+      <span class="nav-label">${entry.label}</span>
+      <span class="nav-lock-meta">${entry.ready ? 'Prêt !' : `Nv.${entry.currentLevel}/${entry.requiredLevel}`}</span>
+      <div class="nav-unlock-bar"><div class="nav-unlock-fill" style="width:${pct}%"></div></div>
+    `;
+    return btn;
+  }
+
+  function syncJobUnlockToasts() {
+    const current = getUnlockedGatheringJobs(game.state, game.balance);
+    if (knownUnlockedGathering === null) {
+      knownUnlockedGathering = [...current];
+      return;
+    }
+    for (const id of current) {
+      if (!knownUnlockedGathering.includes(id)) {
+        const job = game.jobs[id];
+        showToast(els, `🔓 ${job?.name || id} débloqué !`, 'levelup');
+        els.levelFlash?.classList.add('active');
+        setTimeout(() => els.levelFlash?.classList.remove('active'), 600);
+        buildNav();
+      }
+    }
+    knownUnlockedGathering = [...current];
+  }
+
+  let knownUnlockedGathering = null;
+
   function buildNav() {
     els.sidebarNav.innerHTML = '';
     els.sidebarFooter.innerHTML = '';
@@ -190,6 +233,13 @@ export function initUI(game, audio) {
       for (const viewId of cat.items) {
         const btn = createNavBtn(viewId);
         if (btn) items.appendChild(btn);
+      }
+
+      if (cat.id === 'recolte') {
+        const upcoming = getUpcomingGatheringJobUnlocks(game.state, game.balance, game.jobs, 2);
+        for (const entry of upcoming) {
+          items.appendChild(createLockedNavBtn(entry));
+        }
       }
 
       if (cat.id === 'recolte' || cat.id === 'ferme') {
@@ -306,6 +356,7 @@ export function initUI(game, audio) {
   }
 
   buildNav();
+  syncJobUnlockToasts();
 
   els.burgerBtn?.addEventListener('click', openSidebar);
   els.sidebarOverlay?.addEventListener('click', closeSidebar);
@@ -386,6 +437,7 @@ export function initUI(game, audio) {
       return;
     }
     refreshView();
+    syncJobUnlockToasts();
     if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
   });
   on('farmFeedChange', ({ buildingId, slotIndex }) => {
@@ -409,6 +461,8 @@ export function initUI(game, audio) {
       els.levelFlash.classList.add('active');
       setTimeout(() => els.levelFlash.classList.remove('active'), 600);
       audio.playSfx('levelup');
+      syncJobUnlockToasts();
+      buildNav();
     } else {
       const bonusNote = dailyBonus ? ' · Bonus du jour ×2 !' : '';
       showToast(els, `+${y} ${resource?.name || ''}${bonusNote}`, 'harvest');

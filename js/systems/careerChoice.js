@@ -40,6 +40,8 @@ export {
   getVisibleFarmViews,
   isCraftJobUnlocked,
   isCombatUnlocked,
+  getNextGatheringJobUnlock,
+  getUpcomingGatheringJobUnlocks,
 } from './jobUnlock.js';
 
 export function needsCareerChoice(state) {
