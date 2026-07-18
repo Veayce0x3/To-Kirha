@@ -104,35 +104,117 @@ export function getJobUnlockHint(jobId, balance) {
   return rules[jobId]?.hint || null;
 }
 
-function parseJobLevelGate(rule) {
-  const levels = rule?.when?.jobLevel;
-  if (!levels || typeof levels !== 'object') return null;
-  const [gateJob, requiredLevel] = Object.entries(levels)[0] || [];
-  if (!gateJob || requiredLevel == null) return null;
-  return { gateJob, requiredLevel };
+function buildJobLevelGates(when, state, jobs = {}) {
+  if (!when?.jobLevel) return [];
+  return Object.entries(when.jobLevel).map(([jobId, requiredLevel]) => {
+    const currentLevel = state.jobs?.[jobId]?.level || 1;
+    return {
+      type: 'jobLevel',
+      jobId,
+      jobName: jobs[jobId]?.name || jobId,
+      requiredLevel,
+      currentLevel,
+      progress: Math.min(1, currentLevel / requiredLevel),
+      ready: currentLevel >= requiredLevel,
+    };
+  });
+}
+
+function buildUnlockGates(rule, state, balance, jobs = {}) {
+  if (!rule?.when) return [];
+  const when = rule.when;
+  const gates = buildJobLevelGates(when, state, jobs);
+
+  if (when.characterLevel != null) {
+    const currentLevel = state.character?.level || 1;
+    gates.push({
+      type: 'characterLevel',
+      jobName: 'Personnage',
+      requiredLevel: when.characterLevel,
+      currentLevel,
+      progress: Math.min(1, currentLevel / when.characterLevel),
+      ready: currentLevel >= when.characterLevel,
+    });
+  }
+
+  if (when.totalHarvests != null) {
+    const current = state.stats?.totalHarvests || state.lifetimeStats?.totalHarvests || 0;
+    gates.push({
+      type: 'totalHarvests',
+      jobName: 'Récoltes totales',
+      requiredLevel: when.totalHarvests,
+      currentLevel: current,
+      progress: Math.min(1, current / when.totalHarvests),
+      ready: current >= when.totalHarvests,
+    });
+  }
+
+  if (when.buildingUnlocked) {
+    const buildingId = when.buildingUnlocked;
+    const ready = isFarmBuildingUnlocked(buildingId, state, balance);
+    const buildingRule = getJobUnlockRules(balance).farm?.[buildingId]
+      || getJobUnlockRules(balance)[`farm_${buildingId}`];
+    const buildingGates = buildingRule ? buildUnlockGates(buildingRule, state, balance, jobs) : [];
+    const buildingProgress = ready
+      ? 1
+      : (buildingGates.length
+        ? buildingGates.reduce((sum, gate) => sum + gate.progress, 0) / buildingGates.length
+        : 0);
+    gates.push({
+      type: 'building',
+      buildingId,
+      buildingName: FARM_BUILDING_LABELS[buildingId] || buildingId,
+      progress: buildingProgress,
+      ready,
+      subGates: buildingGates,
+    });
+  }
+
+  return gates;
+}
+
+function summarizeUnlockGates(gates) {
+  const ready = gates.length > 0 && gates.every((gate) => gate.ready);
+  const progress = gates.length
+    ? gates.reduce((sum, gate) => sum + gate.progress, 0) / gates.length
+    : 0;
+  return { ready, progress };
+}
+
+function countReadyGates(gates) {
+  return gates.filter((gate) => gate.ready).length;
+}
+
+function legacyGateFields(gates) {
+  const pending = gates.find((gate) => !gate.ready) || gates[0];
+  if (!pending) return {};
+  return {
+    gateJob: pending.jobId,
+    requiredLevel: pending.requiredLevel,
+    currentLevel: pending.currentLevel,
+    remaining: Math.max(0, (pending.requiredLevel || 0) - (pending.currentLevel || 0)),
+  };
 }
 
 /** Progression vers le déblocage d'un métier de récolte verrouillé. */
-export function getGatheringJobUnlockProgress(jobId, state, balance) {
+export function getGatheringJobUnlockProgress(jobId, state, balance, jobs = {}) {
   if (!GATHERING_JOB_IDS.includes(jobId) || jobId === 'farmer') return null;
   if (isGatheringJobUnlocked(jobId, state, balance)) return null;
 
   const rule = getJobUnlockRules(balance)[jobId];
-  const gate = parseJobLevelGate(rule);
-  if (!gate) return null;
+  const gates = buildUnlockGates(rule, state, balance, jobs);
+  if (!gates.length) return null;
 
-  const currentLevel = state.jobs?.[gate.gateJob]?.level || 1;
-  const remaining = Math.max(0, gate.requiredLevel - currentLevel);
+  const { ready, progress } = summarizeUnlockGates(gates);
 
   return {
     jobId,
-    gateJob: gate.gateJob,
-    requiredLevel: gate.requiredLevel,
-    currentLevel,
-    remaining,
-    progress: Math.min(1, currentLevel / gate.requiredLevel),
-    ready: currentLevel >= gate.requiredLevel,
+    gates,
+    ready,
+    progress,
     hint: rule?.hint || null,
+    viewId: `job_${jobId}`,
+    ...legacyGateFields(gates),
   };
 }
 
@@ -141,7 +223,7 @@ export function getUpcomingGatheringJobUnlocks(state, balance, jobs, limit = 4) 
   return GATHERING_JOB_IDS
     .filter((id) => id !== 'farmer' && !isGatheringJobUnlocked(id, state, balance))
     .map((id) => {
-      const progress = getGatheringJobUnlockProgress(id, state, balance);
+      const progress = getGatheringJobUnlockProgress(id, state, balance, jobs);
       if (!progress) return null;
       return {
         ...progress,
@@ -151,7 +233,11 @@ export function getUpcomingGatheringJobUnlocks(state, balance, jobs, limit = 4) 
       };
     })
     .filter(Boolean)
-    .sort((a, b) => a.requiredLevel - b.requiredLevel)
+    .sort((a, b) => {
+      const readyDiff = countReadyGates(b.gates) - countReadyGates(a.gates);
+      if (readyDiff !== 0) return readyDiff;
+      return b.progress - a.progress;
+    })
     .slice(0, limit);
 }
 
@@ -191,53 +277,8 @@ export function getFeatureUnlockProgress(featureId, state, balance, jobs = {}) {
   const rule = getJobUnlockRules(balance)[featureId];
   if (!rule) return null;
 
-  const when = rule.when || {};
-  const gates = [];
-
-  if (when.jobLevel) {
-    for (const [jobId, requiredLevel] of Object.entries(when.jobLevel)) {
-      const currentLevel = state.jobs?.[jobId]?.level || 1;
-      gates.push({
-        type: 'jobLevel',
-        jobId,
-        jobName: jobs[jobId]?.name || jobId,
-        requiredLevel,
-        currentLevel,
-        progress: Math.min(1, currentLevel / requiredLevel),
-        ready: currentLevel >= requiredLevel,
-      });
-    }
-  }
-
-  if (when.buildingUnlocked) {
-    const buildingId = when.buildingUnlocked;
-    const ready = isFarmBuildingUnlocked(buildingId, state, balance);
-    const buildingRule = getJobUnlockRules(balance).farm?.[buildingId];
-    const buildingGate = parseJobLevelGate(buildingRule);
-    let progress = ready ? 1 : 0;
-    let currentLevel = null;
-    let requiredLevel = null;
-    if (buildingGate && !ready) {
-      currentLevel = state.jobs?.[buildingGate.gateJob]?.level || 1;
-      requiredLevel = buildingGate.requiredLevel;
-      progress = Math.min(1, currentLevel / requiredLevel);
-    }
-    gates.push({
-      type: 'building',
-      buildingId,
-      buildingName: FARM_BUILDING_LABELS[buildingId] || buildingId,
-      gateJob: buildingGate?.gateJob || null,
-      requiredLevel,
-      currentLevel,
-      progress,
-      ready,
-    });
-  }
-
-  const ready = gates.every((gate) => gate.ready);
-  const progress = gates.length
-    ? gates.reduce((sum, gate) => sum + gate.progress, 0) / gates.length
-    : 0;
+  const gates = buildUnlockGates(rule, state, balance, jobs);
+  const { ready, progress } = summarizeUnlockGates(gates);
 
   const labels = {
     combat: 'Combat',

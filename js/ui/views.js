@@ -84,7 +84,11 @@ function renderLockedUnlockPanel(game, el, entry) {
         ? '✓ Atteint'
         : gate.type === 'building' && gate.requiredLevel == null
           ? 'Non débloqué'
-          : `Nv.${gate.currentLevel} / ${gate.requiredLevel}`;
+          : gate.type === 'totalHarvests'
+            ? `${gate.currentLevel} / ${gate.requiredLevel} récoltes`
+            : gate.type === 'characterLevel'
+              ? `Perso Nv.${gate.currentLevel} / ${gate.requiredLevel}`
+              : `Nv.${gate.currentLevel} / ${gate.requiredLevel}`;
       return `
         <div class="feature-locked-gate${gate.ready ? ' feature-locked-gate-ready' : ''}">
           <div class="feature-locked-gate-head">
@@ -1985,7 +1989,7 @@ export function refreshJobViewLight(game, jobId) {
 
 function renderJob(game, el, jobId) {
   if (!isGatheringJobUnlocked(jobId, game.state, game.balance)) {
-    const progress = getGatheringJobUnlockProgress(jobId, game.state, game.balance);
+    const progress = getGatheringJobUnlockProgress(jobId, game.state, game.balance, game.jobs);
     if (progress) {
       renderLockedUnlockPanel(game, el, {
         ...progress,

@@ -168,6 +168,12 @@ export function initUI(game, audio) {
       if (pending.type === 'jobLevel') {
         return `${pending.jobName} Nv.${pending.currentLevel}/${pending.requiredLevel}`;
       }
+      if (pending.type === 'characterLevel') {
+        return `Perso Nv.${pending.currentLevel}/${pending.requiredLevel}`;
+      }
+      if (pending.type === 'totalHarvests') {
+        return `${pending.currentLevel}/${pending.requiredLevel} récoltes`;
+      }
       if (pending.type === 'building') {
         if (pending.requiredLevel != null) {
           return `${pending.buildingName} Nv.${pending.currentLevel}/${pending.requiredLevel}`;

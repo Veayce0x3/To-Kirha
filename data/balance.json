@@ -434,35 +434,35 @@
   "jobUnlocks": {
     "farmer": { "always": true },
     "lumberjack": {
-      "when": { "jobLevel": { "farmer": 10 } },
-      "hint": "Atteins Paysan Nv.10 pour débloquer le Bûcheron."
+      "when": { "jobLevel": { "farmer": 8 } },
+      "hint": "Atteins Paysan Nv.8 pour débloquer le Bûcheron."
     },
     "fisher": {
-      "when": { "jobLevel": { "farmer": 14 } },
-      "hint": "Atteins Paysan Nv.14 pour débloquer le Pêcheur."
+      "when": { "jobLevel": { "lumberjack": 10, "farmer": 10 } },
+      "hint": "Monte Bûcheron Nv.10 et Paysan Nv.10 pour le Pêcheur."
     },
     "miner": {
-      "when": { "jobLevel": { "farmer": 18 } },
-      "hint": "Atteins Paysan Nv.18 pour débloquer le Mineur."
+      "when": { "jobLevel": { "fisher": 10, "lumberjack": 8 } },
+      "hint": "Monte Pêcheur Nv.10 et Bûcheron Nv.8 pour le Mineur."
     },
     "alchemist": {
-      "when": { "jobLevel": { "farmer": 22 } },
-      "hint": "Atteins Paysan Nv.22 pour débloquer l'Alchimiste."
+      "when": { "jobLevel": { "miner": 12, "fisher": 8 } },
+      "hint": "Monte Mineur Nv.12 et Pêcheur Nv.8 pour l'Alchimiste."
     },
     "combat": {
       "when": { "jobLevel": { "farmer": 5 } },
       "hint": "Atteins Paysan Nv.5 pour débloquer le Combat."
     },
     "toolmaker": {
-      "when": { "jobLevel": { "farmer": 8 } },
-      "hint": "Atteins Paysan Nv.8 pour débloquer l'Outilleur."
+      "when": { "jobLevel": { "lumberjack": 5, "farmer": 6 } },
+      "hint": "Monte Bûcheron Nv.5 et Paysan Nv.6 pour l'Outilleur."
     },
     "cook": {
       "when": {
         "jobLevel": { "farmer": 6, "breeder": 6 },
         "buildingUnlocked": "chicken_coop"
       },
-      "hint": "Atteins Paysan Nv.6, débloque le Poulailler puis monte Éleveur Nv.6 pour la Cuisine."
+      "hint": "Paysan Nv.6, Poulailler débloqué et Éleveur Nv.6 pour la Cuisine."
     },
     "farm": {
       "chicken_coop": {
@@ -470,24 +470,24 @@
         "hint": "Atteins Paysan Nv.6 pour débloquer le Poulailler."
       },
       "well": {
-        "when": { "jobLevel": { "farmer": 12 } },
-        "hint": "Atteins Paysan Nv.12 pour débloquer le Puits."
+        "when": { "jobLevel": { "farmer": 10, "breeder": 5 } },
+        "hint": "Paysan Nv.10 et Éleveur Nv.5 pour le Puits."
       },
       "barn": {
-        "when": { "jobLevel": { "farmer": 18 } },
-        "hint": "Atteins Paysan Nv.18 pour l'Étable."
+        "when": { "jobLevel": { "breeder": 10, "lumberjack": 8 } },
+        "hint": "Éleveur Nv.10 et Bûcheron Nv.8 pour l'Étable."
       },
       "sheepfold": {
-        "when": { "jobLevel": { "farmer": 20 } },
-        "hint": "Atteins Paysan Nv.20 pour la Bergerie."
+        "when": { "jobLevel": { "breeder": 12, "lumberjack": 10, "farmer": 12 } },
+        "hint": "Éleveur Nv.12, Bûcheron Nv.10 et Paysan Nv.12 pour la Bergerie."
       },
       "pigsty": {
-        "when": { "jobLevel": { "farmer": 22 } },
-        "hint": "Atteins Paysan Nv.22 pour la Porcherie."
+        "when": { "jobLevel": { "miner": 8, "breeder": 14 } },
+        "hint": "Mineur Nv.8 et Éleveur Nv.14 pour la Porcherie."
       },
       "beehive": {
-        "when": { "jobLevel": { "farmer": 24 } },
-        "hint": "Atteins Paysan Nv.24 pour les Ruches."
+        "when": { "jobLevel": { "alchemist": 6, "breeder": 16, "farmer": 16 } },
+        "hint": "Alchimiste Nv.6, Éleveur Nv.16 et Paysan Nv.16 pour les Ruches."
       }
     },
     "farm_chicken_coop": {
@@ -495,24 +495,24 @@
       "hint": "Atteins Paysan Nv.6 pour le Poulailler."
     },
     "farm_well": {
-      "when": { "jobLevel": { "farmer": 12 } },
-      "hint": "Atteins Paysan Nv.12 pour le Puits."
+      "when": { "jobLevel": { "farmer": 10, "breeder": 5 } },
+      "hint": "Paysan Nv.10 et Éleveur Nv.5 pour le Puits."
     },
     "farm_barn": {
-      "when": { "jobLevel": { "farmer": 18 } },
-      "hint": "Atteins Paysan Nv.18 pour l'Étable."
+      "when": { "jobLevel": { "breeder": 10, "lumberjack": 8 } },
+      "hint": "Éleveur Nv.10 et Bûcheron Nv.8 pour l'Étable."
     },
     "farm_sheepfold": {
-      "when": { "jobLevel": { "farmer": 20 } },
-      "hint": "Atteins Paysan Nv.20 pour la Bergerie."
+      "when": { "jobLevel": { "breeder": 12, "lumberjack": 10, "farmer": 12 } },
+      "hint": "Éleveur Nv.12, Bûcheron Nv.10 et Paysan Nv.12 pour la Bergerie."
     },
     "farm_pigsty": {
-      "when": { "jobLevel": { "farmer": 22 } },
-      "hint": "Atteins Paysan Nv.22 pour la Porcherie."
+      "when": { "jobLevel": { "miner": 8, "breeder": 14 } },
+      "hint": "Mineur Nv.8 et Éleveur Nv.14 pour la Porcherie."
     },
     "farm_beehive": {
-      "when": { "jobLevel": { "farmer": 24 } },
-      "hint": "Atteins Paysan Nv.24 pour les Ruches."
+      "when": { "jobLevel": { "alchemist": 6, "breeder": 16, "farmer": 16 } },
+      "hint": "Alchimiste Nv.6, Éleveur Nv.16 et Paysan Nv.16 pour les Ruches."
     }
   }
 }

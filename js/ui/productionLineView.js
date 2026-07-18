@@ -223,21 +223,40 @@ function buildJobUnlockBanner(game) {
   panel.innerHTML = '<h4 class="job-unlock-banner-title">Prochains métiers</h4>';
 
   for (const entry of upcoming) {
-    const pct = Math.floor(entry.progress * 100);
-    const gateName = game.jobs[entry.gateJob]?.name || entry.gateJob;
+    const pct = Math.floor((entry.progress || 0) * 100);
     const icon = getJobIcon(entry.jobId);
     const row = document.createElement('div');
     row.className = `job-unlock-row${entry.ready ? ' job-unlock-ready' : ''}`;
+
+    const gatesHtml = (entry.gates || []).map((gate) => {
+      const gatePct = Math.floor((gate.progress || 0) * 100);
+      const label = gate.type === 'building'
+        ? gate.buildingName
+        : gate.jobName;
+      const meta = gate.ready
+        ? '✓'
+        : gate.type === 'totalHarvests'
+          ? `${gate.currentLevel}/${gate.requiredLevel}`
+          : `Nv.${gate.currentLevel}/${gate.requiredLevel}`;
+      return `
+        <div class="job-unlock-gate${gate.ready ? ' job-unlock-gate-ready' : ''}">
+          <span>${label}</span>
+          <span>${meta}</span>
+          <div class="xp-bar-container job-unlock-bar"><div class="xp-bar" style="width:${gatePct}%"></div></div>
+        </div>
+      `;
+    }).join('');
+
     row.innerHTML = `
       <div class="job-unlock-row-head">
         <span class="job-unlock-icon">${icon ? iconHtml(icon, 'job-unlock-img', entry.label) : entry.emoji}</span>
         <div class="job-unlock-info">
           <strong>${entry.label}</strong>
-          <span class="job-unlock-req">${entry.ready ? 'Débloqué !' : `${gateName} Nv.${entry.currentLevel} / ${entry.requiredLevel}`}</span>
+          <span class="job-unlock-req">${entry.ready ? 'Débloqué !' : `${(entry.gates || []).filter((gate) => gate.ready).length}/${entry.gates?.length || 0} prérequis`}</span>
         </div>
         <span class="job-unlock-pct">${pct}%</span>
       </div>
-      <div class="xp-bar-container job-unlock-bar"><div class="xp-bar" style="width:${pct}%"></div></div>
+      <div class="job-unlock-gates">${gatesHtml}</div>
       ${entry.hint && !entry.ready ? `<p class="job-unlock-hint">${entry.hint}</p>` : ''}
     `;
     panel.appendChild(row);
@@ -272,7 +291,7 @@ export function renderJobProduction(game, el, jobId) {
           <button type="button" class="job-inline-unlock" id="job-next-unlock" title="${nextUnlock.hint || ''}">
             ${getJobIcon(nextUnlock.jobId) ? iconHtml(getJobIcon(nextUnlock.jobId), 'job-inline-unlock-icon', nextUnlock.label) : nextUnlock.emoji}
             <span class="job-inline-unlock-label">${nextUnlock.label}</span>
-            <span class="job-inline-unlock-meta">${nextUnlock.ready ? 'Prêt' : `Nv.${nextUnlock.currentLevel}/${nextUnlock.requiredLevel}`}</span>
+            <span class="job-inline-unlock-meta">${nextUnlock.ready ? 'Prêt' : `${(nextUnlock.gates || []).filter((gate) => gate.ready).length}/${nextUnlock.gates?.length || 0} prérequis`}</span>
             <span class="job-inline-unlock-bar"><span class="job-inline-unlock-fill" style="width:${Math.floor(nextUnlock.progress * 100)}%"></span></span>
           </button>
         ` : ''}

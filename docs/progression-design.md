@@ -25,7 +25,9 @@
 ## 4. Déblocage métiers / bâtiments / combat
 
 - Config : `balance.jobUnlocks`
-- Paysan seul au départ · Bûcheron Paysan Nv.10 · Poulailler Nv.6 · etc.
+- **Chaîne de métiers** : chaque métier de récolte exige aussi le métier précédent (ex. Pêcheur = Bûcheron Nv.10 + Paysan Nv.10)
+- **Ferme / craft** : mélange Paysan, Éleveur, Bûcheron, Mineur, Alchimiste selon le bâtiment
+- L’UI affiche **tous** les prérequis (pas seulement Paysan)
 - Code : `js/systems/jobUnlock.js`
 
 ## 5. Lignes de production
