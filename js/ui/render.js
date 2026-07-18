@@ -1,5 +1,6 @@
 import { on } from '../core/events.js';
 import { forceAppRefresh } from '../core/reload.js';
+import { initBottomPullRefresh } from './pullRefresh.js';
 import {
   shouldShowStartupRefreshPrompt,
   markStartupRefreshDismissed,
@@ -773,6 +774,10 @@ export function initUI(game, audio) {
   refreshHeader(game.state);
   refreshView();
   showStartupRefreshPrompt();
+
+  const contentWrapper = document.querySelector('.content-wrapper');
+  if (contentWrapper) initBottomPullRefresh(contentWrapper, game);
+
   if (game.isHarvesting() || game.isFarmActive()) tickHarvestUI();
 }
 
