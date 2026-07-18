@@ -14,6 +14,7 @@ import {
   isAccountBanned,
   canSeeAdminPanel,
   signOutAccount,
+  logoutToWelcomeScreen,
 } from '../core/auth.js';
 import { changeDisplayNameFree, deleteMyAccount } from '../systems/accountProfile.js';
 
@@ -45,16 +46,14 @@ export function showBannedModalIfNeeded() {
   modalEl.classList.add('active');
   document.body.classList.add('auth-modal-open');
   body.querySelector('#auth-banned-signout')?.addEventListener('click', async () => {
-    const { signOutAccount } = await import('../core/auth.js');
-    await signOutAccount();
-    delete gameRef?.state?.meta?.account;
-    location.reload();
+    await logoutToWelcomeScreen(gameRef);
   });
   body.querySelector('#auth-banned-guest')?.addEventListener('click', async () => {
-    const { signOutAccount } = await import('../core/auth.js');
-    await signOutAccount();
-    delete gameRef?.state?.meta?.account;
-    location.href = `${location.pathname}?newgame=1`;
+    await logoutToWelcomeScreen(gameRef);
+    const name = applyGuestToState(gameRef.state, generateGuestDisplayName());
+    gameRef.scheduleSave?.();
+    emit('nicknameChange', { name, renamed: false });
+    finishAuth();
   });
   return true;
 }
@@ -86,6 +85,12 @@ function openAuthModal(mode = 'welcome') {
   renderAuthBody(mode);
   modalEl.classList.add('active');
   document.body.classList.add('auth-modal-open');
+}
+
+/** Écran d'accueil connexion / invité / créer un compte (après déconnexion ou premier lancement). */
+export function showAuthWelcomeScreen() {
+  resolveAuthPromise = null;
+  openAuthModal('welcome');
 }
 
 function renderAuthBody(mode) {
@@ -293,9 +298,20 @@ export function renderAccountPanel(game, container, { hideDelete = false } = {})
     navigate('admin');
   });
   container.querySelector('#account-signout')?.addEventListener('click', async () => {
-    await signOutAccount();
-    delete game.state.meta?.account;
-    location.reload();
+    const btn = container.querySelector('#account-signout');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Déconnexion…';
+    }
+    try {
+      await logoutToWelcomeScreen(game);
+    } catch {
+      emit('nicknameError', { reason: 'Impossible de se déconnecter. Réessaie.' });
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Se déconnecter';
+      }
+    }
   });
 
   container.querySelector('#account-free-rename')?.addEventListener('click', async () => {

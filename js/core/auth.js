@@ -381,9 +381,13 @@ export async function signInWithEmail(email, password) {
 }
 
 export async function signOutAccount() {
-  if (isSupabaseConfigured()) {
-    const supabase = await getSupabaseClient();
-    await supabase.auth.signOut();
+  try {
+    if (isSupabaseConfigured()) {
+      const supabase = await getSupabaseClient();
+      if (supabase) await supabase.auth.signOut();
+    }
+  } catch (err) {
+    console.warn('[auth] signOut Supabase:', err);
   }
   authState = {
     mode: null, userId: null, email: null, isGuest: true, displayName: null,
@@ -394,6 +398,20 @@ export async function signOutAccount() {
     sessionStorage.removeItem(AUTH_SESSION_KEY);
   } catch {}
   emit('authChange', getAuthState());
+  return { ok: true };
+}
+
+/** Déconnexion complète : Supabase + efface le compte local + sauvegarde + écran d'accueil auth. */
+export async function logoutToWelcomeScreen(game) {
+  await signOutAccount();
+  if (game?.state?.meta) {
+    delete game.state.meta.account;
+  }
+  if (game?.state) {
+    const { SaveProvider } = await import('./save.js');
+    await SaveProvider.save(game.state, game.balance);
+  }
+  emit('authLoggedOut');
   return { ok: true };
 }
 

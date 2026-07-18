@@ -605,6 +605,14 @@ export function initUI(game, audio) {
     buildNav();
     updateNavActive();
   });
+  on('authLoggedOut', async () => {
+    buildNav();
+    updateNavActive();
+    refreshView();
+    refreshHeader(game.state);
+    const { showAuthWelcomeScreen } = await import('./authUi.js');
+    showAuthWelcomeScreen();
+  });
   on('careerChoiceApplied', () => {
     buildNav();
     refreshView();
