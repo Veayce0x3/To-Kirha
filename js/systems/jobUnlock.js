@@ -1,6 +1,7 @@
 /** Déblocages progressifs des métiers, bâtiments et vues. */
 
 import { GATHERING_JOB_IDS } from './careerChoice.js';
+import { FARM_BUILDING_IDS } from './farm.js';
 
 export const CRAFT_JOB_IDS = ['toolmaker', 'cook'];
 export const SPECIAL_VIEWS = ['combat', 'workshop', 'cuisine'];
