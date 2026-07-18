@@ -31,24 +31,11 @@ export function cameFromHardRefresh() {
 }
 
 /**
- * Popup au lancement :
- * - toujours si build obsolète
- * - sinon une fois par session navigateur (jusqu'au hard-refresh)
+ * Popup au lancement : désactivée (bloquait les clics sur mobile).
+ * Hard-refresh reste dispo dans Options.
  */
-export function shouldShowStartupRefreshPrompt(balance) {
-  if (balance?.testerStartupRefresh === false) return false;
-  if (cameFromHardRefresh()) return false;
-
-  if (isBuildStale(balance)) return true;
-
-  try {
-    // Déjà actualisé cette session → ne pas rebloquer
-    if (sessionStorage.getItem(SS_JUST_REFRESHED) === '1') return false;
-  } catch {
-    // ignore
-  }
-
-  return true;
+export function shouldShowStartupRefreshPrompt(_balance) {
+  return false;
 }
 
 export function markStartupRefreshDismissed(_balance) {

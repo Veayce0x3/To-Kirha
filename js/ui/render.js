@@ -399,44 +399,12 @@ export function initUI(game, audio) {
   }
 
   function showStartupRefreshPrompt() {
-    if (!els.startupRefreshModal || !shouldShowStartupRefreshPrompt(game.balance)) return;
-
-    const copy = getStartupRefreshCopy(game.balance);
-    const current = getAppBuildId(game.balance);
-    const last = getLastSeenBuildId();
-
-    if (els.startupRefreshTitle) els.startupRefreshTitle.textContent = copy.title;
-    if (els.startupRefreshDesc) els.startupRefreshDesc.textContent = copy.desc;
-    if (els.startupRefreshVersion) {
-      els.startupRefreshVersion.textContent = last
-        ? `Build actuelle : ${current} · Dernière session : ${last}${copy.stale ? ' (obsolète)' : ''}`
-        : `Build actuelle : ${current}`;
-    }
-
-    els.startupRefreshModal.classList.add('active');
-    els.startupRefreshModal.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('startup-refresh-pending');
-
-    els.startupRefreshConfirm?.addEventListener('click', async () => {
-      const btn = els.startupRefreshConfirm;
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Actualisation…';
-      }
-      recordBuildSeen(game.balance);
-      try {
-        await forceAppRefresh(game);
-      } catch {
-        window.location.reload();
-      }
-    }, { once: true });
-
-    els.startupRefreshSkip?.addEventListener('click', () => {
-      markStartupRefreshDismissed(game.balance);
+    // Désactivé : laissait pointer-events:none sur tout le jeu.
+    document.body.classList.remove('startup-refresh-pending', 'career-choice-pending');
+    if (els.startupRefreshModal) {
       els.startupRefreshModal.classList.remove('active');
       els.startupRefreshModal.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('startup-refresh-pending');
-    }, { once: true });
+    }
   }
 
   buildNav();
