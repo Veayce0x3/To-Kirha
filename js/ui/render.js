@@ -1,5 +1,13 @@
 import { on } from '../core/events.js';
 import { forceAppRefresh } from '../core/reload.js';
+import {
+  shouldShowStartupRefreshPrompt,
+  markStartupRefreshDismissed,
+  recordBuildSeen,
+  getAppBuildId,
+  getLastSeenBuildId,
+  getStartupRefreshCopy,
+} from '../core/startupRefresh.js';
 import { RARITY_LABELS } from '../systems/equipmentRarity.js';
 import { getNavIcon, getCategoryIcon, getJobIcon, iconHtml, UI, renderResourceIcon } from '../core/assets.js';
 import {
@@ -96,6 +104,9 @@ export function initUI(game, audio) {
     prestigeCancel: document.getElementById('prestige-cancel'),
     prestigeConfirm: document.getElementById('prestige-confirm'),
     startupRefreshModal: document.getElementById('startup-refresh-modal'),
+    startupRefreshTitle: document.getElementById('startup-refresh-title'),
+    startupRefreshDesc: document.getElementById('startup-refresh-desc'),
+    startupRefreshVersion: document.getElementById('startup-refresh-version'),
     startupRefreshConfirm: document.getElementById('startup-refresh-confirm'),
     startupRefreshSkip: document.getElementById('startup-refresh-skip'),
   };
@@ -387,14 +398,34 @@ export function initUI(game, audio) {
   }
 
   function showStartupRefreshPrompt() {
-    const justRefreshed = new URL(window.location.href).searchParams.has('tokirha_refresh');
-    if (!els.startupRefreshModal || justRefreshed || game.needsCareerChoice()) return;
+    if (!els.startupRefreshModal || !shouldShowStartupRefreshPrompt(game.balance)) return;
+
+    const copy = getStartupRefreshCopy(game.balance);
+    const current = getAppBuildId(game.balance);
+    const last = getLastSeenBuildId();
+
+    if (els.startupRefreshTitle) els.startupRefreshTitle.textContent = copy.title;
+    if (els.startupRefreshDesc) els.startupRefreshDesc.textContent = copy.desc;
+    if (els.startupRefreshVersion) {
+      els.startupRefreshVersion.textContent = last
+        ? `Build actuelle : ${current} · Dernière session : ${last}${copy.stale ? ' (obsolète)' : ''}`
+        : `Build actuelle : ${current}`;
+    }
+
     els.startupRefreshModal.classList.add('active');
+    els.startupRefreshModal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('startup-refresh-pending');
+
     els.startupRefreshConfirm?.addEventListener('click', () => {
+      recordBuildSeen(game.balance);
       forceAppRefresh(game);
     }, { once: true });
+
     els.startupRefreshSkip?.addEventListener('click', () => {
+      markStartupRefreshDismissed(game.balance);
       els.startupRefreshModal.classList.remove('active');
+      els.startupRefreshModal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('startup-refresh-pending');
     }, { once: true });
   }
 

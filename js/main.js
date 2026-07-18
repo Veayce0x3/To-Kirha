@@ -4,6 +4,7 @@ import { SaveProvider } from './core/save.js';
 import { audio } from './core/audio.js';
 import { initAuthModal, showAuthModalIfNeeded, showBannedModalIfNeeded } from './ui/authUi.js';
 import { loadGameConfig, isMaintenanceMode } from './systems/gameConfig.js';
+import { recordBuildSeen } from './core/startupRefresh.js';
 import { mountAnnouncementBanner } from './ui/announcements.js';
 import { isAccountBanned, syncProfileFromServer } from './core/auth.js';
 
@@ -51,6 +52,10 @@ async function loadJSON(file) {
     weaponRoles
   );
   await game.init();
+
+  if (new URL(window.location.href).searchParams.has('tokirha_refresh')) {
+    recordBuildSeen(balance);
+  }
 
   await loadGameConfig();
 

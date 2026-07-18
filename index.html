@@ -16,9 +16,9 @@
   <meta http-equiv="Expires" content="0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="To-Kirha">
-  <link rel="stylesheet" href="./css/main.css?v=20260718-0835">
-  <link rel="stylesheet" href="./css/layout.css?v=20260718-0835">
-  <link rel="stylesheet" href="./css/online.css?v=20260718-0835">
+  <link rel="stylesheet" href="./css/main.css?v=20260718-0848">
+  <link rel="stylesheet" href="./css/layout.css?v=20260718-0848">
+  <link rel="stylesheet" href="./css/online.css?v=20260718-0848">
 </head>
 <body>
   <div class="sakura-bg"></div>
@@ -77,13 +77,14 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="startup-refresh-modal">
+  <div class="modal-overlay" id="startup-refresh-modal" aria-hidden="true">
     <div class="modal modal-refresh">
-      <h2>🔄 Dernière version ?</h2>
-      <p class="modal-desc">Avant de tester, tu peux actualiser la page pour être sûr de jouer avec la version la plus récente du jeu.</p>
-      <div class="modal-actions">
-        <button class="btn btn-muted" id="startup-refresh-skip" type="button">Continuer</button>
-        <button class="btn btn-prestige" id="startup-refresh-confirm" type="button">Actualiser maintenant</button>
+      <h2 id="startup-refresh-title">🔄 Dernière version ?</h2>
+      <p class="modal-desc" id="startup-refresh-desc">Avant de tester, actualise la page pour charger la version la plus récente.</p>
+      <p class="startup-refresh-version" id="startup-refresh-version"></p>
+      <div class="modal-actions modal-actions-refresh">
+        <button class="btn btn-prestige" id="startup-refresh-confirm" type="button">Actualiser et jouer</button>
+        <button class="btn btn-muted btn-small" id="startup-refresh-skip" type="button">Continuer sans actualiser</button>
       </div>
     </div>
   </div>
@@ -133,6 +134,6 @@
     </div>
   </div>
 
-  <script type="module" src="./js/main.js?v=20260718-0835"></script>
+  <script type="module" src="./js/main.js?v=20260718-0848"></script>
 </body>
 </html>
