@@ -1,5 +1,5 @@
 const LS_LAST_BUILD = 'tokirha_last_build';
-const SS_DISMISSED = 'tokirha_startup_dismissed';
+const SS_JUST_REFRESHED = 'tokirha_just_refreshed';
 
 export function getAppBuildId(balance) {
   return balance?.appBuildId || balance?.saveVersion?.toString() || 'dev';
@@ -19,39 +19,57 @@ export function isBuildStale(balance) {
   return !!last && last !== current;
 }
 
-/** Afficher la popup de refresh (testeurs / beta). */
-export function shouldShowStartupRefreshPrompt(balance) {
-  if (!balance?.testerStartupRefresh && !balance?.betaMode) return false;
-
-  const url = new URL(window.location.href);
-  if (url.searchParams.has('tokirha_refresh')) return false;
-
-  const buildId = getAppBuildId(balance);
-  if (isBuildStale(balance)) return true;
-
+/** True si on vient juste d'un hard-refresh (param URL ou flag session). */
+export function cameFromHardRefresh() {
   try {
-    if (sessionStorage.getItem(SS_DISMISSED) === buildId) return false;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('tokirha_refresh')) return true;
+    if (sessionStorage.getItem(SS_JUST_REFRESHED) === '1') return true;
   } catch {
-    // sessionStorage indisponible → afficher quand même
+    // ignore
   }
+  return false;
+}
+
+/**
+ * Afficher la popup à chaque ouverture de session,
+ * sauf si on arrive tout juste d'un hard-refresh.
+ */
+export function shouldShowStartupRefreshPrompt(balance) {
+  // Toujours actif en beta / testeurs (défaut true si non précisé)
+  if (balance?.testerStartupRefresh === false) return false;
+
+  if (cameFromHardRefresh()) return false;
 
   return true;
 }
 
-export function markStartupRefreshDismissed(balance) {
-  const buildId = getAppBuildId(balance);
-  try {
-    sessionStorage.setItem(SS_DISMISSED, buildId);
-  } catch {
-    // ignore
-  }
+/** @deprecated Conservé pour compat — plus utilisé pour sauter le prompt. */
+export function markStartupRefreshDismissed(_balance) {
+  // Intentionnellement vide : on ne laisse plus contourner le hard-refresh.
 }
 
 export function recordBuildSeen(balance) {
   const buildId = getAppBuildId(balance);
   try {
     localStorage.setItem(LS_LAST_BUILD, buildId);
-    sessionStorage.removeItem(SS_DISMISSED);
+    sessionStorage.setItem(SS_JUST_REFRESHED, '1');
+  } catch {
+    // ignore
+  }
+}
+
+/** Nettoie l'URL (?tokirha_refresh=…) après un refresh réussi. */
+export function cleanRefreshParamsFromUrl() {
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('tokirha_refresh') && !url.searchParams.has('_cb')) return;
+    url.searchParams.delete('tokirha_refresh');
+    url.searchParams.delete('_cb');
+    url.searchParams.delete('v');
+    url.searchParams.delete('_');
+    const clean = url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : '') + url.hash;
+    window.history.replaceState({}, '', clean);
   } catch {
     // ignore
   }
@@ -64,15 +82,15 @@ export function getStartupRefreshCopy(balance) {
 
   if (stale) {
     return {
-      title: '🔄 Nouvelle version disponible',
-      desc: `Tu joues peut‑être une ancienne version en cache (ta dernière session : ${last}). Actualise pour charger la build ${current} avant de tester.`,
+      title: '🔄 Nouvelle version — actualisation obligatoire',
+      desc: `Une version plus récente est disponible. L'ancienne (session : ${last}) est peut‑être encore en cache. Appuie sur Actualiser pour vider le cache et charger la build ${current}.`,
       stale: true,
     };
   }
 
   return {
-    title: '🔄 Vérifier la dernière version',
-    desc: `Avant de tester, actualise la page pour être sûr de jouer la build ${current} (cache navigateur vidé). Recommandé à chaque ouverture du jeu.`,
+    title: '🔄 Actualisation au lancement',
+    desc: `À chaque ouverture, on force un rechargement complet (cache navigateur vidé) pour jouer la build ${current}. C’est normal en beta.`,
     stale: false,
   };
 }

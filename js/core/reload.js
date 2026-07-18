@@ -1,19 +1,13 @@
 import { SaveProvider } from './save.js';
 
-export async function forceAppRefresh(game = null) {
-  try {
-    game?.scheduleSave?.();
-  } catch {
-    // Refresh must stay available even if the save debounce is unavailable.
-  }
-
+async function clearBrowserCaches() {
   try {
     if ('caches' in window) {
       const keys = await caches.keys();
       await Promise.all(keys.map((key) => caches.delete(key)));
     }
   } catch {
-    // CacheStorage is optional, especially on iOS standalone mode.
+    // CacheStorage optionnel (iOS standalone, etc.)
   }
 
   try {
@@ -22,28 +16,74 @@ export async function forceAppRefresh(game = null) {
       await Promise.all(registrations.map((registration) => registration.unregister()));
     }
   } catch {
-    // No service worker is expected today; keep this safe for future builds.
+    // Pas de SW aujourd'hui — garde pour plus tard
+  }
+}
+
+/** Recharge forcée des fichiers critiques (contourne le cache HTTP). */
+async function prefetchFreshAssets(bust) {
+  const files = [
+    `./index.html?_=${bust}`,
+    `./js/main.js?_=${bust}`,
+    `./css/main.css?_=${bust}`,
+    `./css/layout.css?_=${bust}`,
+    `./css/online.css?_=${bust}`,
+    `./data/balance.json?_=${bust}`,
+    `./data/resources.json?_=${bust}`,
+    `./data/farm.json?_=${bust}`,
+    `./data/recipes.json?_=${bust}`,
+    `./manifest.webmanifest?_=${bust}`,
+  ];
+  await Promise.allSettled(
+    files.map((url) => fetch(url, { cache: 'reload', credentials: 'same-origin' }))
+  );
+}
+
+/**
+ * Hard refresh : vide caches + SW, re-télécharge les assets, recharge la page
+ * avec un cache-buster unique (nécessaire sur GitHub Pages / Safari).
+ */
+export async function forceAppRefresh(game = null) {
+  try {
+    game?.scheduleSave?.();
+  } catch {
+    // Le refresh doit rester possible même si la save échoue
+  }
+
+  const bust = String(Date.now());
+
+  await clearBrowserCaches();
+  await prefetchFreshAssets(bust);
+
+  try {
+    sessionStorage.removeItem('tokirha_startup_dismissed');
+  } catch {
+    // ignore
   }
 
   const url = new URL(window.location.href);
-  url.searchParams.set('tokirha_refresh', String(Date.now()));
+  // Nettoie les vieux paramètres pour éviter l'accumulation
+  url.searchParams.delete('tokirha_refresh');
+  url.searchParams.delete('v');
+  url.searchParams.delete('_');
+  url.searchParams.delete('_cb');
+  url.searchParams.set('_cb', bust);
+  url.searchParams.set('tokirha_refresh', bust);
+
+  // replace + timestamp = vraie navigation, pas un soft reload
   window.location.replace(url.toString());
 }
 
 export async function forceNewGameReload() {
   SaveProvider.beginReset();
+  await clearBrowserCaches();
 
-  try {
-    if ('caches' in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((key) => caches.delete(key)));
-    }
-  } catch {
-    // Cache cleanup is best-effort only.
-  }
-
+  const bust = String(Date.now());
   const url = new URL(window.location.href);
+  url.searchParams.delete('tokirha_refresh');
+  url.searchParams.delete('_cb');
   url.searchParams.set('newgame', '1');
-  url.searchParams.set('tokirha_refresh', String(Date.now()));
+  url.searchParams.set('_cb', bust);
+  url.searchParams.set('tokirha_refresh', bust);
   window.location.replace(url.toString());
 }

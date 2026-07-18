@@ -4,14 +4,16 @@ import { SaveProvider } from './core/save.js';
 import { audio } from './core/audio.js';
 import { initAuthModal, showAuthModalIfNeeded, showBannedModalIfNeeded } from './ui/authUi.js';
 import { loadGameConfig, isMaintenanceMode } from './systems/gameConfig.js';
-import { recordBuildSeen } from './core/startupRefresh.js';
+import { recordBuildSeen, cleanRefreshParamsFromUrl, cameFromHardRefresh } from './core/startupRefresh.js';
 import { mountAnnouncementBanner } from './ui/announcements.js';
 import { isAccountBanned, syncProfileFromServer } from './core/auth.js';
 
 const DATA_BASE = new URL('../data/', import.meta.url);
 
 async function loadJSON(file) {
-  const res = await fetch(new URL(file, DATA_BASE));
+  const url = new URL(file, DATA_BASE);
+  url.searchParams.set('_', String(Date.now()));
+  const res = await fetch(url, { cache: 'no-store', credentials: 'same-origin' });
   if (!res.ok) throw new Error(`Impossible de charger ${file} (${res.status})`);
   return res.json();
 }
@@ -53,8 +55,9 @@ async function loadJSON(file) {
   );
   await game.init();
 
-  if (new URL(window.location.href).searchParams.has('tokirha_refresh')) {
+  if (cameFromHardRefresh()) {
     recordBuildSeen(balance);
+    cleanRefreshParamsFromUrl();
   }
 
   await loadGameConfig();

@@ -2,7 +2,6 @@ import { on } from '../core/events.js';
 import { forceAppRefresh } from '../core/reload.js';
 import {
   shouldShowStartupRefreshPrompt,
-  markStartupRefreshDismissed,
   recordBuildSeen,
   getAppBuildId,
   getLastSeenBuildId,
@@ -108,7 +107,6 @@ export function initUI(game, audio) {
     startupRefreshDesc: document.getElementById('startup-refresh-desc'),
     startupRefreshVersion: document.getElementById('startup-refresh-version'),
     startupRefreshConfirm: document.getElementById('startup-refresh-confirm'),
-    startupRefreshSkip: document.getElementById('startup-refresh-skip'),
   };
 
   let lastKirha = game.state.kirha;
@@ -416,16 +414,23 @@ export function initUI(game, audio) {
     els.startupRefreshModal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('startup-refresh-pending');
 
-    els.startupRefreshConfirm?.addEventListener('click', () => {
+    els.startupRefreshConfirm?.addEventListener('click', async () => {
+      const btn = els.startupRefreshConfirm;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Vidage du cache…';
+      }
       recordBuildSeen(game.balance);
-      forceAppRefresh(game);
-    }, { once: true });
-
-    els.startupRefreshSkip?.addEventListener('click', () => {
-      markStartupRefreshDismissed(game.balance);
-      els.startupRefreshModal.classList.remove('active');
-      els.startupRefreshModal.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('startup-refresh-pending');
+      try {
+        await forceAppRefresh(game);
+      } catch {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Vider le cache et actualiser';
+        }
+        // Fallback : navigation brute
+        window.location.reload();
+      }
     }, { once: true });
   }
 
