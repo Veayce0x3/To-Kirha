@@ -1,14 +1,5 @@
 import { on } from '../core/events.js';
-import { forceAppRefresh } from '../core/reload.js';
 import { cleanupPullRefreshArtifacts } from './pullRefresh.js';
-import {
-  shouldShowStartupRefreshPrompt,
-  markStartupRefreshDismissed,
-  recordBuildSeen,
-  getAppBuildId,
-  getLastSeenBuildId,
-  getStartupRefreshCopy,
-} from '../core/startupRefresh.js';
 import { RARITY_LABELS } from '../systems/equipmentRarity.js';
 import { getNavIcon, getCategoryIcon, getJobIcon, iconHtml, UI, renderResourceIcon } from '../core/assets.js';
 import {
