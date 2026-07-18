@@ -726,6 +726,22 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Anciens bundles en cache : ne jamais laisser ces nœuds casser le flex */
+.top-pull-refresh,
+.bottom-pull-refresh {
+  display: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  flex: 0 0 0 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 .view-container {
   flex: 1;
   padding: 1rem 1.25rem 2rem;
