@@ -67,7 +67,7 @@ export function buildDungeonRooms(combatZone) {
   return rooms;
 }
 
-export function canFight(combatZone, state, balance, characterConfig, isBoss = false) {
+export function canFight(combatZone, state, balance, characterConfig, isBoss = false, monsterIndex = 0) {
   if (!isZoneUnlocked(combatZone.zone, state, balance)) {
     return { ok: false, reason: 'Zone verrouillée' };
   }
@@ -76,7 +76,92 @@ export function canFight(combatZone, state, balance, characterConfig, isBoss = f
     return { ok: false, reason: `Perso Nv.${combatZone.requiredCharLevel} requis` };
   }
   if (state.combatEncounter) return { ok: false, reason: 'Combat en cours' };
+
+  const training = getTrainingUnlockCheck(combatZone, state, balance, isBoss, monsterIndex);
+  if (!training.ok) return training;
+
   return { ok: true };
+}
+
+/** Seuils d'entraînement : monstre 2 = 5 kills du 1, monstre 3 = 10 du 2, boss = 15 du 3. */
+export function getTrainingUnlockThresholds(balance) {
+  const configured = balance?.combat?.trainingUnlockKills;
+  if (Array.isArray(configured) && configured.length) return configured.map((n) => Math.max(0, Number(n) || 0));
+  return [0, 5, 10, 15];
+}
+
+export function getMonsterKillCount(state, enemyId) {
+  if (!enemyId) return 0;
+  return state.combatKillStats?.[enemyId] || 0;
+}
+
+/**
+ * @returns {{ ok: boolean, reason?: string, required?: number, current?: number, prevName?: string }}
+ */
+export function getTrainingUnlockCheck(combatZone, state, balance, isBoss = false, monsterIndex = 0) {
+  const thresholds = getTrainingUnlockThresholds(balance);
+  const monsters = combatZone.monsters || [];
+
+  if (isBoss) {
+    if (!monsters.length) return { ok: true };
+    const last = monsters[monsters.length - 1];
+    const required = thresholds[Math.min(thresholds.length - 1, monsters.length)] ?? 15;
+    const current = getMonsterKillCount(state, last.enemyId);
+    if (current >= required) return { ok: true, required, current, prevName: last.name };
+    return {
+      ok: false,
+      reason: `Vaincs ${last.name} ${required} fois (${current}/${required})`,
+      required,
+      current,
+      prevName: last.name,
+    };
+  }
+
+  const index = Math.max(0, monsterIndex | 0);
+  if (index <= 0) return { ok: true, required: 0, current: 0 };
+  if (index >= monsters.length) return { ok: false, reason: 'Ennemi inconnu' };
+
+  const required = thresholds[Math.min(thresholds.length - 1, index)] ?? 5;
+  const prev = monsters[index - 1];
+  const current = getMonsterKillCount(state, prev.enemyId);
+  if (current >= required) return { ok: true, required, current, prevName: prev.name };
+  return {
+    ok: false,
+    reason: `Vaincs ${prev.name} ${required} fois (${current}/${required})`,
+    required,
+    current,
+    prevName: prev.name,
+  };
+}
+
+export function getTrainingUnlockProgress(combatZone, state, balance) {
+  const monsters = combatZone.monsters || [];
+  const thresholds = getTrainingUnlockThresholds(balance);
+  const rows = monsters.map((monster, index) => {
+    const check = getTrainingUnlockCheck(combatZone, state, balance, false, index);
+    const kills = getMonsterKillCount(state, monster.enemyId);
+    return {
+      index,
+      monster,
+      unlocked: check.ok,
+      kills,
+      requiredFromPrev: index === 0 ? 0 : (thresholds[Math.min(thresholds.length - 1, index)] ?? 5),
+      prevName: check.prevName || null,
+      currentTowardUnlock: check.current ?? 0,
+      reason: check.reason || null,
+    };
+  });
+  const bossCheck = getTrainingUnlockCheck(combatZone, state, balance, true, 0);
+  return {
+    monsters: rows,
+    boss: {
+      unlocked: bossCheck.ok,
+      required: bossCheck.required ?? 15,
+      current: bossCheck.current ?? 0,
+      prevName: bossCheck.prevName || null,
+      reason: bossCheck.reason || null,
+    },
+  };
 }
 
 export function canEnterDungeon(combatZone, state, balance, characterConfig) {
@@ -127,9 +212,10 @@ export function startFight(
   characterConfig,
   combatItems,
   enemies,
-  companionDefs
+  companionDefs,
+  monsterIndex = 0
 ) {
-  const check = canFight(combatZone, state, balance, characterConfig, isBoss);
+  const check = canFight(combatZone, state, balance, characterConfig, isBoss, monsterIndex);
   if (!check.ok) return check;
 
   const party = buildHeroOnlyParty(state, characterConfig, combatItems, balance);

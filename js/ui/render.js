@@ -49,6 +49,7 @@ import {
   refreshAuctionHouseLight,
   refreshCharacterCombatPanels,
 } from './views.js';
+import { patchFarmUnitCard } from './productionLineView.js';
 
 export function initUI(game, audio) {
   initSakuraPetals();
@@ -497,18 +498,16 @@ export function initUI(game, audio) {
   });
   on('harvestComplete', ({ resourceId, jobId, unitIndex, slotIndex, yield: y, xp, levelResult, dailyBonus }) => {
     patchHarvestSlot(game, jobId, unitIndex ?? slotIndex, resourceId);
-    const resource = game.resources[resourceId];
     if (levelResult) {
       const job = game.jobs[levelResult.jobId];
-      showToast(els, `+${y} ${resource?.name || ''} — ${job?.name || ''} Nv.${levelResult.level} !`, 'levelup');
+      const resource = game.resources[resourceId];
+      showToast(els, `${resource?.name || ''} — ${job?.name || ''} Nv.${levelResult.level} !`, 'levelup');
       els.levelFlash.classList.add('active');
       setTimeout(() => els.levelFlash.classList.remove('active'), 600);
       audio.playSfx('levelup');
       syncJobUnlockToasts();
       buildNav();
     } else {
-      const bonusNote = dailyBonus ? ' · Bonus du jour ×2 !' : '';
-      showToast(els, `+${y} ${resource?.name || ''}${bonusNote}`, 'harvest');
       audio.playSfx('harvest');
     }
     tickHarvestUI();
@@ -523,23 +522,6 @@ export function initUI(game, audio) {
     updateNavActive();
     if (game.isHarvesting()) tickHarvestUI();
     audio.playSfx('ready');
-    const viewJob = VIEWS[getView()]?.job;
-    if (viewJob !== jobId) {
-      const resource = game.resources[resourceId];
-      const job = game.jobs[jobId];
-      const targetView = JOB_VIEW_MAP[jobId];
-      const label = resource?.emoji
-        ? `${resource.emoji} Prêt : ${resource.name || ''}`
-        : `Prêt à récolter : ${resource?.name || ''}`;
-      showToast(
-        els,
-        label,
-        'ready',
-        targetView
-          ? { label: `→ ${job?.name || 'Récolte'}`, onClick: () => navigate(targetView) }
-          : null
-      );
-    }
   });
   on('nicknameError', ({ reason }) => showToast(els, reason, 'sell'));
   on('nicknameChange', (r) => {
@@ -675,11 +657,6 @@ export function initUI(game, audio) {
   on('farmComplete', (outcome) => {
     const { buildingId, products } = outcome || {};
     if (products && Object.keys(products).length) {
-      const parts = Object.entries(products).map(([resId, qty]) => {
-        const res = game.resources[resId];
-        return `+${qty} ${res?.emoji || ''}${res?.name || resId}`.trim();
-      });
-      showToast(els, parts.join(' · '), 'harvest');
       audio.playSfx('harvest');
     }
     if (buildingId != null) {
@@ -702,7 +679,10 @@ export function initUI(game, audio) {
     showToast(els, `Nouvel emplacement ferme ! (${slots} slots)`, 'upgrade');
     if (isFarmView(getView())) refreshView();
   });
-  on('farmStart', () => {
+  on('farmStart', ({ buildingId, productId, unitIndex }) => {
+    if (buildingId != null && productId != null && unitIndex != null) {
+      patchFarmUnitCard(game, buildingId, productId, unitIndex);
+    }
     if (!animFrame) tickHarvestUI();
   });
   on('equip', ({ recipeId }) => {

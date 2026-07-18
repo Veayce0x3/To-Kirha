@@ -3086,6 +3086,73 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   background: linear-gradient(90deg, var(--violet-principal), var(--vert-clair));
 }
 
+.job-next-footer {
+  margin-top: 1.25rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed rgba(232, 180, 203, 0.45);
+}
+
+.job-next-footer-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--violet-sakura);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.job-next-footer .job-inline-unlock {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 0.65rem 0.75rem 0.85rem;
+  text-align: left;
+}
+
+.job-next-footer .job-inline-unlock-icon {
+  width: 36px;
+  height: 36px;
+  max-width: 36px;
+  max-height: 36px;
+  filter: none;
+  flex-shrink: 0;
+}
+
+.job-next-footer .job-inline-unlock-label {
+  font-size: 0.9rem;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+
+.job-next-footer .job-inline-unlock-meta {
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.job-next-footer .job-inline-unlock-bar {
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.3rem;
+  width: auto;
+  max-width: none;
+}
+
+.job-next-footer-ready .job-inline-unlock {
+  border-style: solid;
+  border-color: var(--vert-clair);
+  background: rgba(74, 140, 63, 0.08);
+}
+
+.combat-monster-locked {
+  opacity: 0.72;
+}
+
 .nav-btn-locked {
   opacity: 0.72;
   cursor: pointer;

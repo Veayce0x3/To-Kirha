@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 32,
-  "appBuildId": "20260718-1450",
+  "appBuildId": "20260718-1510",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -35,6 +35,7 @@
       "requireCookUnlocked": true,
       "hint": "Débloque la Cuisine (Poulailler Éleveur Nv.6) pour préparer des repas avant le donjon."
     },
+    "trainingUnlockKills": [0, 5, 10, 15],
     "fusionCosts": {
       "common": 50,
       "rare": 150,

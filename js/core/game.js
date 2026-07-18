@@ -1535,10 +1535,10 @@ export class Game {
     return this.combatZones[zoneId] || null;
   }
 
-  canStartFight(zoneId, isBoss = false) {
+  canStartFight(zoneId, isBoss = false, monsterIndex = 0) {
     const combatZone = this.combatZones[zoneId];
     if (!combatZone) return { ok: false, reason: 'Zone de combat inconnue' };
-    return canFight(combatZone, this.state, this.balance, this.characterConfig, isBoss);
+    return canFight(combatZone, this.state, this.balance, this.characterConfig, isBoss, monsterIndex);
   }
 
   startCombatFight(zoneId, monsterIndex, isBoss = false) {
@@ -1557,7 +1557,8 @@ export class Game {
       this.characterConfig,
       this.combatEquipment.items,
       this.enemies,
-      this.companions
+      this.companions,
+      monsterIndex
     );
 
     if (!result.ok) return result;

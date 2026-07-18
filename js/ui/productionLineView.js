@@ -17,13 +17,13 @@ import { getJobEquippedTool } from '../systems/equipment.js';
 import { emit } from '../core/events.js';
 import {
   navigate,
+  getView,
   getHarvestViewForJob,
   getFarmViewForBuilding,
 } from './router.js';
 import {
   getVisibleHarvestViews,
   getVisibleFarmViews,
-  getUpcomingGatheringJobUnlocks,
   getNextGatheringJobUnlock,
 } from '../systems/careerChoice.js';
 
@@ -214,54 +214,28 @@ function buildUnlockPanel(game, jobId) {
   return panel;
 }
 
-function buildJobUnlockBanner(game) {
-  const upcoming = getUpcomingGatheringJobUnlocks(game.state, game.balance, game.jobs, 3);
-  if (!upcoming.length) return null;
+function buildNextJobUnlockFooter(game) {
+  const nextUnlock = getNextGatheringJobUnlock(game.state, game.balance, game.jobs);
+  if (!nextUnlock) return null;
+
+  const pct = Math.floor((nextUnlock.progress || 0) * 100);
+  const readyCount = (nextUnlock.gates || []).filter((gate) => gate.ready).length;
+  const totalGates = nextUnlock.gates?.length || 0;
+  const icon = getJobIcon(nextUnlock.jobId);
 
   const panel = document.createElement('div');
-  panel.className = 'job-unlock-banner';
-  panel.innerHTML = '<h4 class="job-unlock-banner-title">Prochains métiers</h4>';
-
-  for (const entry of upcoming) {
-    const pct = Math.floor((entry.progress || 0) * 100);
-    const icon = getJobIcon(entry.jobId);
-    const row = document.createElement('div');
-    row.className = `job-unlock-row${entry.ready ? ' job-unlock-ready' : ''}`;
-
-    const gatesHtml = (entry.gates || []).map((gate) => {
-      const gatePct = Math.floor((gate.progress || 0) * 100);
-      const label = gate.type === 'building'
-        ? gate.buildingName
-        : gate.jobName;
-      const meta = gate.ready
-        ? '✓'
-        : gate.type === 'totalHarvests'
-          ? `${gate.currentLevel}/${gate.requiredLevel}`
-          : `Nv.${gate.currentLevel}/${gate.requiredLevel}`;
-      return `
-        <div class="job-unlock-gate${gate.ready ? ' job-unlock-gate-ready' : ''}">
-          <span>${label}</span>
-          <span>${meta}</span>
-          <div class="xp-bar-container job-unlock-bar"><div class="xp-bar" style="width:${gatePct}%"></div></div>
-        </div>
-      `;
-    }).join('');
-
-    row.innerHTML = `
-      <div class="job-unlock-row-head">
-        <span class="job-unlock-icon">${icon ? iconHtml(icon, 'job-unlock-img', entry.label) : entry.emoji}</span>
-        <div class="job-unlock-info">
-          <strong>${entry.label}</strong>
-          <span class="job-unlock-req">${entry.ready ? 'Débloqué !' : `${(entry.gates || []).filter((gate) => gate.ready).length}/${entry.gates?.length || 0} prérequis`}</span>
-        </div>
-        <span class="job-unlock-pct">${pct}%</span>
-      </div>
-      <div class="job-unlock-gates">${gatesHtml}</div>
-      ${entry.hint && !entry.ready ? `<p class="job-unlock-hint">${entry.hint}</p>` : ''}
-    `;
-    panel.appendChild(row);
-  }
-
+  panel.className = `job-next-footer${nextUnlock.ready ? ' job-next-footer-ready' : ''}`;
+  panel.innerHTML = `
+    <p class="job-next-footer-label">Prochain métier</p>
+    <button type="button" class="job-inline-unlock" id="job-next-unlock" title="${nextUnlock.hint || ''}">
+      ${icon ? iconHtml(icon, 'job-inline-unlock-icon', nextUnlock.label) : nextUnlock.emoji}
+      <span class="job-inline-unlock-label">${nextUnlock.label}</span>
+      <span class="job-inline-unlock-meta">${nextUnlock.ready ? 'Prêt' : `${readyCount}/${totalGates} prérequis`}</span>
+      <span class="job-inline-unlock-bar"><span class="job-inline-unlock-fill" style="width:${pct}%"></span></span>
+    </button>
+    ${nextUnlock.hint && !nextUnlock.ready ? `<p class="job-unlock-hint">${nextUnlock.hint}</p>` : ''}
+  `;
+  panel.querySelector('#job-next-unlock')?.addEventListener('click', () => navigate(nextUnlock.viewId));
   return panel;
 }
 
@@ -275,10 +249,6 @@ export function renderJobProduction(game, el, jobId) {
   const prevView = getAdjacentVisibleView(currentView, visibleHarvestViews, -1);
   const nextView = getAdjacentVisibleView(currentView, visibleHarvestViews, 1);
 
-  const nextUnlock = jobId === 'farmer'
-    ? getNextGatheringJobUnlock(game.state, game.balance, game.jobs)
-    : null;
-
   el.innerHTML = `
     <div class="skill-header">
       <div class="skill-header-top job-nav-header">
@@ -289,34 +259,20 @@ export function renderJobProduction(game, el, jobId) {
         </div>
         <button type="button" class="btn btn-muted btn-job-nav" id="job-next" ${nextView ? '' : 'disabled'}>›</button>
       </div>
-      ${nextUnlock ? `
-        <button type="button" class="job-inline-unlock" id="job-next-unlock" title="${nextUnlock.hint || ''}">
-          ${getJobIcon(nextUnlock.jobId) ? iconHtml(getJobIcon(nextUnlock.jobId), 'job-inline-unlock-icon', nextUnlock.label) : nextUnlock.emoji}
-          <span class="job-inline-unlock-label">${nextUnlock.label}</span>
-          <span class="job-inline-unlock-meta">${nextUnlock.ready ? 'Prêt' : `${(nextUnlock.gates || []).filter((gate) => gate.ready).length}/${nextUnlock.gates?.length || 0} prérequis`}</span>
-          <span class="job-inline-unlock-bar"><span class="job-inline-unlock-fill" style="width:${Math.floor(nextUnlock.progress * 100)}%"></span></span>
-        </button>
-      ` : ''}
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
       <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${prog.xp} / ${prog.needed} XP`}</p>
     </div>
     <div class="panel-inner">
-      <div id="job-unlock-banner"></div>
       <h3>Lignes de production</h3>
       <p class="view-desc">La première ressource est offerte. Débloque jusqu'à 5 unités, puis passe à la ressource suivante quand ton niveau le permet.</p>
       <div id="production-lines"></div>
       <div id="production-unlock"></div>
+      <div id="job-next-footer"></div>
     </div>
   `;
 
   el.querySelector('#job-prev')?.addEventListener('click', () => { if (prevView) navigate(prevView); });
   el.querySelector('#job-next')?.addEventListener('click', () => { if (nextView) navigate(nextView); });
-  el.querySelector('#job-next-unlock')?.addEventListener('click', () => navigate(nextUnlock.viewId));
-
-  const bannerSlot = el.querySelector('#job-unlock-banner');
-  const banner = buildJobUnlockBanner(game);
-  if (bannerSlot && banner) bannerSlot.appendChild(banner);
-  else if (bannerSlot) bannerSlot.remove();
 
   const linesEl = el.querySelector('#production-lines');
   for (const resource of unlocked) {
@@ -325,6 +281,11 @@ export function renderJobProduction(game, el, jobId) {
 
   const unlockEl = el.querySelector('#production-unlock');
   if (unlockEl) unlockEl.appendChild(buildUnlockPanel(game, jobId));
+
+  const footerSlot = el.querySelector('#job-next-footer');
+  const footer = buildNextJobUnlockFooter(game);
+  if (footerSlot && footer) footerSlot.appendChild(footer);
+  else if (footerSlot) footerSlot.remove();
 }
 
 function getFarmBtnLabel(progress = 0) {
@@ -377,12 +338,21 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
     `;
 
     const onTap = () => {
-      if (canStart) {
-        const result = game.startFarmSlot(buildingId, lineKey, unitIndex);
-        if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
-      } else if (canCollect) {
-        game.completeFarmLine(buildingId, lineKey, unitIndex);
+      const liveProgress = game.getFarmLineProgress(buildingId, lineKey, unitIndex);
+      const liveSlot = game.state.productionLines?.farm?.[buildingId]?.[lineKey]?.slots?.[unitIndex];
+      if (liveSlot?.active) {
+        if (liveProgress >= 1) {
+          game.completeFarmLine(buildingId, lineKey, unitIndex);
+        }
+        return;
       }
+      const liveMeta = game.getFarmMeta(buildingId);
+      const liveNeedsAnimal = building.requiresAnimal && !liveMeta.hasAnimal;
+      const liveToolBlock = game.getFarmToolBlockReason(buildingId);
+      const liveFeedBlocked = needsFeed && (!liveMeta.feedId || !canAffordFeed(building, liveMeta.feedId, game.state));
+      if (liveNeedsAnimal || liveFeedBlocked || liveToolBlock) return;
+      const result = game.startFarmSlot(buildingId, lineKey, unitIndex);
+      if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
     };
 
     card.querySelector('.slot-visual-tap')?.addEventListener('click', onTap);
@@ -570,16 +540,27 @@ export function updateFarmLineProgresses(game, buildingId) {
       if (!slot?.active) return;
       const progress = game.getFarmLineProgress(buildingId, lineKey, unitIndex);
       const pct = Math.floor(progress * 100);
-      const card = document.querySelector(`.production-unit[data-building="${buildingId}"][data-product="${lineKey}"][data-unit="${unitIndex}"]`);
+      let card = document.querySelector(`.production-unit[data-building="${buildingId}"][data-product="${lineKey}"][data-unit="${unitIndex}"]`);
       if (!card) return;
 
       if (isUnifiedFarmBuilding(building)) {
-        const fill = card.querySelector('.slot-progress-fill');
-        const label = card.querySelector('.slot-progress-label');
+        let fill = card.querySelector('.slot-progress-fill');
+        let label = card.querySelector('.slot-progress-label');
+        // Carte démarrée sans overlay → reconstruire comme une récolte
+        if (!fill || !label) {
+          patchFarmUnitCard(game, buildingId, lineKey, unitIndex);
+          card = document.querySelector(`.production-unit[data-building="${buildingId}"][data-product="${lineKey}"][data-unit="${unitIndex}"]`);
+          fill = card?.querySelector('.slot-progress-fill');
+          label = card?.querySelector('.slot-progress-label');
+        }
         const statusLabel = getFarmBtnLabel(progress);
         if (fill) fill.style.width = `${pct}%`;
         if (label) label.textContent = statusLabel;
-        if (progress >= 1) card.classList.add('slot-can-harvest');
+        if (progress >= 1) {
+          card?.classList.add('slot-can-harvest');
+          const tap = card?.querySelector('.slot-visual-tap');
+          if (tap) tap.setAttribute('aria-label', `${building.name} — Prêt !`);
+        }
         return;
       }
 
@@ -588,4 +569,18 @@ export function updateFarmLineProgresses(game, buildingId) {
       }
     });
   }
+}
+
+/** Reconstruit une carte unité ferme (barre live après démarrage). */
+export function patchFarmUnitCard(game, buildingId, lineKey, unitIndex) {
+  const building = getBuildingDef(game.farmData, buildingId);
+  if (!building) return;
+  const view = getFarmViewForBuilding(buildingId);
+  if (getView() !== view) return;
+  const old = document.querySelector(
+    `.production-unit[data-building="${buildingId}"][data-product="${lineKey}"][data-unit="${unitIndex}"]`
+  );
+  if (!old) return;
+  const fresh = buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building);
+  old.replaceWith(fresh);
 }
