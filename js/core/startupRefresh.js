@@ -19,7 +19,6 @@ export function isBuildStale(balance) {
   return !!last && last !== current;
 }
 
-/** True si on vient juste d'un hard-refresh (param URL ou flag session). */
 export function cameFromHardRefresh() {
   try {
     const url = new URL(window.location.href);
@@ -32,21 +31,32 @@ export function cameFromHardRefresh() {
 }
 
 /**
- * Afficher la popup à chaque ouverture de session,
- * sauf si on arrive tout juste d'un hard-refresh.
+ * Popup au lancement :
+ * - toujours si build obsolète
+ * - sinon une fois par session navigateur (jusqu'au hard-refresh)
  */
 export function shouldShowStartupRefreshPrompt(balance) {
-  // Toujours actif en beta / testeurs (défaut true si non précisé)
   if (balance?.testerStartupRefresh === false) return false;
-
   if (cameFromHardRefresh()) return false;
+
+  if (isBuildStale(balance)) return true;
+
+  try {
+    // Déjà actualisé cette session → ne pas rebloquer
+    if (sessionStorage.getItem(SS_JUST_REFRESHED) === '1') return false;
+  } catch {
+    // ignore
+  }
 
   return true;
 }
 
-/** @deprecated Conservé pour compat — plus utilisé pour sauter le prompt. */
 export function markStartupRefreshDismissed(_balance) {
-  // Intentionnellement vide : on ne laisse plus contourner le hard-refresh.
+  try {
+    sessionStorage.setItem(SS_JUST_REFRESHED, '1');
+  } catch {
+    // ignore
+  }
 }
 
 export function recordBuildSeen(balance) {
@@ -59,7 +69,6 @@ export function recordBuildSeen(balance) {
   }
 }
 
-/** Nettoie l'URL (?tokirha_refresh=…) après un refresh réussi. */
 export function cleanRefreshParamsFromUrl() {
   try {
     const url = new URL(window.location.href);
@@ -82,15 +91,15 @@ export function getStartupRefreshCopy(balance) {
 
   if (stale) {
     return {
-      title: '🔄 Nouvelle version — actualisation obligatoire',
-      desc: `Une version plus récente est disponible. L'ancienne (session : ${last}) est peut‑être encore en cache. Appuie sur Actualiser pour vider le cache et charger la build ${current}.`,
+      title: '🔄 Nouvelle version disponible',
+      desc: `Actualise pour charger la build ${current} (ta dernière session : ${last}). Ça vide le cache navigateur.`,
       stale: true,
     };
   }
 
   return {
-    title: '🔄 Actualisation au lancement',
-    desc: `À chaque ouverture, on force un rechargement complet (cache navigateur vidé) pour jouer la build ${current}. C’est normal en beta.`,
+    title: '🔄 Actualiser pour jouer',
+    desc: `Un rechargement forcé charge la build ${current} sans ancien cache. Tu peux aussi le faire plus tard dans Options.`,
     stale: false,
   };
 }

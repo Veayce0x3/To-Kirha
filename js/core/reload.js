@@ -7,7 +7,7 @@ async function clearBrowserCaches() {
       await Promise.all(keys.map((key) => caches.delete(key)));
     }
   } catch {
-    // CacheStorage optionnel (iOS standalone, etc.)
+    // CacheStorage optionnel
   }
 
   try {
@@ -16,44 +16,58 @@ async function clearBrowserCaches() {
       await Promise.all(registrations.map((registration) => registration.unregister()));
     }
   } catch {
-    // Pas de SW aujourd'hui — garde pour plus tard
+    // Pas de SW obligatoire
   }
 }
 
-/** Recharge forcée des fichiers critiques (contourne le cache HTTP). */
+/** Prefetch court (max 1,5 s) — ne doit jamais bloquer le reload. */
 async function prefetchFreshAssets(bust) {
   const files = [
     `./index.html?_=${bust}`,
     `./js/main.js?_=${bust}`,
     `./css/main.css?_=${bust}`,
     `./css/layout.css?_=${bust}`,
-    `./css/online.css?_=${bust}`,
     `./data/balance.json?_=${bust}`,
-    `./data/resources.json?_=${bust}`,
-    `./data/farm.json?_=${bust}`,
-    `./data/recipes.json?_=${bust}`,
-    `./manifest.webmanifest?_=${bust}`,
   ];
-  await Promise.allSettled(
-    files.map((url) => fetch(url, { cache: 'reload', credentials: 'same-origin' }))
-  );
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeout = setTimeout(() => controller?.abort(), 1500);
+  try {
+    await Promise.allSettled(
+      files.map((url) =>
+        fetch(url, {
+          cache: 'reload',
+          credentials: 'same-origin',
+          signal: controller?.signal,
+        })
+      )
+    );
+  } catch {
+    // ignore
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 /**
- * Hard refresh : vide caches + SW, re-télécharge les assets, recharge la page
- * avec un cache-buster unique (nécessaire sur GitHub Pages / Safari).
+ * Hard refresh : vide caches + SW, tente un prefetch rapide, recharge avec cache-buster.
  */
 export async function forceAppRefresh(game = null) {
   try {
     game?.scheduleSave?.();
   } catch {
-    // Le refresh doit rester possible même si la save échoue
+    // ignore
   }
 
   const bust = String(Date.now());
 
-  await clearBrowserCaches();
-  await prefetchFreshAssets(bust);
+  // Ne jamais bloquer plus de ~2 s au total
+  await Promise.race([
+    (async () => {
+      await clearBrowserCaches();
+      await prefetchFreshAssets(bust);
+    })(),
+    new Promise((resolve) => setTimeout(resolve, 2000)),
+  ]);
 
   try {
     sessionStorage.removeItem('tokirha_startup_dismissed');
@@ -62,7 +76,6 @@ export async function forceAppRefresh(game = null) {
   }
 
   const url = new URL(window.location.href);
-  // Nettoie les vieux paramètres pour éviter l'accumulation
   url.searchParams.delete('tokirha_refresh');
   url.searchParams.delete('v');
   url.searchParams.delete('_');
@@ -70,13 +83,16 @@ export async function forceAppRefresh(game = null) {
   url.searchParams.set('_cb', bust);
   url.searchParams.set('tokirha_refresh', bust);
 
-  // replace + timestamp = vraie navigation, pas un soft reload
   window.location.replace(url.toString());
 }
 
 export async function forceNewGameReload() {
   SaveProvider.beginReset();
-  await clearBrowserCaches();
+
+  await Promise.race([
+    clearBrowserCaches(),
+    new Promise((resolve) => setTimeout(resolve, 1000)),
+  ]);
 
   const bust = String(Date.now());
   const url = new URL(window.location.href);
