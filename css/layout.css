@@ -6736,7 +6736,10 @@ body.picker-sheet-open #picker-sheet-portal .picker-sheet-header {
 .job-switcher-icon {
   width: 28px;
   height: 28px;
+  max-width: 28px;
+  max-height: 28px;
   object-fit: contain;
+  display: block;
 }
 
 .job-switcher-emoji {
