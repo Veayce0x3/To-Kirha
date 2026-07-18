@@ -63,5 +63,5 @@ export function getEffectiveHarvestXp(resource, resources, balance = null) {
 /** @deprecated Ancienne échelle 10/14/18 — ne plus utiliser pour les déblocages */
 export function getLineUnlockLevel(tierIndex) {
   if (tierIndex <= 0) return 1;
-  return 12 + (tierIndex - 1) * 6;
+  return 20 + (tierIndex - 1) * 20;
 }

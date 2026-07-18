@@ -1,19 +1,28 @@
 import { getJobEquippedTool } from './equipment.js';
-import { isDurabilityTool, isToolEffectActive } from './toolDurability.js';
+import { hasWorkingTool, isDurabilityTool, isToolEffectActive } from './toolDurability.js';
 import { getResourceTierIndex } from './progression.js';
 import { isStarterHarvestResource } from './zones.js';
 
+/**
+ * Palier outil vs ressource :
+ * index 0 (Blé…) → 0 = sans outil / pas d'usure
+ * index 1 (Orge…) → 1 = faucille craftée avec la ressource 0
+ * index 2 → 2, etc.
+ */
 export function getResourceHarvestTier(resource, resources = null) {
   if (resources && resource) {
-    return getResourceTierIndex(resource, resources) + 1;
+    return getResourceTierIndex(resource, resources);
   }
-  return Math.floor(((resource?.requiredJobLevel || 1) - 1) / 20) + 1;
+  const lvl = resource?.requiredJobLevel || 1;
+  if (lvl <= 1) return 0;
+  return Math.floor(lvl / 20);
 }
 
 export function getRecipeToolTier(recipe) {
   if (recipe?.toolTier) return recipe.toolTier;
   const lvl = recipe?.requiredJobLevel ?? 1;
-  return Math.floor((lvl - 1) / 20) + 1;
+  if (lvl <= 1) return 1;
+  return Math.floor(lvl / 20);
 }
 
 export function getGatheringToolRecipe(state, jobId, recipes) {
@@ -27,6 +36,20 @@ export function getGatheringToolRecipe(state, jobId, recipes) {
   return recipe;
 }
 
+function findOwnedWorkingToolForJob(state, jobId, recipes, minTier = 1) {
+  let best = null;
+  for (const recipeId of state.crafted || []) {
+    const recipe = recipes[recipeId];
+    if (!recipe || !isDurabilityTool(recipe)) continue;
+    if (recipe.effect?.job !== jobId) continue;
+    if (!hasWorkingTool(state, recipeId, recipe)) continue;
+    const tier = getRecipeToolTier(recipe);
+    if (tier < minTier) continue;
+    if (!best || tier < getRecipeToolTier(best)) best = recipe;
+  }
+  return best;
+}
+
 export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentData, resources = null) {
   const recipe = getGatheringToolRecipe(state, jobId, recipes);
   const resourceTier = getResourceHarvestTier(resource, resources);
@@ -35,6 +58,17 @@ export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentDa
     if (resources && isStarterHarvestResource(resource, resources)) {
       return { ok: true };
     }
+    if (resourceTier <= 0) {
+      return { ok: true };
+    }
+    const owned = findOwnedWorkingToolForJob(state, jobId, recipes, resourceTier);
+    if (owned) {
+      return {
+        ok: false,
+        reason: 'not_equipped',
+        message: `Tu possèdes « ${owned.name} » — équipe-la sur Perso → Outils.`,
+      };
+    }
     return {
       ok: false,
       reason: 'no_tool',
@@ -42,6 +76,11 @@ export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentDa
         ? 'Équipe un outil sur Perso → Outils, ou fabrique-le à l\'Atelier Outilleur.'
         : `Outil palier ${resourceTier} requis — fabrique-le à l'Atelier Outilleur.`,
     };
+  }
+
+  // Ressource starter : outil optionnel, pas de contrôle de palier
+  if (resourceTier <= 0 || (resources && isStarterHarvestResource(resource, resources))) {
+    return { ok: true, recipe };
   }
 
   const toolTier = getRecipeToolTier(recipe);
@@ -61,10 +100,18 @@ export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentDa
 export function getFarmToolCheck(state, recipes, equipmentData) {
   const recipe = getGatheringToolRecipe(state, 'breeder', recipes);
   if (!recipe) {
+    const owned = findOwnedWorkingToolForJob(state, 'breeder', recipes, 1);
+    if (owned) {
+      return {
+        ok: false,
+        reason: 'not_equipped',
+        message: `Tu possèdes « ${owned.name} » — équipe-le sur Perso → Outils.`,
+      };
+    }
     return {
       ok: false,
       reason: 'no_tool',
-      message: 'Équipe un outil d\'éleveur sur Perso → Outils (seau, panier…).',
+      message: 'Équipe un seau d\'éleveur sur Perso → Outils (Atelier Outilleur).',
     };
   }
   return { ok: true, recipe };
@@ -78,5 +125,7 @@ export function listToolsForJob(recipes, jobId) {
 
 export function toolMatchesResourceTier(recipe, resource, resources) {
   if (!recipe?.toolTier || !resource) return true;
-  return getRecipeToolTier(recipe) === getResourceHarvestTier(resource, resources);
+  const resourceTier = getResourceHarvestTier(resource, resources);
+  if (resourceTier <= 0) return false; // starter : pas d'usure
+  return getRecipeToolTier(recipe) === resourceTier;
 }

@@ -1,9 +1,11 @@
 import { getJobEquippedTool } from './equipment.js';
 import { getToolUsesRemaining, hasWorkingTool, isDurabilityTool } from './toolDurability.js';
 
-/** Palier outil requis pour une ressource (Nv.1→1, Nv.20→2, …). */
+/** Palier outil requis : Nv.1 → 0, Nv.20 → 1, Nv.40 → 2… */
 export function getResourceToolTier(resource) {
-  return Math.floor(((resource?.requiredJobLevel || 1) - 1) / 20) + 1;
+  const lvl = resource?.requiredJobLevel || 1;
+  if (lvl <= 1) return 0;
+  return Math.floor(lvl / 20);
 }
 
 export function getRecipeToolTier(recipe) {
@@ -25,16 +27,18 @@ export function getEquippedToolTier(state, recipes, jobId) {
 
 export function canHarvestWithTool(resource, state, recipes, jobId) {
   const required = getResourceToolTier(resource);
+  if (required <= 0) return true;
   const equipped = getEquippedToolTier(state, recipes, jobId);
   return equipped >= required;
 }
 
 export function getHarvestToolBlockReason(resource, state, recipes, jobs, jobId) {
   const required = getResourceToolTier(resource);
+  if (required <= 0) return null;
   const recipeId = getJobEquippedTool(state, jobId);
   if (!recipeId) {
     const jobName = jobs[jobId]?.name || jobId;
-    return { type: 'no_tool', message: `Équipe un outil de ${jobName} à l'Atelier` };
+    return { type: 'no_tool', message: `Équipe un outil de ${jobName} (Perso → Outils)` };
   }
   const recipe = recipes[recipeId];
   if (!recipe) {
@@ -66,7 +70,7 @@ export function getFarmToolBlockReason(building, state, recipes) {
   const jobId = building.toolJob || 'breeder';
   const recipeId = getJobEquippedTool(state, jobId);
   if (!recipeId) {
-    return { type: 'no_tool', message: 'Équipe un outil d\'Éleveur (seau, panier…)' };
+    return { type: 'no_tool', message: 'Équipe un seau d\'Éleveur (Perso → Outils)' };
   }
   const recipe = recipes[recipeId];
   if (!recipe || !hasWorkingTool(state, recipe.id, recipe)) {

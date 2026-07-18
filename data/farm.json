@@ -25,8 +25,8 @@
       "cycleMs": 15000,
       "products": { "oeuf": 1, "plume": 1 },
       "productChances": { "oeuf": 1, "plume": 0.33 },
-      "feed": { "ble": 2, "eau": 1 },
-      "feedEfficiency": { "ble": 1, "orge": 0.85, "houblon": 0.75, "avoine": 0.8 }
+      "feed": { "ble": 2 },
+      "feedEfficiency": { "ble": 1 }
     },
     "barn": {
       "id": "barn",

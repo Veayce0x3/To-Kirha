@@ -56,9 +56,9 @@ export function isAdmin() {
 
 export function isSuperAdmin() {
   return authState.mode === 'registered'
-    && authState.role === 'superadmin'
     && !authState.isBanned
-    && authState.profileSynced;
+    && authState.profileSynced
+    && authState.role === 'superadmin';
 }
 
 export function getProfileRole() {
@@ -183,8 +183,12 @@ export function syncAuthFromState(state) {
 function applyProfileData(profile) {
   if (!profile) return;
   authState.profileSynced = true;
-  authState.role = profile.role || 'player';
-  authState.adminAccess = profile.admin_access === true;
+  const role = profile.role || 'player';
+  authState.role = role;
+  // admin_access serveur + repli sur le rôle (évite faux négatif après reset/sync)
+  authState.adminAccess = profile.admin_access === true
+    || role === 'admin'
+    || role === 'superadmin';
   authState.isBanned = !!profile.is_banned;
   authState.bannedReason = profile.banned_reason || null;
   authState.cheatFlagged = !!profile.cheat_flagged;

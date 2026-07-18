@@ -69,7 +69,7 @@ function renderCareerModal() {
 
   body.innerHTML = `
     <h2>🌸 Bienvenue à To-Kirha</h2>
-    <p class="modal-desc">Tu commences en tant que <strong>Paysan</strong> avec une ligne de production de Blé. Les autres métiers se débloquent en progressant.</p>
+    <p class="modal-desc">Tu commences en tant que <strong>Paysan</strong> avec une ligne de production de Blé. Les autres métiers se débloquent en progressant. Le reste s'achète à la Place marchande.</p>
     ${nicknameHtml}
     <section class="career-section">
       <h3>Arme de départ</h3>

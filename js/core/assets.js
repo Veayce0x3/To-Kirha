@@ -168,8 +168,9 @@ const FISHER_SLOT_SPRITES = {
   regrowing: asset(F, 'pecheur_sans_poisson_transparent.png'),
 };
 
+/** Inventaire pêche — goujon = Dorade (starter), id historique conservé pour les recettes */
 const FISHER_INVENTORY_FILES = {
-  dorade: 'dorade_transparent.png',
+  goujon: 'dorade_transparent.png',
 };
 
 function getFisherSprites(resourceId) {
@@ -179,6 +180,21 @@ function getFisherSprites(resourceId) {
     regrowing: FISHER_SLOT_SPRITES.regrowing,
     inventory: invFile ? asset(F, invFile) : null,
   };
+}
+
+const A = 'metiers/alchimiste ';
+
+const ALCHEMIST_FILES = {
+  ortie: {
+    available: 'pissenlit_transparent.png',
+    regrowing: 'jardin-alchimiste_transparent.png',
+    inventory: 'pissenlit_inventaire_transparent.png',
+  },
+};
+
+function alchemistSprite(id, kind) {
+  const file = ALCHEMIST_FILES[id]?.[kind];
+  return file ? asset(A, file) : null;
 }
 
 function farmerSprite(id, kind) {
@@ -204,6 +220,13 @@ export function getResourceSprites(resourceId) {
       available: lumberjackSprite(resourceId, 'available'),
       regrowing: lumberjackSprite(resourceId, 'regrowing'),
       inventory: lumberjackSprite(resourceId, 'inventory'),
+    };
+  }
+  if (ALCHEMIST_FILES[resourceId]) {
+    return {
+      available: alchemistSprite(resourceId, 'available'),
+      regrowing: alchemistSprite(resourceId, 'regrowing'),
+      inventory: alchemistSprite(resourceId, 'inventory'),
     };
   }
   return null;
@@ -264,13 +287,25 @@ export function labelWithIcon(resource, className = 'resource-icon-img') {
 
 export function applyAssetPaths(resources) {
   for (const [id, res] of Object.entries(resources)) {
-    const sprites = getResourceSprites(id) || (res.job === 'fisher' ? getFisherSprites(id) : null);
+    const sprites = getResourceSprites(id)
+      || (res.job === 'fisher' ? getFisherSprites(id) : null)
+      || (FARM_PRODUCT_FILES[id] ? {
+        available: FARM_PRODUCT_FILES[id],
+        regrowing: FARM_PRODUCT_FILES[id],
+        inventory: FARM_PRODUCT_FILES[id],
+      } : null);
     if (sprites) {
       if (!res.visual) res.visual = {};
       res.visual.sprite = sprites;
       if (!res.visual.harvesting) {
         res.visual.harvesting = { label: 'Récolte…' };
       }
+    }
+    // Icône inventaire ferme même sans sprite de slot
+    if (!res.visual?.sprite?.inventory && FARM_PRODUCT_FILES[id]) {
+      if (!res.visual) res.visual = {};
+      if (!res.visual.sprite) res.visual.sprite = {};
+      res.visual.sprite.inventory = FARM_PRODUCT_FILES[id];
     }
   }
 
@@ -280,6 +315,12 @@ export function applyAssetPaths(resources) {
 
   if (resources.gold_nugget) {
     resources.gold_nugget.sprite = asset('pepites d_or', 'pepite_150_transparent.png');
+  }
+
+  if (resources.eau && !resources.eau.visual?.sprite?.inventory) {
+    if (!resources.eau.visual) resources.eau.visual = {};
+    if (!resources.eau.visual.sprite) resources.eau.visual.sprite = {};
+    resources.eau.visual.sprite.inventory = FARM_PRODUCT_FILES.eau;
   }
 }
 

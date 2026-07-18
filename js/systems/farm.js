@@ -182,10 +182,13 @@ export function consumeFeed(building, feedId, state) {
 
 export function listFeedOptions(building) {
   if (Object.keys(building.feed || {}).length === 0) return [];
-  return [...new Set([
-    ...Object.keys(building.feed || {}).filter((k) => k !== 'eau'),
-    ...Object.keys(building.feedEfficiency || {}),
-  ])];
+  // Une seule ration « officielle » par bâtiment (pas les alternatives d'efficacité).
+  return Object.keys(building.feed).filter((k) => k !== 'eau');
+}
+
+/** Première ration du bâtiment (ex. blé pour le poulailler). */
+export function getPrimaryFeedId(building) {
+  return listFeedOptions(building)[0] || null;
 }
 
 export function getAvailableFeeds(building, state) {
@@ -224,6 +227,10 @@ export function startFarmProduction(state, farmData, buildingId, slotIndex) {
 
   const needsFeed = Object.keys(building.feed || {}).length > 0;
   if (needsFeed) {
+    if (!slot.feedId) {
+      const primary = Object.keys(building.feed || {}).find((k) => k !== 'eau');
+      if (primary) slot.feedId = primary;
+    }
     if (!slot.feedId || !canAffordFeed(building, slot.feedId, state)) {
       return { ok: false, reason: 'Ration insuffisante' };
     }

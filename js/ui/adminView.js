@@ -23,6 +23,7 @@ import {
   grantAllJobsLevel,
   flagCheat,
   deleteLeaderboardEntry,
+  wipeAllLeaderboard,
   wipePlayerMarket,
   resetCloudSave,
   fetchModerationLogs,
@@ -604,6 +605,7 @@ async function renderLeaderboardAdmin(container) {
         <option value="total_earned" ${sort === 'total_earned' ? 'selected' : ''}>Par fortune</option>
         <option value="seasons_completed" ${sort === 'seasons_completed' ? 'selected' : ''}>Par saisons</option>
       </select>
+      ${isSuperAdmin() ? '<button type="button" class="btn btn-muted btn-sm" id="admin-wipe-lb">Vider tout le classement</button>' : ''}
     `)}
     <div class="admin-table-wrap">
       <table class="admin-table">
@@ -622,13 +624,19 @@ async function renderLeaderboardAdmin(container) {
               <button type="button" class="btn btn-muted btn-sm admin-del-lb-row" data-uid="${r.user_id}">Retirer</button>
             </td>
           </tr>
-        `).join('')}</tbody>
+        `).join('') || '<tr><td colspan="8">Aucun joueur classé.</td></tr>'}</tbody>
       </table>
     </div>
   `;
   container.querySelector('#admin-lb-sort')?.addEventListener('change', (e) => {
     container.dataset.sort = e.target.value;
     renderLeaderboardAdmin(container);
+  });
+  container.querySelector('#admin-wipe-lb')?.addEventListener('click', async () => {
+    if (!confirm('Vider TOUT le classement ? (parties reset)')) return;
+    const r = await wipeAllLeaderboard();
+    setStatus(r.ok ? `Classement vidé (${r.data?.deleted ?? 0}).` : r.reason, !r.ok);
+    if (r.ok) renderLeaderboardAdmin(container);
   });
   bindRefresh(container, () => renderLeaderboardAdmin(container));
   container.querySelectorAll('.admin-view-player').forEach((btn) => {

@@ -4,21 +4,33 @@ function getZoneUnlockRequirements(zoneId, balance) {
   return balance.zones[zoneId]?.unlockRequirements || null;
 }
 
-export function formatZoneUnlockRequirements(zoneId, balance, resources = {}, jobs = {}) {
+export function formatZoneUnlockRequirements(zoneId, balance, resources = {}, jobs = {}, state = null) {
   const req = getZoneUnlockRequirements(zoneId, balance);
   if (!req) return [];
 
   const lines = [];
-  if (req.kirha > 0) lines.push(`${req.kirha.toLocaleString('fr-FR')} 💰`);
   if (req.minJobLevel && req.minJobId) {
     const jobName = jobs[req.minJobId]?.name || req.minJobId;
-    lines.push(`${jobName} Nv.${req.minJobLevel}`);
+    const current = state ? getJobLevel(state, req.minJobId) : null;
+    const done = current != null && current >= req.minJobLevel;
+    const progress = current != null
+      ? ` (toi : Nv.${current}${done ? ' ✓' : ''})`
+      : '';
+    lines.push(`${done ? '✓' : '🔒'} ${jobName} Nv.${req.minJobLevel}${progress}`);
   }
   if (req.resources) {
     for (const [resId, amount] of Object.entries(req.resources)) {
       const name = resources[resId]?.name || resId;
-      lines.push(`${amount}× ${name}`);
+      const have = state?.inventory?.[resId] || 0;
+      const done = state ? have >= amount : null;
+      const progress = state != null ? ` · ${have}/${amount}` : '';
+      lines.push(`${done ? '✓' : '📦'} ${amount}× ${name}${progress}`);
     }
+  }
+  if (req.kirha > 0) {
+    const have = state?.kirha || 0;
+    const done = state ? have >= req.kirha : null;
+    lines.push(`${done ? '✓' : '💰'} ${req.kirha.toLocaleString('fr-FR')} Kirha${state != null ? ` · ${have.toLocaleString('fr-FR')}` : ''}`);
   }
   return lines;
 }

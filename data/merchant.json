@@ -1,12 +1,12 @@
 {
   "id": "auction_house",
-  "name": "Hôtel des Ventes",
+  "name": "Place marchande",
   "emoji": "🏛️",
-  "description": "Marché du Village Sakura — achète des biens rares avec tes Kirha.",
+  "description": "Place du Village Sakura — achète des biens rares avec tes Kirha.",
   "vendors": {
     "ancient_scroll_vendor": {
       "id": "ancient_scroll_vendor",
-      "name": "Marchand des Anciens",
+      "name": "Archiviste",
       "emoji": "📜",
       "description": "Savoir ancestral indispensable à la fabrication des objets les plus utiles.",
       "offers": {

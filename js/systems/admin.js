@@ -26,7 +26,7 @@ export const ADMIN_TABS = [
   { id: 'players', label: 'Joueurs', icon: '👥', minRole: 'moderator' },
   { id: 'reports', label: 'Signalements', icon: '🚩', minRole: 'moderator' },
   { id: 'leaderboard', label: 'Classement', icon: '🏆', minRole: 'moderator' },
-  { id: 'market', label: 'HDV', icon: '🏪', minRole: 'moderator' },
+  { id: 'market', label: 'Place', icon: '🏪', minRole: 'moderator' },
   { id: 'saves', label: 'Saves', icon: '💾', minRole: 'admin' },
   { id: 'announcements', label: 'Annonces', icon: '📢', minRole: 'admin' },
   { id: 'config', label: 'Config', icon: '⚙️', minRole: 'admin' },
@@ -87,6 +87,11 @@ export async function flagCheat(userId, flagged, notes = null) {
 export async function deleteLeaderboardEntry(userId) {
   if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
   return rpc('admin_delete_leaderboard', { p_user_id: userId });
+}
+
+export async function wipeAllLeaderboard() {
+  if (!isSuperAdmin()) return { ok: false, reason: 'Superadmin requis.' };
+  return rpc('admin_wipe_all_leaderboard');
 }
 
 export async function wipePlayerMarket(userId) {

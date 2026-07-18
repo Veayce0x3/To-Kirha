@@ -24,7 +24,7 @@
     "id": "fishing_rod",
     "name": "Canne en bambou",
     "emoji": "🎣",
-    "description": "Palier 1 — pêcheur",
+    "description": "Palier 1 — pêcheur (Dorade)",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
@@ -45,7 +45,7 @@
     "id": "farm_sickle",
     "name": "Faucille du Paysan",
     "emoji": "🌾",
-    "description": "Palier 1 — paysan",
+    "description": "Palier 1 — récolte l'Orge (le Blé n'use pas l'outil)",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
@@ -176,13 +176,12 @@
     "id": "breeder_bucket",
     "name": "Seau de Frêne",
     "emoji": "🪣",
-    "description": "Palier 1 — élevage",
+    "description": "Palier 1 — élevage (bois uniquement)",
     "kirhaCost": 5,
     "maxUses": 30,
     "toolTier": 1,
     "ingredients": {
-      "frene": 4,
-      "fer": 2
+      "frene": 4
     },
     "effect": {
       "type": "speed",
@@ -213,7 +212,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 8,
+    "requiredJobLevel": 20,
     "jobXp": 22
   },
   "sequoia_axe": {
@@ -1093,7 +1092,7 @@
     "id": "orge_sickle",
     "name": "Faucille d'Orge",
     "emoji": "🌾",
-    "description": "Palier 2 — farmer",
+    "description": "Palier 2 — récolte le Seigle (l'Orge n'use pas cet outil)",
     "kirhaCost": 120,
     "maxUses": 50,
     "toolTier": 2,

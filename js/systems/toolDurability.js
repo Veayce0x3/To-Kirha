@@ -41,6 +41,11 @@ export function migrateToolDurability(state, recipes) {
   }
 }
 
+/**
+ * Usure les outils équipés.
+ * En récolte : n'use que si palier outil = palier ressource (pas sur la 1ʳᵉ ressource).
+ * En ferme (sans resourceId) : usure à chaque production.
+ */
 export function wearToolsForHarvest(state, recipes, equipmentData, jobId, resourceId = null, resources = null) {
   const eq = state.equipment;
   if (!eq?.jobs) return [];

@@ -23,7 +23,7 @@ import {
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
 import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
-import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
+import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, getPrimaryFeedId, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
 import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consumables.js';
 import { RARITY_LABELS, RARITY_EMOJI, getInstanceRarity, getNextRarity } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
@@ -1190,10 +1190,10 @@ function renderCharHelpTab(panel) {
     <div class="help-grid">
       <section class="help-card">
         <h4>🌱 Voie de départ</h4>
-        <p>Tu choisis 2 métiers de récolte et 2 bâtiments de ferme. Le reste se récupère via l'Hôtel des Ventes.</p>
+        <p>Tu choisis 2 métiers de récolte et 2 bâtiments de ferme. Le reste se récupère via la Place marchande.</p>
       </section>
       <section class="help-card">
-        <h4>🏛️ Hôtel des Ventes</h4>
+        <h4>🏛️ Place marchande</h4>
         <p>Utilise les catégories pour acheter les ressources que tu ne produis pas. Vends tes surplus à la Banque pour financer les achats.</p>
       </section>
       <section class="help-card">
@@ -1446,10 +1446,22 @@ function renderWorld(game, el) {
       `;
     }
 
-    const chips = zoneResources.map((r) => {
-      const job = game.jobs[r.job];
-      return `<span class="world-res-chip" title="${job?.name || ''} Nv.${r.requiredJobLevel}">${renderResourceIcon(r, 'world-res-icon')}${r.name}</span>`;
-    }).join('');
+    const chips = zoneResources
+      .slice()
+      .sort((a, b) => (a.requiredJobLevel || 1) - (b.requiredJobLevel || 1))
+      .map((r) => {
+        const job = game.jobs[r.job];
+        const unlocked = isResourceUnlockedByJob(r, game.state);
+        const lvl = r.requiredJobLevel || 1;
+        const title = unlocked
+          ? `${r.name} · ${job?.name || ''} (débloqué)`
+          : `${r.name} · ${job?.name || ''} Nv.${lvl}`;
+        return `<span class="world-res-chip${unlocked ? '' : ' locked'}" title="${title}">
+          ${renderResourceIcon(r, 'world-res-icon')}
+          <span class="world-res-chip-name">${r.name}</span>
+          ${unlocked ? '' : `<span class="world-res-chip-lvl">Nv.${lvl}</span>`}
+        </span>`;
+      }).join('');
 
     card.innerHTML = `
       <div class="world-card-head">
@@ -1920,20 +1932,37 @@ function buildFarmFeedPickerHtml(game, building, slot, active) {
   const allFeeds = listFeedOptions(building);
   if (!allFeeds.length) return { pickerHtml: '', canAffordSelected: true };
 
-  const selected = slot?.feedId || '';
+  const primary = getPrimaryFeedId(building);
+  const selected = slot?.feedId || primary || '';
+  const single = allFeeds.length === 1;
+
+  if (single) {
+    const feedId = primary;
+    const res = game.resources[feedId];
+    const affordable = canAffordFeed(building, feedId, game.state);
+    return {
+      pickerHtml: `
+        <div class="farm-feed-label">
+          <span class="farm-feed-label-text">Ration · ${res?.name || feedId}</span>
+          ${buildFarmFeedCostHtml(game, building, feedId)}
+          ${affordable ? '' : '<p class="farm-feed-hint empty-text">Stock insuffisant</p>'}
+        </div>`,
+      canAffordSelected: affordable,
+      autoFeedId: feedId,
+    };
+  }
+
   const options = allFeeds.map((feedId) => {
     const res = game.resources[feedId];
     const affordable = canAffordFeed(building, feedId, game.state);
-    const eff = building.feedEfficiency?.[feedId];
-    const effNote = eff && eff < 1 ? ` · ${Math.round(eff * 100)}% eff.` : '';
     const stockNote = affordable ? '' : ' · stock insuffisant';
-    const label = `${res?.name || feedId}${effNote}${stockNote}`;
+    const label = `${res?.name || feedId}${stockNote}`;
     const disabled = !affordable && feedId !== selected ? ' disabled' : '';
     return `<option value="${feedId}"${feedId === selected ? ' selected' : ''}${disabled}>${label}</option>`;
   }).join('');
 
-  const costHtml = slot?.feedId
-    ? buildFarmFeedCostHtml(game, building, slot.feedId)
+  const costHtml = selected
+    ? buildFarmFeedCostHtml(game, building, selected)
     : '<p class="farm-feed-hint empty-text">Choisis une ration pour voir le coût</p>';
 
   return {
@@ -1941,12 +1970,12 @@ function buildFarmFeedPickerHtml(game, building, slot, active) {
       <label class="farm-feed-label">
         <span class="farm-feed-label-text">Ration</span>
         <select class="farm-feed-select"${active ? ' disabled' : ''}>
-          <option value=""${!selected ? ' selected' : ''}>— Choisir —</option>
           ${options}
         </select>
       </label>
       ${costHtml}`,
-    canAffordSelected: !slot?.feedId || canAffordFeed(building, slot.feedId, game.state),
+    canAffordSelected: !selected || canAffordFeed(building, selected, game.state),
+    autoFeedId: selected || null,
   };
 }
 
@@ -1975,7 +2004,11 @@ export function refreshJobViewLight(game, jobId) {
   }
   if (meta) {
     const zone = game.getCurrentZone();
-    meta.textContent = `Niveau ${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''} · ${zone?.name || ''}`;
+    const levelEl = document.querySelector('.skill-header .skill-level-pill');
+    if (levelEl) {
+      levelEl.textContent = `Nv.${prog.level}${prog.seasonCap ? `/${prog.seasonCap}` : ''}`;
+    }
+    meta.textContent = zone?.name || '';
   }
   updateHarvestInventoryStrip(game, jobId);
   const toolsStrip = document.querySelector('.panel-inner.job-tools-strip');
@@ -2011,7 +2044,10 @@ function renderJobLegacyUnused(game, el, jobId) {
   const maxSlots = game.balance.harvestSlots.maxSlots;
   const ownedSlots = game.getMaxHarvestSlots(jobId);
   const assignable = game.getAssignableResources(jobId);
-  const lockedResources = assignable.filter((r) => !isResourceUnlockedByJob(r, game.state));
+  const lockedResources = assignable
+    .filter((r) => !isResourceUnlockedByJob(r, game.state))
+    .sort((a, b) => (a.requiredJobLevel || 1) - (b.requiredJobLevel || 1));
+  const nextUnlock = lockedResources[0] || null;
   const currentView = getHarvestViewForJob(jobId);
   const visibleHarvestViews = getVisibleHarvestViews(game.state);
   const prevView = currentView ? getAdjacentVisibleView(currentView, visibleHarvestViews, -1) : null;
@@ -2019,16 +2055,51 @@ function renderJobLegacyUnused(game, el, jobId) {
   const prevJob = prevView ? VIEWS[prevView]?.job : null;
   const nextJob = nextView ? VIEWS[nextView]?.job : null;
 
+  const nextUnlockHtml = nextUnlock ? `
+    <button type="button" class="job-next-unlock" id="job-next-unlock" title="Ressources à débloquer">
+      ${renderResourceIcon(nextUnlock, 'job-next-unlock-icon')}
+      <span class="job-next-unlock-text">
+        <span class="job-next-unlock-label">Prochaine</span>
+        <span class="job-next-unlock-name">${nextUnlock.name}</span>
+        <span class="job-next-unlock-lvl">Nv.${nextUnlock.requiredJobLevel || 1}</span>
+      </span>
+    </button>
+  ` : '';
+
   el.innerHTML = `
-    <div class="skill-header">
+    <div class="skill-header skill-header-compact">
       <div class="skill-header-top job-nav-header">
         <button type="button" class="btn btn-muted btn-job-nav" id="job-prev" aria-label="Métier précédent" ${prevView ? '' : 'disabled'}>‹</button>
         <div class="job-nav-center">
-          <div class="skill-header-title">${getJobIcon(jobId) ? iconHtml(getJobIcon(jobId), 'job-icon', job.name) : ''} ${job.name}</div>
-          <div class="skill-header-meta">Niveau ${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''} · ${zone?.name || ''}</div>
+          <div class="skill-header-title">${getJobIcon(jobId) ? iconHtml(getJobIcon(jobId), 'job-icon', job.name) : ''} ${job.name}
+            <span class="skill-level-pill">Nv.${prog.level}${prog.seasonCap ? `/${prog.seasonCap}` : ''}</span>
+          </div>
+          <div class="skill-header-meta">${zone?.name || ''}</div>
         </div>
         <button type="button" class="btn btn-muted btn-job-nav" id="job-next" aria-label="Métier suivant" ${nextView ? '' : 'disabled'}>›</button>
       </div>
+      <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
+      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${prog.xp} / ${prog.needed} XP`}</p>
+    </div>
+    <div class="panel-inner job-harvest-panel">
+      <div class="panel-head-row">
+        <h3>Récolte</h3>
+        <div class="job-harvest-actions">
+          ${nextUnlockHtml}
+          <button class="btn btn-muted btn-small" id="goto-world" type="button">Zone</button>
+        </div>
+      </div>
+      <div class="slots-grid" id="harvest-slots"></div>
+    </div>
+    ${buildJobEquippedToolsStrip(game, jobId)}
+    ${buildHarvestInventoryStrip(game, jobId)}
+    ${lockedResources.length > 1 ? `
+      <details class="panel-inner panel-muted job-locked-details">
+        <summary>Autres ressources · ${lockedResources.length - 1} verrouillées</summary>
+        <div class="resource-grid job-locked-grid" id="locked-resources"></div>
+      </details>
+    ` : lockedResources.length === 1 ? '' : ''}
+    <div class="job-nav-footer">
       <div class="job-nav-hints">
         ${prevJob ? `<span class="job-nav-hint">${game.jobs[prevJob]?.name || ''}</span>` : '<span></span>'}
         ${nextJob ? `<span class="job-nav-hint">${game.jobs[nextJob]?.name || ''}</span>` : '<span></span>'}
@@ -2037,24 +2108,7 @@ function renderJobLegacyUnused(game, el, jobId) {
         <button type="button" class="btn btn-muted btn-nav-mobile" id="job-prev-mobile" ${prevView ? '' : 'disabled'}>‹ ${prevJob ? game.jobs[prevJob]?.name : 'Préc.'}</button>
         <button type="button" class="btn btn-muted btn-nav-mobile" id="job-next-mobile" ${nextView ? '' : 'disabled'}>${nextJob ? game.jobs[nextJob]?.name : 'Suiv.'} ›</button>
       </div>
-      <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
-      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1} — passe à la suivante` : `${prog.xp} / ${prog.needed} XP`}</p>
     </div>
-    ${buildJobEquippedToolsStrip(game, jobId)}
-    ${buildHarvestInventoryStrip(game, jobId)}
-    <div class="panel-inner">
-      <div class="panel-head-row">
-        <h3>Emplacements de récolte</h3>
-        <button class="btn btn-muted btn-small" id="goto-world" type="button">Changer de zone</button>
-      </div>
-      <div class="slots-grid" id="harvest-slots"></div>
-    </div>
-    ${lockedResources.length > 0 ? `
-      <div class="panel-inner panel-muted">
-        <h3>Ressources verrouillées</h3>
-        <div class="resource-grid" id="locked-resources"></div>
-      </div>
-    ` : ''}
   `;
 
   el.querySelector('#goto-world')?.addEventListener('click', () => navigate('world'));
@@ -2062,6 +2116,11 @@ function renderJobLegacyUnused(game, el, jobId) {
   el.querySelector('#job-next')?.addEventListener('click', () => { if (nextView) navigate(nextView); });
   el.querySelector('#job-prev-mobile')?.addEventListener('click', () => { if (prevView) navigate(prevView); });
   el.querySelector('#job-next-mobile')?.addEventListener('click', () => { if (nextView) navigate(nextView); });
+  el.querySelector('#job-next-unlock')?.addEventListener('click', () => {
+    const details = el.querySelector('.job-locked-details');
+    if (details) details.open = true;
+    details?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
 
   const slotsEl = el.querySelector('#harvest-slots');
   for (let i = 0; i < maxSlots; i++) {
@@ -2074,15 +2133,15 @@ function renderJobLegacyUnused(game, el, jobId) {
 
   const lockedEl = el.querySelector('#locked-resources');
   if (lockedEl) {
-    for (const resource of lockedResources) {
+    for (const resource of lockedResources.slice(1)) {
       const tile = document.createElement('div');
-      tile.className = 'resource-tile locked-res';
+      tile.className = 'resource-tile locked-res locked-res-compact';
       tile.innerHTML = `
         <div class="tile-head">
           ${renderResourceIcon(resource, 'tile-resource-icon')}
           <div>
             <div class="tile-name">${resource.name}</div>
-            <div class="tile-lock">🔒 Requis : ${job.name} Nv.${resource.requiredJobLevel || 1}</div>
+            <div class="tile-lock">Nv.${resource.requiredJobLevel || 1}</div>
           </div>
         </div>
       `;
@@ -2153,9 +2212,16 @@ function renderFarmSlot(game, buildingId, slotIndex, building, container) {
   const progress = active ? game.getFarmSlotProgress(buildingId, slotIndex) : 0;
   const needsFeed = Object.keys(building.feed || {}).length > 0;
   const feedUi = needsFeed ? buildFarmFeedPickerHtml(game, building, slot, active) : { pickerHtml: '', canAffordSelected: true };
+
+  // Auto-sélection de la ration unique (ex. 2 blé au poulailler).
+  if (!active && needsFeed && feedUi.autoFeedId && slot && slot.feedId !== feedUi.autoFeedId) {
+    slot.feedId = feedUi.autoFeedId;
+  }
+
   const toolBlock = game.getFarmToolBlockReason(buildingId);
   const sprite = getFarmBuildingSprite(building);
-  const feedBlocked = needsFeed && (!slot?.feedId || !feedUi.canAffordSelected);
+  const effectiveFeedId = slot?.feedId || feedUi.autoFeedId;
+  const feedBlocked = needsFeed && (!effectiveFeedId || !feedUi.canAffordSelected);
 
   const card = document.createElement('div');
   card.className = `farm-slot harvest-slot${active ? ' active-harvest' : ''}`;
@@ -2383,14 +2449,6 @@ function renderFarmBuildingLegacyUnused(game, el, buildingId) {
         </div>
         <button type="button" class="btn btn-muted btn-job-nav" id="farm-next" aria-label="Bâtiment suivant" ${nextView ? '' : 'disabled'}>›</button>
       </div>
-      <div class="job-nav-hints">
-        ${prevBuilding ? `<span class="job-nav-hint">${prevBuilding}</span>` : '<span></span>'}
-        ${nextBuilding ? `<span class="job-nav-hint">${nextBuilding}</span>` : '<span></span>'}
-      </div>
-      <div class="job-nav-mobile">
-        <button type="button" class="btn btn-muted btn-nav-mobile" id="farm-prev-mobile" ${prevView ? '' : 'disabled'}>‹ ${prevBuilding || 'Préc.'}</button>
-        <button type="button" class="btn btn-muted btn-nav-mobile" id="farm-next-mobile" ${nextView ? '' : 'disabled'}>${nextBuilding || 'Suiv.'} ›</button>
-      </div>
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
       <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${prog.xp} / ${prog.needed} XP Éleveur`}</p>
       ${toolBlock ? `<p class="slot-tool-hint farm-tool-banner">⚠️ ${toolBlock}</p>` : ''}
@@ -2402,6 +2460,16 @@ function renderFarmBuildingLegacyUnused(game, el, buildingId) {
         <h3>Emplacements · ${ownedSlots}/${maxSlots}</h3>
       </div>
       <div class="slots-grid farm-slots" id="farm-slots"></div>
+    </div>
+    <div class="job-nav-footer">
+      <div class="job-nav-hints">
+        ${prevBuilding ? `<span class="job-nav-hint">${prevBuilding}</span>` : '<span></span>'}
+        ${nextBuilding ? `<span class="job-nav-hint">${nextBuilding}</span>` : '<span></span>'}
+      </div>
+      <div class="job-nav-mobile">
+        <button type="button" class="btn btn-muted btn-nav-mobile" id="farm-prev-mobile" ${prevView ? '' : 'disabled'}>‹ ${prevBuilding || 'Préc.'}</button>
+        <button type="button" class="btn btn-muted btn-nav-mobile" id="farm-next-mobile" ${nextView ? '' : 'disabled'}>${nextBuilding || 'Suiv.'} ›</button>
+      </div>
     </div>
   `;
 
@@ -2486,7 +2554,7 @@ function renderCuisine(game, el) {
   mountCraftWorkshop(game, el.querySelector('#cuisine-content'), 'cook');
 }
 
-/* ── Hôtel des Ventes (mobile-first) ── */
+/* ── Place marchande (mobile-first) ── */
 const AUCTION_GROUP_LABELS = {
   services: 'Services',
   gathering: 'Récolte',
@@ -2740,7 +2808,7 @@ function mountAuctionNavigation(game, root) {
   const { vendorGroups, activeGroup, activeVendor } = buildAuctionCatalog(game, hdvMainMode);
   const breadcrumb = root.querySelector('#hdv-breadcrumb');
   if (breadcrumb && activeVendor) {
-    breadcrumb.textContent = `HDV › ${AUCTION_GROUP_LABELS[auctionGroup] || auctionGroup} › ${activeVendor.name}`;
+    breadcrumb.textContent = `Place › ${AUCTION_GROUP_LABELS[auctionGroup] || auctionGroup} › ${activeVendor.name}`;
   }
 
   const tabsEl = root.querySelector('#hdv-group-tabs');
@@ -2810,7 +2878,7 @@ export function renderAuctionHouse(game, el) {
 
   if (!canUseOnlineFeatures()) {
     el.innerHTML = `
-      <div class="view-header"><h2>Hôtel des Ventes</h2></div>
+      <div class="view-header"><h2>Place marchande</h2></div>
       <div class="panel-inner">
         <p class="view-desc">${getOnlineBlockReason()}</p>
         <button type="button" class="btn btn-craft" id="hdv-need-account">Créer un compte</button>
@@ -2828,7 +2896,7 @@ export function renderAuctionHouse(game, el) {
   const showTest = isTestHdvEnabled(game.balance);
   const maintenance = isMaintenanceMode();
   const modes = [
-    { id: 'npc', label: '📜 Marchand' },
+    { id: 'npc', label: '📜 Archiviste' },
     ...(showTest ? [{ id: 'test', label: '🧪 HDV Test' }] : []),
   ];
   if (hdvMainMode === 'players') hdvMainMode = 'npc';
@@ -3029,7 +3097,7 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   } else if (recipe?.effect) {
     compareHtml = `<div class="item-stat-compare">${recipe.description}</div>`;
   } else if (notSellable && resource.merchantOnly) {
-    compareHtml = '<p class="item-stat-compare">Objet spécial — acheté à l\'Hôtel des Ventes. Requis pour de nombreuses fabrications.</p>';
+    compareHtml = '<p class="item-stat-compare">Objet spécial — acheté à la Place marchande. Requis pour de nombreuses fabrications.</p>';
   } else if (mealEffect) {
     const levelNote = mealInfo.levelOk
       ? ''
@@ -3039,7 +3107,7 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   }
 
   const sellActions = notSellable
-    ? `<button class="btn btn-craft" id="modal-goto-auction">${iconHtml(getNavIcon('auction_house'), 'btn-inline-icon', 'HDV')} Hôtel des Ventes</button>`
+    ? `<button class="btn btn-craft" id="modal-goto-auction">${iconHtml(getNavIcon('auction_house'), 'btn-inline-icon', 'Place')} Place marchande</button>`
     : `
       <button class="btn btn-sell" id="modal-sell-1">Vendre 1</button>
       ${amount >= 5 ? `<button class="btn btn-sell" id="modal-sell-5">×5 · ${formatNumber(unitPrice * 5)} 💰</button>` : ''}

@@ -144,7 +144,7 @@ function paintCraftPanel(game, craftJobId, panelEl, headerEl) {
     hints = `
       <div class="merchant-hint panel-inner">
         <span>📜 Les fabrications avancées requièrent des <strong>Parchemins des Anciens</strong>.</span>
-        <button type="button" class="btn btn-muted btn-sm" id="goto-auction">🏛️ Hôtel des Ventes</button>
+        <button type="button" class="btn btn-muted btn-sm" id="goto-auction">🏛️ Place marchande</button>
       </div>
     `;
   } else if (isCook) {

@@ -74,9 +74,9 @@
   },
   "resourceUnlock": {
     "starterLevel": 1,
-    "baseLevel": 12,
-    "perTierStep": 6,
-    "comment": "Ressource tier 1→Nv.12, tier 2→Nv.18, tier 3→Nv.24… (≠ XP récolte)"
+    "baseLevel": 20,
+    "perTierStep": 20,
+    "comment": "Ressource tier 1→Nv.20, tier 2→Nv.40, tier 3→Nv.60… (≠ XP récolte)"
   },
   "harvestSlots": {
     "startingSlots": 2,

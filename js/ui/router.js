@@ -58,7 +58,7 @@ export const VIEWS = {
   job_farmer: { id: 'job_farmer', label: 'Paysan', title: 'Paysan', job: 'farmer' },
   job_alchemist: { id: 'job_alchemist', label: 'Alchimiste', title: 'Alchimiste', job: 'alchemist' },
   inventory: { id: 'inventory', label: 'Banque', title: 'Banque' },
-  auction_house: { id: 'auction_house', label: 'Hôtel des Ventes', title: 'Hôtel des Ventes' },
+  auction_house: { id: 'auction_house', label: 'Place marchande', title: 'Place marchande' },
   combat: { id: 'combat', label: 'Combat', title: 'Combat' },
   leaderboard: { id: 'leaderboard', label: 'Classement', title: 'Classement', emoji: '🏆' },
   workshop: { id: 'workshop', label: 'Atelier', title: 'Atelier' },
