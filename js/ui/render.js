@@ -47,6 +47,8 @@ import {
   closeDungeonCombatModal,
   refreshAuctionHouseLight,
   refreshCharacterCombatPanels,
+  refreshHarvestSlotsGrid,
+  refreshFarmSlotsGrid,
 } from './views.js';
 
 export function initUI(game, audio) {
@@ -586,7 +588,7 @@ export function initUI(game, audio) {
   });
   on('farmSlotUnlock', ({ buildingId, slots }) => {
     showToast(els, `Nouvel emplacement ferme ! (${slots} slots)`, 'upgrade');
-    if (isFarmView(getView())) refreshView();
+    refreshFarmSlotsGrid(game, buildingId);
   });
   on('farmStart', () => {
     if (!animFrame) tickHarvestUI();
@@ -595,7 +597,11 @@ export function initUI(game, audio) {
     const r = game.recipes[recipeId];
     showToast(els, `Équipé : ${r.emoji} ${r.name}`, 'upgrade');
   });
-  on('slotUnlock', ({ slots }) => showToast(els, `Nouvel emplacement ! (${slots} slots)`, 'upgrade'));
+  on('slotUnlock', ({ slots, jobId }) => {
+    showToast(els, `Nouvel emplacement ! (${slots} slots)`, 'upgrade');
+    const activeJobId = jobId || VIEWS[getView()]?.job;
+    if (activeJobId) refreshHarvestSlotsGrid(game, activeJobId);
+  });
   on('zoneUnlock', ({ zone, auto }) => {
     const prefix = auto ? 'Nouvelle zone débloquée :' : 'Zone :';
     showToast(els, `${prefix} ${zone.emoji} ${zone.name}`, 'zone');

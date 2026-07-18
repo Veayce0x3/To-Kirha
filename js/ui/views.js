@@ -1661,20 +1661,28 @@ function renderLockedHarvestSlot(game, jobId, slotIndex, container, showBuy) {
   }
 
   const card = document.createElement('div');
-  card.className = 'harvest-slot slot-locked';
+  card.className = `harvest-slot slot-locked${canBuy ? ' slot-unlock-ready' : ''}`;
+  card.dataset.job = jobId;
+  card.dataset.slot = String(slotIndex);
   card.innerHTML = `
-    <div class="tile-name">🔒 Verrouillé</div>
+    <div class="tile-name">${canBuy ? '🔓 Emplacement disponible' : '🔒 Verrouillé'}</div>
     <p class="empty-text">${showBuy ? 'Débloquer un emplacement pour ce métier' : 'Achète le slot précédent'}</p>
     ${showBuy ? `
       ${resCostHtml}
-      <button class="btn btn-upgrade btn-buy-slot" ${canBuy ? '' : 'disabled'}>
+      <button type="button" class="btn btn-upgrade btn-buy-slot" ${canBuy ? '' : 'disabled'}>
         Acheter · ${formatNumber(kirhaCost)} 💰
       </button>
     ` : ''}
   `;
 
   if (showBuy) {
-    card.querySelector('.btn-buy-slot')?.addEventListener('click', () => game.buyHarvestSlot(jobId));
+    card.querySelector('.btn-buy-slot')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget;
+      if (btn.disabled) return;
+      if (!game.buyHarvestSlot(jobId)) return;
+      btn.disabled = true;
+      refreshHarvestSlotsGrid(game, jobId);
+    });
   }
 
   container.appendChild(card);
@@ -1892,6 +1900,9 @@ function renderJobLegacyUnused(game, el, jobId) {
   el.querySelector('#job-next-mobile')?.addEventListener('click', () => { if (nextView) navigate(nextView); });
 
   const slotsEl = el.querySelector('#harvest-slots');
+  const maxSlotsCfg = game.balance.harvestSlots?.maxSlots ?? 10;
+  const head = el.querySelector('.panel-head-row h3');
+  if (head) head.textContent = `Emplacements de récolte · ${ownedSlots}/${maxSlotsCfg}`;
   for (let i = 0; i < maxSlots; i++) {
     if (i < ownedSlots) {
       renderHarvestSlot(game, jobId, i, slotsEl);
@@ -2070,23 +2081,71 @@ function renderLockedFarmSlot(game, buildingId, slotIndex, container, showBuy) {
   }
 
   const card = document.createElement('div');
-  card.className = 'harvest-slot slot-locked farm-slot-locked';
+  card.className = `harvest-slot slot-locked farm-slot-locked${canBuy ? ' slot-unlock-ready' : ''}`;
+  card.dataset.building = buildingId;
+  card.dataset.slot = String(slotIndex);
   card.innerHTML = `
-    <div class="tile-name">🔒 Emplacement animal</div>
+    <div class="tile-name">${canBuy ? '🔓 Emplacement disponible' : '🔒 Emplacement animal'}</div>
     <p class="empty-text">${showBuy ? `Agrandir le ${building?.name || 'bâtiment'}` : 'Achète l\'emplacement précédent'}</p>
     ${showBuy ? `
       ${resCostHtml}
-      <button class="btn btn-upgrade btn-buy-farm-slot" data-building="${buildingId}" ${canBuy ? '' : 'disabled'}>
+      <button type="button" class="btn btn-upgrade btn-buy-farm-slot" data-building="${buildingId}" ${canBuy ? '' : 'disabled'}>
         Acheter · ${formatNumber(kirhaCost)} 💰
       </button>
     ` : ''}
   `;
 
   if (showBuy) {
-    card.querySelector('.btn-buy-farm-slot')?.addEventListener('click', () => game.buyFarmSlot(buildingId));
+    card.querySelector('.btn-buy-farm-slot')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget;
+      if (btn.disabled) return;
+      if (!game.buyFarmSlot(buildingId)) return;
+      btn.disabled = true;
+      refreshFarmSlotsGrid(game, buildingId);
+    });
   }
 
   container.appendChild(card);
+}
+
+/** Rafraîchit la grille d'emplacements de récolte sans recharger toute la vue. */
+export function refreshHarvestSlotsGrid(game, jobId) {
+  const container = document.getElementById('harvest-slots');
+  if (!container) return;
+  const maxSlots = game.balance.harvestSlots?.maxSlots ?? 10;
+  const ownedSlots = game.getMaxHarvestSlots(jobId);
+  container.innerHTML = '';
+  for (let i = 0; i < maxSlots; i++) {
+    if (i < ownedSlots) {
+      renderHarvestSlot(game, jobId, i, container);
+    } else {
+      renderLockedHarvestSlot(game, jobId, i, container, i === ownedSlots);
+    }
+  }
+  const head = container.closest('.panel-inner')?.querySelector('h3');
+  if (head) head.textContent = `Emplacements de récolte · ${ownedSlots}/${maxSlots}`;
+  updateHarvestInventoryStrip(game, jobId);
+}
+
+/** Rafraîchit la grille d'emplacements ferme sans recharger toute la vue. */
+export function refreshFarmSlotsGrid(game, buildingId) {
+  const container = document.getElementById('farm-slots');
+  const building = getBuildingDef(game.farmData, buildingId);
+  if (!container || !building) return;
+  const maxSlots = game.farmData.maxSlotsPerBuilding || 4;
+  const ownedSlots = game.getMaxFarmSlots(buildingId);
+  container.innerHTML = '';
+  for (let i = 0; i < maxSlots; i++) {
+    if (i < ownedSlots) {
+      renderFarmSlot(game, buildingId, i, building, container);
+    } else {
+      renderLockedFarmSlot(game, buildingId, i, container, i === ownedSlots);
+    }
+  }
+  const head = container.closest('.panel-inner')?.querySelector('h3');
+  if (head) head.textContent = `Emplacements · ${ownedSlots}/${maxSlots}`;
+  const strip = document.querySelector('.harvest-inventory-strip');
+  if (strip) strip.outerHTML = buildFarmProductStrip(game, building);
 }
 
 /** Re-rendu léger de tous les emplacements du bâtiment ferme affiché. */
