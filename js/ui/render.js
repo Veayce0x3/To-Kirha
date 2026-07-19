@@ -502,6 +502,12 @@ export function initUI(game, audio) {
     if (game.doPrestige()) {
       els.prestigeModal.classList.remove('active');
       audio.playSfx('prestige');
+      navigate('character');
+      buildNav();
+      updateNavActive();
+      refreshView();
+      refreshHeader(game.state);
+      showCareerChoiceIfNeeded(game);
     }
   });
 

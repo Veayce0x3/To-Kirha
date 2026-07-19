@@ -278,10 +278,15 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
   const preservedAchievements = state.achievements || state.quests;
 
   const fresh = typeof getFreshState === 'function' ? getFreshState() : getFreshProgress(balance);
+  const preservedNickname = state.character?.nickname || null;
+  const preservedMeta = state.meta && typeof state.meta === 'object'
+    ? JSON.parse(JSON.stringify(state.meta))
+    : {};
+
   return {
     ...fresh,
-    // Nouvelle saison : repartir sans Kirha (pas le boost test HDV)
-    kirha: 0,
+    // Départ saison : Kirha de base (pas le boost test 10 000)
+    kirha: balance.startingKirha ?? 0,
     season,
     prestige: newPrestige,
     lifetimeStats,
@@ -290,6 +295,16 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     lastOnline: Date.now(),
     // Conserve le temps de jeu lifetime (admin)
     playtime: state.playtime || { foregroundMs: 0, backgroundMs: 0 },
+    // Compte + pseudo : sinon plus d’accès nav / onboarding
+    meta: preservedMeta,
+    character: {
+      ...(fresh.character || { level: 1, xp: 0 }),
+      nickname: preservedNickname,
+      nicknameUpdatedAt: state.character?.nicknameUpdatedAt || null,
+      freeRenameUsed: !!state.character?.freeRenameUsed,
+    },
+    // Rechoisir l’arme de départ pour la nouvelle saison
+    careerChoice: null,
   };
 }
 

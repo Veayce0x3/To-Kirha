@@ -10,6 +10,7 @@ import {
 } from '../systems/careerChoice.js';
 import { validateNickname } from '../systems/character.js';
 import { needsAuthChoice } from '../core/auth.js';
+import { showAuthModalIfNeeded } from './authUi.js';
 
 let modalEl = null;
 let gameRef = null;
@@ -67,9 +68,15 @@ function renderCareerModal() {
     </section>
   ` : `<section class="career-section"><p>Tu joues avec <strong>${escapeHtml(gameRef.getCharacterDisplayName())}</strong>.</p></section>`;
 
+  const season = gameRef.state?.season || 1;
+  const welcomeTitle = season > 1 ? `🌸 Saison ${season}` : '🌸 Bienvenue à To-Kirha';
+  const welcomeDesc = season > 1
+    ? `Nouvelle saison ! Tu repars Paysan avec le Blé. Tes bonus permanents sont conservés (+Kirha / +XP). Choisis ton arme de départ.`
+    : `Tu commences en tant que <strong>Paysan</strong> avec une ligne de production de Blé. Les autres métiers se débloquent en progressant. Le reste s'achète à la Place marchande.`;
+
   body.innerHTML = `
-    <h2>🌸 Bienvenue à To-Kirha</h2>
-    <p class="modal-desc">Tu commences en tant que <strong>Paysan</strong> avec une ligne de production de Blé. Les autres métiers se débloquent en progressant. Le reste s'achète à la Place marchande.</p>
+    <h2>${welcomeTitle}</h2>
+    <p class="modal-desc">${welcomeDesc}</p>
     ${nicknameHtml}
     <section class="career-section">
       <h3>Arme de départ</h3>
@@ -79,7 +86,7 @@ function renderCareerModal() {
     <p class="career-status">${canConfirm ? '✅ Tu peux commencer !' : (check.reason || nicknameCheck.reason || 'Choisis ton arme.')}</p>
     <p class="career-error save-warn hidden" id="career-error" role="alert"></p>
     <div class="career-actions">
-      <button type="button" class="btn btn-prestige" id="career-confirm" ${canConfirm ? '' : 'disabled'}>Commencer l'aventure</button>
+      <button type="button" class="btn btn-prestige" id="career-confirm" ${canConfirm ? '' : 'disabled'}>${season > 1 ? 'Commencer la saison' : "Commencer l'aventure"}</button>
       <button type="button" class="btn btn-muted" id="career-reload">Actualiser</button>
       <button type="button" class="btn btn-muted" id="career-reset">Réinitialiser</button>
     </div>
@@ -183,6 +190,8 @@ export function showCareerChoiceIfNeeded(game) {
   gameRef = game;
   if (needsAuthChoice(game.state)) {
     closeCareerModal();
+    // Compte perdu (ex. bug prestige) → rouvrir l’auth plutôt que bloquer sans UI
+    showAuthModalIfNeeded(game);
     return;
   }
   if (!game.needsCareerChoice()) {
