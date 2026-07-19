@@ -1,5 +1,5 @@
 import { getJobEquippedTool } from './equipment.js';
-import { hasWorkingTool, isDurabilityTool, isToolEffectActive } from './toolDurability.js';
+import { isDurabilityTool, isToolEffectActive } from './toolDurability.js';
 import { getResourceTierIndex } from './progression.js';
 import { isStarterHarvestResource } from './zones.js';
 
