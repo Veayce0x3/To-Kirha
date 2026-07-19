@@ -19,6 +19,7 @@ import {
   clearDungeonPartySnapshot,
 } from './combat.js';
 import { addCharacterXp } from './character.js';
+import { getPrestigeBonuses, applyMultiplierBonus } from './prestige.js';
 import {
   peekMealHeal,
   consumeMealFromInventory,
@@ -282,7 +283,8 @@ function wearAfterCombat(state, combatItems) {
 function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, combatItems, combatZone) {
   const run = state.combatEncounter;
   const xpMult = balance.combat?.soloXpMultiplier ?? 0.25;
-  const charXp = Math.floor((foe.charXpReward || 0) * xpMult);
+  const rawXp = Math.floor((foe.charXpReward || 0) * xpMult);
+  const charXp = applyMultiplierBonus(rawXp, getPrestigeBonuses(state).xp);
   const levelResult = charXp > 0 ? addCharacterXp(state, charXp, characterConfig, balance) : null;
   recordKill(state, zoneId, foe, isBoss);
 
@@ -318,7 +320,7 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, c
 }
 
 function finishDungeonRun(run, state, characterConfig, balance, combatItems) {
-  const totalXp = run.dungeonCharXp || 0;
+  const totalXp = applyMultiplierBonus(run.dungeonCharXp || 0, getPrestigeBonuses(state).xp);
   const levelResult = totalXp > 0 ? addCharacterXp(state, totalXp, characterConfig, balance) : null;
   applyDrops(state, run.dungeonDrops || {});
   const roomCount = run.rooms?.length || 0;

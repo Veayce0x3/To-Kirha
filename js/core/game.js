@@ -38,6 +38,7 @@ import {
   repairSeasonAccess,
   getPrestigePreview,
   getPrestigeBonuses,
+  applyMultiplierBonus,
   getPrestigeProgress,
   getSeasonCapPreview,
   getSeasonCapProximity,
@@ -518,7 +519,7 @@ export class Game {
   }
 
   applyKirhaBonus(amount) {
-    return Math.floor(amount * getPrestigeBonuses(this.state).kirha);
+    return applyMultiplierBonus(amount, getPrestigeBonuses(this.state).kirha);
   }
 
   getCurrentZone() {

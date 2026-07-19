@@ -18,8 +18,7 @@ import {
   formatAnimalCostParts,
   ensureFarmUnitsForAnimalSlots,
 } from '../systems/productionLines.js';
-import { getHarvestTime } from '../systems/harvest.js';
-import { getHarvestXpForResource } from '../systems/progression.js';
+import { getHarvestTime, getHarvestXp } from '../systems/harvest.js';
 import { getHarvestToolCheck, getFarmToolCheck } from '../systems/toolTier.js';
 import { getToolUsesRemaining, isDurabilityTool } from '../systems/toolDurability.js';
 import { getJobEquippedTool } from '../systems/equipment.js';
@@ -163,7 +162,7 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   if (!line) return;
   const qty = game.state.inventory[resourceId] || 0;
   const maxUnits = game.balance.productionLines?.maxUnitsPerResource ?? 5;
-  const xpPerHarvest = getHarvestXpForResource(resource, game.resources, game.balance);
+  const xpPerHarvest = getHarvestXp(resource, game.state, game.balance, game.resources);
   const harvestMs = Math.round(getHarvestTime(resource, game.state, game.jobs, game.balance, game.resources) / 1000);
   const toolDurability = getLineToolDurability(game, jobId, resource);
 

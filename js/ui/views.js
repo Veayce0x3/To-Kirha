@@ -1,5 +1,6 @@
 import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats, getSkillUsesLeft, getSkillMaxUses } from '../systems/combat.js';
 import { getCraftSellBonus, getRecipeRequiredLevel } from '../systems/crafting.js';
+import { getPrestigeBonuses, applyMultiplierBonus } from '../systems/prestige.js';
 import { mountCraftWorkshop } from './craftView.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
 import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped } from '../systems/equipment.js';
@@ -3162,7 +3163,8 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
     const notSellable = resource.notSellable || resource.merchantOnly;
     const isProtected = protectedIds.has(id);
     const bonus = resource.craftOnly && !notSellable ? getCraftSellBonus(game.state, game.jobs) : 1;
-    const unitPrice = notSellable ? 0 : Math.floor(resource.sellPrice * bonus);
+    const baseUnit = notSellable ? 0 : Math.floor(resource.sellPrice * bonus);
+    const unitPrice = notSellable ? 0 : applyMultiplierBonus(baseUnit, getPrestigeBonuses(game.state).kirha);
     const value = unitPrice * amount;
     if (!notSellable && !isProtected) totalValue += value;
 

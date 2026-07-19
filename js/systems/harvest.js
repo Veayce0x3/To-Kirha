@@ -1,5 +1,5 @@
 import { getCraftBonus } from './craft.js';
-import { getPrestigeBonuses, getSeasonLevelCap } from './prestige.js';
+import { getPrestigeBonuses, getSeasonLevelCap, applyMultiplierBonus } from './prestige.js';
 import { getHarvestXpForResource, getRegrowthTier } from './progression.js';
 
 const ZONE_REGROWTH_BONUS = {
@@ -60,7 +60,7 @@ export function getHarvestXp(resource, state, balance, resources = null) {
   const base = resources
     ? getHarvestXpForResource(resource, resources, balance)
     : (resource.xpPerHarvest ?? 10);
-  return Math.floor(base * prestigeBonus);
+  return applyMultiplierBonus(base, prestigeBonus);
 }
 
 export function getXpForLevel(job, level) {

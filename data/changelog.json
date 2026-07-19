@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260719-2215",
+      "date": "2026-07-19",
+      "title": "Bonus saison vraiment appliqués",
+      "highlights": [
+        "Corrige l’arrondi qui annulait le +5 % (blé 4💰 → 5💰, XP 8 → 9)",
+        "Prix / XP affichés incluent le bonus ; combat et ferme aussi"
+      ]
+    },
+    {
       "buildId": "20260719-2200",
       "date": "2026-07-19",
       "title": "Nouvelle saison = reset total + bonus",
