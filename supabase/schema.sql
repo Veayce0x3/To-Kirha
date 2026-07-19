@@ -18,6 +18,7 @@ create table if not exists leaderboard_entries (
   user_id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
   char_level int not null default 1,
+  max_job_level int not null default 1,
   season int not null default 1,
   total_earned bigint not null default 0,
   seasons_completed int not null default 0,
@@ -28,6 +29,7 @@ create table if not exists leaderboard_entries (
 );
 
 create index if not exists leaderboard_char_level_idx on leaderboard_entries (char_level desc);
+create index if not exists leaderboard_max_job_level_idx on leaderboard_entries (max_job_level desc);
 create index if not exists leaderboard_total_earned_idx on leaderboard_entries (total_earned desc);
 create index if not exists leaderboard_seasons_idx on leaderboard_entries (seasons_completed desc);
 

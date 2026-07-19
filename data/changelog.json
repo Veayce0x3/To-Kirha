@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1230",
+      "date": "2026-07-19",
+      "title": "Classement réparé",
+      "highlights": [
+        "Classement : correctif de la sync (colonne métier manquante) + restauration des scores depuis les saves cloud"
+      ]
+    },
+    {
       "buildId": "20260719-1215",
       "date": "2026-07-19",
       "title": "Correctif accès Admin",

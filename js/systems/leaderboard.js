@@ -35,16 +35,30 @@ export async function submitLeaderboardSnapshot(state, displayName) {
     return { ok: false, reason: 'Classement temporairement désactivé.' };
   }
   const auth = getAuthState();
+  if (!auth.userId || auth.userId === 'dev_local_user') {
+    return { ok: false, reason: 'Session invalide.' };
+  }
   const metrics = buildLeaderboardSnapshot(state);
   const supabase = await getSupabaseClient();
   const row = {
     user_id: auth.userId,
-    display_name: displayName || 'Voyageur',
-    ...metrics,
+    display_name: (displayName || auth.displayName || 'Voyageur').slice(0, 40),
+    char_level: metrics.char_level,
+    max_job_level: metrics.max_job_level,
+    season: metrics.season,
+    total_earned: metrics.total_earned,
+    seasons_completed: metrics.seasons_completed,
+    total_harvests: metrics.total_harvests,
+    boss_kills_total: metrics.boss_kills_total,
+    kirha_current: metrics.kirha_current,
     updated_at: new Date().toISOString(),
   };
   const { error } = await supabase.from('leaderboard_entries').upsert(row, { onConflict: 'user_id' });
-  return error ? { ok: false, reason: error.message } : { ok: true };
+  if (error) {
+    console.warn('[leaderboard] upsert failed', error.message);
+    return { ok: false, reason: error.message };
+  }
+  return { ok: true };
 }
 
 export async function fetchLeaderboard(sortKey = 'char_level', limit = 50, localState = null) {

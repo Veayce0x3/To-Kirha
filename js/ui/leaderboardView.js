@@ -32,7 +32,7 @@ export async function renderLeaderboard(game, el) {
     return;
   }
 
-  await submitLeaderboardSnapshot(game.state, game.getCharacterDisplayName());
+  const sync = await submitLeaderboardSnapshot(game.state, game.getCharacterDisplayName());
   const tabDef = LEADERBOARD_TABS.find((t) => t.id === activeLeaderboardTab) || LEADERBOARD_TABS[0];
   const result = await fetchLeaderboard(tabDef.sortKey, 50, game.state);
   const auth = getAuthState();
@@ -49,6 +49,7 @@ export async function renderLeaderboard(game, el) {
       `).join('')}
     </nav>
     <div class="panel-inner">
+      ${!sync.ok ? `<p class="auth-error">Sync classement : ${sync.reason || 'échec'}</p>` : ''}
       ${!result.ok ? `<p class="auth-error">${result.reason || 'Impossible de charger le classement.'}</p>` : ''}
       ${result.devLocal ? '<p class="view-desc">Mode dev local — classement solo (Supabase non configuré).</p>' : ''}
       <ol class="leaderboard-list">
