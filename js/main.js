@@ -137,7 +137,9 @@ async function main() {
   document.addEventListener('touchstart', unlockAudio);
 
   const { startPlaytimeTracker } = await import('./systems/playtime.js');
-  startPlaytimeTracker(game);
+  startPlaytimeTracker(game, {
+    onPersist: () => game.scheduleSave(),
+  });
 
   window.addEventListener('beforeunload', () => {
     if (SaveProvider.isResetting()) return;
@@ -148,8 +150,10 @@ async function main() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       if (SaveProvider.isResetting()) return;
-      game.state.lastOnline = Date.now();
-      SaveProvider.save(game.state, game.balance);
+      game.flushSave().catch(() => {
+        game.state.lastOnline = Date.now();
+        SaveProvider.save(game.state, game.balance);
+      });
     }
   });
 }

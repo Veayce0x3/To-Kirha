@@ -242,10 +242,20 @@ const MIGRATIONS = {
     // XP ferme : métier Éleveur → niveau par bâtiment (poulailler, étable…)
     migrateBreederXpToBuildings(state);
   },
+  35(state) {
+    // Animaux ferme : slots multiples (hasAnimal → animals[])
+    if (!state.farmBuildingMeta) return;
+    for (const meta of Object.values(state.farmBuildingMeta)) {
+      if (!meta || Array.isArray(meta.animals)) continue;
+      const slots = 1;
+      meta.animalSlots = slots;
+      meta.animals = [meta.hasAnimal ? { cyclesLeft: Math.max(1, Number(meta.cyclesLeft) || 12) } : null];
+    }
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 34;
+  const target = ctx.balance?.saveVersion ?? 35;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

@@ -48,7 +48,30 @@
       },
       "feedEfficiency": {
         "ble": 1
-      }
+      },
+      "animalMaxSlots": 5,
+      "animalRepurchase": {
+        "kirha": 20,
+        "ble": 3
+      },
+      "animalSlotUnlocks": [
+        {
+          "buildingLevel": 5,
+          "kirha": 100
+        },
+        {
+          "buildingLevel": 12,
+          "kirha": 280
+        },
+        {
+          "buildingLevel": 20,
+          "kirha": 600
+        },
+        {
+          "buildingLevel": 30,
+          "kirha": 1200
+        }
+      ]
     },
     "barn": {
       "id": "barn",
@@ -86,7 +109,31 @@
         "ble": 0.8,
         "seigle": 0.85,
         "avoine": 0.7
-      }
+      },
+      "animalMaxSlots": 5,
+      "animalRepurchase": {
+        "kirha": 40,
+        "orge": 4,
+        "eau": 2
+      },
+      "animalSlotUnlocks": [
+        {
+          "buildingLevel": 5,
+          "kirha": 180
+        },
+        {
+          "buildingLevel": 12,
+          "kirha": 450
+        },
+        {
+          "buildingLevel": 20,
+          "kirha": 900
+        },
+        {
+          "buildingLevel": 30,
+          "kirha": 1800
+        }
+      ]
     },
     "sheepfold": {
       "id": "sheepfold",
@@ -123,7 +170,31 @@
         "avoine": 1,
         "ble": 0.75,
         "orge": 0.8
-      }
+      },
+      "animalMaxSlots": 5,
+      "animalRepurchase": {
+        "kirha": 35,
+        "avoine": 3,
+        "eau": 1
+      },
+      "animalSlotUnlocks": [
+        {
+          "buildingLevel": 5,
+          "kirha": 160
+        },
+        {
+          "buildingLevel": 12,
+          "kirha": 400
+        },
+        {
+          "buildingLevel": 20,
+          "kirha": 850
+        },
+        {
+          "buildingLevel": 30,
+          "kirha": 1600
+        }
+      ]
     },
     "pigsty": {
       "id": "pigsty",
@@ -161,7 +232,31 @@
         "ble": 0.8,
         "dorade": 1,
         "orge": 0.7
-      }
+      },
+      "animalMaxSlots": 5,
+      "animalRepurchase": {
+        "kirha": 45,
+        "ble": 3,
+        "dorade": 2
+      },
+      "animalSlotUnlocks": [
+        {
+          "buildingLevel": 5,
+          "kirha": 200
+        },
+        {
+          "buildingLevel": 12,
+          "kirha": 500
+        },
+        {
+          "buildingLevel": 20,
+          "kirha": 1000
+        },
+        {
+          "buildingLevel": 30,
+          "kirha": 2000
+        }
+      ]
     },
     "beehive": {
       "id": "beehive",
@@ -196,7 +291,30 @@
         "pissenlit": 1,
         "menthe": 0.9,
         "ble": 0.4
-      }
+      },
+      "animalMaxSlots": 5,
+      "animalRepurchase": {
+        "kirha": 30,
+        "pissenlit": 3
+      },
+      "animalSlotUnlocks": [
+        {
+          "buildingLevel": 5,
+          "kirha": 140
+        },
+        {
+          "buildingLevel": 12,
+          "kirha": 360
+        },
+        {
+          "buildingLevel": 20,
+          "kirha": 750
+        },
+        {
+          "buildingLevel": 30,
+          "kirha": 1400
+        }
+      ]
     }
   },
   "feedOptions": [

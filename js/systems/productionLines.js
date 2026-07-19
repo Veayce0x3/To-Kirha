@@ -20,12 +20,12 @@ import {
   canAffordFeed,
   consumeFeed,
   computeFarmDuration,
-  listFeedOptions,
   wearBreederTool,
   isUnifiedFarmBuilding,
   getUnifiedFarmLineKey,
   rollFarmProductDrops,
   getFarmProductionXp,
+  getPrimaryFeedId,
 } from './farm.js';
 import { addFarmBuildingXp, getFarmBuildingLevel } from './farmProgress.js';
 
@@ -243,15 +243,99 @@ export function getFarmBuildingMeta(state, buildingId) {
       hasAnimal: false,
       feedId: null,
       cyclesLeft: 0,
+      animalSlots: 1,
+      animals: [null],
       level: 1,
       xp: 0,
     };
   }
   const meta = state.farmBuildingMeta[buildingId];
-  if (meta.cyclesLeft == null) meta.cyclesLeft = meta.hasAnimal ? 12 : 0;
   if (meta.level == null || meta.level < 1) meta.level = 1;
   if (meta.xp == null || meta.xp < 0) meta.xp = 0;
+  normalizeAnimalSlots(meta);
   return meta;
+}
+
+/** Migre hasAnimal/cyclesLeft → animals[] + animalSlots. */
+export function normalizeAnimalSlots(meta) {
+  if (!Array.isArray(meta.animals)) {
+    const slots = Math.max(1, Number(meta.animalSlots) || 1);
+    meta.animalSlots = slots;
+    meta.animals = Array.from({ length: slots }, () => null);
+    if (meta.hasAnimal) {
+      meta.animals[0] = { cyclesLeft: Math.max(1, Number(meta.cyclesLeft) || 12) };
+    }
+  }
+  const slots = Math.max(1, Number(meta.animalSlots) || meta.animals.length || 1);
+  meta.animalSlots = slots;
+  while (meta.animals.length < slots) meta.animals.push(null);
+  if (meta.animals.length > slots) meta.animals.length = slots;
+
+  const alive = meta.animals.filter((a) => a && (a.cyclesLeft || 0) > 0);
+  meta.hasAnimal = alive.length > 0;
+  meta.cyclesLeft = alive.reduce((sum, a) => sum + (a.cyclesLeft || 0), 0);
+  return meta;
+}
+
+export function countAliveAnimals(meta) {
+  normalizeAnimalSlots(meta);
+  return meta.animals.filter((a) => a && (a.cyclesLeft || 0) > 0).length;
+}
+
+export function countActiveFarmProductions(state, buildingId) {
+  const lines = state.productionLines?.farm?.[buildingId] || {};
+  let n = 0;
+  for (const line of Object.values(lines)) {
+    for (const slot of line.slots || []) {
+      if (slot?.active) n += 1;
+    }
+  }
+  return n;
+}
+
+/** Emplacement libre : jamais rempli (null) ou animal mort (cyclesLeft <= 0). */
+export function getEmptyAnimalSlotIndex(meta) {
+  normalizeAnimalSlots(meta);
+  return meta.animals.findIndex((a) => !a || (a.cyclesLeft || 0) <= 0);
+}
+
+export function getNextAnimalSlotUnlock(building, meta) {
+  normalizeAnimalSlots(meta);
+  const unlocks = building?.animalSlotUnlocks || [];
+  const nextIndex = meta.animalSlots; // 0-based index of next slot to unlock
+  if (nextIndex >= (building?.animalMaxSlots || unlocks.length + 1)) {
+    return null;
+  }
+  const req = unlocks[nextIndex - 1]; // unlocks[0] = 2nd slot
+  if (!req) return null;
+  return { slotIndex: nextIndex, ...req };
+}
+
+function payAnimalCost(state, cost) {
+  if (!cost) return { ok: false, reason: 'Coût invalide' };
+  if ((state.kirha || 0) < (cost.kirha || 0)) return { ok: false, reason: 'Pas assez de Kirha' };
+  for (const [resId, amount] of Object.entries(cost)) {
+    if (resId === 'kirha') continue;
+    if ((state.inventory[resId] || 0) < amount) {
+      return { ok: false, reason: 'Ressources insuffisantes' };
+    }
+  }
+  if (cost.kirha) state.kirha -= cost.kirha;
+  for (const [resId, amount] of Object.entries(cost)) {
+    if (resId === 'kirha') continue;
+    state.inventory[resId] -= amount;
+  }
+  return { ok: true };
+}
+
+export function formatAnimalCostParts(cost, resources) {
+  const parts = [];
+  if (cost?.kirha) parts.push(`${cost.kirha} 💰`);
+  for (const [rid, qty] of Object.entries(cost || {})) {
+    if (rid === 'kirha') continue;
+    parts.push(`${qty}× ${resources?.[rid]?.name || rid}`);
+  }
+  return parts;
 }
 
 export function canBuyHarvestUnit(state, balance, jobId, resourceId, resources) {
@@ -438,7 +522,7 @@ export function isAnyProductionActive(state) {
   return false;
 }
 
-export function startHarvestUnit(state, resources, jobs, balance, jobId, resourceId, unitIndex) {
+export function startHarvestUnit(state, resources, jobs, balance, jobId, resourceId, unitIndex, recipes = null, equipment = null) {
   const line = getHarvestLine(state, jobId, resourceId);
   const slot = line?.slots?.[unitIndex];
   const resource = resources[resourceId];
@@ -446,7 +530,14 @@ export function startHarvestUnit(state, resources, jobs, balance, jobId, resourc
 
   const duration = getHarvestTime(resource, state, jobs, balance, resources);
   slot.active = { phase: 'harvesting', start: Date.now(), duration, resourceId };
-  return { ok: true, duration, jobId, resourceId, unitIndex };
+
+  // Usure à au démarrage : 1 utilisation = 1 récolte lancée (pas de multi-clic gratuit)
+  let wornTools = [];
+  if (recipes && equipment) {
+    wornTools = wearToolsForHarvest(state, recipes, equipment, jobId, resourceId, resources);
+  }
+
+  return { ok: true, duration, jobId, resourceId, unitIndex, wornTools };
 }
 
 export function completeHarvestUnit(state, resources, jobs, balance, jobId, resourceId, unitIndex, recipes, equipment) {
@@ -482,7 +573,6 @@ export function completeHarvestUnit(state, resources, jobs, balance, jobId, reso
       resourceId,
     };
 
-    const wornTools = wearToolsForHarvest(state, recipes, equipment, jobId, resourceId, resources);
     return {
       phase: 'harvested',
       resourceId,
@@ -493,7 +583,7 @@ export function completeHarvestUnit(state, resources, jobs, balance, jobId, reso
       levelResult,
       dailyBonus,
       regrowthDuration,
-      wornTools,
+      wornTools: [],
     };
   }
 
@@ -504,27 +594,54 @@ export function completeHarvestUnit(state, resources, jobs, balance, jobId, reso
 export function buyFarmAnimal(state, farmData, buildingId) {
   const building = getBuildingDef(farmData, buildingId);
   const meta = getFarmBuildingMeta(state, buildingId);
-  if (!building?.requiresAnimal || meta.hasAnimal) return { ok: false, reason: 'Indisponible' };
-  const cost = building.animalPurchase || {};
-  if ((state.kirha || 0) < (cost.kirha || 0)) return { ok: false, reason: 'Pas assez de Kirha' };
-  for (const [resId, amount] of Object.entries(cost)) {
-    if (resId === 'kirha') continue;
-    if ((state.inventory[resId] || 0) < amount) {
-      return { ok: false, reason: 'Ressources insuffisantes' };
-    }
+  if (!building?.requiresAnimal) return { ok: false, reason: 'Indisponible' };
+
+  const emptyIdx = getEmptyAnimalSlotIndex(meta);
+  if (emptyIdx < 0) {
+    return { ok: false, reason: 'Tous les emplacements sont occupés — débloque-en un autre' };
   }
-  if (cost.kirha) state.kirha -= cost.kirha;
-  for (const [resId, amount] of Object.entries(cost)) {
-    if (resId === 'kirha') continue;
-    state.inventory[resId] -= amount;
-  }
-  meta.hasAnimal = true;
-  meta.cyclesLeft = Math.max(1, building.animalMaxCycles || 12);
+
+  const slotState = meta.animals[emptyIdx];
+  const isReplaceDead = !!(slotState && (slotState.cyclesLeft || 0) <= 0);
+  const cost = (isReplaceDead && building.animalRepurchase)
+    ? building.animalRepurchase
+    : (building.animalPurchase || {});
+
+  const paid = payAnimalCost(state, cost);
+  if (!paid.ok) return paid;
+
+  meta.animals[emptyIdx] = { cyclesLeft: Math.max(1, building.animalMaxCycles || 12) };
+  normalizeAnimalSlots(meta);
   return {
     ok: true,
     animalName: building.animalName || 'Animal',
-    cyclesLeft: meta.cyclesLeft,
+    cyclesLeft: meta.animals[emptyIdx].cyclesLeft,
+    slotIndex: emptyIdx,
+    replaced: isReplaceDead,
   };
+}
+
+export function unlockFarmAnimalSlot(state, farmData, buildingId) {
+  const building = getBuildingDef(farmData, buildingId);
+  const meta = getFarmBuildingMeta(state, buildingId);
+  if (!building?.requiresAnimal) return { ok: false, reason: 'Indisponible' };
+
+  const next = getNextAnimalSlotUnlock(building, meta);
+  if (!next) return { ok: false, reason: 'Maximum d’animaux atteint' };
+
+  const buildingLv = getFarmBuildingLevel(state, buildingId);
+  if (buildingLv < (next.buildingLevel || 1)) {
+    return { ok: false, reason: `${building.name} Nv.${next.buildingLevel} requis` };
+  }
+
+  const cost = { kirha: next.kirha || 0, ...(next.resources || {}) };
+  const paid = payAnimalCost(state, cost);
+  if (!paid.ok) return paid;
+
+  meta.animalSlots += 1;
+  meta.animals.push(null);
+  normalizeAnimalSlots(meta);
+  return { ok: true, animalSlots: meta.animalSlots };
 }
 
 export function setFarmLineFeed(state, buildingId, feedId) {
@@ -533,20 +650,29 @@ export function setFarmLineFeed(state, buildingId, feedId) {
   return true;
 }
 
-export function startFarmUnit(state, farmData, jobs, balance, buildingId, productId, unitIndex) {
+export function startFarmUnit(state, farmData, jobs, balance, buildingId, productId, unitIndex, recipes = null, equipment = null) {
   const building = getBuildingDef(farmData, buildingId);
   const line = getFarmLine(state, buildingId, productId);
   const slot = line?.slots?.[unitIndex];
   const meta = getFarmBuildingMeta(state, buildingId);
   if (!building || !slot || slot.active) return { ok: false, reason: 'Occupé' };
 
-  if (building.requiresAnimal && !meta.hasAnimal) {
-    return { ok: false, reason: 'Achète un animal pour ce bâtiment' };
+  if (building.requiresAnimal) {
+    const alive = countAliveAnimals(meta);
+    if (alive <= 0) {
+      return { ok: false, reason: 'Achète un animal pour ce bâtiment' };
+    }
+    const producing = countActiveFarmProductions(state, buildingId);
+    if (producing >= alive) {
+      return { ok: false, reason: `Pas assez d’animaux (${alive} actif${alive > 1 ? 's' : ''})` };
+    }
   }
 
   const needsFeed = Object.keys(building.feed || {}).length > 0;
-  const feedId = meta.feedId;
+  let feedId = meta.feedId || getPrimaryFeedId(building);
   if (needsFeed) {
+    if (!feedId) feedId = getPrimaryFeedId(building);
+    meta.feedId = feedId;
     if (!feedId || !canAffordFeed(building, feedId, state)) {
       return { ok: false, reason: 'Ration insuffisante' };
     }
@@ -557,7 +683,13 @@ export function startFarmUnit(state, farmData, jobs, balance, buildingId, produc
 
   const duration = computeFarmDuration(building, feedId, state);
   slot.active = { phase: 'producing', start: Date.now(), duration, feedId, productId };
-  return { ok: true, duration, buildingId, productId, unitIndex };
+
+  let wornTools = [];
+  if (recipes && equipment) {
+    wornTools = wearBreederTool(state, recipes, equipment, building?.toolKind || null);
+  }
+
+  return { ok: true, duration, buildingId, productId, unitIndex, wornTools };
 }
 
 export function completeFarmUnit(state, farmData, jobs, balance, buildingId, productId, unitIndex, recipes, equipment) {
@@ -592,19 +724,29 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
   slot.active = null;
 
   let animalExpired = false;
+  let expiredName = null;
   if (building?.requiresAnimal) {
     const meta = getFarmBuildingMeta(state, buildingId);
-    if (meta.hasAnimal) {
-      meta.cyclesLeft = Math.max(0, (meta.cyclesLeft || 1) - 1);
-      if (meta.cyclesLeft <= 0) {
-        meta.hasAnimal = false;
-        meta.cyclesLeft = 0;
+    // Usure sur l'animal avec le moins de cycles restants
+    let bestIdx = -1;
+    let bestCycles = Infinity;
+    meta.animals.forEach((a, i) => {
+      if (a && (a.cyclesLeft || 0) > 0 && a.cyclesLeft < bestCycles) {
+        bestCycles = a.cyclesLeft;
+        bestIdx = i;
+      }
+    });
+    if (bestIdx >= 0) {
+      meta.animals[bestIdx].cyclesLeft -= 1;
+      if (meta.animals[bestIdx].cyclesLeft <= 0) {
+        meta.animals[bestIdx] = { cyclesLeft: 0 };
         animalExpired = true;
+        expiredName = building.animalName || 'Animal';
       }
     }
+    normalizeAnimalSlots(meta);
   }
 
-  const wornTools = wearBreederTool(state, recipes, equipment, building?.toolKind || null);
   return {
     products,
     xp,
@@ -613,11 +755,11 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
     productId,
     unitIndex,
     animalExpired,
-    animalName: building?.animalName || null,
+    animalName: expiredName || building?.animalName || null,
     cyclesLeft: building?.requiresAnimal
       ? (getFarmBuildingMeta(state, buildingId).cyclesLeft || 0)
       : null,
-    wornTools,
+    wornTools: [],
   };
 }
 

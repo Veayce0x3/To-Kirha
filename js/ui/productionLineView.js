@@ -2,19 +2,23 @@ import { getResourceVisual, renderResourceIcon } from '../systems/resourceVisual
 import {
   canAffordFeed,
   getBuildingDef,
-  listFeedOptions,
   isUnifiedFarmBuilding,
   getUnifiedFarmLineKey,
   getFarmProductionLineIds,
   getFarmProductionXp,
   formatFeedCostLabel,
   formatFeedStockHtml,
-  getFeedCost,
   getPrimaryFeedId,
 } from '../systems/farm.js';
 import { getFarmBuildingProgress } from '../systems/farmProgress.js';
 import { getFarmBuildingIcon, getJobIcon, iconHtml } from '../core/assets.js';
-import { getVisibleProductionResources } from '../systems/productionLines.js';
+import {
+  getVisibleProductionResources,
+  countAliveAnimals,
+  getEmptyAnimalSlotIndex,
+  getNextAnimalSlotUnlock,
+  formatAnimalCostParts,
+} from '../systems/productionLines.js';
 import { getHarvestTime } from '../systems/harvest.js';
 import { getHarvestXpForResource } from '../systems/progression.js';
 import { getHarvestToolCheck, getFarmToolCheck } from '../systems/toolTier.js';
@@ -307,10 +311,25 @@ export function renderJobProduction(game, el, jobId) {
   else if (footerSlot) footerSlot.remove();
 }
 
-function getFarmBtnLabel(progress = 0) {
-  const pct = Math.floor(progress * 100);
+function getFarmBtnLabel(progress = 0, remainingMs = null) {
   if (progress >= 1) return 'Prêt !';
+  if (remainingMs != null && remainingMs > 0) {
+    const sec = Math.max(1, Math.ceil(remainingMs / 1000));
+    if (sec >= 60) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+    return `${sec}s`;
+  }
+  const pct = Math.floor(progress * 100);
   return `Production ${pct}%`;
+}
+
+function getSlotRemainingMs(slot) {
+  if (!slot?.active) return null;
+  const elapsed = Date.now() - (slot.active.start || 0);
+  return Math.max(0, (slot.active.duration || 0) - elapsed);
 }
 
 function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
@@ -319,11 +338,25 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
   const slot = line?.slots?.[unitIndex];
   const active = !!slot?.active;
   const meta = game.getFarmMeta(buildingId);
-  const needsAnimal = building.requiresAnimal && !meta.hasAnimal;
+  const alive = countAliveAnimals(meta);
+  const needsAnimal = building.requiresAnimal && alive <= 0;
   const toolBlock = game.getFarmToolBlockReason(buildingId);
   const needsFeed = Object.keys(building.feed || {}).length > 0;
-  const feedBlocked = needsFeed && (!meta.feedId || !canAffordFeed(building, meta.feedId, game.state));
-  const blocked = needsAnimal || feedBlocked || toolBlock;
+  const feedId = meta.feedId || getPrimaryFeedId(building);
+  if (needsFeed && feedId && meta.feedId !== feedId) {
+    game.setFarmFeed(buildingId, feedId);
+  }
+  const feedBlocked = needsFeed && (!feedId || !canAffordFeed(building, feedId, game.state));
+  const animalCapacityBlocked = building.requiresAnimal && alive > 0
+    && (() => {
+      const lines = game.state.productionLines?.farm?.[buildingId] || {};
+      let n = 0;
+      for (const ln of Object.values(lines)) {
+        for (const s of ln.slots || []) if (s?.active) n += 1;
+      }
+      return n >= alive;
+    })();
+  const blocked = needsAnimal || feedBlocked || toolBlock || animalCapacityBlocked;
   const canStart = !active && !blocked;
   const canCollect = active && progress >= 1;
   const unified = isUnifiedFarmBuilding(building);
@@ -333,9 +366,10 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
     ? `<img class="slot-visual-sprite" src="${buildingIcon}" alt="" />`
     : `<span class="slot-visual-emoji">${building.emoji || '🏠'}</span>`;
 
+  const remainingMs = getSlotRemainingMs(slot);
   const progressPct = Math.floor(progress * 100);
   const statusLabel = active
-    ? getFarmBtnLabel(progress)
+    ? getFarmBtnLabel(progress, remainingMs)
     : (canStart ? 'Produire' : '');
 
   const card = document.createElement('div');
@@ -354,7 +388,8 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
       </div>
       ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
       ${needsAnimal ? `<p class="slot-tool-hint">Achète ${building.animalName ? `un(e) ${building.animalName.toLowerCase()}` : 'un animal'} pour produire</p>` : ''}
-      ${feedBlocked && !needsAnimal ? '<p class="slot-tool-hint">Choisis une ration</p>' : ''}
+      ${animalCapacityBlocked && !needsAnimal ? `<p class="slot-tool-hint">Tous tes animaux sont occupés (${alive})</p>` : ''}
+      ${feedBlocked && !needsAnimal ? '<p class="slot-tool-hint">Pas assez de ration</p>' : ''}
     `;
 
     const onTap = () => {
@@ -367,9 +402,11 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
         return;
       }
       const liveMeta = game.getFarmMeta(buildingId);
-      const liveNeedsAnimal = building.requiresAnimal && !liveMeta.hasAnimal;
+      const liveAlive = countAliveAnimals(liveMeta);
+      const liveNeedsAnimal = building.requiresAnimal && liveAlive <= 0;
       const liveToolBlock = game.getFarmToolBlockReason(buildingId);
-      const liveFeedBlocked = needsFeed && (!liveMeta.feedId || !canAffordFeed(building, liveMeta.feedId, game.state));
+      const liveFeedId = liveMeta.feedId || getPrimaryFeedId(building);
+      const liveFeedBlocked = needsFeed && (!liveFeedId || !canAffordFeed(building, liveFeedId, game.state));
       if (liveNeedsAnimal || liveFeedBlocked || liveToolBlock) return;
       const result = game.startFarmSlot(buildingId, lineKey, unitIndex);
       if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
@@ -392,7 +429,7 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
       ${active ? `<div class="xp-bar-container slot-progress"><div class="xp-bar" style="width:${progressPct}%"></div></div>` : ''}
       ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
       <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${canStart || canCollect ? ' affordable' : ''}" ${active && progress < 1 || (!active && blocked) ? 'disabled' : ''}>
-        ${active ? (progress >= 1 ? 'Collecter' : `Production ${progressPct}%`) : 'Produire'}
+        ${active ? (progress >= 1 ? 'Collecter' : getFarmBtnLabel(progress, remainingMs)) : 'Produire'}
       </button>
     </div>
   `;
@@ -427,9 +464,10 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
   const feedHtmlChips = formatFeedStockHtml(building, feedId, game.resources, game.state, renderResourceIcon);
   const toolDur = getFarmToolDurabilityLabel(game, building);
   const animalLabel = building.animalName || 'Animal';
-  const lifeLine = meta.hasAnimal
-    ? `${building.animalEmoji || '🐾'} ${animalLabel} · ${meta.cyclesLeft || 0} production${(meta.cyclesLeft || 0) !== 1 ? 's' : ''} restante${(meta.cyclesLeft || 0) !== 1 ? 's' : ''}`
-    : `${building.animalEmoji || '🐾'} Aucun ${animalLabel.toLowerCase()} — à acheter`;
+  const alive = countAliveAnimals(meta);
+  const lifeLine = building.requiresAnimal
+    ? `${building.animalEmoji || '🐾'} ${alive}/${meta.animalSlots || 1} ${animalLabel}${(alive !== 1) ? 's' : ''} · ${meta.cyclesLeft || 0} cycle(s)`
+    : '';
 
   const section = document.createElement('div');
   section.className = 'production-line-section';
@@ -448,11 +486,11 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
       </div>
     </div>
     <div class="farm-info-chips">
-      <div class="farm-feed-chips" title="Stock inventaire (−coût par production)">${feedHtmlChips || `🍽️ ${feedLabel}`}</div>
+      <div class="farm-feed-chips" title="Consommé à chaque production">${feedHtmlChips || `🍽️ ${feedLabel}`}</div>
       ${xpGain > 0 ? `<span class="farm-info-chip">📜 +${xpGain} XP</span>` : ''}
-      <span class="farm-info-chip">${lifeLine}</span>
+      ${lifeLine ? `<span class="farm-info-chip">${lifeLine}</span>` : ''}
     </div>
-    <p class="view-desc">Tape pour lancer une production, puis pour collecter. L'animal a une durée de vie limitée.</p>
+    <p class="view-desc">Tape pour lancer une production (ration auto), puis pour collecter.</p>
     <div class="slots-grid production-units-grid"></div>
   `;
 
@@ -470,38 +508,26 @@ export function renderFarmProduction(game, el, buildingId) {
   const pct = prog.grantsXp ? (prog.xp / prog.needed) * 100 : 0;
   const meta = game.getFarmMeta(buildingId);
   const needsFeed = Object.keys(building.feed || {}).length > 0;
-  const feedOptions = listFeedOptions(building);
   const xpGain = getFarmProductionXp(building);
-  const feedId = meta.feedId || getPrimaryFeedId(building);
+  const feedId = getPrimaryFeedId(building) || meta.feedId;
+  if (needsFeed && feedId) {
+    game.setFarmFeed(buildingId, feedId);
+    meta.feedId = feedId;
+  }
   const feedStockHtml = formatFeedStockHtml(building, feedId, game.resources, game.state, renderResourceIcon);
   const toolDur = getFarmToolDurabilityLabel(game, building);
 
-  // Auto-sélection de la ration principale si vide
-  if (needsFeed && !meta.feedId && feedOptions[0]) {
-    game.setFarmFeed(buildingId, feedOptions[0]);
-    meta.feedId = feedOptions[0];
-  }
-
   let feedHtml = '';
   if (needsFeed) {
+    const feedName = game.resources[feedId]?.name || feedId;
     feedHtml = `
-      <div class="farm-feed-block">
-        <label>Ration
-          <select class="farm-feed-select" id="farm-feed-select">
-            <option value="">— Choisir —</option>
-            ${feedOptions.map((id) => {
-              const cost = getFeedCost(building, id);
-              const have = game.state.inventory[id] || 0;
-              const need = cost?.[id] || 0;
-              const name = game.resources[id]?.name || id;
-              return `<option value="${id}" ${meta.feedId === id ? 'selected' : ''}>${name} · stock ${have}${need ? ` (−${need})` : ''}</option>`;
-            }).join('')}
-          </select>
-        </label>
+      <div class="farm-feed-auto">
+        <p class="farm-feed-auto-label">Ration : <strong>${feedName}</strong> (auto)</p>
         <div class="farm-feed-preview-row">
           <div class="farm-feed-chips">${feedStockHtml}</div>
           <span class="farm-feed-xp">+${xpGain} XP</span>
         </div>
+        <p class="view-desc">Consommée automatiquement à chaque production — le décompte apparaît sur l’unité.</p>
       </div>`;
   } else {
     feedHtml = xpGain > 0
@@ -513,23 +539,45 @@ export function renderFarmProduction(game, el, buildingId) {
   if (building.requiresAnimal) {
     const animalName = building.animalName || 'Animal';
     const emoji = building.animalEmoji || building.emoji || '🐾';
-    const cost = building.animalPurchase || {};
-    const costParts = [];
-    if (cost.kirha) costParts.push(`${cost.kirha} 💰`);
-    for (const [rid, qty] of Object.entries(cost)) {
-      if (rid === 'kirha') continue;
-      costParts.push(`${qty}× ${game.resources[rid]?.name || rid}`);
+    const alive = countAliveAnimals(meta);
+    const emptyIdx = getEmptyAnimalSlotIndex(meta);
+    const nextUnlock = getNextAnimalSlotUnlock(building, meta);
+    const slotDead = emptyIdx >= 0 && meta.animals[emptyIdx] && (meta.animals[emptyIdx].cyclesLeft || 0) <= 0;
+    const buyCost = (slotDead && building.animalRepurchase) ? building.animalRepurchase : (building.animalPurchase || {});
+    const buyParts = formatAnimalCostParts(buyCost, game.resources);
+    const buyLabel = slotDead ? `Racheter ${animalName}` : `Acheter ${animalName}`;
+
+    const slotChips = (meta.animals || []).map((a, i) => {
+      if (a && (a.cyclesLeft || 0) > 0) {
+        return `<span class="farm-animal-chip ok">${emoji} #${i + 1} · ${a.cyclesLeft} cycles</span>`;
+      }
+      if (a && (a.cyclesLeft || 0) <= 0) {
+        return `<span class="farm-animal-chip dead">${emoji} #${i + 1} · mort</span>`;
+      }
+      return `<span class="farm-animal-chip empty">Emplacement ${i + 1} vide</span>`;
+    }).join('');
+
+    let unlockHtml = '';
+    if (nextUnlock) {
+      const needLv = nextUnlock.buildingLevel || 1;
+      const lvOk = (prog.level || 1) >= needLv;
+      const unlockParts = formatAnimalCostParts({ kirha: nextUnlock.kirha || 0, ...(nextUnlock.resources || {}) }, game.resources);
+      unlockHtml = `
+        <button type="button" class="btn btn-muted btn-sm btn-unlock-animal-slot" ${lvOk ? '' : 'disabled'}>
+          Débloquer emplacement ${nextUnlock.slotIndex + 1} · Nv.${needLv}${lvOk ? '' : ` (actuel ${prog.level})`} · ${unlockParts.join(' + ')}
+        </button>`;
     }
-    if (!meta.hasAnimal) {
-      animalHtml = `
-        <div class="farm-animal-buy">
-          <p class="view-desc">${emoji} Achète un(e) <strong>${animalName}</strong> pour produire (${building.animalMaxCycles || '?'} cycles de vie).</p>
-          <button type="button" class="btn btn-craft btn-buy-animal">Acheter ${animalName} · ${costParts.join(' + ')}</button>
-        </div>`;
-    } else {
-      animalHtml = `
-        <p class="farm-animal-status">${emoji} ${animalName} active · <strong>${meta.cyclesLeft || 0}</strong> production${(meta.cyclesLeft || 0) !== 1 ? 's' : ''} restante${(meta.cyclesLeft || 0) !== 1 ? 's' : ''}</p>`;
-    }
+
+    animalHtml = `
+      <div class="farm-animal-panel">
+        <p class="farm-animal-status">${emoji} ${alive}/${meta.animalSlots || 1} ${animalName}${alive !== 1 ? 's' : ''} actif${alive !== 1 ? 's' : ''}</p>
+        <div class="farm-animal-chips">${slotChips}</div>
+        <div class="farm-animal-actions">
+          ${emptyIdx >= 0 ? `<button type="button" class="btn btn-craft btn-buy-animal">${buyLabel} · ${buyParts.join(' + ')}</button>` : ''}
+          ${unlockHtml}
+        </div>
+        <p class="view-desc">Débloquer un nouvel animal est plus dur. Racheter un animal mort est moins cher.</p>
+      </div>`;
   }
 
   el.innerHTML = `
@@ -552,12 +600,13 @@ export function renderFarmProduction(game, el, buildingId) {
     </div>
   `;
 
-  el.querySelector('#farm-feed-select')?.addEventListener('change', (e) => {
-    game.setFarmFeed(buildingId, e.target.value);
-    renderFarmProduction(game, el, buildingId);
-  });
   el.querySelector('.btn-buy-animal')?.addEventListener('click', () => {
     const result = game.buyFarmAnimal(buildingId);
+    if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
+    else renderFarmProduction(game, el, buildingId);
+  });
+  el.querySelector('.btn-unlock-animal-slot')?.addEventListener('click', () => {
+    const result = game.unlockFarmAnimalSlot(buildingId);
     if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
     else renderFarmProduction(game, el, buildingId);
   });
@@ -651,7 +700,7 @@ export function updateFarmLineProgresses(game, buildingId) {
           fill = card?.querySelector('.slot-progress-fill');
           label = card?.querySelector('.slot-progress-label');
         }
-        const statusLabel = getFarmBtnLabel(progress);
+        const statusLabel = getFarmBtnLabel(progress, getSlotRemainingMs(slot));
         if (fill) fill.style.width = `${pct}%`;
         if (label) label.textContent = statusLabel;
         if (progress >= 1) {

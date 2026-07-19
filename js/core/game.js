@@ -66,8 +66,13 @@ import {
   getJobHarvestNavStatus as computeJobHarvestNavStatus,
   getFarmBuildingNavStatus as computeFarmBuildingNavStatus,
   buyFarmAnimal,
+  unlockFarmAnimalSlot,
   setFarmLineFeed,
   getFarmBuildingMeta,
+  countAliveAnimals,
+  getNextAnimalSlotUnlock,
+  getEmptyAnimalSlotIndex,
+  formatAnimalCostParts,
   listActiveProductionTimers,
   getJobHarvestResources,
 } from '../systems/productionLines.js';
@@ -808,8 +813,25 @@ export class Game {
       return { ok: false, reason: toolCheck.message };
     }
 
-    const result = startFarmUnit(this.state, this.farmData, this.jobs, this.balance, buildingId, productId, unitIndex);
+    const result = startFarmUnit(
+      this.state,
+      this.farmData,
+      this.jobs,
+      this.balance,
+      buildingId,
+      productId,
+      unitIndex,
+      this.recipes,
+      this.equipment
+    );
     if (!result.ok) return result;
+
+    for (const { recipeId, remaining } of result.wornTools || []) {
+      if (remaining <= 0) {
+        const recipe = this.recipes[recipeId];
+        emit('toolBroken', { recipeId, name: recipe?.name || recipeId });
+      }
+    }
 
     if (!isUnifiedFarmBuilding(building)) {
       this.scheduleProductionTimer('farm', { buildingId, productId }, unitIndex, result.duration);
@@ -1028,9 +1050,33 @@ export class Game {
   buyFarmAnimal(buildingId) {
     const result = buyFarmAnimal(this.state, this.farmData, buildingId);
     if (!result.ok) return result;
-    emit('farmFeedChange', { buildingId });
+    emit('farmAnimalBuy', result);
+    emit('stateChange', this.state);
     this.scheduleSave();
     return result;
+  }
+
+  unlockFarmAnimalSlot(buildingId) {
+    const result = unlockFarmAnimalSlot(this.state, this.farmData, buildingId);
+    if (!result.ok) return result;
+    emit('farmAnimalSlotUnlock', result);
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return result;
+  }
+
+  getFarmAnimalInfo(buildingId) {
+    const building = this.farmData.buildings?.[buildingId];
+    const meta = getFarmBuildingMeta(this.state, buildingId);
+    if (!building?.requiresAnimal) return null;
+    return {
+      alive: countAliveAnimals(meta),
+      slots: meta.animalSlots,
+      animals: meta.animals,
+      emptyIndex: getEmptyAnimalSlotIndex(meta),
+      nextUnlock: getNextAnimalSlotUnlock(building, meta),
+      buildingLevel: this.getFarmBuildingLevel(buildingId),
+    };
   }
 
   useCombatMeal(mealId) {
@@ -1128,8 +1174,25 @@ export class Game {
       return false;
     }
 
-    const result = startHarvestUnit(this.state, this.resources, this.jobs, this.balance, jobId, resourceId, unitIndex);
+    const result = startHarvestUnit(
+      this.state,
+      this.resources,
+      this.jobs,
+      this.balance,
+      jobId,
+      resourceId,
+      unitIndex,
+      this.recipes,
+      this.equipment
+    );
     if (!result.ok) return false;
+
+    for (const { recipeId, remaining } of result.wornTools || []) {
+      if (remaining <= 0) {
+        const recipe = this.recipes[recipeId];
+        emit('toolBroken', { recipeId, name: recipe?.name || recipeId });
+      }
+    }
 
     this.scheduleProductionTimer('harvest', { jobId, resourceId }, unitIndex, result.duration);
     emit('harvestStart', { resourceId, jobId, unitIndex, duration: result.duration, phase: 'harvesting' });

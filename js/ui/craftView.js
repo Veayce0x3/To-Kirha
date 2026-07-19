@@ -90,6 +90,53 @@ function renderRecipeGroup(title, items, game) {
   `;
 }
 
+const TOOL_JOB_ORDER = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist', 'breeder', 'cook', '_other'];
+
+function getToolTargetJob(info, game) {
+  const fromEffect = info.recipe?.effect?.job;
+  if (fromEffect) return fromEffect;
+  const fromEquip = game.equipment?.equipable?.[info.recipeId]?.job;
+  if (fromEquip) return fromEquip;
+  return '_other';
+}
+
+function renderToolmakerByJob(groups, game) {
+  const buckets = new Map();
+  for (const key of TOOL_JOB_ORDER) buckets.set(key, { available: [], owned: [], locked: [] });
+
+  for (const info of groups.available) {
+    const job = getToolTargetJob(info, game);
+    (buckets.get(TOOL_JOB_ORDER.includes(job) ? job : '_other').available).push(info);
+  }
+  for (const info of groups.owned) {
+    const job = getToolTargetJob(info, game);
+    (buckets.get(TOOL_JOB_ORDER.includes(job) ? job : '_other').owned).push(info);
+  }
+  for (const info of groups.locked) {
+    const job = getToolTargetJob(info, game);
+    (buckets.get(TOOL_JOB_ORDER.includes(job) ? job : '_other').locked).push(info);
+  }
+
+  const parts = [];
+  for (const jobId of TOOL_JOB_ORDER) {
+    const g = buckets.get(jobId);
+    if (!g.available.length && !g.owned.length && !g.locked.length) continue;
+    const job = game.jobs[jobId];
+    const title = jobId === '_other'
+      ? '🛠️ Autres'
+      : `${job?.emoji || '🛠️'} ${job?.name || jobId}`;
+    parts.push(`
+      <section class="craft-job-group">
+        <h3 class="craft-job-group-title">${title}</h3>
+        ${renderRecipeGroup('Disponibles', g.available, game)}
+        ${renderRecipeGroup('Possédé', g.owned, game)}
+        ${renderRecipeGroup('Verrouillées', g.locked, game)}
+      </section>
+    `);
+  }
+  return parts.filter(Boolean).join('');
+}
+
 function handleCraftPanelClick(game, event, craftJobId, panelEl, headerEl) {
   const equipBtn = event.target.closest('[data-equip-recipe]');
   if (equipBtn) {
@@ -155,11 +202,13 @@ function paintCraftPanel(game, craftJobId, panelEl, headerEl) {
     `;
   }
 
-  const body = [
-    renderRecipeGroup('✅ Disponibles', groups.available, game),
-    renderRecipeGroup('📦 Possédé', groups.owned, game),
-    renderRecipeGroup('🔒 Verrouillées', groups.locked, game),
-  ].filter(Boolean).join('');
+  const body = isTools
+    ? renderToolmakerByJob(groups, game)
+    : [
+      renderRecipeGroup('✅ Disponibles', groups.available, game),
+      renderRecipeGroup('📦 Possédé', groups.owned, game),
+      renderRecipeGroup('🔒 Verrouillées', groups.locked, game),
+    ].filter(Boolean).join('');
 
   panelEl.innerHTML = `
     ${hints}

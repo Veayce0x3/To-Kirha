@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1800",
+      "date": "2026-07-19",
+      "title": "Outils, ferme, outilleur",
+      "highlights": [
+        "Récolte : 1 utilisation d’outil = 1 plant (plus de multi-clic avec 1 use)",
+        "Ferme : ration auto + décompte ; plusieurs animaux (déblocage dur, rachat mort moins cher)",
+        "Outilleur : outils groupés par métier",
+        "Temps de jeu : sync cloud périodique ; animations coupées en arrière-plan (batterie)"
+      ]
+    },
+    {
       "buildId": "20260719-1730",
       "date": "2026-07-19",
       "title": "Saison + Admin",

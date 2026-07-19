@@ -837,6 +837,15 @@ body.page-hidden .sakura-petals {
   animation-play-state: paused;
 }
 
+body.page-hidden .slot-can-harvest,
+body.page-hidden .active-harvest .slot-visual,
+body.page-hidden .slot-visual-tap,
+body.page-hidden .harvest-slot.active-harvest,
+body.page-hidden .farm-slot.active-harvest,
+body.page-hidden .nav-btn-unlock-ready {
+  animation: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .petal,
   .sakura-petals {

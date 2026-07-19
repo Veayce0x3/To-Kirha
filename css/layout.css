@@ -899,14 +899,93 @@
   margin-bottom: 0.75rem;
 }
 
+.farm-feed-auto {
+  margin-bottom: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(45, 90, 39, 0.06);
+  border: 1px solid rgba(45, 90, 39, 0.12);
+}
+
+.farm-feed-auto-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
 .farm-feed-preview,
 .farm-animal-status {
   margin: 0.4rem 0 0.65rem;
   font-size: 0.85rem;
 }
 
+.farm-animal-panel {
+  margin-bottom: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(248, 232, 238, 0.55);
+  border: 1px solid rgba(155, 89, 182, 0.18);
+}
+
+.farm-animal-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.4rem 0 0.55rem;
+}
+
+.farm-animal-chip {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.9);
+  border: 1px solid rgba(74, 55, 40, 0.12);
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.farm-animal-chip.ok {
+  border-color: rgba(45, 90, 39, 0.35);
+  color: var(--vert-foret);
+}
+
+.farm-animal-chip.dead {
+  border-color: rgba(192, 57, 43, 0.35);
+  color: #922b21;
+}
+
+.farm-animal-chip.empty {
+  opacity: 0.7;
+}
+
+.farm-animal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.farm-animal-actions .btn {
+  min-height: 44px;
+}
+
 .farm-animal-buy {
   margin-bottom: 0.75rem;
+}
+
+.craft-job-group {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(232, 180, 203, 0.35);
+}
+
+.craft-job-group:last-child {
+  border-bottom: none;
+}
+
+.craft-job-group-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  color: var(--vert-foret);
 }
 
 .view-container {
