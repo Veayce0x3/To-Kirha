@@ -175,7 +175,7 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
         ${renderResourceIcon(resource, 'tile-resource-icon')}
         <strong>${resource.name}</strong>
         <span class="production-stock">Stock : ${qty}</span>
-        <span class="production-xp">+${xpPerHarvest} XP</span>
+        <span class="production-xp">+${Number(xpPerHarvest).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} XP</span>
         ${toolDurability ? `<span class="production-tool-dur">🛠️ ${toolDurability}</span>` : ''}
       </div>
       <div class="production-line-meta">

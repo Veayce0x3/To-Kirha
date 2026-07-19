@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260719-2230",
+      "date": "2026-07-19",
+      "title": "Bonus saison = % exact",
+      "highlights": [
+        "Blé : 10 XP → 10,5 avec +5 % (plus d’arrondi forcé)",
+        "Kirha : même logique exacte (ex. 4 → 4,2)"
+      ]
+    },
+    {
       "buildId": "20260719-2215",
       "date": "2026-07-19",
       "title": "Bonus saison vraiment appliqués",

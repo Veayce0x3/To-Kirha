@@ -25,16 +25,14 @@ export function getPrestigeBonuses(state) {
 }
 
 /**
- * Applique un multiplicateur (saison / succès).
- * Si le % est trop petit pour Math.floor (ex. 4×1.05→4), force au moins +1.
+ * Applique un multiplicateur de saison / succès — valeur exacte (ex. 10 × 1,05 = 10,5).
  */
 export function applyMultiplierBonus(base, multiplier) {
-  const amount = Math.max(0, Math.floor(Number(base) || 0));
+  const amount = Number(base) || 0;
   const mult = Number(multiplier) || 1;
-  if (amount <= 0 || mult <= 1) return amount;
-  const boosted = Math.floor(amount * mult + 1e-9);
-  if (boosted <= amount) return amount + 1;
-  return boosted;
+  if (amount <= 0) return 0;
+  if (mult === 1) return amount;
+  return amount * mult;
 }
 
 /** Plafond de niveau pour la saison en cours — le max absolu (200) exige plusieurs saisons. */

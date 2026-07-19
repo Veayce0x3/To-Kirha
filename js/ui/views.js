@@ -4113,9 +4113,14 @@ export function showDungeonResult(game, result) {
 }
 
 export function formatNumber(n) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 10_000) return (n / 1_000).toFixed(1) + 'K';
-  return Math.floor(n).toLocaleString('fr-FR');
+  const x = Number(n) || 0;
+  if (x >= 1_000_000) return (x / 1_000_000).toFixed(1) + 'M';
+  if (x >= 10_000) return (x / 1_000).toFixed(1) + 'K';
+  // Garder les décimales du bonus saison (ex. 10,5 XP / 4,2 💰)
+  if (Math.abs(x - Math.round(x)) > 1e-9) {
+    return x.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  }
+  return Math.round(x).toLocaleString('fr-FR');
 }
 
 export function initSakuraPetals() {
