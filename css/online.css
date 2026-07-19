@@ -629,6 +629,99 @@ body.auth-modal-open #career-choice-modal {
   display: none;
 }
 
+.admin-player-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(74, 55, 40, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  animation: adminSheetFade 0.18s ease;
+}
+
+@keyframes adminSheetFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.admin-player-sheet {
+  width: min(100%, 640px);
+  max-height: min(92vh, 900px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px 18px 0 0;
+  background: linear-gradient(180deg, #fffdf9 0%, #f8e8ee 120%);
+  border: 1px solid rgba(45, 90, 39, 0.16);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+  animation: adminSheetSlide 0.22s ease;
+}
+
+@keyframes adminSheetSlide {
+  from { transform: translateY(24px); opacity: 0.6; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.admin-player-sheet-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid rgba(74, 55, 40, 0.1);
+  background: rgba(255, 253, 249, 0.95);
+  border-radius: 18px 18px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.admin-player-sheet-title {
+  margin: 0;
+  font-size: 1.05rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-sheet-back {
+  flex-shrink: 0;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.admin-player-sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.9rem;
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+}
+
+body.admin-sheet-open {
+  overflow: hidden;
+}
+
+@media (min-width: 720px) {
+  .admin-player-sheet-overlay {
+    align-items: center;
+    padding: 1.25rem;
+  }
+
+  .admin-player-sheet {
+    border-radius: 18px;
+    max-height: min(88vh, 860px);
+  }
+
+  .admin-player-sheet-header {
+    border-radius: 18px 18px 0 0;
+  }
+}
+
 .admin-detail-head {
   display: flex;
   flex-wrap: wrap;

@@ -156,14 +156,14 @@ function renderObjectiveBanner(game, container, { ready = false } = {}) {
   const prestigeInfo = game.getPrestigeInfo();
   const showPrestigeBtn = objective.openPrestige
     || objective.source === 'prestige'
-    || (objective.source === 'season_cap' && objective.hintView === 'options');
+    || (objective.source === 'season_cap' && objective.hintView === 'season');
 
   if (showPrestigeBtn) {
     const go = document.createElement('button');
     go.type = 'button';
     go.className = `btn btn-small ${prestigeInfo.canDo ? 'btn-prestige' : 'btn-muted'} mission-go`;
     go.textContent = prestigeInfo.canDo ? 'Nouvelle saison' : 'Saison suivante';
-    go.addEventListener('click', () => emitPrestigeModal());
+    go.addEventListener('click', () => navigate('season'));
     container.appendChild(go);
   } else if (objective.hintView || objective.hintJob) {
     const go = document.createElement('button');
@@ -200,10 +200,10 @@ function renderPrestigeTeaser(game, container) {
     <div class="xp-bar-container prestige-teaser-bar"><div class="xp-bar" style="width:${progress.percent}%"></div></div>
     ${capHint}
     ${info.canDo ? '<p class="prestige-ready">Tout est prêt pour une nouvelle saison !</p>' : ''}
-    <button type="button" class="btn btn-small ${info.canDo ? 'btn-prestige' : 'btn-muted'}" id="char-prestige-btn">Voir détails</button>
+    <button type="button" class="btn btn-small ${info.canDo ? 'btn-prestige' : 'btn-muted'}" id="char-prestige-btn">Voir l'onglet Saison</button>
   `;
 
-  container.querySelector('#char-prestige-btn')?.addEventListener('click', () => emitPrestigeModal());
+  container.querySelector('#char-prestige-btn')?.addEventListener('click', () => navigate('season'));
 }
 
 function splitSkillsByDqMenu(skills) {
@@ -301,6 +301,7 @@ export function renderView(game, container, viewId) {
     leaderboard: renderLeaderboard,
     admin: renderAdmin,
     options: renderOptions,
+    season: renderSeason,
     combat: renderCombat,
   };
 
@@ -3221,19 +3222,61 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
 }
 
-/* ── Options ── */
+/* ── Saison ── */
 function emitPrestigeModal() {
   document.dispatchEvent(new CustomEvent('tokirha:prestige-open'));
 }
 
-export function renderOptions(game, el) {
+export function renderSeason(game, el) {
   const info = game.getPrestigeInfo();
   const caps = info.caps || game.getSeasonCapPreview();
   const p = game.state.prestige || {};
   const progress = game.getPrestigeProgress();
+  const seasonsDone = game.state.lifetimeStats?.seasonsCompleted || 0;
   const blockerHtml = info.blockers?.length
     ? `<ul class="prestige-blockers">${info.blockers.map((b) => `<li>${b}</li>`).join('')}</ul>`
     : '';
+
+  el.innerHTML = `
+    <div class="view-header"><h2><span class="nav-emoji" aria-hidden="true">🌸</span> Nouvelle saison</h2></div>
+    <p class="view-desc">Reset complet de la progression. Tu gardes tes bonus Kirha et XP permanents — plus tu changes de saison, plus tu vas loin.</p>
+
+    <div class="panel-inner panel-prestige season-panel">
+      <div class="season-status-grid">
+        <div class="admin-info-card">
+          <span class="admin-info-lbl">Saison actuelle</span>
+          <span class="admin-info-val">Saison ${info.currentSeason}</span>
+          <span class="admin-td-muted">${seasonsDone} renaissance(s)</span>
+        </div>
+        <div class="admin-info-card">
+          <span class="admin-info-lbl">Plafonds</span>
+          <span class="admin-info-val">Perso Nv.${caps.character.cap} · Métiers Nv.${caps.jobs.cap}</span>
+          <span class="admin-td-muted">Saison ${info.nextSeason} : Nv.${caps.nextSeason.character} / ${caps.nextSeason.jobs}</span>
+        </div>
+        <div class="admin-info-card">
+          <span class="admin-info-lbl">Bonus permanents</span>
+          <span class="admin-info-val">+${Math.round((p.kirhaBonus || 0) * 100)}% 💰 · +${Math.round((p.xpBonus || 0) * 100)}% XP</span>
+          <span class="admin-td-muted">Prochaine : +${info.gainBonuses.kirha}% 💰 · +${info.gainBonuses.xp}% XP</span>
+        </div>
+      </div>
+
+      <h3 class="admin-section-title">Prérequis Saison ${info.nextSeason}</h3>
+      <p class="view-desc">${progress.completed}/${progress.total} conditions</p>
+      <div class="xp-bar-container prestige-teaser-bar"><div class="xp-bar" style="width:${progress.percent}%"></div></div>
+      ${info.canDo
+        ? `<p class="prestige-req prestige-ready">Prêt pour la Saison ${info.nextSeason} !</p>`
+        : `<p class="prestige-req">Encore requis :</p>${blockerHtml}`}
+
+      <p class="view-desc season-reset-hint">Au passage : inventaire, métiers, ferme, zones et équipement repartent à zéro. Succès et bonus de saison sont conservés.</p>
+      <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
+    </div>
+  `;
+
+  el.querySelector('#prestige-btn')?.addEventListener('click', () => emitPrestigeModal());
+}
+
+/* ── Options ── */
+export function renderOptions(game, el) {
   const isRegistered = game.state?.meta?.account?.mode === 'registered';
   el.innerHTML = `
     <div class="view-header"><h2>${iconHtml(getNavIcon('options'), 'view-header-icon', 'Options')} Options</h2></div>
@@ -3244,21 +3287,6 @@ export function renderOptions(game, el) {
       <p class="view-desc">Vide le cache navigateur et recharge la dernière version. En général inutile : le jeu s’actualise tout seul au lancement.</p>
       <p class="startup-refresh-version" id="options-build-id"></p>
       <button type="button" class="btn btn-prestige" id="reload-app">Vider le cache et actualiser</button>
-    </div>
-    <div class="panel-inner panel-prestige">
-      <h3>🌸 Nouvelle Saison</h3>
-      <div id="prestige-info">
-        <p>Saison ${info.currentSeason} · Plafonds : perso Nv.${caps.character.cap} · métiers Nv.${caps.jobs.cap}</p>
-        <p>Saison ${info.nextSeason} : perso Nv.${caps.nextSeason.character} · métiers Nv.${caps.nextSeason.jobs}</p>
-        <p>Bonus actuels : +${Math.round((p.kirhaBonus || 0) * 100)}% 💰 · +${Math.round((p.xpBonus || 0) * 100)}% XP</p>
-        <p class="prestige-gain">Saison ${info.nextSeason} : +${info.gainBonuses.kirha}% 💰 · +${info.gainBonuses.xp}% XP</p>
-        <p class="view-desc">Prérequis : ${progress.completed}/${progress.total}</p>
-        <div class="xp-bar-container prestige-teaser-bar"><div class="xp-bar" style="width:${progress.percent}%"></div></div>
-        ${info.canDo
-          ? `<p class="prestige-req prestige-ready">Prêt pour la Saison ${info.nextSeason} !</p>`
-          : `<p class="prestige-req">Encore requis :</p>${blockerHtml}`}
-      </div>
-      <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
     </div>
     <div class="panel-inner save-panel save-danger-zone">
       <h3>⚠️ Zone sensible</h3>
@@ -3302,7 +3330,6 @@ export function renderOptions(game, el) {
       window.location.reload();
     }
   });
-  el.querySelector('#prestige-btn')?.addEventListener('click', () => emitPrestigeModal());
 
   const hint = (msg) => { const h = el.querySelector('#save-hint'); if (h) h.textContent = msg; };
 

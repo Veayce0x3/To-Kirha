@@ -795,6 +795,12 @@ body {
   font-size: 0.75rem;
   color: var(--violet-sakura);
   font-weight: 500;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .kirha-amount.pulse {

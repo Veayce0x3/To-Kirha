@@ -122,7 +122,7 @@ export function getCurrentObjective(ctx) {
       return objective(
         'Plafond de saison',
         `Plafond métiers Nv.${jobsCap} atteint — passe à la Saison ${(state.season || 1) + 1} pour progresser.`,
-        { hintView: 'options', openPrestige: true, priority: 3, source: 'season_cap' }
+        { hintView: 'season', openPrestige: true, priority: 3, source: 'season_cap' }
       );
     }
     const jobName = jobs[lockedRes.job]?.name || lockedRes.job;
@@ -156,7 +156,7 @@ export function getCurrentObjective(ctx) {
         return objective(
           'Plafond de saison',
           `Plafond perso Nv.${charCap} atteint — passe à la Saison ${(state.season || 1) + 1} pour progresser.`,
-          { hintView: 'options', openPrestige: true, priority: 4, source: 'season_cap' }
+          { hintView: 'season', openPrestige: true, priority: 4, source: 'season_cap' }
         );
       }
       return objective(
@@ -179,8 +179,8 @@ export function getCurrentObjective(ctx) {
   if (canPrestige(state, balance, quests, combatZones)) {
     return objective(
       'Nouvelle saison',
-      `Tout est prêt — lance la Saison ${(state.season || 1) + 1} dans Options.`,
-      { hintView: 'options', openPrestige: true, priority: 6, source: 'prestige' }
+      `Tout est prêt — lance la Saison ${(state.season || 1) + 1} dans l'onglet Saison.`,
+      { hintView: 'season', openPrestige: true, priority: 6, source: 'prestige' }
     );
   }
 
@@ -196,7 +196,7 @@ export function getCurrentObjective(ctx) {
     return objective(
       'Plafond de saison',
       `Plafond Saison ${state.season || 1} atteint (${capParts.join(' · ')}). Termine les prérequis puis passe à la Saison ${(state.season || 1) + 1}.`,
-      { hintView: 'options', openPrestige: true, priority: 5, source: 'season_cap' }
+      { hintView: 'season', openPrestige: true, priority: 5, source: 'season_cap' }
     );
   }
 

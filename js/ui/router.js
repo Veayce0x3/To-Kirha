@@ -49,6 +49,7 @@ const FARM_VIEWS = Object.fromEntries(
 
 export const VIEWS = {
   character: { id: 'character', label: 'Perso', title: 'Personnage' },
+  season: { id: 'season', label: 'Saison', title: 'Nouvelle saison', emoji: '🌸' },
   world: { id: 'world', label: 'Monde', title: 'Monde' },
   achievements: { id: 'achievements', label: 'Succès', title: 'Succès' },
   missions: { id: 'achievements', label: 'Succès', title: 'Succès' },
@@ -76,7 +77,7 @@ export const NAV_CATEGORIES = [
     id: 'personnage',
     label: 'Personnage',
     collapsible: false,
-    items: ['character'],
+    items: ['character', 'season'],
   },
   {
     id: 'monde',

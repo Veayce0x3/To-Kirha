@@ -73,7 +73,7 @@ export function initUI(game, audio) {
       }
       return true;
     }
-    return viewId === 'character' || viewId === 'options' || (viewId === 'admin' && canSeeAdminPanel());
+    return viewId === 'character' || viewId === 'season' || viewId === 'options' || (viewId === 'admin' && canSeeAdminPanel());
   });
 
   const els = {
@@ -483,6 +483,16 @@ export function initUI(game, audio) {
   els.sidebarOverlay?.addEventListener('click', closeSidebar);
   els.quickOptions?.addEventListener('click', () => navigate('options'));
   els.quickScroll?.addEventListener('click', () => navigate('auction_house'));
+  els.seasonBadge?.addEventListener('click', () => navigate('season'));
+  els.seasonBadge?.setAttribute('role', 'button');
+  els.seasonBadge?.setAttribute('tabindex', '0');
+  els.seasonBadge?.setAttribute('title', 'Voir la saison');
+  els.seasonBadge?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      navigate('season');
+    }
+  });
 
   on('sidebarClose', closeSidebar);
 

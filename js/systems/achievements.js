@@ -306,7 +306,7 @@ export function getAchievementGuidance(state, balance, achievements, recipes) {
   const next = getNextAchievement(achievements, state, recipes);
   if (next) return null;
   if (canPrestigeBase(state, balance, achievements, {})) {
-    return 'Succès Saison 1 complétés — lance une Nouvelle Saison dans Options.';
+    return 'Succès Saison 1 complétés — lance une Nouvelle Saison dans l’onglet Saison.';
   }
   return 'Consulte les succès pour préparer le passage de saison.';
 }

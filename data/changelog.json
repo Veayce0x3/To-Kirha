@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1730",
+      "date": "2026-07-19",
+      "title": "Saison + Admin",
+      "highlights": [
+        "Menu : nouvel onglet Saison (plus dans Options) — reset progression + bonus Kirha/XP",
+        "Admin : fiche joueur en feuille glissante (plus besoin de scroller) · onglet Place HDV retiré"
+      ]
+    },
+    {
       "buildId": "20260719-1705",
       "date": "2026-07-19",
       "title": "Màj auto sur téléphone",

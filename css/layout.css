@@ -335,6 +335,54 @@
   display: none;
 }
 
+.season-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.55rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.season-panel .admin-info-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 12px;
+  background: rgba(255, 253, 249, 0.9);
+  border: 1px solid rgba(74, 55, 40, 0.08);
+  font-size: 0.82rem;
+}
+
+.season-panel .admin-info-lbl {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 0.65;
+}
+
+.season-panel .admin-info-val {
+  font-weight: 600;
+}
+
+.season-panel .admin-td-muted {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.season-panel .admin-section-title {
+  margin: 1rem 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.season-reset-hint {
+  margin: 0.85rem 0;
+}
+
+.season-panel #prestige-btn {
+  width: 100%;
+  min-height: 48px;
+}
+
 .tile-lock-ing {
   color: var(--accent-brown, #4A3728);
 }

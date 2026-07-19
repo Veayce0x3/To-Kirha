@@ -3,6 +3,7 @@
  */
 
 import { navigate } from './router.js';
+import { on } from '../core/events.js';
 import {
   getProfileRole,
   getAuthState,
@@ -32,7 +33,6 @@ import {
   deleteLeaderboardEntry,
   wipeAllLeaderboard,
   rebuildLeaderboardFromSaves,
-  wipePlayerMarket,
   resetCloudSave,
   fetchModerationLogs,
   fetchReports,
@@ -42,9 +42,6 @@ import {
   toggleAnnouncement,
   fetchAdminConfig,
   setAdminConfig,
-  fetchMarketAdmin,
-  deleteListing,
-  deleteBuyOffer,
   fetchLeaderboardAdmin,
   fetchCloudSaves,
   submitPlayerReport,
@@ -59,9 +56,42 @@ let activeTab = 'dashboard';
 let selectedPlayerId = null;
 let statusMsg = '';
 let panelBodyEl = null;
+let playerSheetEl = null;
 
-function resLabel(id) {
-  return gameRef?.resources?.[id]?.name || id;
+on('navigate', (viewId) => {
+  if (viewId !== 'admin') closePlayerSheet();
+});
+
+function closePlayerSheet() {
+  playerSheetEl?.remove();
+  playerSheetEl = null;
+  document.body.classList.remove('admin-sheet-open');
+}
+
+function getOrCreatePlayerSheet() {
+  if (playerSheetEl?.isConnected) return playerSheetEl;
+  closePlayerSheet();
+  const overlay = document.createElement('div');
+  overlay.className = 'admin-player-sheet-overlay';
+  overlay.innerHTML = `
+    <div class="admin-player-sheet" role="dialog" aria-modal="true" aria-label="Fiche joueur">
+      <div class="admin-player-sheet-header">
+        <button type="button" class="btn btn-muted btn-sm admin-sheet-back" aria-label="Fermer">← Retour</button>
+        <h3 class="admin-player-sheet-title">Fiche joueur</h3>
+      </div>
+      <div class="admin-player-sheet-body" id="admin-player-sheet-body">
+        <p class="admin-loading">Chargement…</p>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closePlayerSheet();
+  });
+  overlay.querySelector('.admin-sheet-back')?.addEventListener('click', () => closePlayerSheet());
+  document.body.appendChild(overlay);
+  document.body.classList.add('admin-sheet-open');
+  playerSheetEl = overlay;
+  return overlay;
 }
 
 function toolbarHtml(extra = '') {
@@ -77,13 +107,14 @@ function bindRefresh(container, fn) {
   container.querySelector('.admin-refresh-btn')?.addEventListener('click', fn);
 }
 
-function bindPlayerTable(container, detailEl) {
+function bindPlayerTable(container) {
   container.querySelectorAll('.admin-view-player').forEach((btn) => {
-    btn.addEventListener('click', () => loadPlayerDetail(btn.dataset.uid, detailEl));
+    btn.addEventListener('click', () => loadPlayerDetail(btn.dataset.uid));
   });
 }
 
 function goToTab(tabId, userId = null) {
+  if (tabId !== 'players') closePlayerSheet();
   activeTab = tabId;
   if (userId) selectedPlayerId = userId;
   const tabsEl = panelBodyEl?.parentElement?.previousElementSibling;
@@ -268,7 +299,6 @@ async function renderDashboard(container) {
       <div class="admin-stat"><span class="admin-stat-val">${fmtNum(d.reports_pending)}</span><span class="admin-stat-lbl">Signalements</span></div>
       <div class="admin-stat warn"><span class="admin-stat-val">${fmtNum(d.players_banned)}</span><span class="admin-stat-lbl">Bannis</span></div>
       <div class="admin-stat warn"><span class="admin-stat-val">${fmtNum(d.players_flagged)}</span><span class="admin-stat-lbl">Flags</span></div>
-      <div class="admin-stat"><span class="admin-stat-val">${fmtNum((d.market_sells_active || 0) + (d.market_buys_active || 0))}</span><span class="admin-stat-lbl">Annonces HDV</span></div>
     </div>
     <p class="admin-meta-line">Classement ${fmtNum(d.leaderboard_entries)} · Saves ${fmtNum(d.saves_total)} · Staff ${fmtNum(d.staff_count)} · Annonces ${fmtNum(d.announcements_active)}</p>
     <div class="admin-dash-cols">
@@ -339,10 +369,8 @@ async function renderPlayers(container) {
       <button type="button" class="btn btn-craft" id="admin-player-search-btn">Rechercher</button>
     `)}
     <div id="admin-players-results"><p class="admin-loading">Chargement…</p></div>
-    <div id="admin-player-detail" class="admin-detail-panel hidden"></div>
   `;
   const resultsEl = container.querySelector('#admin-players-results');
-  const detailEl = container.querySelector('#admin-player-detail');
 
   async function loadList(f) {
     resultsEl.innerHTML = '<p class="admin-loading">Chargement…</p>';
@@ -352,7 +380,7 @@ async function renderPlayers(container) {
       return;
     }
     resultsEl.innerHTML = playerTableHtml(res.data || []);
-    bindPlayerTable(resultsEl, detailEl);
+    bindPlayerTable(resultsEl);
   }
 
   async function doSearch() {
@@ -368,7 +396,7 @@ async function renderPlayers(container) {
       return;
     }
     resultsEl.innerHTML = playerTableHtml(res.data || []);
-    bindPlayerTable(resultsEl, detailEl);
+    bindPlayerTable(resultsEl);
   }
 
   container.querySelectorAll('.admin-chip').forEach((chip) => {
@@ -385,22 +413,31 @@ async function renderPlayers(container) {
   bindRefresh(container, () => renderPlayers(container));
 
   await loadList(filter);
-  if (selectedPlayerId) loadPlayerDetail(selectedPlayerId, detailEl);
+  if (selectedPlayerId) {
+    const uid = selectedPlayerId;
+    selectedPlayerId = null;
+    loadPlayerDetail(uid);
+  }
 }
 
-async function loadPlayerDetail(userId, detailEl) {
+async function loadPlayerDetail(userId) {
   selectedPlayerId = userId;
-  detailEl.classList.remove('hidden');
+  const sheet = getOrCreatePlayerSheet();
+  const detailEl = sheet.querySelector('#admin-player-sheet-body');
+  const titleEl = sheet.querySelector('.admin-player-sheet-title');
+  if (titleEl) titleEl.textContent = 'Fiche joueur';
   detailEl.innerHTML = '<p class="admin-loading">Chargement fiche…</p>';
   const res = await getPlayerDetail(userId);
   if (!res.ok) {
     detailEl.innerHTML = `<p class="admin-error">${res.reason}</p>`;
     return;
   }
-  const { profile, leaderboard, save_summary, market_sells_active, market_buys_active, reports_against, reports_by, name_history, inventory_summary, jobs_summary, combat_items } = res.data;
+  const { profile, leaderboard, save_summary, reports_against, reports_by, name_history, inventory_summary, jobs_summary, combat_items } = res.data;
   const canSetRole = isSuperAdmin();
   const canResetSave = isAdmin();
   const canGrantJobs = isAdmin();
+
+  if (titleEl) titleEl.textContent = profile.display_name || 'Fiche joueur';
 
   const jobsHtml = jobs_summary && Object.keys(jobs_summary).length
     ? Object.entries(jobs_summary).map(([id, lv]) => `<span class="admin-tag">${id} Nv.${lv}</span>`).join(' ')
@@ -436,7 +473,6 @@ async function loadPlayerDetail(userId, detailEl) {
       <div class="admin-info-card"><span class="admin-info-lbl">Classement</span><span class="admin-info-val">${leaderboard ? `Nv.${leaderboard.char_level} · S${leaderboard.season}` : '—'}</span><span class="admin-td-muted">${leaderboard ? `${fmtNum(leaderboard.total_earned)} 💰 gagnés · ${fmtNum(leaderboard.kirha_current || 0)} en poche` : ''}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Save cloud</span><span class="admin-info-val">${save_summary ? `${save_summary.nickname || '?'} · Nv.${save_summary.char_level}` : 'Aucune'}</span><span class="admin-td-muted">${save_summary ? `S${save_summary.season} · ${fmtNum(save_summary.kirha)} 💰` : ''}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Carrière</span><span class="admin-info-val">${save_summary?.career_confirmed ? `${save_summary.career_harvest || '?'} / ${save_summary.career_farm || '?'}` : 'Non choisie'}</span></div>
-      <div class="admin-info-card"><span class="admin-info-lbl">HDV</span><span class="admin-info-val">${market_sells_active} vente(s) · ${market_buys_active} offre(s)</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Signalements</span><span class="admin-info-val">${reports_against} reçus · ${reports_by || 0} envoyés</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Renommage</span><span class="admin-info-val">${profile.free_rename_used ? 'Utilisé' : 'Disponible'}</span></div>
       <div class="admin-info-card admin-info-card-wide">
@@ -496,7 +532,6 @@ async function loadPlayerDetail(userId, detailEl) {
       <h5 class="admin-section-title">Données</h5>
       <div class="admin-actions">
         <button type="button" class="btn btn-muted" id="admin-del-lb">Retirer classement</button>
-        <button type="button" class="btn btn-muted" id="admin-wipe-market">Vider HDV</button>
         ${canResetSave ? '<button type="button" class="btn btn-muted" id="admin-reset-save">Reset save cloud</button>' : ''}
         ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs">+1 tous métiers</button>' : ''}
         ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs-5">+5 tous métiers</button>' : ''}
@@ -531,49 +566,42 @@ async function loadPlayerDetail(userId, detailEl) {
     if (!reason) return;
     const r = await banUser(userId, reason);
     setStatus(r.ok ? 'Joueur banni.' : r.reason, !r.ok);
-    if (r.ok) loadPlayerDetail(userId, detailEl);
+    if (r.ok) loadPlayerDetail(userId);
   });
 
   detailEl.querySelector('#admin-unban')?.addEventListener('click', async () => {
     if (!confirm('Débannir ce joueur ?')) return;
     const r = await unbanUser(userId, 'Déban manuel');
     setStatus(r.ok ? 'Joueur débanni.' : r.reason, !r.ok);
-    if (r.ok) loadPlayerDetail(userId, detailEl);
+    if (r.ok) loadPlayerDetail(userId);
   });
 
   detailEl.querySelector('#admin-flag')?.addEventListener('click', async () => {
     const notes = profile.cheat_flagged ? null : prompt('Notes triche (optionnel) :');
     const r = await flagCheat(userId, !profile.cheat_flagged, notes);
     setStatus(r.ok ? 'Flag mis à jour.' : r.reason, !r.ok);
-    if (r.ok) loadPlayerDetail(userId, detailEl);
+    if (r.ok) loadPlayerDetail(userId);
   });
 
   detailEl.querySelector('#admin-del-lb')?.addEventListener('click', async () => {
     if (!confirm('Retirer du classement ?')) return;
     const r = await deleteLeaderboardEntry(userId);
     setStatus(r.ok ? 'Entrée supprimée.' : r.reason, !r.ok);
-    if (r.ok) loadPlayerDetail(userId, detailEl);
-  });
-
-  detailEl.querySelector('#admin-wipe-market')?.addEventListener('click', async () => {
-    if (!confirm('Supprimer toutes les annonces HDV de ce joueur ?')) return;
-    const r = await wipePlayerMarket(userId);
-    setStatus(r.ok ? 'HDV vidé.' : r.reason, !r.ok);
-    if (r.ok) loadPlayerDetail(userId, detailEl);
+    if (r.ok) loadPlayerDetail(userId);
   });
 
   detailEl.querySelector('#admin-reset-save')?.addEventListener('click', async () => {
     if (!confirm('Supprimer la save cloud ? Irréversible.')) return;
     const r = await resetCloudSave(userId);
     setStatus(r.ok ? 'Save cloud supprimée.' : r.reason, !r.ok);
-    if (r.ok) loadPlayerDetail(userId, detailEl);
+    if (r.ok) loadPlayerDetail(userId);
   });
 
   detailEl.querySelector('#admin-grant-jobs')?.addEventListener('click', async () => {
     if (!confirm('Ajouter +1 niveau à tous les métiers de ce joueur (save cloud) ?')) return;
     const r = await grantAllJobsLevel(userId);
     setStatus(r.ok ? 'Tous les métiers +1.' : r.reason, !r.ok);
-    if (r.ok) loadPlayerDetail(userId, detailEl);
+    if (r.ok) loadPlayerDetail(userId);
   });
 
   detailEl.querySelector('#admin-grant-jobs-5')?.addEventListener('click', async () => {
@@ -589,7 +617,7 @@ async function loadPlayerDetail(userId, detailEl) {
       }
     }
     setStatus(ok ? 'Tous les métiers +5.' : lastReason, !ok);
-    if (ok) loadPlayerDetail(userId, detailEl);
+    if (ok) loadPlayerDetail(userId);
   });
 
   detailEl.querySelector('#admin-set-role')?.addEventListener('click', async () => {
@@ -599,7 +627,7 @@ async function loadPlayerDetail(userId, detailEl) {
     setStatus(r.ok ? 'Rôle mis à jour.' : r.reason, !r.ok);
     if (r.ok) {
       await refreshProfile();
-      loadPlayerDetail(userId, detailEl);
+      loadPlayerDetail(userId);
     }
   });
 }
@@ -761,78 +789,6 @@ async function renderLeaderboardAdmin(container) {
       const r = await deleteLeaderboardEntry(btn.dataset.uid);
       setStatus(r.ok ? 'Entrée supprimée.' : r.reason, !r.ok);
       if (r.ok) renderLeaderboardAdmin(container);
-    });
-  });
-}
-
-async function renderMarketAdmin(container) {
-  container.innerHTML = '<p class="admin-loading">Chargement…</p>';
-  const res = await fetchMarketAdmin(60);
-  if (!res.ok) {
-    container.innerHTML = `<p class="admin-error">${res.reason}</p>`;
-    return;
-  }
-  const { sells = [], buys = [] } = res.data || {};
-  container.innerHTML = `
-    ${toolbarHtml(`<input type="search" class="auth-input admin-search" id="admin-market-filter" placeholder="Filtrer ressource / joueur…" />`)}
-    <div id="admin-market-content">
-      <h4 class="admin-section-title">Ventes actives (${sells.length})</h4>
-      <div id="admin-market-sells">${sells.length ? sells.map((s) => marketSellRow(s)).join('') : '<p class="view-desc">Aucune vente.</p>'}</div>
-      <h4 class="admin-section-title">Offres achat (${buys.length})</h4>
-      <div id="admin-market-buys">${buys.length ? buys.map((b) => marketBuyRow(b)).join('') : '<p class="view-desc">Aucune offre.</p>'}</div>
-    </div>
-  `;
-
-  function marketSellRow(s) {
-    return `
-      <div class="admin-market-row" data-search="${s.resource_id} ${s.seller_name || s.seller_display}">
-        <span>
-          <button type="button" class="btn-link admin-goto-player" data-uid="${s.seller_id}">${s.seller_name || s.seller_display}</button>
-          · ${resLabel(s.resource_id)} ×${s.qty_remaining} · ${s.unit_price} 💰/u · exp. ${fmtDate(s.expires_at)}
-        </span>
-        <button type="button" class="btn btn-muted btn-sm admin-del-sell" data-id="${s.id}">Suppr.</button>
-      </div>
-    `;
-  }
-
-  function marketBuyRow(b) {
-    return `
-      <div class="admin-market-row" data-search="${b.resource_id} ${b.buyer_name || b.buyer_display}">
-        <span>
-          <button type="button" class="btn-link admin-goto-player" data-uid="${b.buyer_id}">${b.buyer_name || b.buyer_display}</button>
-          · ${resLabel(b.resource_id)} ×${b.qty_remaining} · max ${b.max_unit_price} 💰/u · exp. ${fmtDate(b.expires_at)}
-        </span>
-        <button type="button" class="btn btn-muted btn-sm admin-del-buy" data-id="${b.id}">Suppr.</button>
-      </div>
-    `;
-  }
-
-  container.querySelector('#admin-market-filter')?.addEventListener('input', (e) => {
-    const q = e.target.value.trim().toLowerCase();
-    container.querySelectorAll('.admin-market-row').forEach((row) => {
-      const hay = (row.dataset.search || '').toLowerCase();
-      row.classList.toggle('hidden', q.length > 0 && !hay.includes(q));
-    });
-  });
-
-  bindRefresh(container, () => renderMarketAdmin(container));
-  container.querySelectorAll('.admin-goto-player').forEach((btn) => {
-    btn.addEventListener('click', () => goToTab('players', btn.dataset.uid));
-  });
-  container.querySelectorAll('.admin-del-sell').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Supprimer cette annonce ?')) return;
-      const r = await deleteListing(btn.dataset.id);
-      setStatus(r.ok ? 'Annonce supprimée.' : r.reason, !r.ok);
-      if (r.ok) renderMarketAdmin(container);
-    });
-  });
-  container.querySelectorAll('.admin-del-buy').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Supprimer cette offre ?') ) return;
-      const r = await deleteBuyOffer(btn.dataset.id);
-      setStatus(r.ok ? 'Offre supprimée.' : r.reason, !r.ok);
-      if (r.ok) renderMarketAdmin(container);
     });
   });
 }
@@ -1050,7 +1006,6 @@ async function renderAdminPanel(bodyEl) {
     case 'players': await renderPlayers(bodyEl); break;
     case 'reports': await renderReports(bodyEl); break;
     case 'leaderboard': await renderLeaderboardAdmin(bodyEl); break;
-    case 'market': await renderMarketAdmin(bodyEl); break;
     case 'saves': await renderSaves(bodyEl); break;
     case 'announcements': await renderAnnouncements(bodyEl); break;
     case 'config': await renderConfig(bodyEl); break;
@@ -1158,7 +1113,7 @@ function paintAdmin(game, el) {
   renderAdminPanel(bodyEl);
 }
 
-/** Formulaire signalement joueur (classement / HDV). */
+/** Formulaire signalement joueur (classement). */
 export function renderReportPlayerForm(container, reportedUserId, reportedName) {
   if (!isReportingEnabled()) {
     container.innerHTML = '<p class="view-desc">Signalements désactivés.</p>';
