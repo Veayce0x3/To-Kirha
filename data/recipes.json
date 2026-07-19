@@ -29,7 +29,7 @@
     "maxUses": 25,
     "toolTier": 1,
     "ingredients": {
-      "goujon": 8
+      "fugu": 8
     },
     "effect": {
       "type": "speed",
@@ -71,7 +71,7 @@
     "maxUses": 25,
     "toolTier": 1,
     "ingredients": {
-      "fer": 8
+      "pierre": 8
     },
     "effect": {
       "type": "speed",
@@ -92,7 +92,7 @@
     "maxUses": 25,
     "toolTier": 1,
     "ingredients": {
-      "ortie": 8
+      "pissenlit": 8
     },
     "effect": {
       "type": "speed",
@@ -113,7 +113,7 @@
     "maxUses": 200,
     "ingredients": {
       "frene": 12,
-      "ortie": 6,
+      "pissenlit": 6,
       "ancient_scroll": 1
     },
     "effect": {
@@ -135,7 +135,7 @@
     "maxUses": 200,
     "ingredients": {
       "frene": 8,
-      "goujon": 5,
+      "fugu": 5,
       "ancient_scroll": 1
     },
     "effect": {
@@ -158,8 +158,8 @@
     "ingredients": {
       "frene": 20,
       "ble": 12,
-      "goujon": 10,
-      "ortie": 12,
+      "fugu": 10,
+      "pissenlit": 12,
       "ancient_scroll": 3
     },
     "effect": {
@@ -204,7 +204,7 @@
     "toolTier": 2,
     "toolKind": "bucket",
     "ingredients": {
-      "fer": 8,
+      "pierre": 8,
       "frene": 4
     },
     "effect": {
@@ -250,7 +250,7 @@
     "toolTier": 2,
     "toolKind": "basket",
     "ingredients": {
-      "fer": 6,
+      "pierre": 6,
       "frene": 5,
       "cuir": 2
     },
@@ -273,7 +273,7 @@
     "maxUses": 50,
     "toolTier": 2,
     "ingredients": {
-      "chataignier": 6
+      "sequoia": 6
     },
     "effect": {
       "type": "speed",
@@ -309,7 +309,7 @@
     "description": "Repas niv. 10–19 : soin % PV max en donjon",
     "kirhaCost": 40,
     "ingredients": {
-      "goujon": 6,
+      "fugu": 6,
       "ble": 4,
       "meal_onigiri": 1
     },
@@ -328,7 +328,7 @@
     "kirhaCost": 135,
     "ingredients": {
       "miel": 4,
-      "avoine": 4,
+      "riz_sakura": 4,
       "oeuf": 3,
       "meal_poisson": 1
     },
@@ -348,8 +348,8 @@
     "ingredients": {
       "jambon": 4,
       "lait": 4,
-      "noyer": 3,
-      "ortie": 4,
+      "bouleau": 3,
+      "pissenlit": 4,
       "meal_gateau": 1
     },
     "output": "meal_festin",
@@ -366,9 +366,9 @@
     "description": "Repas niv. 40–49 : soin % PV max en donjon",
     "kirhaCost": 245,
     "ingredients": {
-      "brochet": 4,
-      "houblon": 4,
-      "menthe": 3,
+      "homard": 4,
+      "seigle": 4,
+      "lavande": 3,
       "bacon": 2,
       "ancient_scroll": 4,
       "meal_festin": 1
@@ -387,9 +387,9 @@
     "description": "Repas niv. 50–59 : soin % PV max en donjon",
     "kirhaCost": 300,
     "ingredients": {
-      "sardine": 4,
-      "malt": 4,
-      "ginseng": 3,
+      "calmar": 4,
+      "riz_sakura": 4,
+      "chrysantheme": 3,
       "lait_brebis": 2,
       "ancient_scroll": 5,
       "meal_bento": 1
@@ -408,10 +408,10 @@
     "description": "Repas niv. 60–69 : soin % PV max en donjon",
     "kirhaCost": 355,
     "ingredients": {
-      "carpe": 4,
-      "lin": 4,
-      "orchidee": 3,
-      "cuivre": 2,
+      "naso": 4,
+      "riz_sakura": 4,
+      "pivoine": 3,
+      "pierre": 2,
       "ancient_scroll": 6,
       "meal_ramen": 1
     },
@@ -429,10 +429,10 @@
     "description": "Repas niv. 70–79 : soin % PV max en donjon",
     "kirhaCost": 410,
     "ingredients": {
-      "bar": 4,
-      "chanvre": 4,
-      "belladone": 3,
-      "bambou": 3,
+      "naso": 4,
+      "sarrasin": 4,
+      "chrysantheme": 3,
+      "magnolia": 3,
       "ancient_scroll": 7,
       "meal_sushi": 1
     },
@@ -450,10 +450,10 @@
     "description": "Repas niv. 80–89 : soin % PV max en donjon",
     "kirhaCost": 465,
     "ingredients": {
-      "dorade": 4,
-      "mais": 4,
-      "mandragore": 3,
-      "merisier": 3,
+      "fugu": 4,
+      "riz_sakura": 4,
+      "lotus_sacre": 3,
+      "sakura_dore": 3,
       "ancient_scroll": 8,
       "meal_tempura": 1
     },
@@ -471,10 +471,10 @@
     "description": "Repas niv. 90–99 : soin % PV max en donjon",
     "kirhaCost": 520,
     "ingredients": {
-      "raie": 4,
-      "seigle": 4,
-      "edelweiss": 3,
-      "erable": 3,
+      "pieuvre": 4,
+      "riz_sakura": 4,
+      "wisteria": 3,
+      "magnolia": 3,
       "ancient_scroll": 9,
       "meal_udon": 1
     },
@@ -492,10 +492,10 @@
     "description": "Repas niv. 100–109 : soin % PV max en donjon",
     "kirhaCost": 575,
     "ingredients": {
-      "perche": 4,
-      "millet": 4,
-      "perce_neige": 3,
-      "charme": 3,
+      "koi_dore": 4,
+      "riz_sakura": 4,
+      "lotus_sacre": 3,
+      "sakura": 3,
       "ancient_scroll": 10,
       "meal_yakitori": 1
     },
@@ -513,10 +513,10 @@
     "description": "Repas niv. 110–119 : soin % PV max en donjon",
     "kirhaCost": 630,
     "ingredients": {
-      "etain": 3,
-      "or_minerai": 2,
-      "kobalte": 2,
-      "bombu": 3,
+      "emeraude": 3,
+      "cristal": 2,
+      "pierre": 2,
+      "bambou": 3,
       "ancient_scroll": 11,
       "meal_kaiseki": 1
     },
@@ -534,10 +534,10 @@
     "description": "Repas niv. 120–129 : soin % PV max en donjon",
     "kirhaCost": 685,
     "ingredients": {
-      "lotus_grain": 4,
-      "lotus_essence": 2,
-      "lotus_carp": 3,
-      "lotus_crystal": 2,
+      "riz_sakura": 4,
+      "lotus_sacre": 2,
+      "carpe_koi": 3,
+      "cristal": 2,
       "ancient_scroll": 12,
       "meal_mochi": 1
     },
@@ -555,8 +555,8 @@
     "description": "Repas niv. 130–139 : soin % PV max en donjon",
     "kirhaCost": 740,
     "ingredients": {
-      "brume_ble": 3,
-      "brume_truite": 3,
+      "orge": 3,
+      "saumon": 3,
       "gelee_royale": 2,
       "plume": 3,
       "ancient_scroll": 13,
@@ -576,8 +576,8 @@
     "description": "Repas niv. 140–149 : soin % PV max en donjon",
     "kirhaCost": 795,
     "ingredients": {
-      "brume_quartz": 3,
-      "brume_saule": 3,
+      "topaze": 3,
+      "bouleau": 3,
       "lait_brebis": 3,
       "cuir": 2,
       "ancient_scroll": 14,
@@ -597,9 +597,9 @@
     "description": "Repas niv. 150–159 : soin % PV max en donjon",
     "kirhaCost": 850,
     "ingredients": {
-      "bronze": 4,
-      "manganese": 3,
-      "bauxite": 3,
+      "fer": 4,
+      "topaze": 3,
+      "saphir": 3,
       "laine": 3,
       "ancient_scroll": 15,
       "meal_teriyaki": 1
@@ -618,10 +618,10 @@
     "description": "Repas niv. 160–169 : soin % PV max en donjon",
     "kirhaCost": 905,
     "ingredients": {
-      "silicate": 4,
-      "kobalte": 3,
-      "chataignier": 4,
-      "sauge": 3,
+      "jade": 4,
+      "pierre": 3,
+      "sequoia": 4,
+      "lavande": 3,
       "ancient_scroll": 16,
       "meal_katsu": 1
     },
@@ -639,10 +639,10 @@
     "description": "Repas niv. 170–179 : soin % PV max en donjon",
     "kirhaCost": 960,
     "ingredients": {
-      "argent": 3,
-      "carpe": 4,
+      "diamant": 3,
+      "naso": 4,
       "miel": 3,
-      "if": 3,
+      "ginkgo": 3,
       "ancient_scroll": 17,
       "meal_sashimi": 1
     },
@@ -660,9 +660,9 @@
     "description": "Repas niv. 180–189 : soin % PV max en donjon",
     "kirhaCost": 1015,
     "ingredients": {
-      "or_minerai": 3,
-      "perche": 4,
-      "edelweiss": 4,
+      "cristal": 3,
+      "koi_dore": 4,
+      "wisteria": 4,
       "jambon": 4,
       "ancient_scroll": 18,
       "meal_sukiyaki": 1
@@ -681,8 +681,8 @@
     "description": "Repas niv. 190–199 : soin % PV max en donjon",
     "kirhaCost": 1070,
     "ingredients": {
-      "lotus_tree": 3,
-      "lotus_crystal": 3,
+      "sakura": 3,
+      "cristal": 3,
       "gelee_royale": 4,
       "laine": 3,
       "ancient_scroll": 19,
@@ -702,11 +702,11 @@
     "description": "Repas niv. 200–209 : soin % PV max en donjon",
     "kirhaCost": 1125,
     "ingredients": {
-      "frostiz": 4,
-      "kralamoure": 3,
-      "cendrepierre": 3,
-      "salikronia": 3,
-      "orme": 3,
+      "riz_dore": 4,
+      "koi_dore": 3,
+      "cristal_dore": 3,
+      "lotus_sacre_dore": 3,
+      "sakura_dore": 3,
       "ancient_scroll": 20,
       "meal_okonomiyaki": 1
     },
@@ -726,7 +726,7 @@
     "maxUses": 50,
     "toolTier": 2,
     "ingredients": {
-      "cuivre": 6
+      "pierre": 6
     },
     "effect": {
       "type": "speed",
@@ -747,7 +747,7 @@
     "maxUses": 75,
     "toolTier": 3,
     "ingredients": {
-      "noyer": 8
+      "bouleau": 8
     },
     "effect": {
       "type": "speed",
@@ -768,7 +768,7 @@
     "maxUses": 100,
     "toolTier": 4,
     "ingredients": {
-      "chene": 10
+      "bouleau": 10
     },
     "effect": {
       "type": "speed",
@@ -789,7 +789,7 @@
     "maxUses": 125,
     "toolTier": 5,
     "ingredients": {
-      "bombu": 12
+      "bambou": 12
     },
     "effect": {
       "type": "speed",
@@ -810,7 +810,7 @@
     "maxUses": 150,
     "toolTier": 6,
     "ingredients": {
-      "erable": 14
+      "magnolia": 14
     },
     "effect": {
       "type": "speed",
@@ -831,7 +831,7 @@
     "maxUses": 175,
     "toolTier": 7,
     "ingredients": {
-      "charme": 16
+      "sakura": 16
     },
     "effect": {
       "type": "speed",
@@ -852,7 +852,7 @@
     "maxUses": 250,
     "toolTier": 10,
     "ingredients": {
-      "orme": 20
+      "sakura_dore": 20
     },
     "effect": {
       "type": "speed",
@@ -873,7 +873,7 @@
     "maxUses": 50,
     "toolTier": 2,
     "ingredients": {
-      "greuvette": 6
+      "crabe": 6
     },
     "effect": {
       "type": "speed",
@@ -894,7 +894,7 @@
     "maxUses": 75,
     "toolTier": 3,
     "ingredients": {
-      "truite": 8
+      "saumon": 8
     },
     "effect": {
       "type": "speed",
@@ -915,7 +915,7 @@
     "maxUses": 100,
     "toolTier": 4,
     "ingredients": {
-      "brochet": 10
+      "homard": 10
     },
     "effect": {
       "type": "speed",
@@ -936,7 +936,7 @@
     "maxUses": 125,
     "toolTier": 5,
     "ingredients": {
-      "carpe": 12
+      "naso": 12
     },
     "effect": {
       "type": "speed",
@@ -957,7 +957,7 @@
     "maxUses": 150,
     "toolTier": 6,
     "ingredients": {
-      "raie": 14
+      "pieuvre": 14
     },
     "effect": {
       "type": "speed",
@@ -978,7 +978,7 @@
     "maxUses": 175,
     "toolTier": 7,
     "ingredients": {
-      "perche": 16
+      "koi_dore": 16
     },
     "effect": {
       "type": "speed",
@@ -999,7 +999,7 @@
     "maxUses": 250,
     "toolTier": 10,
     "ingredients": {
-      "kralamoure": 20
+      "koi_dore": 20
     },
     "effect": {
       "type": "speed",
@@ -1020,7 +1020,7 @@
     "maxUses": 75,
     "toolTier": 3,
     "ingredients": {
-      "bronze": 8
+      "fer": 8
     },
     "effect": {
       "type": "speed",
@@ -1041,7 +1041,7 @@
     "maxUses": 100,
     "toolTier": 4,
     "ingredients": {
-      "kobalte": 10
+      "pierre": 10
     },
     "effect": {
       "type": "speed",
@@ -1062,7 +1062,7 @@
     "maxUses": 125,
     "toolTier": 5,
     "ingredients": {
-      "argent": 12
+      "diamant": 12
     },
     "effect": {
       "type": "speed",
@@ -1083,7 +1083,7 @@
     "maxUses": 150,
     "toolTier": 6,
     "ingredients": {
-      "etain": 14
+      "emeraude": 14
     },
     "effect": {
       "type": "speed",
@@ -1104,7 +1104,7 @@
     "maxUses": 175,
     "toolTier": 7,
     "ingredients": {
-      "or_minerai": 16
+      "cristal": 16
     },
     "effect": {
       "type": "speed",
@@ -1125,7 +1125,7 @@
     "maxUses": 250,
     "toolTier": 10,
     "ingredients": {
-      "cendrepierre": 20
+      "cristal_dore": 20
     },
     "effect": {
       "type": "speed",
@@ -1167,7 +1167,7 @@
     "maxUses": 75,
     "toolTier": 3,
     "ingredients": {
-      "avoine": 8
+      "riz_sakura": 8
     },
     "effect": {
       "type": "speed",
@@ -1188,7 +1188,7 @@
     "maxUses": 100,
     "toolTier": 4,
     "ingredients": {
-      "houblon": 10
+      "seigle": 10
     },
     "effect": {
       "type": "speed",
@@ -1209,7 +1209,7 @@
     "maxUses": 125,
     "toolTier": 5,
     "ingredients": {
-      "lin": 12
+      "riz_sakura": 12
     },
     "effect": {
       "type": "speed",
@@ -1230,7 +1230,7 @@
     "maxUses": 150,
     "toolTier": 6,
     "ingredients": {
-      "seigle": 14
+      "riz_sakura": 14
     },
     "effect": {
       "type": "speed",
@@ -1251,7 +1251,7 @@
     "maxUses": 175,
     "toolTier": 7,
     "ingredients": {
-      "millet": 16
+      "riz_sakura": 16
     },
     "effect": {
       "type": "speed",
@@ -1272,7 +1272,7 @@
     "maxUses": 250,
     "toolTier": 10,
     "ingredients": {
-      "frostiz": 20
+      "riz_dore": 20
     },
     "effect": {
       "type": "speed",
@@ -1293,7 +1293,7 @@
     "maxUses": 50,
     "toolTier": 2,
     "ingredients": {
-      "sauge": 6
+      "lavande": 6
     },
     "effect": {
       "type": "speed",
@@ -1314,7 +1314,7 @@
     "maxUses": 75,
     "toolTier": 3,
     "ingredients": {
-      "trefle": 8
+      "pissenlit": 8
     },
     "effect": {
       "type": "speed",
@@ -1335,7 +1335,7 @@
     "maxUses": 100,
     "toolTier": 4,
     "ingredients": {
-      "menthe": 10
+      "lavande": 10
     },
     "effect": {
       "type": "speed",
@@ -1356,7 +1356,7 @@
     "maxUses": 125,
     "toolTier": 5,
     "ingredients": {
-      "orchidee": 12
+      "pivoine": 12
     },
     "effect": {
       "type": "speed",
@@ -1377,7 +1377,7 @@
     "maxUses": 150,
     "toolTier": 6,
     "ingredients": {
-      "edelweiss": 14
+      "wisteria": 14
     },
     "effect": {
       "type": "speed",
@@ -1398,7 +1398,7 @@
     "maxUses": 175,
     "toolTier": 7,
     "ingredients": {
-      "perce_neige": 16
+      "lotus_sacre": 16
     },
     "effect": {
       "type": "speed",
@@ -1419,7 +1419,7 @@
     "maxUses": 250,
     "toolTier": 10,
     "ingredients": {
-      "salikronia": 20
+      "lotus_sacre_dore": 20
     },
     "effect": {
       "type": "speed",

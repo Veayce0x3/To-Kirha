@@ -1,4 +1,1084 @@
 {
+  "frene": {
+    "id": "frene",
+    "name": "Frêne",
+    "emoji": "🌳",
+    "zone": "village_sakura",
+    "job": "lumberjack",
+    "requiredJobLevel": 1,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 4,
+    "xpPerHarvest": 8,
+    "rarity": "common",
+    "visual": {
+      "available": {
+        "emoji": "🌳",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌳",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "sequoia": {
+    "id": "sequoia",
+    "name": "Séquoia",
+    "emoji": "🌲",
+    "zone": "village_sakura",
+    "job": "lumberjack",
+    "requiredJobLevel": 20,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 7,
+    "xpPerHarvest": 12,
+    "rarity": "common",
+    "visual": {
+      "available": {
+        "emoji": "🌲",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌲",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "chene": {
+    "id": "chene",
+    "name": "Chêne",
+    "emoji": "🍂",
+    "zone": "petal_forest",
+    "job": "lumberjack",
+    "requiredJobLevel": 40,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 10,
+    "xpPerHarvest": 16,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "🍂",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🍂",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "bouleau": {
+    "id": "bouleau",
+    "name": "Bouleau",
+    "emoji": "🌿",
+    "zone": "petal_forest",
+    "job": "lumberjack",
+    "requiredJobLevel": 60,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 13,
+    "xpPerHarvest": 20,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "🌿",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌿",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "ginkgo": {
+    "id": "ginkgo",
+    "name": "Ginkgo",
+    "emoji": "🌿",
+    "zone": "mist_river",
+    "job": "lumberjack",
+    "requiredJobLevel": 80,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 16,
+    "xpPerHarvest": 24,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "🌿",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌿",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "erable": {
+    "id": "erable",
+    "name": "Érable",
+    "emoji": "🍁",
+    "zone": "mist_river",
+    "job": "lumberjack",
+    "requiredJobLevel": 100,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 19,
+    "xpPerHarvest": 28,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🍁",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🍁",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "magnolia": {
+    "id": "magnolia",
+    "name": "Magnolia",
+    "emoji": "🌸",
+    "zone": "jade_mountains",
+    "job": "lumberjack",
+    "requiredJobLevel": 120,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 22,
+    "xpPerHarvest": 32,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🌸",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌸",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "bambou": {
+    "id": "bambou",
+    "name": "Bambou",
+    "emoji": "🎋",
+    "zone": "jade_mountains",
+    "job": "lumberjack",
+    "requiredJobLevel": 140,
+    "baseHarvestTime": 3000,
+    "baseYield": 3,
+    "sellPrice": 25,
+    "xpPerHarvest": 36,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🎋",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🎋",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "sakura": {
+    "id": "sakura",
+    "name": "Sakura",
+    "emoji": "🌸",
+    "zone": "lotus_sanctuary",
+    "job": "lumberjack",
+    "requiredJobLevel": 170,
+    "baseHarvestTime": 3000,
+    "baseYield": 3,
+    "sellPrice": 28,
+    "xpPerHarvest": 40,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🌸",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌸",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "sakura_dore": {
+    "id": "sakura_dore",
+    "name": "Sakura Doré",
+    "emoji": "✨",
+    "zone": "lotus_sanctuary",
+    "job": "lumberjack",
+    "requiredJobLevel": 200,
+    "baseHarvestTime": 3000,
+    "baseYield": 4,
+    "sellPrice": 34,
+    "xpPerHarvest": 48,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "✨",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "✨",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "dorade": {
+    "id": "dorade",
+    "name": "Dorade",
+    "emoji": "🐟",
+    "zone": "village_sakura",
+    "job": "fisher",
+    "requiredJobLevel": 1,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 4,
+    "xpPerHarvest": 8,
+    "rarity": "common",
+    "visual": {
+      "available": {
+        "emoji": "🐟",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🐟",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "crabe": {
+    "id": "crabe",
+    "name": "Crabe",
+    "emoji": "🦀",
+    "zone": "village_sakura",
+    "job": "fisher",
+    "requiredJobLevel": 20,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 7,
+    "xpPerHarvest": 12,
+    "rarity": "common",
+    "visual": {
+      "available": {
+        "emoji": "🦀",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🦀",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "saumon": {
+    "id": "saumon",
+    "name": "Saumon",
+    "emoji": "🐟",
+    "zone": "petal_forest",
+    "job": "fisher",
+    "requiredJobLevel": 40,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 10,
+    "xpPerHarvest": 16,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "🐟",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🐟",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "calmar": {
+    "id": "calmar",
+    "name": "Calmar",
+    "emoji": "🦑",
+    "zone": "petal_forest",
+    "job": "fisher",
+    "requiredJobLevel": 60,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 13,
+    "xpPerHarvest": 20,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "🦑",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🦑",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "homard": {
+    "id": "homard",
+    "name": "Homard",
+    "emoji": "🦞",
+    "zone": "mist_river",
+    "job": "fisher",
+    "requiredJobLevel": 80,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 16,
+    "xpPerHarvest": 24,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "🦞",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🦞",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "naso": {
+    "id": "naso",
+    "name": "Naso",
+    "emoji": "🐠",
+    "zone": "mist_river",
+    "job": "fisher",
+    "requiredJobLevel": 100,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 19,
+    "xpPerHarvest": 28,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🐠",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🐠",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "fugu": {
+    "id": "fugu",
+    "name": "Fugu",
+    "emoji": "🐡",
+    "zone": "jade_mountains",
+    "job": "fisher",
+    "requiredJobLevel": 120,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 22,
+    "xpPerHarvest": 32,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🐡",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🐡",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "pieuvre": {
+    "id": "pieuvre",
+    "name": "Pieuvre",
+    "emoji": "🐙",
+    "zone": "jade_mountains",
+    "job": "fisher",
+    "requiredJobLevel": 140,
+    "baseHarvestTime": 3000,
+    "baseYield": 3,
+    "sellPrice": 25,
+    "xpPerHarvest": 36,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🐙",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🐙",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "carpe_koi": {
+    "id": "carpe_koi",
+    "name": "Carpe Koï",
+    "emoji": "🎏",
+    "zone": "lotus_sanctuary",
+    "job": "fisher",
+    "requiredJobLevel": 170,
+    "baseHarvestTime": 3000,
+    "baseYield": 3,
+    "sellPrice": 28,
+    "xpPerHarvest": 40,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🎏",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🎏",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "koi_dore": {
+    "id": "koi_dore",
+    "name": "Carpe Koï dorée",
+    "emoji": "🐉",
+    "zone": "lotus_sanctuary",
+    "job": "fisher",
+    "requiredJobLevel": 200,
+    "baseHarvestTime": 3000,
+    "baseYield": 4,
+    "sellPrice": 34,
+    "xpPerHarvest": 48,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🐉",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🐉",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "pierre": {
+    "id": "pierre",
+    "name": "Pierre",
+    "emoji": "🪨",
+    "zone": "village_sakura",
+    "job": "miner",
+    "requiredJobLevel": 1,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 4,
+    "xpPerHarvest": 8,
+    "rarity": "common",
+    "visual": {
+      "available": {
+        "emoji": "🪨",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🪨",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "fer": {
+    "id": "fer",
+    "name": "Fer",
+    "emoji": "⚙️",
+    "zone": "village_sakura",
+    "job": "miner",
+    "requiredJobLevel": 20,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 7,
+    "xpPerHarvest": 12,
+    "rarity": "common",
+    "visual": {
+      "available": {
+        "emoji": "⚙️",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "⚙️",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "cuivre": {
+    "id": "cuivre",
+    "name": "Cuivre",
+    "emoji": "🟤",
+    "zone": "petal_forest",
+    "job": "miner",
+    "requiredJobLevel": 40,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 10,
+    "xpPerHarvest": 16,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "🟤",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🟤",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "topaze": {
+    "id": "topaze",
+    "name": "Topaze",
+    "emoji": "💛",
+    "zone": "petal_forest",
+    "job": "miner",
+    "requiredJobLevel": 60,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 13,
+    "xpPerHarvest": 20,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "💛",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "💛",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "jade": {
+    "id": "jade",
+    "name": "Jade",
+    "emoji": "🟢",
+    "zone": "mist_river",
+    "job": "miner",
+    "requiredJobLevel": 80,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 16,
+    "xpPerHarvest": 24,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "🟢",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🟢",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "saphir": {
+    "id": "saphir",
+    "name": "Saphir",
+    "emoji": "💠",
+    "zone": "mist_river",
+    "job": "miner",
+    "requiredJobLevel": 100,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 19,
+    "xpPerHarvest": 28,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "💠",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "💠",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "emeraude": {
+    "id": "emeraude",
+    "name": "Émeraude",
+    "emoji": "💚",
+    "zone": "jade_mountains",
+    "job": "miner",
+    "requiredJobLevel": 120,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 22,
+    "xpPerHarvest": 32,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "💚",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "💚",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "diamant": {
+    "id": "diamant",
+    "name": "Diamant",
+    "emoji": "💎",
+    "zone": "jade_mountains",
+    "job": "miner",
+    "requiredJobLevel": 140,
+    "baseHarvestTime": 3000,
+    "baseYield": 3,
+    "sellPrice": 25,
+    "xpPerHarvest": 36,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "💎",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "💎",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "cristal": {
+    "id": "cristal",
+    "name": "Cristal",
+    "emoji": "🔮",
+    "zone": "lotus_sanctuary",
+    "job": "miner",
+    "requiredJobLevel": 170,
+    "baseHarvestTime": 3000,
+    "baseYield": 3,
+    "sellPrice": 28,
+    "xpPerHarvest": 40,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🔮",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🔮",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "cristal_dore": {
+    "id": "cristal_dore",
+    "name": "Cristal Doré",
+    "emoji": "✨",
+    "zone": "lotus_sanctuary",
+    "job": "miner",
+    "requiredJobLevel": 200,
+    "baseHarvestTime": 3000,
+    "baseYield": 4,
+    "sellPrice": 34,
+    "xpPerHarvest": 48,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "✨",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "✨",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "pissenlit": {
+    "id": "pissenlit",
+    "name": "Pissenlit",
+    "emoji": "🌼",
+    "zone": "village_sakura",
+    "job": "alchemist",
+    "requiredJobLevel": 1,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 4,
+    "xpPerHarvest": 8,
+    "rarity": "common",
+    "visual": {
+      "available": {
+        "emoji": "🌼",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌼",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "ortie": {
+    "id": "ortie",
+    "name": "Ortie",
+    "emoji": "🌿",
+    "zone": "village_sakura",
+    "job": "alchemist",
+    "requiredJobLevel": 20,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 7,
+    "xpPerHarvest": 12,
+    "rarity": "common",
+    "visual": {
+      "available": {
+        "emoji": "🌿",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌿",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "menthe": {
+    "id": "menthe",
+    "name": "Menthe",
+    "emoji": "🌿",
+    "zone": "petal_forest",
+    "job": "alchemist",
+    "requiredJobLevel": 40,
+    "baseHarvestTime": 3000,
+    "baseYield": 1,
+    "sellPrice": 10,
+    "xpPerHarvest": 16,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "🌿",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌿",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "chrysantheme": {
+    "id": "chrysantheme",
+    "name": "Chrysanthème",
+    "emoji": "🌸",
+    "zone": "petal_forest",
+    "job": "alchemist",
+    "requiredJobLevel": 60,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 13,
+    "xpPerHarvest": 20,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "🌸",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌸",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "lavande": {
+    "id": "lavande",
+    "name": "Lavande",
+    "emoji": "💜",
+    "zone": "mist_river",
+    "job": "alchemist",
+    "requiredJobLevel": 80,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 16,
+    "xpPerHarvest": 24,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "💜",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "💜",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "ginseng": {
+    "id": "ginseng",
+    "name": "Ginseng",
+    "emoji": "🌿",
+    "zone": "mist_river",
+    "job": "alchemist",
+    "requiredJobLevel": 100,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 19,
+    "xpPerHarvest": 28,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🌿",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌿",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "pivoine": {
+    "id": "pivoine",
+    "name": "Pivoine",
+    "emoji": "🌺",
+    "zone": "jade_mountains",
+    "job": "alchemist",
+    "requiredJobLevel": 120,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 22,
+    "xpPerHarvest": 32,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🌺",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌺",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "wisteria": {
+    "id": "wisteria",
+    "name": "Wisteria",
+    "emoji": "🪻",
+    "zone": "jade_mountains",
+    "job": "alchemist",
+    "requiredJobLevel": 140,
+    "baseHarvestTime": 3000,
+    "baseYield": 3,
+    "sellPrice": 25,
+    "xpPerHarvest": 36,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🪻",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🪻",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "lotus_sacre": {
+    "id": "lotus_sacre",
+    "name": "Lotus Sacré",
+    "emoji": "🪷",
+    "zone": "lotus_sanctuary",
+    "job": "alchemist",
+    "requiredJobLevel": 170,
+    "baseHarvestTime": 3000,
+    "baseYield": 3,
+    "sellPrice": 28,
+    "xpPerHarvest": 40,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🪷",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🪷",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "lotus_sacre_dore": {
+    "id": "lotus_sacre_dore",
+    "name": "Lotus Sacré Doré",
+    "emoji": "✨",
+    "zone": "lotus_sanctuary",
+    "job": "alchemist",
+    "requiredJobLevel": 200,
+    "baseHarvestTime": 3000,
+    "baseYield": 4,
+    "sellPrice": 34,
+    "xpPerHarvest": 48,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "✨",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "✨",
+        "label": "Récolte…"
+      }
+    }
+  },
   "ble": {
     "id": "ble",
     "name": "Blé",
@@ -14,16 +1094,11 @@
     "visual": {
       "available": {
         "emoji": "🌾",
-        "label": "Champ mûr"
+        "label": "Prêt à récolter"
       },
       "regrowing": {
         "emoji": "🌿",
         "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/farmer/ble-available.png",
-        "regrowing": "assets/resources/farmer/ble-regrowing.png",
-        "inventory": "assets/resources/farmer/ble-inventory.png"
       },
       "harvesting": {
         "emoji": "🌾",
@@ -44,28 +1119,23 @@
     "xpPerHarvest": 12,
     "rarity": "common",
     "visual": {
-      "harvesting": {
-        "emoji": "🌾",
-        "label": "Récolte…"
-      },
       "available": {
         "emoji": "🌾",
         "label": "Prêt à récolter"
       },
       "regrowing": {
-        "emoji": "🌾",
+        "emoji": "🌿",
         "label": "Repousse…"
       },
-      "sprite": {
-        "available": "assets/resources/farmer/orge-available.png",
-        "regrowing": "assets/resources/farmer/orge-regrowing.png",
-        "inventory": "assets/resources/farmer/orge-inventory.png"
+      "harvesting": {
+        "emoji": "🌾",
+        "label": "Récolte…"
       }
     }
   },
   "avoine": {
     "id": "avoine",
-    "name": "Seigle",
+    "name": "Avoine",
     "emoji": "🌾",
     "zone": "petal_forest",
     "job": "farmer",
@@ -76,28 +1146,23 @@
     "xpPerHarvest": 16,
     "rarity": "uncommon",
     "visual": {
-      "harvesting": {
-        "emoji": "🌾",
-        "label": "Récolte…"
-      },
       "available": {
         "emoji": "🌾",
         "label": "Prêt à récolter"
       },
       "regrowing": {
-        "emoji": "🌾",
+        "emoji": "🌿",
         "label": "Repousse…"
       },
-      "sprite": {
-        "available": "assets/resources/farmer/avoine-available.png",
-        "regrowing": "assets/resources/farmer/avoine-regrowing.png",
-        "inventory": "assets/resources/farmer/avoine-inventory.png"
+      "harvesting": {
+        "emoji": "🌾",
+        "label": "Récolte…"
       }
     }
   },
-  "houblon": {
-    "id": "houblon",
-    "name": "Avoine",
+  "seigle": {
+    "id": "seigle",
+    "name": "Seigle",
     "emoji": "🌾",
     "zone": "petal_forest",
     "job": "farmer",
@@ -108,1068 +1173,181 @@
     "xpPerHarvest": 20,
     "rarity": "uncommon",
     "visual": {
-      "harvesting": {
-        "emoji": "🌾",
-        "label": "Récolte…"
-      },
       "available": {
         "emoji": "🌾",
         "label": "Prêt à récolter"
       },
       "regrowing": {
-        "emoji": "🌾",
+        "emoji": "🌿",
         "label": "Repousse…"
       },
-      "sprite": {
-        "available": "assets/resources/farmer/houblon-available.png",
-        "regrowing": "assets/resources/farmer/houblon-regrowing.png",
-        "inventory": "assets/resources/farmer/houblon-inventory.png"
+      "harvesting": {
+        "emoji": "🌾",
+        "label": "Récolte…"
       }
     }
   },
-  "lin": {
-    "id": "lin",
-    "name": "Maïs",
-    "emoji": "🌽",
-    "zone": "petal_forest",
-    "job": "farmer",
-    "requiredJobLevel": 80,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 16,
-    "xpPerHarvest": 24,
-    "rarity": "uncommon"
-  },
-  "seigle": {
-    "id": "seigle",
-    "name": "Riz",
-    "emoji": "🍚",
-    "zone": "jade_mountains",
-    "job": "farmer",
-    "requiredJobLevel": 100,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 19,
-    "xpPerHarvest": 28,
-    "rarity": "rare"
-  },
-  "malt": {
-    "id": "malt",
-    "name": "Millet",
-    "emoji": "🌾",
-    "zone": "mist_river",
-    "job": "farmer",
-    "requiredJobLevel": 60,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 22,
-    "xpPerHarvest": 32,
-    "rarity": "rare"
-  },
-  "chanvre": {
-    "id": "chanvre",
+  "sarrasin": {
+    "id": "sarrasin",
     "name": "Sarrasin",
     "emoji": "🥠",
     "zone": "mist_river",
     "job": "farmer",
     "requiredJobLevel": 80,
     "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 25,
-    "xpPerHarvest": 36,
-    "rarity": "rare"
+    "baseYield": 2,
+    "sellPrice": 16,
+    "xpPerHarvest": 24,
+    "rarity": "uncommon",
+    "visual": {
+      "available": {
+        "emoji": "🥠",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🥠",
+        "label": "Récolte…"
+      }
+    }
   },
-  "mais": {
-    "id": "mais",
-    "name": "Riz Violet",
-    "emoji": "💜",
-    "zone": "lotus_sanctuary",
+  "houblon": {
+    "id": "houblon",
+    "name": "Houblon",
+    "emoji": "🌾",
+    "zone": "mist_river",
     "job": "farmer",
     "requiredJobLevel": 100,
     "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 28,
-    "xpPerHarvest": 40,
-    "rarity": "rare"
+    "baseYield": 2,
+    "sellPrice": 19,
+    "xpPerHarvest": 28,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🌾",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌾",
+        "label": "Récolte…"
+      }
+    }
   },
-  "millet": {
-    "id": "millet",
+  "lin": {
+    "id": "lin",
+    "name": "Lin",
+    "emoji": "🌿",
+    "zone": "jade_mountains",
+    "job": "farmer",
+    "requiredJobLevel": 120,
+    "baseHarvestTime": 3000,
+    "baseYield": 2,
+    "sellPrice": 22,
+    "xpPerHarvest": 32,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🌿",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌿",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "mais": {
+    "id": "mais",
+    "name": "Maïs",
+    "emoji": "🌽",
+    "zone": "jade_mountains",
+    "job": "farmer",
+    "requiredJobLevel": 140,
+    "baseHarvestTime": 3000,
+    "baseYield": 3,
+    "sellPrice": 25,
+    "xpPerHarvest": 36,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🌽",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌽",
+        "label": "Récolte…"
+      }
+    }
+  },
+  "riz_sakura": {
+    "id": "riz_sakura",
     "name": "Riz Sakura",
     "emoji": "🌸",
     "zone": "lotus_sanctuary",
     "job": "farmer",
-    "requiredJobLevel": 120,
+    "requiredJobLevel": 170,
     "baseHarvestTime": 3000,
-    "baseYield": 4,
-    "sellPrice": 31,
-    "xpPerHarvest": 44,
-    "rarity": "rare"
+    "baseYield": 3,
+    "sellPrice": 28,
+    "xpPerHarvest": 40,
+    "rarity": "rare",
+    "visual": {
+      "available": {
+        "emoji": "🌸",
+        "label": "Prêt à récolter"
+      },
+      "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
+        "emoji": "🌸",
+        "label": "Récolte…"
+      }
+    }
   },
-  "frostiz": {
-    "id": "frostiz",
-    "name": "Graine Éternelle",
+  "riz_dore": {
+    "id": "riz_dore",
+    "name": "Riz Doré",
     "emoji": "✨",
-    "zone": "jade_mountains",
+    "zone": "lotus_sanctuary",
     "job": "farmer",
     "requiredJobLevel": 200,
     "baseHarvestTime": 3000,
     "baseYield": 4,
     "sellPrice": 34,
     "xpPerHarvest": 48,
-    "rarity": "rare"
-  },
-  "ortie": {
-    "id": "ortie",
-    "name": "Pissenlit",
-    "emoji": "🌼",
-    "zone": "village_sakura",
-    "job": "alchemist",
-    "requiredJobLevel": 1,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 4,
-    "xpPerHarvest": 8,
-    "rarity": "common",
-    "visual": {
-      "available": {
-        "emoji": "🌼",
-        "label": "Plante complète"
-      },
-      "regrowing": {
-        "emoji": "🍂",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": null,
-        "regrowing": null
-      }
-    }
-  },
-  "sauge": {
-    "id": "sauge",
-    "name": "Menthe",
-    "emoji": "🌿",
-    "zone": "village_sakura",
-    "job": "alchemist",
-    "requiredJobLevel": 20,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 7,
-    "xpPerHarvest": 12,
-    "rarity": "common"
-  },
-  "trefle": {
-    "id": "trefle",
-    "name": "Ortie",
-    "emoji": "🌿",
-    "zone": "petal_forest",
-    "job": "alchemist",
-    "requiredJobLevel": 40,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 10,
-    "xpPerHarvest": 16,
-    "rarity": "uncommon"
-  },
-  "menthe": {
-    "id": "menthe",
-    "name": "Lavande",
-    "emoji": "💜",
-    "zone": "petal_forest",
-    "job": "alchemist",
-    "requiredJobLevel": 60,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 13,
-    "xpPerHarvest": 20,
-    "rarity": "uncommon"
-  },
-  "orchidee": {
-    "id": "orchidee",
-    "name": "Pivoine",
-    "emoji": "🌺",
-    "zone": "petal_forest",
-    "job": "alchemist",
-    "requiredJobLevel": 80,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 16,
-    "xpPerHarvest": 24,
-    "rarity": "uncommon"
-  },
-  "edelweiss": {
-    "id": "edelweiss",
-    "name": "Wisteria",
-    "emoji": "🪻",
-    "zone": "jade_mountains",
-    "job": "alchemist",
-    "requiredJobLevel": 100,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 19,
-    "xpPerHarvest": 28,
-    "rarity": "rare"
-  },
-  "ginseng": {
-    "id": "ginseng",
-    "name": "Chrysanthème",
-    "emoji": "🌸",
-    "zone": "mist_river",
-    "job": "alchemist",
-    "requiredJobLevel": 60,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 22,
-    "xpPerHarvest": 32,
-    "rarity": "rare"
-  },
-  "belladone": {
-    "id": "belladone",
-    "name": "Ginseng",
-    "emoji": "🌿",
-    "zone": "mist_river",
-    "job": "alchemist",
-    "requiredJobLevel": 80,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 25,
-    "xpPerHarvest": 36,
-    "rarity": "rare"
-  },
-  "mandragore": {
-    "id": "mandragore",
-    "name": "Fleur de Lotus Sakura",
-    "emoji": "🪷",
-    "zone": "lotus_sanctuary",
-    "job": "alchemist",
-    "requiredJobLevel": 100,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 28,
-    "xpPerHarvest": 40,
-    "rarity": "rare"
-  },
-  "perce_neige": {
-    "id": "perce_neige",
-    "name": "Herbe Koï",
-    "emoji": "🍃",
-    "zone": "lotus_sanctuary",
-    "job": "alchemist",
-    "requiredJobLevel": 120,
-    "baseHarvestTime": 3000,
-    "baseYield": 4,
-    "sellPrice": 31,
-    "xpPerHarvest": 44,
-    "rarity": "rare"
-  },
-  "salikronia": {
-    "id": "salikronia",
-    "name": "Essence Koï",
-    "emoji": "✨",
-    "zone": "jade_mountains",
-    "job": "alchemist",
-    "requiredJobLevel": 200,
-    "baseHarvestTime": 3000,
-    "baseYield": 4,
-    "sellPrice": 34,
-    "xpPerHarvest": 48,
-    "rarity": "rare"
-  },
-  "frene": {
-    "id": "frene",
-    "name": "Frêne",
-    "emoji": "🌳",
-    "zone": "village_sakura",
-    "job": "lumberjack",
-    "requiredJobLevel": 1,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 4,
-    "xpPerHarvest": 8,
-    "rarity": "common",
-    "visual": {
-      "available": {
-        "emoji": "🌳",
-        "label": "Arbre prêt"
-      },
-      "regrowing": {
-        "emoji": "🪵",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/lumberjack/frene-available.png",
-        "regrowing": "assets/resources/lumberjack/frene-regrowing.png",
-        "inventory": "assets/resources/lumberjack/frene-inventory.png"
-      },
-      "harvesting": {
-        "emoji": "🌳",
-        "label": "Récolte…"
-      }
-    }
-  },
-  "chataignier": {
-    "id": "chataignier",
-    "name": "Séquoia",
-    "emoji": "🌲",
-    "zone": "village_sakura",
-    "job": "lumberjack",
-    "requiredJobLevel": 20,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 7,
-    "xpPerHarvest": 12,
-    "rarity": "common",
-    "visual": {
-      "harvesting": {
-        "emoji": "🌲",
-        "label": "Récolte…"
-      },
-      "available": {
-        "emoji": "🌲",
-        "label": "Prêt à récolter"
-      },
-      "regrowing": {
-        "emoji": "🌲",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/lumberjack/chataignier-available.png",
-        "regrowing": "assets/resources/lumberjack/chataignier-regrowing.png",
-        "inventory": "assets/resources/lumberjack/chataignier-inventory.png"
-      }
-    }
-  },
-  "noyer": {
-    "id": "noyer",
-    "name": "Chêne",
-    "emoji": "🍂",
-    "zone": "petal_forest",
-    "job": "lumberjack",
-    "requiredJobLevel": 40,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 10,
-    "xpPerHarvest": 16,
-    "rarity": "uncommon",
-    "visual": {
-      "harvesting": {
-        "emoji": "🍂",
-        "label": "Récolte…"
-      },
-      "available": {
-        "emoji": "🍂",
-        "label": "Prêt à récolter"
-      },
-      "regrowing": {
-        "emoji": "🍂",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/lumberjack/noyer-available.png",
-        "regrowing": "assets/resources/lumberjack/noyer-regrowing.png",
-        "inventory": "assets/resources/lumberjack/noyer-inventory.png"
-      }
-    }
-  },
-  "chene": {
-    "id": "chene",
-    "name": "Bouleau",
-    "emoji": "🌿",
-    "zone": "petal_forest",
-    "job": "lumberjack",
-    "requiredJobLevel": 60,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 13,
-    "xpPerHarvest": 20,
-    "rarity": "uncommon",
-    "visual": {
-      "harvesting": {
-        "emoji": "🌿",
-        "label": "Récolte…"
-      },
-      "available": {
-        "emoji": "🌿",
-        "label": "Prêt à récolter"
-      },
-      "regrowing": {
-        "emoji": "🌿",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/lumberjack/chene-available.png",
-        "regrowing": "assets/resources/lumberjack/chene-regrowing.png",
-        "inventory": "assets/resources/lumberjack/chene-inventory.png"
-      }
-    }
-  },
-  "bombu": {
-    "id": "bombu",
-    "name": "Érable",
-    "emoji": "🍁",
-    "zone": "petal_forest",
-    "job": "lumberjack",
-    "requiredJobLevel": 80,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 16,
-    "xpPerHarvest": 24,
-    "rarity": "uncommon",
-    "visual": {
-      "harvesting": {
-        "emoji": "🍁",
-        "label": "Récolte…"
-      },
-      "available": {
-        "emoji": "🍁",
-        "label": "Prêt à récolter"
-      },
-      "regrowing": {
-        "emoji": "🍁",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/lumberjack/bombu-available.png",
-        "regrowing": "assets/resources/lumberjack/bombu-regrowing.png",
-        "inventory": "assets/resources/lumberjack/bombu-inventory.png"
-      }
-    }
-  },
-  "erable": {
-    "id": "erable",
-    "name": "Bambou",
-    "emoji": "🎋",
-    "zone": "jade_mountains",
-    "job": "lumberjack",
-    "requiredJobLevel": 100,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 19,
-    "xpPerHarvest": 28,
     "rarity": "rare",
     "visual": {
-      "harvesting": {
-        "emoji": "🎋",
-        "label": "Récolte…"
-      },
-      "available": {
-        "emoji": "🎋",
-        "label": "Prêt à récolter"
-      },
-      "regrowing": {
-        "emoji": "🎋",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/lumberjack/erable-available.png",
-        "regrowing": "assets/resources/lumberjack/erable-regrowing.png",
-        "inventory": "assets/resources/lumberjack/erable-inventory.png"
-      }
-    }
-  },
-  "if": {
-    "id": "if",
-    "name": "Ginkgo",
-    "emoji": "🌿",
-    "zone": "mist_river",
-    "job": "lumberjack",
-    "requiredJobLevel": 60,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 22,
-    "xpPerHarvest": 32,
-    "rarity": "rare",
-    "visual": {
-      "harvesting": {
-        "emoji": "🌿",
-        "label": "Récolte…"
-      },
-      "available": {
-        "emoji": "🌿",
-        "label": "Prêt à récolter"
-      },
-      "regrowing": {
-        "emoji": "🌿",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/lumberjack/if-available.png",
-        "regrowing": "assets/resources/lumberjack/if-regrowing.png",
-        "inventory": "assets/resources/lumberjack/if-inventory.png"
-      }
-    }
-  },
-  "bambou": {
-    "id": "bambou",
-    "name": "Magnolia",
-    "emoji": "🌸",
-    "zone": "mist_river",
-    "job": "lumberjack",
-    "requiredJobLevel": 80,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 25,
-    "xpPerHarvest": 36,
-    "rarity": "rare",
-    "visual": {
-      "harvesting": {
-        "emoji": "🌸",
-        "label": "Récolte…"
-      },
-      "available": {
-        "emoji": "🌸",
-        "label": "Prêt à récolter"
-      },
-      "regrowing": {
-        "emoji": "🌸",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/lumberjack/bambou-available.png",
-        "regrowing": "assets/resources/lumberjack/bambou-regrowing.png",
-        "inventory": "assets/resources/lumberjack/bambou-inventory.png"
-      }
-    }
-  },
-  "merisier": {
-    "id": "merisier",
-    "name": "Cerisier Doré",
-    "emoji": "🌺",
-    "zone": "lotus_sanctuary",
-    "job": "lumberjack",
-    "requiredJobLevel": 100,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 28,
-    "xpPerHarvest": 40,
-    "rarity": "rare",
-    "visual": {
-      "harvesting": {
-        "emoji": "🌺",
-        "label": "Récolte…"
-      },
-      "available": {
-        "emoji": "🌺",
-        "label": "Prêt à récolter"
-      },
-      "regrowing": {
-        "emoji": "🌺",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/lumberjack/merisier-available.png",
-        "regrowing": "assets/resources/lumberjack/merisier-regrowing.png",
-        "inventory": "assets/resources/lumberjack/merisier-inventory.png"
-      }
-    }
-  },
-  "charme": {
-    "id": "charme",
-    "name": "Bois de Sakura",
-    "emoji": "🪵",
-    "zone": "lotus_sanctuary",
-    "job": "lumberjack",
-    "requiredJobLevel": 120,
-    "baseHarvestTime": 3000,
-    "baseYield": 4,
-    "sellPrice": 31,
-    "xpPerHarvest": 44,
-    "rarity": "rare",
-    "visual": {
-      "harvesting": {
-        "emoji": "🪵",
-        "label": "Récolte…"
-      },
-      "available": {
-        "emoji": "🪵",
-        "label": "Prêt à récolter"
-      },
-      "regrowing": {
-        "emoji": "🪵",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/lumberjack/charme-available.png",
-        "regrowing": "assets/resources/lumberjack/charme-regrowing.png",
-        "inventory": "assets/resources/lumberjack/charme-inventory.png"
-      }
-    }
-  },
-  "orme": {
-    "id": "orme",
-    "name": "Sakura Millénaire",
-    "emoji": "✨",
-    "zone": "jade_mountains",
-    "job": "lumberjack",
-    "requiredJobLevel": 200,
-    "baseHarvestTime": 3000,
-    "baseYield": 4,
-    "sellPrice": 34,
-    "xpPerHarvest": 48,
-    "rarity": "rare",
-    "visual": {
-      "harvesting": {
-        "emoji": "✨",
-        "label": "Récolte…"
-      },
       "available": {
         "emoji": "✨",
         "label": "Prêt à récolter"
       },
       "regrowing": {
+        "emoji": "🌿",
+        "label": "Repousse…"
+      },
+      "harvesting": {
         "emoji": "✨",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": "assets/resources/lumberjack/orme-available.png",
-        "regrowing": "assets/resources/lumberjack/orme-regrowing.png",
-        "inventory": "assets/resources/lumberjack/orme-inventory.png"
+        "label": "Récolte…"
       }
     }
-  },
-  "fer": {
-    "id": "fer",
-    "name": "Pierre",
-    "emoji": "🪨",
-    "zone": "village_sakura",
-    "job": "miner",
-    "requiredJobLevel": 1,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 4,
-    "xpPerHarvest": 8,
-    "rarity": "common",
-    "visual": {
-      "available": {
-        "emoji": "🪨",
-        "label": "Filon intact"
-      },
-      "regrowing": {
-        "emoji": "⛰️",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": null,
-        "regrowing": null
-      }
-    }
-  },
-  "cuivre": {
-    "id": "cuivre",
-    "name": "Charbon",
-    "emoji": "⬛",
-    "zone": "village_sakura",
-    "job": "miner",
-    "requiredJobLevel": 20,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 7,
-    "xpPerHarvest": 12,
-    "rarity": "common"
-  },
-  "bronze": {
-    "id": "bronze",
-    "name": "Cuivre",
-    "emoji": "🟤",
-    "zone": "petal_forest",
-    "job": "miner",
-    "requiredJobLevel": 40,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 10,
-    "xpPerHarvest": 16,
-    "rarity": "uncommon"
-  },
-  "kobalte": {
-    "id": "kobalte",
-    "name": "Fer",
-    "emoji": "⚙️",
-    "zone": "petal_forest",
-    "job": "miner",
-    "requiredJobLevel": 60,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 13,
-    "xpPerHarvest": 20,
-    "rarity": "uncommon"
-  },
-  "manganese": {
-    "id": "manganese",
-    "name": "Topaze",
-    "emoji": "💛",
-    "zone": "petal_forest",
-    "job": "miner",
-    "requiredJobLevel": 80,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 16,
-    "xpPerHarvest": 24,
-    "rarity": "uncommon"
-  },
-  "etain": {
-    "id": "etain",
-    "name": "Émeraude",
-    "emoji": "💚",
-    "zone": "jade_mountains",
-    "job": "miner",
-    "requiredJobLevel": 100,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 19,
-    "xpPerHarvest": 28,
-    "rarity": "rare"
-  },
-  "silicate": {
-    "id": "silicate",
-    "name": "Jade",
-    "emoji": "🟢",
-    "zone": "mist_river",
-    "job": "miner",
-    "requiredJobLevel": 60,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 22,
-    "xpPerHarvest": 32,
-    "rarity": "rare"
-  },
-  "argent": {
-    "id": "argent",
-    "name": "Diamant",
-    "emoji": "💎",
-    "zone": "mist_river",
-    "job": "miner",
-    "requiredJobLevel": 80,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 25,
-    "xpPerHarvest": 36,
-    "rarity": "rare"
-  },
-  "bauxite": {
-    "id": "bauxite",
-    "name": "Saphir Sakura",
-    "emoji": "💠",
-    "zone": "lotus_sanctuary",
-    "job": "miner",
-    "requiredJobLevel": 100,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 28,
-    "xpPerHarvest": 40,
-    "rarity": "rare"
-  },
-  "or_minerai": {
-    "id": "or_minerai",
-    "name": "Cristal Koï",
-    "emoji": "🔮",
-    "zone": "lotus_sanctuary",
-    "job": "miner",
-    "requiredJobLevel": 120,
-    "baseHarvestTime": 3000,
-    "baseYield": 4,
-    "sellPrice": 31,
-    "xpPerHarvest": 44,
-    "rarity": "rare"
-  },
-  "cendrepierre": {
-    "id": "cendrepierre",
-    "name": "Cristal du Temple",
-    "emoji": "✨",
-    "zone": "jade_mountains",
-    "job": "miner",
-    "requiredJobLevel": 200,
-    "baseHarvestTime": 3000,
-    "baseYield": 4,
-    "sellPrice": 34,
-    "xpPerHarvest": 48,
-    "rarity": "rare"
-  },
-  "goujon": {
-    "id": "goujon",
-    "name": "Dorade",
-    "emoji": "🐟",
-    "zone": "village_sakura",
-    "job": "fisher",
-    "requiredJobLevel": 1,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 4,
-    "xpPerHarvest": 8,
-    "rarity": "common",
-    "visual": {
-      "available": {
-        "emoji": "🐟",
-        "label": "Zone active"
-      },
-      "regrowing": {
-        "emoji": "💧",
-        "label": "Repousse…"
-      },
-      "sprite": {
-        "available": null,
-        "regrowing": null
-      }
-    }
-  },
-  "greuvette": {
-    "id": "greuvette",
-    "name": "Crabe",
-    "emoji": "🦀",
-    "zone": "village_sakura",
-    "job": "fisher",
-    "requiredJobLevel": 20,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 7,
-    "xpPerHarvest": 12,
-    "rarity": "common"
-  },
-  "truite": {
-    "id": "truite",
-    "name": "Saumon",
-    "emoji": "🐟",
-    "zone": "petal_forest",
-    "job": "fisher",
-    "requiredJobLevel": 40,
-    "baseHarvestTime": 3000,
-    "baseYield": 1,
-    "sellPrice": 10,
-    "xpPerHarvest": 16,
-    "rarity": "uncommon"
-  },
-  "brochet": {
-    "id": "brochet",
-    "name": "Homard",
-    "emoji": "🦞",
-    "zone": "petal_forest",
-    "job": "fisher",
-    "requiredJobLevel": 60,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 13,
-    "xpPerHarvest": 20,
-    "rarity": "uncommon"
-  },
-  "carpe": {
-    "id": "carpe",
-    "name": "Naso",
-    "emoji": "🐠",
-    "zone": "petal_forest",
-    "job": "fisher",
-    "requiredJobLevel": 80,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 16,
-    "xpPerHarvest": 24,
-    "rarity": "uncommon"
-  },
-  "raie": {
-    "id": "raie",
-    "name": "Pieuvre",
-    "emoji": "🐙",
-    "zone": "jade_mountains",
-    "job": "fisher",
-    "requiredJobLevel": 100,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 19,
-    "xpPerHarvest": 28,
-    "rarity": "rare"
-  },
-  "sardine": {
-    "id": "sardine",
-    "name": "Calmar",
-    "emoji": "🦑",
-    "zone": "mist_river",
-    "job": "fisher",
-    "requiredJobLevel": 60,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 22,
-    "xpPerHarvest": 32,
-    "rarity": "rare"
-  },
-  "bar": {
-    "id": "bar",
-    "name": "Crevette Sakura",
-    "emoji": "🦐",
-    "zone": "mist_river",
-    "job": "fisher",
-    "requiredJobLevel": 80,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 25,
-    "xpPerHarvest": 36,
-    "rarity": "rare"
-  },
-  "dorade": {
-    "id": "dorade",
-    "name": "Fugu",
-    "emoji": "🐡",
-    "zone": "lotus_sanctuary",
-    "job": "fisher",
-    "requiredJobLevel": 100,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 28,
-    "xpPerHarvest": 40,
-    "rarity": "rare"
-  },
-  "perche": {
-    "id": "perche",
-    "name": "Carpe Koï Dorée",
-    "emoji": "🎏",
-    "zone": "lotus_sanctuary",
-    "job": "fisher",
-    "requiredJobLevel": 120,
-    "baseHarvestTime": 3000,
-    "baseYield": 4,
-    "sellPrice": 31,
-    "xpPerHarvest": 44,
-    "rarity": "rare"
-  },
-  "kralamoure": {
-    "id": "kralamoure",
-    "name": "Dragon des Eaux",
-    "emoji": "🐉",
-    "zone": "jade_mountains",
-    "job": "fisher",
-    "requiredJobLevel": 200,
-    "baseHarvestTime": 3000,
-    "baseYield": 4,
-    "sellPrice": 34,
-    "xpPerHarvest": 48,
-    "rarity": "rare"
-  },
-  "brume_ble": {
-    "id": "brume_ble",
-    "name": "Blé de Brume",
-    "emoji": "🌾",
-    "zone": "mist_river",
-    "job": "farmer",
-    "requiredJobLevel": 40,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 14,
-    "xpPerHarvest": 22,
-    "rarity": "uncommon"
-  },
-  "brume_truite": {
-    "id": "brume_truite",
-    "name": "Truite brumeuse",
-    "emoji": "🐟",
-    "zone": "mist_river",
-    "job": "fisher",
-    "requiredJobLevel": 40,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 16,
-    "xpPerHarvest": 24,
-    "rarity": "uncommon"
-  },
-  "brume_quartz": {
-    "id": "brume_quartz",
-    "name": "Quartz brumeux",
-    "emoji": "💎",
-    "zone": "mist_river",
-    "job": "miner",
-    "requiredJobLevel": 40,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 18,
-    "xpPerHarvest": 26,
-    "rarity": "uncommon"
-  },
-  "brume_saule": {
-    "id": "brume_saule",
-    "name": "Saule brumeux",
-    "emoji": "🌳",
-    "zone": "mist_river",
-    "job": "lumberjack",
-    "requiredJobLevel": 40,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 15,
-    "xpPerHarvest": 23,
-    "rarity": "uncommon"
-  },
-  "brume_lotus_herb": {
-    "id": "brume_lotus_herb",
-    "name": "Herbe de brume",
-    "emoji": "🌿",
-    "zone": "mist_river",
-    "job": "alchemist",
-    "requiredJobLevel": 40,
-    "baseHarvestTime": 3000,
-    "baseYield": 2,
-    "sellPrice": 17,
-    "xpPerHarvest": 25,
-    "rarity": "uncommon"
-  },
-  "lotus_grain": {
-    "id": "lotus_grain",
-    "name": "Graine de lotus",
-    "emoji": "🪷",
-    "zone": "lotus_sanctuary",
-    "job": "farmer",
-    "requiredJobLevel": 120,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 28,
-    "xpPerHarvest": 38,
-    "rarity": "rare"
-  },
-  "lotus_carp": {
-    "id": "lotus_carp",
-    "name": "Carpe sacrée",
-    "emoji": "🎏",
-    "zone": "lotus_sanctuary",
-    "job": "fisher",
-    "requiredJobLevel": 120,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 30,
-    "xpPerHarvest": 40,
-    "rarity": "rare"
-  },
-  "lotus_crystal": {
-    "id": "lotus_crystal",
-    "name": "Cristal lotus",
-    "emoji": "💠",
-    "zone": "lotus_sanctuary",
-    "job": "miner",
-    "requiredJobLevel": 120,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 32,
-    "xpPerHarvest": 42,
-    "rarity": "rare"
-  },
-  "lotus_tree": {
-    "id": "lotus_tree",
-    "name": "Cerisier lotus",
-    "emoji": "🌸",
-    "zone": "lotus_sanctuary",
-    "job": "lumberjack",
-    "requiredJobLevel": 120,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 29,
-    "xpPerHarvest": 39,
-    "rarity": "rare"
-  },
-  "lotus_essence": {
-    "id": "lotus_essence",
-    "name": "Essence de lotus",
-    "emoji": "✨",
-    "zone": "lotus_sanctuary",
-    "job": "alchemist",
-    "requiredJobLevel": 120,
-    "baseHarvestTime": 3000,
-    "baseYield": 3,
-    "sellPrice": 31,
-    "xpPerHarvest": 41,
-    "rarity": "rare"
   },
   "jade_amulet": {
     "id": "jade_amulet",

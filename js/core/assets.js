@@ -97,7 +97,7 @@ const FARMER_FILES = {
     regrowing: 'avoine_coupe_transparent.png',
     inventory: 'avoine_inventaire_transparent.png',
   },
-  houblon: {
+  seigle: {
     available: 'seigle_transparent.png',
     regrowing: 'seigle_coupe_transparent.png',
     inventory: 'seigle_inventaire_transparent.png',
@@ -110,55 +110,50 @@ const LUMBERJACK_FILES = {
     regrowing: 'tronc_frene_transparent.png',
     inventory: 'frene_inventaire_transparent.png',
   },
-  chataignier: {
+  sequoia: {
     available: 'sequoia_transparent.png',
     regrowing: 'tronc_sequoia_transparent.png',
     inventory: 'ressource_sequoia_transparent.png',
   },
-  noyer: {
+  chene: {
     available: 'chene_transparent.png',
     regrowing: 'tronc_chene_transparent.png',
     inventory: 'chene_inventaire_transparent.png',
   },
-  chene: {
+  bouleau: {
     available: 'bouleau_transparent.png',
     regrowing: 'tronc_bouleau_transparent.png',
     inventory: 'bouleau_inventaire_transparent.png',
   },
-  bombu: {
-    available: 'erable_transparent.png',
-    regrowing: 'tronc_erable_transparent.png',
-    inventory: 'erable_inventaire_transparent.png',
-  },
-  erable: {
-    available: 'bambou_transparent.png',
-    regrowing: 'tronc_bambou_transparent.png',
-    inventory: 'bambou_inventaire_transparent.png',
-  },
-  if: {
+  ginkgo: {
     available: 'ginkgo_transparent.png',
     regrowing: 'tronc_ginkgo_transparent.png',
     inventory: 'ginkgo_inventaire_transparent.png',
   },
-  bambou: {
+  erable: {
+    available: 'erable_transparent.png',
+    regrowing: 'tronc_erable_transparent.png',
+    inventory: 'erable_inventaire_transparent.png',
+  },
+  magnolia: {
     available: 'magnolia_transparent.png',
     regrowing: 'tronc_magnolia_transparent.png',
     inventory: 'magnolia_inventaire_transparent.png',
   },
-  merisier: {
+  bambou: {
+    available: 'bambou_transparent.png',
+    regrowing: 'tronc_bambou_transparent.png',
+    inventory: 'bambou_inventaire_transparent.png',
+  },
+  sakura: {
+    available: 'sakura_transparent.png',
+    regrowing: 'tronc_sakura_transparent.png',
+    inventory: 'sakura_inventaire_transparent.png',
+  },
+  sakura_dore: {
     available: 'cerisier_dore_transparent.png',
     regrowing: 'tronc_cerisier_dore_transparent.png',
     inventory: 'cerisier_dore_inventaire_transparent.png',
-  },
-  charme: {
-    available: 'sakura_transparent.png',
-    regrowing: 'tronc_sakura_transparent.png',
-    inventory: 'sakura_inventaire_transparent.png',
-  },
-  orme: {
-    available: 'sakura_transparent.png',
-    regrowing: 'tronc_sakura_transparent.png',
-    inventory: 'sakura_inventaire_transparent.png',
   },
 };
 
@@ -168,9 +163,8 @@ const FISHER_SLOT_SPRITES = {
   regrowing: asset(F, 'pecheur_sans_poisson_transparent.png'),
 };
 
-/** Inventaire pêche — goujon = Dorade (starter), id historique conservé pour les recettes */
 const FISHER_INVENTORY_FILES = {
-  goujon: 'dorade_transparent.png',
+  dorade: 'dorade_transparent.png',
 };
 
 function getFisherSprites(resourceId) {
@@ -185,7 +179,7 @@ function getFisherSprites(resourceId) {
 const A = 'metiers/alchimiste ';
 
 const ALCHEMIST_FILES = {
-  ortie: {
+  pissenlit: {
     available: 'pissenlit_transparent.png',
     regrowing: 'jardin-alchimiste_transparent.png',
     inventory: 'pissenlit_inventaire_transparent.png',

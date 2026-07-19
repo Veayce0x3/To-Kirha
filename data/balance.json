@@ -1,8 +1,8 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 32,
-  "appBuildId": "20260719-1330",
+  "saveVersion": 33,
+  "appBuildId": "20260719-1400",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -14,7 +14,12 @@
     "flatUnitPrice": 10,
     "priceMultiplier": 1.2,
     "flatMaxPrice": 12,
-    "bulkQuantities": [1, 5, 10, 25],
+    "bulkQuantities": [
+      1,
+      5,
+      10,
+      25
+    ],
     "banner": "Marché test — toutes les ressources métiers/ferme à 10 💰/u (beta). HDV joueurs dans l’onglet Joueurs."
   },
   "goldNuggetExchange": {
@@ -35,7 +40,12 @@
       "requireCookUnlocked": true,
       "hint": "Débloque la Cuisine (Poulailler Éleveur Nv.6) pour préparer des repas avant le donjon."
     },
-    "trainingUnlockKills": [0, 5, 10, 15],
+    "trainingUnlockKills": [
+      0,
+      5,
+      10,
+      15
+    ],
     "fusionCosts": {
       "common": 50,
       "rare": 150,
@@ -98,9 +108,9 @@
     "unlockResourceByJob": {
       "lumberjack": "frene",
       "farmer": "ble",
-      "miner": "fer",
-      "fisher": "goujon",
-      "alchemist": "ortie"
+      "miner": "pierre",
+      "fisher": "dorade",
+      "alchemist": "pissenlit"
     },
     "unlockResourcesByJob": {
       "lumberjack": [
@@ -110,81 +120,109 @@
           "frene": 10
         },
         {
-          "noyer": 10
+          "chene": 10
         },
         {
-          "brume_saule": 10
+          "bouleau": 10
+        },
+        {
+          "erable": 10
+        },
+        {
+          "magnolia": 10
         },
         {
           "bambou": 10
         },
         {
-          "merisier": 10
+          "sakura": 10
         },
         {
-          "charme": 10
-        },
-        {
-          "orme": 10
-        },
-        {
-          "orme": 10
+          "sakura_dore": 10
         }
       ],
       "fisher": [
         null,
         null,
         {
-          "goujon": 10
-        },
-        {
-          "truite": 10
-        },
-        {
-          "brume_truite": 10
-        },
-        {
-          "bar": 10
-        },
-        {
           "dorade": 10
         },
         {
-          "perche": 10
+          "saumon": 10
         },
         {
-          "kralamoure": 10
+          "calmar": 10
         },
         {
-          "kralamoure": 10
+          "naso": 10
+        },
+        {
+          "fugu": 10
+        },
+        {
+          "pieuvre": 10
+        },
+        {
+          "carpe_koi": 10
+        },
+        {
+          "koi_dore": 10
         }
       ],
       "miner": [
         null,
         null,
         {
-          "fer": 10
+          "pierre": 10
         },
         {
-          "bronze": 10
+          "cuivre": 10
         },
         {
-          "brume_quartz": 10
+          "topaze": 10
         },
         {
-          "argent": 10
+          "saphir": 10
         },
         {
-          "bauxite": 10
+          "emeraude": 10
         },
         {
-          "or_minerai": 10
+          "diamant": 10
         },
         {
-          "cendrepierre": 10
+          "cristal": 10
         },
         {
-          "cendrepierre": 10
+          "cristal_dore": 10
+        }
+      ],
+      "alchemist": [
+        null,
+        null,
+        {
+          "pissenlit": 10
+        },
+        {
+          "menthe": 10
+        },
+        {
+          "chrysantheme": 10
+        },
+        {
+          "ginseng": 10
+        },
+        {
+          "pivoine": 10
+        },
+        {
+          "wisteria": 10
+        },
+        {
+          "lotus_sacre": 10
+        },
+        {
+          "lotus_sacre_dore": 10
         }
       ],
       "farmer": [
@@ -197,50 +235,22 @@
           "avoine": 10
         },
         {
-          "brume_ble": 10
+          "seigle": 10
         },
         {
-          "chanvre": 10
+          "houblon": 10
+        },
+        {
+          "lin": 10
         },
         {
           "mais": 10
         },
         {
-          "millet": 10
+          "riz_sakura": 10
         },
         {
-          "frostiz": 10
-        },
-        {
-          "frostiz": 10
-        }
-      ],
-      "alchemist": [
-        null,
-        null,
-        {
-          "ortie": 10
-        },
-        {
-          "trefle": 10
-        },
-        {
-          "brume_lotus_herb": 10
-        },
-        {
-          "belladone": 10
-        },
-        {
-          "mandragore": 10
-        },
-        {
-          "perce_neige": 10
-        },
-        {
-          "salikronia": 10
-        },
-        {
-          "salikronia": 10
+          "riz_dore": 10
         }
       ]
     },
@@ -266,8 +276,12 @@
   },
   "prestige": {
     "minTotalEarned": 100000,
-    "requiredZones": ["lotus_sanctuary"],
-    "minBossKills": { "lotus_sanctuary": 1 },
+    "requiredZones": [
+      "lotus_sanctuary"
+    ],
+    "minBossKills": {
+      "lotus_sanctuary": 1
+    },
     "requireQuestsChapter": "lotus_sanctuary",
     "seasonRequirements": {
       "1": {
@@ -377,8 +391,8 @@
         "minJobId": "fisher",
         "minJobLevel": 10,
         "resources": {
-          "goujon": 10,
-          "ortie": 10
+          "fugu": 10,
+          "pissenlit": 10
         }
       }
     },
@@ -395,7 +409,7 @@
         "minJobId": "miner",
         "minJobLevel": 15,
         "resources": {
-          "fer": 10,
+          "pierre": 10,
           "frene": 15
         }
       }
@@ -413,7 +427,7 @@
         "minJobId": "alchemist",
         "minJobLevel": 20,
         "resources": {
-          "ortie": 15,
+          "pissenlit": 15,
           "ble": 15
         }
       }
@@ -427,95 +441,213 @@
   "productionLines": {
     "maxUnitsPerResource": 5,
     "maxUnits": 5,
-    "unitUnlockCosts": [0, 10, 30, 80, 200],
-    "unitUnlockSameResource": [0, 10, 20, 35, 50],
+    "unitUnlockCosts": [
+      0,
+      10,
+      30,
+      80,
+      200
+    ],
+    "unitUnlockSameResource": [
+      0,
+      10,
+      20,
+      35,
+      50
+    ],
     "newTierKirhaBase": 50,
     "newTierKirhaStep": 40,
     "newTierResourceBase": 25,
     "newTierResourceStep": 15,
-    "farmUnitUnlockCosts": [0, 600, 2000, 6000, 15000, 40000, 100000, 250000, 600000, 1500000]
+    "farmUnitUnlockCosts": [
+      0,
+      600,
+      2000,
+      6000,
+      15000,
+      40000,
+      100000,
+      250000,
+      600000,
+      1500000
+    ]
   },
   "jobUnlocks": {
-    "farmer": { "always": true },
+    "farmer": {
+      "always": true
+    },
     "lumberjack": {
-      "when": { "jobLevel": { "farmer": 8 } },
+      "when": {
+        "jobLevel": {
+          "farmer": 8
+        }
+      },
       "hint": "Atteins Paysan Nv.8 pour débloquer le Bûcheron."
     },
     "fisher": {
-      "when": { "jobLevel": { "lumberjack": 10, "farmer": 10 } },
+      "when": {
+        "jobLevel": {
+          "lumberjack": 10,
+          "farmer": 10
+        }
+      },
       "hint": "Monte Bûcheron Nv.10 et Paysan Nv.10 pour le Pêcheur."
     },
     "miner": {
-      "when": { "jobLevel": { "fisher": 10, "lumberjack": 8 } },
+      "when": {
+        "jobLevel": {
+          "fisher": 10,
+          "lumberjack": 8
+        }
+      },
       "hint": "Monte Pêcheur Nv.10 et Bûcheron Nv.8 pour le Mineur."
     },
     "alchemist": {
-      "when": { "jobLevel": { "miner": 12, "fisher": 8 } },
+      "when": {
+        "jobLevel": {
+          "miner": 12,
+          "fisher": 8
+        }
+      },
       "hint": "Monte Mineur Nv.12 et Pêcheur Nv.8 pour l'Alchimiste."
     },
     "combat": {
-      "when": { "jobLevel": { "farmer": 5 } },
+      "when": {
+        "jobLevel": {
+          "farmer": 5
+        }
+      },
       "hint": "Atteins Paysan Nv.5 pour débloquer le Combat."
     },
     "toolmaker": {
-      "when": { "jobLevel": { "lumberjack": 5, "farmer": 6 } },
+      "when": {
+        "jobLevel": {
+          "lumberjack": 5,
+          "farmer": 6
+        }
+      },
       "hint": "Monte Bûcheron Nv.5 et Paysan Nv.6 pour l'Outilleur."
     },
     "cook": {
       "when": {
-        "jobLevel": { "farmer": 6, "breeder": 6 },
+        "jobLevel": {
+          "farmer": 6,
+          "breeder": 6
+        },
         "buildingUnlocked": "chicken_coop"
       },
       "hint": "Paysan Nv.6, Poulailler débloqué et Éleveur Nv.6 pour la Cuisine."
     },
     "farm": {
       "chicken_coop": {
-        "when": { "jobLevel": { "farmer": 6 } },
+        "when": {
+          "jobLevel": {
+            "farmer": 6
+          }
+        },
         "hint": "Atteins Paysan Nv.6 pour débloquer le Poulailler."
       },
       "well": {
-        "when": { "jobLevel": { "farmer": 10, "breeder": 5 } },
+        "when": {
+          "jobLevel": {
+            "farmer": 10,
+            "breeder": 5
+          }
+        },
         "hint": "Paysan Nv.10 et Éleveur Nv.5 pour le Puits."
       },
       "barn": {
-        "when": { "jobLevel": { "breeder": 10, "lumberjack": 8 } },
+        "when": {
+          "jobLevel": {
+            "breeder": 10,
+            "lumberjack": 8
+          }
+        },
         "hint": "Éleveur Nv.10 et Bûcheron Nv.8 pour l'Étable."
       },
       "sheepfold": {
-        "when": { "jobLevel": { "breeder": 12, "lumberjack": 10, "farmer": 12 } },
+        "when": {
+          "jobLevel": {
+            "breeder": 12,
+            "lumberjack": 10,
+            "farmer": 12
+          }
+        },
         "hint": "Éleveur Nv.12, Bûcheron Nv.10 et Paysan Nv.12 pour la Bergerie."
       },
       "pigsty": {
-        "when": { "jobLevel": { "miner": 8, "breeder": 14 } },
+        "when": {
+          "jobLevel": {
+            "miner": 8,
+            "breeder": 14
+          }
+        },
         "hint": "Mineur Nv.8 et Éleveur Nv.14 pour la Porcherie."
       },
       "beehive": {
-        "when": { "jobLevel": { "alchemist": 6, "breeder": 16, "farmer": 16 } },
+        "when": {
+          "jobLevel": {
+            "alchemist": 6,
+            "breeder": 16,
+            "farmer": 16
+          }
+        },
         "hint": "Alchimiste Nv.6, Éleveur Nv.16 et Paysan Nv.16 pour les Ruches."
       }
     },
     "farm_chicken_coop": {
-      "when": { "jobLevel": { "farmer": 6 } },
+      "when": {
+        "jobLevel": {
+          "farmer": 6
+        }
+      },
       "hint": "Atteins Paysan Nv.6 pour le Poulailler."
     },
     "farm_well": {
-      "when": { "jobLevel": { "farmer": 10, "breeder": 5 } },
+      "when": {
+        "jobLevel": {
+          "farmer": 10,
+          "breeder": 5
+        }
+      },
       "hint": "Paysan Nv.10 et Éleveur Nv.5 pour le Puits."
     },
     "farm_barn": {
-      "when": { "jobLevel": { "breeder": 10, "lumberjack": 8 } },
+      "when": {
+        "jobLevel": {
+          "breeder": 10,
+          "lumberjack": 8
+        }
+      },
       "hint": "Éleveur Nv.10 et Bûcheron Nv.8 pour l'Étable."
     },
     "farm_sheepfold": {
-      "when": { "jobLevel": { "breeder": 12, "lumberjack": 10, "farmer": 12 } },
+      "when": {
+        "jobLevel": {
+          "breeder": 12,
+          "lumberjack": 10,
+          "farmer": 12
+        }
+      },
       "hint": "Éleveur Nv.12, Bûcheron Nv.10 et Paysan Nv.12 pour la Bergerie."
     },
     "farm_pigsty": {
-      "when": { "jobLevel": { "miner": 8, "breeder": 14 } },
+      "when": {
+        "jobLevel": {
+          "miner": 8,
+          "breeder": 14
+        }
+      },
       "hint": "Mineur Nv.8 et Éleveur Nv.14 pour la Porcherie."
     },
     "farm_beehive": {
-      "when": { "jobLevel": { "alchemist": 6, "breeder": 16, "farmer": 16 } },
+      "when": {
+        "jobLevel": {
+          "alchemist": 6,
+          "breeder": 16,
+          "farmer": 16
+        }
+      },
       "hint": "Alchimiste Nv.6, Éleveur Nv.16 et Paysan Nv.16 pour les Ruches."
     }
   }

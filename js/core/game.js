@@ -210,13 +210,7 @@ const LEGACY_COMBAT_RESOURCES = [
 ];
 
 const LEGACY_RESOURCE_MAP = {
-  sakura_wood: 'frene',
-  herbs: 'ortie',
-  petal_wood: 'noyer',
-  fish: 'goujon',
-  sakura_carp: 'carpe',
-  jade_ore: 'fer',
-  moon_stone: 'kobalte',
+  // Laisser les anciens ids intacts jusqu'à la migration 33 (one-shot).
 };
 
 function migrateLegacyCombatResources(state) {
@@ -339,8 +333,10 @@ export class Game {
   migrateInventory(oldInv) {
     const inv = this.buildDefaultInventory();
     for (const [id, amount] of Object.entries(oldInv || {})) {
+      if (!amount) continue;
       const mapped = LEGACY_RESOURCE_MAP[id] || id;
-      if (this.resources[mapped]) inv[mapped] = (inv[mapped] || 0) + amount;
+      // Garder aussi les anciens ids (noyer, etc.) pour la migration 33 one-shot
+      inv[mapped] = (inv[mapped] || 0) + amount;
     }
     return inv;
   }

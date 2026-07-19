@@ -6,7 +6,10 @@
     "title": "Première moisson",
     "description": "Récolte 8× Frêne ou Blé (emplacements Bûcheron / Paysan).",
     "type": "harvest_resource",
-    "resourceIds": ["frene", "ble"],
+    "resourceIds": [
+      "frene",
+      "ble"
+    ],
     "target": 8,
     "rewardKirha": 40,
     "hintJob": "lumberjack"
@@ -18,7 +21,16 @@
     "title": "Premiers élevages",
     "description": "Collecte 3 ressources à la Ferme (eau, œufs, lait…).",
     "type": "harvest_resource",
-    "resourceIds": ["eau", "oeuf", "lait", "plume", "cuir", "laine", "miel", "bacon"],
+    "resourceIds": [
+      "eau",
+      "oeuf",
+      "lait",
+      "plume",
+      "cuir",
+      "laine",
+      "miel",
+      "bacon"
+    ],
     "target": 3,
     "rewardKirha": 35,
     "hintView": "farm_chicken_coop"
@@ -32,7 +44,9 @@
     "type": "craft_job",
     "jobId": "toolmaker",
     "target": 1,
-    "requires": { "questId": "q_v1_harvest" },
+    "requires": {
+      "questId": "q_v1_harvest"
+    },
     "rewardScrolls": 1,
     "hintView": "workshop"
   },
@@ -44,7 +58,9 @@
     "description": "Équipe une arme de combat sur ton personnage.",
     "type": "equip_weapon",
     "target": 1,
-    "requires": { "questId": "q_v1_tool" },
+    "requires": {
+      "questId": "q_v1_tool"
+    },
     "rewardNuggets": 5,
     "hintView": "character"
   },
@@ -57,7 +73,9 @@
     "type": "combat_kills",
     "enemyId": "spirit_lantern",
     "target": 3,
-    "requires": { "questId": "q_v1_weapon" },
+    "requires": {
+      "questId": "q_v1_weapon"
+    },
     "rewardKirha": 80,
     "hintView": "combat"
   },
@@ -70,7 +88,9 @@
     "type": "boss_kill",
     "combatZoneId": "village_sakura",
     "target": 1,
-    "requires": { "questId": "q_v1_combat" },
+    "requires": {
+      "questId": "q_v1_combat"
+    },
     "rewardKirha": 150,
     "rewardScrolls": 2,
     "hintView": "combat"
@@ -84,7 +104,9 @@
     "type": "job_level",
     "jobId": "farmer",
     "target": 15,
-    "requires": { "bossZone": "village_sakura" },
+    "requires": {
+      "bossZone": "village_sakura"
+    },
     "rewardKirha": 120,
     "hintJob": "farmer"
   },
@@ -97,7 +119,9 @@
     "type": "job_level",
     "jobId": "lumberjack",
     "target": 15,
-    "requires": { "bossZone": "village_sakura" },
+    "requires": {
+      "bossZone": "village_sakura"
+    },
     "rewardKirha": 100,
     "hintJob": "lumberjack"
   },
@@ -110,7 +134,9 @@
     "type": "combat_kills",
     "enemyId": "wild_fox",
     "target": 5,
-    "requires": { "bossZone": "village_sakura" },
+    "requires": {
+      "bossZone": "village_sakura"
+    },
     "rewardKirha": 150,
     "hintView": "combat"
   },
@@ -123,7 +149,9 @@
     "type": "boss_kill",
     "combatZoneId": "petal_forest",
     "target": 1,
-    "requires": { "questId": "q_v2_harvest" },
+    "requires": {
+      "questId": "q_v2_harvest"
+    },
     "rewardKirha": 300,
     "rewardScrolls": 3,
     "hintView": "combat"
@@ -137,7 +165,9 @@
     "type": "job_level",
     "jobId": "fisher",
     "target": 20,
-    "requires": { "bossZone": "petal_forest" },
+    "requires": {
+      "bossZone": "petal_forest"
+    },
     "rewardKirha": 200,
     "hintJob": "fisher"
   },
@@ -150,7 +180,9 @@
     "type": "job_level",
     "jobId": "miner",
     "target": 20,
-    "requires": { "bossZone": "petal_forest" },
+    "requires": {
+      "bossZone": "petal_forest"
+    },
     "rewardKirha": 180,
     "hintJob": "miner"
   },
@@ -163,7 +195,9 @@
     "type": "combat_kills",
     "enemyId": "mist_wisp",
     "target": 5,
-    "requires": { "questId": "q_v3_miner" },
+    "requires": {
+      "questId": "q_v3_miner"
+    },
     "rewardKirha": 220,
     "hintView": "combat"
   },
@@ -176,7 +210,9 @@
     "type": "boss_kill",
     "combatZoneId": "mist_river",
     "target": 1,
-    "requires": { "questId": "q_v3_combat" },
+    "requires": {
+      "questId": "q_v3_combat"
+    },
     "rewardKirha": 500,
     "rewardScrolls": 4,
     "hintView": "combat"
@@ -190,7 +226,9 @@
     "type": "job_level",
     "jobId": "miner",
     "target": 30,
-    "requires": { "bossZone": "mist_river" },
+    "requires": {
+      "bossZone": "mist_river"
+    },
     "rewardKirha": 350,
     "hintJob": "miner"
   },
@@ -203,7 +241,9 @@
     "type": "craft_job",
     "jobId": "toolmaker",
     "target": 1,
-    "requires": { "questId": "q_v4_miner" },
+    "requires": {
+      "questId": "q_v4_miner"
+    },
     "rewardScrolls": 2,
     "hintView": "workshop"
   },
@@ -216,7 +256,9 @@
     "type": "combat_kills",
     "enemyId": "stone_warden",
     "target": 5,
-    "requires": { "questId": "q_v4_craft" },
+    "requires": {
+      "questId": "q_v4_craft"
+    },
     "rewardKirha": 400,
     "hintView": "combat"
   },
@@ -229,7 +271,9 @@
     "type": "boss_kill",
     "combatZoneId": "jade_mountains",
     "target": 1,
-    "requires": { "questId": "q_v4_combat" },
+    "requires": {
+      "questId": "q_v4_combat"
+    },
     "rewardKirha": 800,
     "rewardNuggets": 20,
     "hintView": "combat"
@@ -243,7 +287,9 @@
     "type": "job_level",
     "jobId": "alchemist",
     "target": 45,
-    "requires": { "bossZone": "jade_mountains" },
+    "requires": {
+      "bossZone": "jade_mountains"
+    },
     "rewardKirha": 600,
     "hintJob": "alchemist"
   },
@@ -256,7 +302,9 @@
     "type": "combat_kills",
     "enemyId": "lotus_guard",
     "target": 5,
-    "requires": { "questId": "q_v5_arrival" },
+    "requires": {
+      "questId": "q_v5_arrival"
+    },
     "rewardKirha": 800,
     "hintView": "combat"
   },
@@ -269,7 +317,9 @@
     "type": "craft_job",
     "jobId": "toolmaker",
     "target": 1,
-    "requires": { "questId": "q_v5_combat" },
+    "requires": {
+      "questId": "q_v5_combat"
+    },
     "rewardScrolls": 3,
     "hintView": "workshop"
   },
@@ -282,7 +332,9 @@
     "type": "boss_kill",
     "combatZoneId": "lotus_sanctuary",
     "target": 1,
-    "requires": { "questId": "q_v5_craft" },
+    "requires": {
+      "questId": "q_v5_craft"
+    },
     "rewardKirha": 1500,
     "rewardScrolls": 5,
     "hintView": "combat"
@@ -295,7 +347,9 @@
     "description": "Équipe au moins un compagnon (arme ou armure).",
     "type": "companion_equipped",
     "target": 1,
-    "requires": { "questId": "q_v1_weapon" },
+    "requires": {
+      "questId": "q_v1_weapon"
+    },
     "rewardNuggets": 8,
     "hintView": "character"
   }

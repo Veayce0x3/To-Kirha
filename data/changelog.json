@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1400",
+      "date": "2026-07-19",
+      "title": "Ressources de récolte refondues",
+      "highlights": [
+        "10 ressources par métier de récolte (ids alignés sur les noms)",
+        "Paliers : nv.1 → 20 → 40 → 60 → 80 → 100 → 120 → 140 → 170 → 200",
+        "Suppression des ressources « brume / lotus » en trop ; migration auto de l’inventaire"
+      ]
+    },
+    {
       "buildId": "20260719-1330",
       "date": "2026-07-19",
       "title": "Banque bientôt disponible",
