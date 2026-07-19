@@ -151,9 +151,9 @@ const LUMBERJACK_FILES = {
     inventory: 'sakura_inventaire_transparent.png',
   },
   sakura_dore: {
-    available: 'cerisier_dore_transparent.png',
-    regrowing: 'tronc_cerisier_dore_transparent.png',
-    inventory: 'cerisier_dore_inventaire_transparent.png',
+    available: 'sakura_dore_transparent.png',
+    regrowing: 'tronc_sakura_dore_transparent.png',
+    inventory: 'sakura_dore_inventaire_transparent.png',
   },
 };
 
