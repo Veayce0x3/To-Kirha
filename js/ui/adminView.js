@@ -948,6 +948,19 @@ async function renderAdminPanel(bodyEl) {
 
 export function renderAdmin(game, el) {
   gameRef = game;
+  el.innerHTML = `
+    <div class="view-header"><h2>🛡️ Administration</h2></div>
+    <p class="view-desc">Vérification des droits…</p>
+  `;
+
+  refreshProfile()
+    .catch(() => null)
+    .then(() => {
+      paintAdmin(game, el);
+    });
+}
+
+function paintAdmin(game, el) {
   if (!canSeeAdminPanel()) {
     el.innerHTML = `
       <div class="view-header"><h2>Personnage</h2></div>
@@ -961,8 +974,12 @@ export function renderAdmin(game, el) {
   if (!tabs.length) {
     el.innerHTML = `
       <div class="view-header"><h2>🛡️ Administration</h2></div>
-      <p class="admin-error">Accès refusé — rôle staff requis.</p>
+      <p class="admin-error">Accès refusé — rôle staff requis (actuel : ${ROLE_LABELS[role] || role}).</p>
+      <button type="button" class="btn btn-muted" id="admin-retry-profile">Resynchroniser le profil</button>
     `;
+    el.querySelector('#admin-retry-profile')?.addEventListener('click', () => {
+      renderAdmin(game, el);
+    });
     return;
   }
 

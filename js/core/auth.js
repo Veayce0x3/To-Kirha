@@ -35,27 +35,9 @@ export function isAccountBanned() {
   return authState.isBanned === true;
 }
 
-export function isStaff() {
-  return authState.mode === 'registered'
-    && !authState.isBanned
-    && authState.profileSynced
-    && ['moderator', 'admin', 'superadmin'].includes(authState.role);
-}
-
 /** Panneau Admin — défini plus bas (après applyProfileData / cache session). */
 export function isAdmin() {
   return canSeeAdminPanel();
-}
-
-export function isSuperAdmin() {
-  return authState.mode === 'registered'
-    && !authState.isBanned
-    && authState.profileSynced
-    && authState.role === 'superadmin';
-}
-
-export function getProfileRole() {
-  return authState.role || 'player';
 }
 
 export function isGuestAccount() {
@@ -173,29 +155,64 @@ export function syncAuthFromState(state) {
   }
 }
 
+function normalizeProfilePayload(data) {
+  if (!data) return null;
+  let payload = data;
+  if (typeof payload === 'string') {
+    try {
+      payload = JSON.parse(payload);
+    } catch {
+      return null;
+    }
+  }
+  if (Array.isArray(payload)) payload = payload[0];
+  if (!payload || typeof payload !== 'object') return null;
+  return payload;
+}
+
 function applyProfileData(profile) {
-  if (!profile) return;
+  const normalized = normalizeProfilePayload(profile);
+  if (!normalized) return;
+
   authState.profileSynced = true;
-  const rawRole = profile.role;
-  const role = (typeof rawRole === 'string' && rawRole) ? rawRole : 'player';
+  const rawRole = normalized.role;
+  let role = (typeof rawRole === 'string' && rawRole.trim()) ? rawRole.trim() : 'player';
+  const accessFlag = normalized.admin_access === true
+    || normalized.admin_access === 'true'
+    || normalized.adminAccess === true
+    || role === 'admin'
+    || role === 'superadmin'
+    || role === 'moderator';
+
+  // admin_access true mais role null/player (réponse RPC incomplète) → récupérer le cache
+  if (accessFlag && !['moderator', 'admin', 'superadmin'].includes(role)) {
+    try {
+      const cached = sessionStorage.getItem('tokirha_staff_role');
+      if (cached && ['moderator', 'admin', 'superadmin'].includes(cached)) {
+        role = cached;
+      } else if (normalized.admin_access === true || normalized.admin_access === 'true') {
+        role = 'admin';
+      }
+    } catch {
+      if (normalized.admin_access === true || normalized.admin_access === 'true') role = 'admin';
+    }
+  }
+
   authState.role = role;
-  const accessFlag = profile.admin_access === true
-    || profile.admin_access === 'true'
-    || profile.adminAccess === true;
   authState.adminAccess = accessFlag
     || role === 'admin'
     || role === 'superadmin';
-  authState.isBanned = !!profile.is_banned;
-  authState.bannedReason = profile.banned_reason || null;
-  authState.cheatFlagged = !!profile.cheat_flagged;
-  if (profile.display_name) {
-    authState.displayName = profile.display_name;
+  authState.isBanned = !!normalized.is_banned;
+  authState.bannedReason = normalized.banned_reason || null;
+  authState.cheatFlagged = !!normalized.cheat_flagged;
+  if (normalized.display_name) {
+    authState.displayName = normalized.display_name;
   }
-  authState.freeRenameUsed = !!profile.free_rename_used;
+  authState.freeRenameUsed = !!normalized.free_rename_used;
   try {
-    if (authState.adminAccess) {
+    if (['moderator', 'admin', 'superadmin'].includes(authState.role)) {
       sessionStorage.setItem('tokirha_staff_role', authState.role);
-    } else {
+    } else if (!authState.adminAccess) {
       sessionStorage.removeItem('tokirha_staff_role');
     }
   } catch {
@@ -203,14 +220,12 @@ function applyProfileData(profile) {
   }
 }
 
-/** Panneau Admin visible uniquement pour admin / superadmin (confirmé par le serveur). */
+/** Panneau Admin visible pour admin / superadmin (serveur ou cache session). */
 export function canSeeAdminPanel() {
   if (authState.mode !== 'registered' || authState.isBanned) return false;
-  if (authState.profileSynced) {
-    if (authState.adminAccess === true) return true;
-    if (authState.role === 'admin' || authState.role === 'superadmin') return true;
-  }
-  // Cache session : évite de perdre le bouton si une sync rate
+  const role = getProfileRole();
+  if (role === 'admin' || role === 'superadmin') return true;
+  if (authState.profileSynced && authState.adminAccess === true) return true;
   try {
     const cached = sessionStorage.getItem('tokirha_staff_role');
     if (cached === 'admin' || cached === 'superadmin') return true;
@@ -218,6 +233,37 @@ export function canSeeAdminPanel() {
     // ignore
   }
   return false;
+}
+
+export function getProfileRole() {
+  const live = authState.role || 'player';
+  if (['moderator', 'admin', 'superadmin'].includes(live)) return live;
+  if (authState.adminAccess) {
+    try {
+      const cached = sessionStorage.getItem('tokirha_staff_role');
+      if (cached && ['moderator', 'admin', 'superadmin'].includes(cached)) return cached;
+    } catch {
+      // ignore
+    }
+    return 'admin';
+  }
+  try {
+    const cached = sessionStorage.getItem('tokirha_staff_role');
+    if (cached && ['moderator', 'admin', 'superadmin'].includes(cached)) return cached;
+  } catch {
+    // ignore
+  }
+  return live;
+}
+
+export function isStaff() {
+  if (authState.mode !== 'registered' || authState.isBanned) return false;
+  return ['moderator', 'admin', 'superadmin'].includes(getProfileRole());
+}
+
+export function isSuperAdmin() {
+  if (authState.mode !== 'registered' || authState.isBanned) return false;
+  return getProfileRole() === 'superadmin';
 }
 
 export function hasFreeRenameAvailable() {
@@ -237,22 +283,29 @@ export async function syncProfileFromServer() {
   if (!isSupabaseConfigured() || authState.mode !== 'registered') return null;
   try {
     const supabase = await getSupabaseClient();
+    // S'assurer qu'une session est bien présente avant les RPC staff
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData?.session && authState.userId !== 'dev_local_user') {
+      return null;
+    }
+
     const { data, error } = await supabase.rpc('get_my_profile');
-    if (!error && data) {
-      applyProfileData(data);
+    const profile = normalizeProfilePayload(data);
+    if (!error && profile) {
+      applyProfileData(profile);
       emit('authChange', getAuthState());
       emit('navRefresh');
-      return data;
+      return profile;
     }
 
     // Repli si la RPC échoue : lire le rôle directement
     if (authState.userId && authState.userId !== 'dev_local_user') {
-      const { data: row } = await supabase
+      const { data: row, error: rowErr } = await supabase
         .from('profiles')
         .select('user_id, display_name, role, is_banned, banned_reason, cheat_flagged, free_rename_used')
         .eq('user_id', authState.userId)
         .maybeSingle();
-      if (row) {
+      if (!rowErr && row) {
         applyProfileData({
           ...row,
           admin_access: row.role === 'admin' || row.role === 'superadmin',

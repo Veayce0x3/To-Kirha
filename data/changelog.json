@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1215",
+      "date": "2026-07-19",
+      "title": "Correctif accès Admin",
+      "highlights": [
+        "Accès Admin / Superadmin corrigé (synchronisation du rôle au chargement du panneau)"
+      ]
+    },
+    {
       "buildId": "20260719-1200",
       "date": "2026-07-19",
       "title": "Mises à jour récentes",
