@@ -377,12 +377,14 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
     </div>
   `;
   card.querySelector('.btn-start')?.addEventListener('click', () => {
-    if (canStart) {
-      const result = game.startFarmSlot(buildingId, lineKey, unitIndex);
-      if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
-    } else if (canCollect) {
-      game.completeFarmLine(buildingId, lineKey, unitIndex);
+    const liveProgress = game.getFarmLineProgress(buildingId, lineKey, unitIndex);
+    const liveSlot = game.state.productionLines?.farm?.[buildingId]?.[lineKey]?.slots?.[unitIndex];
+    if (liveSlot?.active) {
+      if (liveProgress >= 1) game.completeFarmLine(buildingId, lineKey, unitIndex);
+      return;
     }
+    const result = game.startFarmSlot(buildingId, lineKey, unitIndex);
+    if (!result?.ok && result?.reason) emit('farmBlocked', { message: result.reason });
   });
   return card;
 }
@@ -546,7 +548,6 @@ export function updateFarmLineProgresses(game, buildingId) {
       if (isUnifiedFarmBuilding(building)) {
         let fill = card.querySelector('.slot-progress-fill');
         let label = card.querySelector('.slot-progress-label');
-        // Carte démarrée sans overlay → reconstruire comme une récolte
         if (!fill || !label) {
           patchFarmUnitCard(game, buildingId, lineKey, unitIndex);
           card = document.querySelector(`.production-unit[data-building="${buildingId}"][data-product="${lineKey}"][data-unit="${unitIndex}"]`);
@@ -562,6 +563,26 @@ export function updateFarmLineProgresses(game, buildingId) {
           if (tap) tap.setAttribute('aria-label', `${building.name} — Prêt !`);
         }
         return;
+      }
+
+      // Puits / bâtiments classiques : barre live comme la récolte
+      let bar = card.querySelector('.slot-progress .xp-bar');
+      const btn = card.querySelector('.btn-start');
+      if (!bar && progress < 1) {
+        patchFarmUnitCard(game, buildingId, lineKey, unitIndex);
+        card = document.querySelector(`.production-unit[data-building="${buildingId}"][data-product="${lineKey}"][data-unit="${unitIndex}"]`);
+        bar = card?.querySelector('.slot-progress .xp-bar');
+      }
+      if (bar) bar.style.width = `${pct}%`;
+      if (btn) {
+        if (progress >= 1) {
+          btn.textContent = 'Collecter';
+          btn.disabled = false;
+          btn.classList.add('affordable');
+        } else {
+          btn.textContent = `Production ${pct}%`;
+          btn.disabled = true;
+        }
       }
 
       if (progress >= 1) {

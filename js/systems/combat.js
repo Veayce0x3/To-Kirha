@@ -364,9 +364,49 @@ export function initEncounter(run, foe, enemies, partySize = 1, combatZone = nul
     activeEnemyIndex: 0,
     log: [],
     desperateUses: 0,
+    skillUses: {},
   };
   startPlayerTurn(run);
   return run.combat;
+}
+
+/** Type d'encounter pour les plafonds d'attaque forte. */
+export function getEncounterUseKind(run) {
+  if (run?.isDungeonRun) return 'dungeon';
+  if (run?.isBoss) return 'soloBoss';
+  return 'soloMob';
+}
+
+export function getSkillMaxUses(skill, run) {
+  if (!skill?.limitedUses && skill?.id !== 'desperate_blow') return null;
+  const kind = getEncounterUseKind(run);
+  const table = skill.usesPerEncounter;
+  if (table && typeof table[kind] === 'number') return Math.max(0, table[kind]);
+  if (skill.id === 'desperate_blow') return 2;
+  return null;
+}
+
+export function getSkillUsesLeft(skill, run) {
+  const max = getSkillMaxUses(skill, run);
+  if (max == null) return null;
+  const used = run?.combat?.skillUses?.[skill.id]
+    ?? (skill.id === 'desperate_blow' ? (run?.combat?.desperateUses || 0) : 0);
+  return Math.max(0, max - used);
+}
+
+export function consumeSkillUse(skill, run) {
+  const max = getSkillMaxUses(skill, run);
+  if (max == null) return { ok: true, left: null, max: null };
+  if (!run.combat.skillUses) run.combat.skillUses = {};
+  const used = run.combat.skillUses[skill.id] || 0;
+  if (used >= max) {
+    return { ok: false, left: 0, max };
+  }
+  run.combat.skillUses[skill.id] = used + 1;
+  if (skill.id === 'desperate_blow') {
+    run.combat.desperateUses = run.combat.skillUses[skill.id];
+  }
+  return { ok: true, left: max - used - 1, max };
 }
 
 export function startPlayerTurn(run) {
@@ -492,13 +532,13 @@ export function useMemberSkill(run, skill, memberIndex, targetId = 'enemy') {
   const member = run.party[memberIndex];
   if (!member || member.hp <= 0) return null;
 
-  if (skill.id === 'desperate_blow') {
-    const used = run.combat.desperateUses || 0;
-    if (used >= 2) {
-      run.combat.log.push({ type: 'system', text: 'Coup désespéré limité à 2× par combat.' });
-      return { blocked: true };
-    }
-    run.combat.desperateUses = used + 1;
+  const useCheck = consumeSkillUse(skill, run);
+  if (!useCheck.ok) {
+    run.combat.log.push({
+      type: 'system',
+      text: `${skill.emoji || ''} ${skill.name} épuisée (${useCheck.max}× max).`,
+    });
+    return { blocked: true };
   }
 
   let targetMember = member;

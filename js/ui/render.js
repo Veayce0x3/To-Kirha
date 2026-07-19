@@ -105,7 +105,6 @@ export function initUI(game, audio) {
   };
 
   let lastKirha = game.state.kirha;
-  let animFrame = null;
 
   function openSidebar() {
     els.sidebar?.classList.add('open');
@@ -372,23 +371,55 @@ export function initUI(game, audio) {
     els.zoneSubtitle.textContent = zone ? `${zone.emoji} ${zone.name}` : '';
   }
 
+  let animTimer = null;
+  let lastNavTickAt = 0;
+  const PROGRESS_TICK_MS = 200;
+  const NAV_TICK_MS = 1000;
+
+  function stopProgressTick() {
+    if (animTimer != null) {
+      clearTimeout(animTimer);
+      animTimer = null;
+    }
+  }
+
   function tickActiveUI() {
+    animTimer = null;
+    if (document.hidden) return;
+
     const harvesting = game.isHarvesting();
     const farming = game.isFarmActive();
     if (harvesting) updateHarvestSlotProgresses(game);
     if (farming) updateFarmSlotProgresses(game);
-    if (harvesting || farming) {
+
+    if (!harvesting && !farming) return;
+
+    const now = Date.now();
+    if (now - lastNavTickAt >= NAV_TICK_MS) {
       updateNavActive();
-      animFrame = requestAnimationFrame(tickActiveUI);
-    } else {
-      cancelAnimationFrame(animFrame);
-      animFrame = null;
+      lastNavTickAt = now;
     }
+
+    animTimer = setTimeout(tickActiveUI, PROGRESS_TICK_MS);
   }
 
   function tickHarvestUI() {
+    if (document.hidden) return;
+    if (animTimer != null) return;
     tickActiveUI();
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopProgressTick();
+      document.body.classList.add('page-hidden');
+    } else {
+      document.body.classList.remove('page-hidden');
+      if ((game.isHarvesting() || game.isFarmActive()) && animTimer == null) {
+        tickHarvestUI();
+      }
+    }
+  });
 
   function showStartupRefreshPrompt() {
     // Désactivé : laissait pointer-events:none sur tout le jeu.
@@ -458,20 +489,20 @@ export function initUI(game, audio) {
     if (isResourcePickerOpen() && jobId) {
       refreshJobViewLight(game, jobId);
       updateNavActive();
-      if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
+      if ((game.isHarvesting() || game.isFarmActive()) && !animTimer) tickHarvestUI();
       return;
     }
     const partial = shouldPartialRefreshOnStateChange(view, game);
     if (partial?.kind === 'job') {
       refreshJobViewLight(game, partial.jobId);
       updateNavActive();
-      if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
+      if ((game.isHarvesting() || game.isFarmActive()) && !animTimer) tickHarvestUI();
       return;
     }
     if (partial?.kind === 'farm') {
       refreshFarmViewLight(game, partial.buildingId);
       updateNavActive();
-      if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
+      if ((game.isHarvesting() || game.isFarmActive()) && !animTimer) tickHarvestUI();
       return;
     }
     if (partial?.kind === 'auction') {
@@ -482,7 +513,7 @@ export function initUI(game, audio) {
     }
     refreshView();
     syncJobUnlockToasts();
-    if ((game.isHarvesting() || game.isFarmActive()) && !animFrame) tickHarvestUI();
+    if ((game.isHarvesting() || game.isFarmActive()) && !animTimer) tickHarvestUI();
   });
   on('farmFeedChange', ({ buildingId, slotIndex }) => {
     patchFarmSlot(game, buildingId, slotIndex);
@@ -673,7 +704,7 @@ export function initUI(game, audio) {
         refreshView();
       }
     }
-    if (game.isFarmActive() && !animFrame) tickHarvestUI();
+    if (game.isFarmActive() && !animTimer) tickHarvestUI();
   });
   on('farmSlotUnlock', ({ buildingId, slots }) => {
     showToast(els, `Nouvel emplacement ferme ! (${slots} slots)`, 'upgrade');
@@ -683,7 +714,7 @@ export function initUI(game, audio) {
     if (buildingId != null && productId != null && unitIndex != null) {
       patchFarmUnitCard(game, buildingId, productId, unitIndex);
     }
-    if (!animFrame) tickHarvestUI();
+    if (!animTimer) tickHarvestUI();
   });
   on('equip', ({ recipeId }) => {
     const r = game.recipes[recipeId];

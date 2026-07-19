@@ -823,14 +823,25 @@ body {
   background: radial-gradient(ellipse, #f4a7c0 0%, #e8b4cb 60%, transparent 100%);
   border-radius: 50% 0 50% 50%;
   animation: petalFall linear infinite;
+  will-change: transform;
+}
+
+body.page-hidden .petal,
+body.page-hidden .sakura-petals {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .petal,
+  .sakura-petals {
+    display: none !important;
+    animation: none !important;
+  }
 }
 
 @keyframes petalFall {
-  0% { transform: translateY(-20px) rotate(0deg) translateX(0); }
-  25% { transform: translateY(25vh) rotate(90deg) translateX(30px); }
-  50% { transform: translateY(50vh) rotate(180deg) translateX(-20px); }
-  75% { transform: translateY(75vh) rotate(270deg) translateX(15px); }
-  100% { transform: translateY(105vh) rotate(360deg) translateX(0); }
+  0% { transform: translate3d(0, -20px, 0) rotate(0deg); }
+  100% { transform: translate3d(12px, 105vh, 0) rotate(360deg); }
 }
 
 .level-flash {

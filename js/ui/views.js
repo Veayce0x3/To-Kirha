@@ -1,4 +1,4 @@
-import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats } from '../systems/combat.js';
+import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats, getSkillUsesLeft, getSkillMaxUses } from '../systems/combat.js';
 import { getCraftSellBonus, getRecipeRequiredLevel } from '../systems/crafting.js';
 import { mountCraftWorkshop } from './craftView.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
@@ -3613,8 +3613,6 @@ function renderDungeonCombatBody(game) {
   const targetMode = combatUi.step === 'target' ? (combatUi.targetMode || getSkillTargetMode(pendingSkillDef)) : null;
   const canAct = isPlayerTurn && combatUi.step === 'action';
 
-  const desperateUses = combat?.desperateUses || 0;
-  const desperateLeft = Math.max(0, 2 - desperateUses);
   const soloHpNote = isSoloFight && game.state.combatWear?.solo?.hero != null
     ? ` · HP entraînement : ${game.state.combatWear.solo.hero}`
     : '';
@@ -3692,13 +3690,16 @@ function renderDungeonCombatBody(game) {
     commandHtml = `
       <button type="button" class="dq-cmd-btn dq-cmd-back" data-menu="main">◀ Retour</button>
       ${attacks.map((skill) => {
-        const desperateHint = skill.id === 'desperate_blow' && desperateLeft <= 0 ? ' (épuisé)' : '';
-        const desperateCount = skill.id === 'desperate_blow' ? ` [${desperateLeft}/2]` : '';
-        const disabled = skill.id === 'desperate_blow' && desperateLeft <= 0;
+        const maxUses = getSkillMaxUses(skill, run);
+        const left = getSkillUsesLeft(skill, run);
+        const limited = maxUses != null;
+        const exhausted = limited && left <= 0;
+        const countLabel = limited ? ` · ${left}/${maxUses}` : '';
+        const hint = exhausted ? ' (épuisé)' : '';
         return `
-        <button type="button" class="dq-cmd-btn${disabled ? '' : ' affordable'}" data-skill="${skill.id}" ${disabled ? 'disabled' : ''}>
+        <button type="button" class="dq-cmd-btn${exhausted ? '' : ' affordable'}${limited ? ' dq-cmd-limited' : ''}" data-skill="${skill.id}" ${exhausted ? 'disabled' : ''} title="${limited ? `${left} utilisation(s) restante(s) sur ${maxUses}` : ''}">
           <span class="dq-cmd-icon">${skill.emoji}</span>
-          <span class="dq-cmd-label">${skill.name}${desperateCount}${desperateHint}</span>
+          <span class="dq-cmd-label">${skill.name}${countLabel}${hint}</span>
         </button>`;
       }).join('')}
     `;
@@ -3914,13 +3915,22 @@ export function formatNumber(n) {
 export function initSakuraPetals() {
   const container = document.getElementById('sakura-petals');
   if (!container || container.children.length > 0) return;
-  for (let i = 0; i < 12; i++) {
+
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  if (reduceMotion) {
+    container.hidden = true;
+    return;
+  }
+
+  // Peu de pétales = moins de paint/composite GPU sur mobile
+  const count = 4;
+  for (let i = 0; i < count; i++) {
     const petal = document.createElement('div');
     petal.className = 'petal';
-    petal.style.left = `${Math.random() * 100}%`;
-    petal.style.animationDuration = `${8 + Math.random() * 12}s`;
-    petal.style.animationDelay = `${Math.random() * 10}s`;
-    petal.style.opacity = `${0.3 + Math.random() * 0.4}`;
+    petal.style.left = `${10 + Math.random() * 80}%`;
+    petal.style.animationDuration = `${14 + Math.random() * 10}s`;
+    petal.style.animationDelay = `${Math.random() * 8}s`;
+    petal.style.opacity = `${0.22 + Math.random() * 0.25}`;
     container.appendChild(petal);
   }
 }

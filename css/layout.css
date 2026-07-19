@@ -4738,6 +4738,10 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   cursor: not-allowed;
 }
 
+.dq-cmd-btn.dq-cmd-limited .dq-cmd-label {
+  font-variant-numeric: tabular-nums;
+}
+
 .dq-cmd-btn:not(:disabled):active,
 .dq-cmd-btn.dq-cmd-main:not(:disabled):hover {
   background: rgba(155, 89, 182, 0.14);

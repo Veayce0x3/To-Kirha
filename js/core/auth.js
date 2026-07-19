@@ -44,10 +44,10 @@ export function isStaff() {
 
 /** Panneau Admin visible uniquement pour admin / superadmin (confirmé par le serveur). */
 export function canSeeAdminPanel() {
-  return authState.mode === 'registered'
-    && !authState.isBanned
-    && authState.profileSynced
-    && authState.adminAccess === true;
+  if (authState.mode !== 'registered' || authState.isBanned) return false;
+  if (!authState.profileSynced) return false;
+  if (authState.adminAccess === true) return true;
+  return authState.role === 'admin' || authState.role === 'superadmin';
 }
 
 export function isAdmin() {
@@ -183,10 +183,13 @@ export function syncAuthFromState(state) {
 function applyProfileData(profile) {
   if (!profile) return;
   authState.profileSynced = true;
-  const role = profile.role || 'player';
+  const rawRole = profile.role;
+  const role = (typeof rawRole === 'string' && rawRole) ? rawRole : 'player';
   authState.role = role;
-  // admin_access serveur + repli sur le rôle (évite faux négatif après reset/sync)
-  authState.adminAccess = profile.admin_access === true
+  const accessFlag = profile.admin_access === true
+    || profile.admin_access === 'true'
+    || profile.adminAccess === true;
+  authState.adminAccess = accessFlag
     || role === 'admin'
     || role === 'superadmin';
   authState.isBanned = !!profile.is_banned;
@@ -220,8 +223,27 @@ export async function syncProfileFromServer() {
       applyProfileData(data);
       emit('authChange', getAuthState());
       emit('navRefresh');
+      return data;
     }
-    return data;
+
+    // Repli si la RPC échoue : lire le rôle directement
+    if (authState.userId && authState.userId !== 'dev_local_user') {
+      const { data: row } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, role, is_banned, banned_reason, cheat_flagged, free_rename_used')
+        .eq('user_id', authState.userId)
+        .maybeSingle();
+      if (row) {
+        applyProfileData({
+          ...row,
+          admin_access: row.role === 'admin' || row.role === 'superadmin',
+        });
+        emit('authChange', getAuthState());
+        emit('navRefresh');
+        return row;
+      }
+    }
+    return null;
   } catch {
     return null;
   }
@@ -279,6 +301,13 @@ export async function initAuth(game) {
     if (!game.state.character?.nickname) {
       game.state.character.nickname = 'DevLocal';
     }
+    authState.ready = true;
+    emit('authChange', getAuthState());
+    return getAuthState();
+  }
+
+  if (authState.mode === 'registered') {
+    await syncProfileFromServer();
     authState.ready = true;
     emit('authChange', getAuthState());
     return getAuthState();
