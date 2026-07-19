@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 36,
-  "appBuildId": "20260719-2030",
+  "appBuildId": "20260719-2130",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -10,7 +10,6 @@
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
   "testHdv": {
     "enabled": true,
-    "startingKirha": 10000,
     "flatUnitPrice": 10,
     "priceMultiplier": 1.2,
     "flatMaxPrice": 12,

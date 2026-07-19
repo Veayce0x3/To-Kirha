@@ -280,6 +280,8 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
   const fresh = typeof getFreshState === 'function' ? getFreshState() : getFreshProgress(balance);
   return {
     ...fresh,
+    // Nouvelle saison : repartir sans Kirha (pas le boost test HDV)
+    kirha: 0,
     season,
     prestige: newPrestige,
     lifetimeStats,

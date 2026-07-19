@@ -75,7 +75,7 @@ export function validateSaveSanity(state, balance = {}) {
   if (kirha < 0 || kirha > MAX_KIRHA) issues.push('Kirha invalide');
 
   const earned = Number(state.lifetimeStats?.totalEarned) || 0;
-  if (kirha > earned + (balance.testHdv?.startingKirha || 50000)) {
+  if (kirha > earned + (balance.startingKirha || 0) + 50000) {
     issues.push('Kirha incohérent avec les gains lifetime');
   }
 

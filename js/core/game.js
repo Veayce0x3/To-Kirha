@@ -282,11 +282,8 @@ export class Game {
   }
 
   getDefaultState() {
-    const kirha = this.balance.testHdv?.enabled
-      ? (this.balance.testHdv.startingKirha ?? this.balance.startingKirha)
-      : this.balance.startingKirha;
     const state = {
-      kirha,
+      kirha: this.balance.startingKirha ?? 0,
       inventory: this.buildDefaultInventory(),
       jobs: this.buildDefaultJobs(),
       character: { level: 1, xp: 0 },
