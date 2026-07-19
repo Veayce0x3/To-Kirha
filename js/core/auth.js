@@ -42,14 +42,7 @@ export function isStaff() {
     && ['moderator', 'admin', 'superadmin'].includes(authState.role);
 }
 
-/** Panneau Admin visible uniquement pour admin / superadmin (confirmé par le serveur). */
-export function canSeeAdminPanel() {
-  if (authState.mode !== 'registered' || authState.isBanned) return false;
-  if (!authState.profileSynced) return false;
-  if (authState.adminAccess === true) return true;
-  return authState.role === 'admin' || authState.role === 'superadmin';
-}
-
+/** Panneau Admin — défini plus bas (après applyProfileData / cache session). */
 export function isAdmin() {
   return canSeeAdminPanel();
 }
@@ -199,6 +192,32 @@ function applyProfileData(profile) {
     authState.displayName = profile.display_name;
   }
   authState.freeRenameUsed = !!profile.free_rename_used;
+  try {
+    if (authState.adminAccess) {
+      sessionStorage.setItem('tokirha_staff_role', authState.role);
+    } else {
+      sessionStorage.removeItem('tokirha_staff_role');
+    }
+  } catch {
+    // ignore
+  }
+}
+
+/** Panneau Admin visible uniquement pour admin / superadmin (confirmé par le serveur). */
+export function canSeeAdminPanel() {
+  if (authState.mode !== 'registered' || authState.isBanned) return false;
+  if (authState.profileSynced) {
+    if (authState.adminAccess === true) return true;
+    if (authState.role === 'admin' || authState.role === 'superadmin') return true;
+  }
+  // Cache session : évite de perdre le bouton si une sync rate
+  try {
+    const cached = sessionStorage.getItem('tokirha_staff_role');
+    if (cached === 'admin' || cached === 'superadmin') return true;
+  } catch {
+    // ignore
+  }
+  return false;
 }
 
 export function hasFreeRenameAvailable() {

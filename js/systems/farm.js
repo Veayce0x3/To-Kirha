@@ -170,6 +170,22 @@ export function getFeedCost(building, feedId) {
   return cost;
 }
 
+/** XP Éleveur par cycle de production. */
+export function getFarmProductionXp(building) {
+  return Math.floor(8 + (building?.cycleMs || 10000) / 2000);
+}
+
+/** Libellé ration (ex. « 2× Orge + 1× Eau »). */
+export function formatFeedCostLabel(building, feedId, resources = {}) {
+  const cost = getFeedCost(building, feedId);
+  if (!cost || !Object.keys(cost).length) {
+    return Object.keys(building?.feed || {}).length === 0 ? 'Aucune ration' : 'Choisir une ration';
+  }
+  return Object.entries(cost)
+    .map(([id, qty]) => `${qty}× ${resources[id]?.name || id}`)
+    .join(' + ');
+}
+
 export function consumeFeed(building, feedId, state) {
   const cost = getFeedCost(building, feedId);
   if (!cost) return Object.keys(building.feed || {}).length === 0;

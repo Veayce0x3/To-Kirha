@@ -3917,20 +3917,21 @@ export function initSakuraPetals() {
   if (!container || container.children.length > 0) return;
 
   const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-  if (reduceMotion) {
+  const isTouch = window.matchMedia?.('(hover: none) and (pointer: coarse)')?.matches;
+  // Mobile : pas de pétales (économie batterie / chauffe)
+  if (reduceMotion || isTouch) {
     container.hidden = true;
     return;
   }
 
-  // Peu de pétales = moins de paint/composite GPU sur mobile
-  const count = 4;
+  const count = 3;
   for (let i = 0; i < count; i++) {
     const petal = document.createElement('div');
     petal.className = 'petal';
     petal.style.left = `${10 + Math.random() * 80}%`;
-    petal.style.animationDuration = `${14 + Math.random() * 10}s`;
+    petal.style.animationDuration = `${16 + Math.random() * 10}s`;
     petal.style.animationDelay = `${Math.random() * 8}s`;
-    petal.style.opacity = `${0.22 + Math.random() * 0.25}`;
+    petal.style.opacity = `${0.18 + Math.random() * 0.2}`;
     container.appendChild(petal);
   }
 }

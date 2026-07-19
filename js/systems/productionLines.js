@@ -236,8 +236,12 @@ function setFarmLine(state, buildingId, productId, line) {
 
 export function getFarmBuildingMeta(state, buildingId) {
   if (!state.farmBuildingMeta) state.farmBuildingMeta = {};
-  if (!state.farmBuildingMeta[buildingId]) state.farmBuildingMeta[buildingId] = { hasAnimal: false, feedId: null };
-  return state.farmBuildingMeta[buildingId];
+  if (!state.farmBuildingMeta[buildingId]) {
+    state.farmBuildingMeta[buildingId] = { hasAnimal: false, feedId: null, cyclesLeft: 0 };
+  }
+  const meta = state.farmBuildingMeta[buildingId];
+  if (meta.cyclesLeft == null) meta.cyclesLeft = meta.hasAnimal ? 12 : 0;
+  return meta;
 }
 
 export function canBuyHarvestUnit(state, balance, jobId, resourceId, resources) {
@@ -505,7 +509,12 @@ export function buyFarmAnimal(state, farmData, buildingId) {
     state.inventory[resId] -= amount;
   }
   meta.hasAnimal = true;
-  return { ok: true };
+  meta.cyclesLeft = Math.max(1, building.animalMaxCycles || 12);
+  return {
+    ok: true,
+    animalName: building.animalName || 'Animal',
+    cyclesLeft: meta.cyclesLeft,
+  };
 }
 
 export function setFarmLineFeed(state, buildingId, feedId) {
@@ -572,6 +581,19 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
   state.stats.totalHarvests = (state.stats.totalHarvests || 0) + 1;
   slot.active = null;
 
+  let animalExpired = false;
+  if (building?.requiresAnimal) {
+    const meta = getFarmBuildingMeta(state, buildingId);
+    if (meta.hasAnimal) {
+      meta.cyclesLeft = Math.max(0, (meta.cyclesLeft || 1) - 1);
+      if (meta.cyclesLeft <= 0) {
+        meta.hasAnimal = false;
+        meta.cyclesLeft = 0;
+        animalExpired = true;
+      }
+    }
+  }
+
   const wornTools = wearBreederTool(state, recipes, equipment);
   return {
     products,
@@ -580,6 +602,11 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
     buildingId,
     productId,
     unitIndex,
+    animalExpired,
+    animalName: building?.animalName || null,
+    cyclesLeft: building?.requiresAnimal
+      ? (getFarmBuildingMeta(state, buildingId).cyclesLeft || 0)
+      : null,
     wornTools,
   };
 }

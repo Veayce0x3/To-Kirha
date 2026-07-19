@@ -373,8 +373,8 @@ export function initUI(game, audio) {
 
   let animTimer = null;
   let lastNavTickAt = 0;
-  const PROGRESS_TICK_MS = 200;
-  const NAV_TICK_MS = 1000;
+  const PROGRESS_TICK_MS = 350;
+  const NAV_TICK_MS = 1500;
 
   function stopProgressTick() {
     if (animTimer != null) {
@@ -686,9 +686,16 @@ export function initUI(game, audio) {
     showToast(els, `🍙 ${mealName} : +${healed} PV (${hp}/${maxHp})`, 'upgrade');
   });
   on('farmComplete', (outcome) => {
-    const { buildingId, products } = outcome || {};
+    const { buildingId, products, animalExpired, animalName } = outcome || {};
     if (products && Object.keys(products).length) {
       audio.playSfx('harvest');
+    }
+    if (animalExpired) {
+      showToast(
+        els,
+        `${animalName || 'Animal'} fatigué — rachète-en un pour continuer`,
+        'sell'
+      );
     }
     if (buildingId != null) {
       patchFarmBuildingSlots(game, buildingId);
@@ -698,7 +705,9 @@ export function initUI(game, audio) {
     const view = getView();
     if (isFarmView(view)) {
       const building = VIEWS[view]?.building;
-      if (game.isFarmActive() && building) {
+      if (animalExpired || !game.isFarmActive()) {
+        refreshView();
+      } else if (game.isFarmActive() && building) {
         refreshFarmViewLight(game, building);
       } else {
         refreshView();

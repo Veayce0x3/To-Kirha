@@ -77,6 +77,11 @@ async function loadJSON(file) {
 
   initUI(game, audio);
 
+  // 2e sync après UI : reconstruit le menu Admin si le profil staff arrive en retard
+  if (game.state?.meta?.account?.mode === 'registered') {
+    syncProfileFromServer().catch(() => {});
+  }
+
   const bannerEl = document.getElementById('global-banners');
   if (bannerEl) {
     if (isMaintenanceMode()) {

@@ -6,6 +6,10 @@ import {
   isUnifiedFarmBuilding,
   getUnifiedFarmLineKey,
   getFarmProductionLineIds,
+  getFarmProductionXp,
+  formatFeedCostLabel,
+  getFeedCost,
+  getPrimaryFeedId,
 } from '../systems/farm.js';
 import { getFarmBuildingIcon, getJobIcon, iconHtml } from '../core/assets.js';
 import { getVisibleProductionResources } from '../systems/productionLines.js';
@@ -320,12 +324,13 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
     : (canStart ? 'Produire' : '');
 
   const card = document.createElement('div');
-  card.className = `farm-slot harvest-slot production-unit${unified ? ' production-unit-tap' : ''}${active ? ' active-harvest' : ''}${canStart || canCollect ? ' slot-can-harvest' : ''}`;
+  const useOverlay = unified || building.tapProgress === true;
+  card.className = `farm-slot harvest-slot production-unit${useOverlay ? ' production-unit-tap' : ''}${active ? ' active-harvest' : ''}${canStart || canCollect ? ' slot-can-harvest' : ''}`;
   card.dataset.building = buildingId;
   card.dataset.product = lineKey;
   card.dataset.unit = String(unitIndex);
 
-  if (unified) {
+  if (useOverlay) {
     card.innerHTML = `
       <div class="slot-visual slot-visual-tap" role="button" tabindex="0" aria-label="${building.name}${statusLabel ? ` — ${statusLabel}` : ''}">
         ${canStart ? '<span class="slot-ready-badge">Prêt</span>' : ''}
@@ -333,7 +338,7 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
         ${active ? `<div class="slot-progress-overlay"><div class="slot-progress-fill" style="width:${progressPct}%"></div><span class="slot-progress-label">${statusLabel}</span></div>` : ''}
       </div>
       ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
-      ${needsAnimal ? '<p class="slot-tool-hint">Achète un animal pour produire</p>' : ''}
+      ${needsAnimal ? `<p class="slot-tool-hint">Achète ${building.animalName ? `un(e) ${building.animalName.toLowerCase()}` : 'un animal'} pour produire</p>` : ''}
       ${feedBlocked && !needsAnimal ? '<p class="slot-tool-hint">Choisis une ration</p>' : ''}
     `;
 
@@ -394,15 +399,20 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
   const line = game.state.productionLines?.farm?.[buildingId]?.[lineKey];
   if (!line) return;
 
+  const meta = game.getFarmMeta(buildingId);
   const productIds = Object.keys(building.products || {});
   const stockParts = productIds.map((id) => {
     const res = game.resources[id];
     return `${renderResourceIcon(res, 'tile-resource-icon') || ''}${res?.name || id} : ${game.state.inventory[id] || 0}`;
   });
   const cycleSec = Math.round((building.cycleMs || 10000) / 1000);
-  const bonusHint = building.productChances?.plume
-    ? ` · Plume ~${Math.round(building.productChances.plume * 100)}%`
-    : '';
+  const xpGain = getFarmProductionXp(building);
+  const feedId = meta.feedId || getPrimaryFeedId(building);
+  const feedLabel = formatFeedCostLabel(building, feedId, game.resources);
+  const animalLabel = building.animalName || 'Animal';
+  const lifeLine = meta.hasAnimal
+    ? `${building.animalEmoji || '🐾'} ${animalLabel} · ${meta.cyclesLeft || 0} production${(meta.cyclesLeft || 0) !== 1 ? 's' : ''} restante${(meta.cyclesLeft || 0) !== 1 ? 's' : ''}`
+    : `${building.animalEmoji || '🐾'} Aucun ${animalLabel.toLowerCase()} — à acheter`;
 
   const section = document.createElement('div');
   section.className = 'production-line-section';
@@ -415,11 +425,16 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
         <span class="production-stock">${stockParts.join(' · ')}</span>
       </div>
       <div class="production-line-meta">
-        <span class="production-units">${line.units} animal(aux)</span>
-        <span class="production-harvest-time">${cycleSec}s/production${bonusHint}</span>
+        <span class="production-units">${line.units} unité(s)</span>
+        <span class="production-harvest-time">${cycleSec}s/cycle</span>
       </div>
     </div>
-    <p class="view-desc">Tape sur l'animal pour lancer une production. L'œuf est garanti, la plume est aléatoire.</p>
+    <div class="farm-info-chips">
+      <span class="farm-info-chip">🍽️ Ration : ${feedLabel}</span>
+      <span class="farm-info-chip">📜 +${xpGain} XP Éleveur</span>
+      <span class="farm-info-chip">${lifeLine}</span>
+    </div>
+    <p class="view-desc">Tape pour lancer une production, puis pour collecter. L'animal a une durée de vie limitée.</p>
     <div class="slots-grid production-units-grid"></div>
   `;
 
@@ -436,26 +451,61 @@ export function renderFarmProduction(game, el, buildingId) {
   const prog = game.getJobProgress('breeder');
   const pct = (prog.xp / prog.needed) * 100;
   const meta = game.getFarmMeta(buildingId);
-  const productIds = Object.keys(building.products || {});
-  const visibleFarmViews = getVisibleFarmViews(game.state, game.balance);
-  const currentView = getFarmViewForBuilding(buildingId);
-  const prevView = getAdjacentVisibleView(currentView, visibleFarmViews, -1);
-  const nextView = getAdjacentVisibleView(currentView, visibleFarmViews, 1);
   const needsFeed = Object.keys(building.feed || {}).length > 0;
   const feedOptions = listFeedOptions(building);
+  const xpGain = getFarmProductionXp(building);
+  const feedId = meta.feedId || getPrimaryFeedId(building);
+  const feedLabel = formatFeedCostLabel(building, feedId, game.resources);
+
+  // Auto-sélection de la ration principale si vide
+  if (needsFeed && !meta.feedId && feedOptions[0]) {
+    game.setFarmFeed(buildingId, feedOptions[0]);
+    meta.feedId = feedOptions[0];
+  }
 
   let feedHtml = '';
   if (needsFeed) {
-    feedHtml = `<label>Ration <select class="farm-feed-select" id="farm-feed-select">
-      <option value="">— Choisir —</option>
-      ${feedOptions.map((id) => `<option value="${id}" ${meta.feedId === id ? 'selected' : ''}>${game.resources[id]?.name || id}</option>`).join('')}
-    </select></label>`;
+    feedHtml = `
+      <div class="farm-feed-block">
+        <label>Ration
+          <select class="farm-feed-select" id="farm-feed-select">
+            <option value="">— Choisir —</option>
+            ${feedOptions.map((id) => {
+              const cost = getFeedCost(building, id);
+              const costTxt = cost
+                ? Object.entries(cost).map(([rid, q]) => `${q} ${game.resources[rid]?.name || rid}`).join(' + ')
+                : '';
+              return `<option value="${id}" ${meta.feedId === id ? 'selected' : ''}>${game.resources[id]?.name || id}${costTxt ? ` (${costTxt})` : ''}</option>`;
+            }).join('')}
+          </select>
+        </label>
+        <p class="farm-feed-preview">Consomme : <strong>${feedLabel}</strong> · Gain : <strong>+${xpGain} XP</strong></p>
+      </div>`;
+  } else {
+    feedHtml = `<p class="farm-feed-preview">Gain : <strong>+${xpGain} XP Éleveur</strong> / production</p>`;
   }
 
   let animalHtml = '';
-  if (building.requiresAnimal && !meta.hasAnimal && building.animalPurchase) {
-    const cost = building.animalPurchase;
-    animalHtml = `<button type="button" class="btn btn-craft btn-buy-animal">Acheter animal · ${cost.kirha || 0} 💰</button>`;
+  if (building.requiresAnimal) {
+    const animalName = building.animalName || 'Animal';
+    const emoji = building.animalEmoji || building.emoji || '🐾';
+    const cost = building.animalPurchase || {};
+    const costParts = [];
+    if (cost.kirha) costParts.push(`${cost.kirha} 💰`);
+    for (const [rid, qty] of Object.entries(cost)) {
+      if (rid === 'kirha') continue;
+      costParts.push(`${qty}× ${game.resources[rid]?.name || rid}`);
+    }
+    if (!meta.hasAnimal) {
+      animalHtml = `
+        <div class="farm-animal-buy">
+          <p class="view-desc">${emoji} Achète un(e) <strong>${animalName}</strong> pour produire (${building.animalMaxCycles || '?'} cycles de vie).</p>
+          <button type="button" class="btn btn-craft btn-buy-animal">Acheter ${animalName} · ${costParts.join(' + ')}</button>
+        </div>`;
+    } else {
+      animalHtml = `
+        <p class="farm-animal-status">${emoji} ${animalName} active · <strong>${meta.cyclesLeft || 0}</strong> production${(meta.cyclesLeft || 0) !== 1 ? 's' : ''} restante${(meta.cyclesLeft || 0) !== 1 ? 's' : ''}</p>`;
+    }
   }
 
   el.innerHTML = `
@@ -473,6 +523,7 @@ export function renderFarmProduction(game, el, buildingId) {
 
   el.querySelector('#farm-feed-select')?.addEventListener('change', (e) => {
     game.setFarmFeed(buildingId, e.target.value);
+    renderFarmProduction(game, el, buildingId);
   });
   el.querySelector('.btn-buy-animal')?.addEventListener('click', () => {
     const result = game.buyFarmAnimal(buildingId);
@@ -486,14 +537,24 @@ export function renderFarmProduction(game, el, buildingId) {
     return;
   }
 
+  // Puits / bâtiments simples : une ligne avec barre overlay
   for (const productId of getFarmProductionLineIds(building)) {
     const resource = game.resources[productId];
     const line = game.state.productionLines?.farm?.[buildingId]?.[productId];
     if (!line) continue;
     const section = document.createElement('div');
     section.className = 'production-line-section';
-    section.innerHTML = `<div class="production-line-head"><strong>${resource?.name || productId}</strong> · Stock ${game.state.inventory[productId] || 0} · ${line.units} unité(s)</div><div class="slots-grid"></div>`;
-    const grid = section.querySelector('.slots-grid');
+    section.innerHTML = `
+      <div class="production-line-head">
+        <strong>${resource?.name || productId}</strong>
+        <span class="production-stock">Stock ${game.state.inventory[productId] || 0}</span>
+      </div>
+      <div class="farm-info-chips">
+        <span class="farm-info-chip">📜 +${xpGain} XP Éleveur</span>
+        <span class="farm-info-chip">${Math.round((building.cycleMs || 0) / 1000)}s / cycle</span>
+      </div>
+      <div class="slots-grid production-units-grid"></div>`;
+    const grid = section.querySelector('.production-units-grid');
     for (let i = 0; i < line.units; i++) {
       grid.appendChild(buildFarmUnitCard(game, buildingId, productId, i, building));
     }
@@ -545,7 +606,7 @@ export function updateFarmLineProgresses(game, buildingId) {
       let card = document.querySelector(`.production-unit[data-building="${buildingId}"][data-product="${lineKey}"][data-unit="${unitIndex}"]`);
       if (!card) return;
 
-      if (isUnifiedFarmBuilding(building)) {
+      if (isUnifiedFarmBuilding(building) || building.tapProgress) {
         let fill = card.querySelector('.slot-progress-fill');
         let label = card.querySelector('.slot-progress-label');
         if (!fill || !label) {
@@ -561,6 +622,10 @@ export function updateFarmLineProgresses(game, buildingId) {
           card?.classList.add('slot-can-harvest');
           const tap = card?.querySelector('.slot-visual-tap');
           if (tap) tap.setAttribute('aria-label', `${building.name} — Prêt !`);
+          // Puits etc. : auto-collecte ; animaux unifiés : attendre le tap
+          if (!isUnifiedFarmBuilding(building)) {
+            game.completeFarmLine(buildingId, lineKey, unitIndex);
+          }
         }
         return;
       }

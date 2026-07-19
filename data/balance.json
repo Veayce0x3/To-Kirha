@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 32,
-  "appBuildId": "20260719-1015",
+  "appBuildId": "20260719-1030",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -64,9 +64,10 @@
     "baseHarvestTimeMs": 3000,
     "harvestPerTierMs": 500,
     "minHarvestTimeMs": 1500,
-    "regrowthBaseMs": 11000,
-    "regrowthPerTierMs": 2000,
-    "minRegrowthTimeMs": 3000
+    "regrowthBaseMs": 25000,
+    "regrowthPerTierMs": 25000,
+    "minRegrowthTimeMs": 8000,
+    "comment": "Repousse : Frêne ~25s, Séquoia ~50s, Chêne ~75s (tier×25s)"
   },
   "harvestXpByTier": {
     "base": 10,
