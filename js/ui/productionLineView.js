@@ -15,7 +15,7 @@ import { getFarmBuildingIcon, getJobIcon, iconHtml } from '../core/assets.js';
 import { getVisibleProductionResources } from '../systems/productionLines.js';
 import { getHarvestTime } from '../systems/harvest.js';
 import { getHarvestXpForResource } from '../systems/progression.js';
-import { getHarvestToolCheck } from '../systems/toolTier.js';
+import { getHarvestToolCheck, getFarmToolCheck } from '../systems/toolTier.js';
 import { getToolUsesRemaining, isDurabilityTool } from '../systems/toolDurability.js';
 import { getJobEquippedTool } from '../systems/equipment.js';
 import { emit } from '../core/events.js';
@@ -115,6 +115,18 @@ function getLineToolDurability(game, jobId, resource) {
   const max = check.recipe.maxUses;
   if (remaining == null || !max) return null;
   return `${remaining}/${max}`;
+}
+
+function getFarmToolDurabilityLabel(game, building) {
+  const check = getFarmToolCheck(game.state, game.recipes, game.equipment, building);
+  if (!check.ok || !check.recipe) return null;
+  const recipeId = getJobEquippedTool(game.state, 'breeder');
+  if (!recipeId || !isDurabilityTool(check.recipe)) return null;
+  const remaining = getToolUsesRemaining(game.state, recipeId);
+  const max = check.recipe.maxUses;
+  if (remaining == null || !max) return null;
+  const emoji = check.recipe.emoji || '🛠️';
+  return `${emoji} ${remaining}/${max}`;
 }
 
 function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
@@ -408,7 +420,8 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
   const cycleSec = Math.round((building.cycleMs || 10000) / 1000);
   const xpGain = getFarmProductionXp(building);
   const feedId = meta.feedId || getPrimaryFeedId(building);
-  const feedLabel = formatFeedCostLabel(building, feedId, game.resources);
+  const feedLabel = formatFeedCostLabel(building, feedId, game.resources, game.state);
+  const toolDur = getFarmToolDurabilityLabel(game, building);
   const animalLabel = building.animalName || 'Animal';
   const lifeLine = meta.hasAnimal
     ? `${building.animalEmoji || '🐾'} ${animalLabel} · ${meta.cyclesLeft || 0} production${(meta.cyclesLeft || 0) !== 1 ? 's' : ''} restante${(meta.cyclesLeft || 0) !== 1 ? 's' : ''}`
@@ -423,6 +436,7 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
         ${getFarmBuildingIcon(buildingId) ? iconHtml(getFarmBuildingIcon(buildingId), 'tile-resource-icon', building.name) : `<span>${building.emoji || '🏠'}</span>`}
         <strong>${building.name}</strong>
         <span class="production-stock">${stockParts.join(' · ')}</span>
+        ${toolDur ? `<span class="production-tool-dur">${toolDur}</span>` : ''}
       </div>
       <div class="production-line-meta">
         <span class="production-units">${line.units} unité(s)</span>
@@ -430,7 +444,7 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
       </div>
     </div>
     <div class="farm-info-chips">
-      <span class="farm-info-chip">🍽️ Ration : ${feedLabel}</span>
+      <span class="farm-info-chip">🍽️ Stock ration : ${feedLabel}</span>
       <span class="farm-info-chip">📜 +${xpGain} XP Éleveur</span>
       <span class="farm-info-chip">${lifeLine}</span>
     </div>
@@ -455,7 +469,8 @@ export function renderFarmProduction(game, el, buildingId) {
   const feedOptions = listFeedOptions(building);
   const xpGain = getFarmProductionXp(building);
   const feedId = meta.feedId || getPrimaryFeedId(building);
-  const feedLabel = formatFeedCostLabel(building, feedId, game.resources);
+  const feedLabel = formatFeedCostLabel(building, feedId, game.resources, game.state);
+  const toolDur = getFarmToolDurabilityLabel(game, building);
 
   // Auto-sélection de la ration principale si vide
   if (needsFeed && !meta.feedId && feedOptions[0]) {
@@ -472,14 +487,14 @@ export function renderFarmProduction(game, el, buildingId) {
             <option value="">— Choisir —</option>
             ${feedOptions.map((id) => {
               const cost = getFeedCost(building, id);
-              const costTxt = cost
-                ? Object.entries(cost).map(([rid, q]) => `${q} ${game.resources[rid]?.name || rid}`).join(' + ')
-                : '';
-              return `<option value="${id}" ${meta.feedId === id ? 'selected' : ''}>${game.resources[id]?.name || id}${costTxt ? ` (${costTxt})` : ''}</option>`;
+              const have = game.state.inventory[id] || 0;
+              const need = cost?.[id] || 0;
+              const name = game.resources[id]?.name || id;
+              return `<option value="${id}" ${meta.feedId === id ? 'selected' : ''}>${name} · stock ${have}${need ? ` (−${need})` : ''}</option>`;
             }).join('')}
           </select>
         </label>
-        <p class="farm-feed-preview">Consomme : <strong>${feedLabel}</strong> · Gain : <strong>+${xpGain} XP</strong></p>
+        <p class="farm-feed-preview">Stock : <strong>${feedLabel}</strong> · Gain : <strong>+${xpGain} XP</strong></p>
       </div>`;
   } else {
     feedHtml = `<p class="farm-feed-preview">Gain : <strong>+${xpGain} XP Éleveur</strong> / production</p>`;
@@ -511,7 +526,7 @@ export function renderFarmProduction(game, el, buildingId) {
   el.innerHTML = `
     <div class="skill-header">
       <div class="skill-header-title">${building.name}</div>
-      <div class="skill-header-meta">Éleveur Nv.${prog.level}</div>
+      <div class="skill-header-meta">Éleveur Nv.${prog.level}${toolDur ? ` · ${toolDur}` : ''}</div>
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
     </div>
     <div class="panel-inner">
@@ -546,8 +561,11 @@ export function renderFarmProduction(game, el, buildingId) {
     section.className = 'production-line-section';
     section.innerHTML = `
       <div class="production-line-head">
-        <strong>${resource?.name || productId}</strong>
-        <span class="production-stock">Stock ${game.state.inventory[productId] || 0}</span>
+        <div class="production-line-title">
+          <strong>${resource?.name || productId}</strong>
+          <span class="production-stock">Stock ${game.state.inventory[productId] || 0}</span>
+          ${toolDur ? `<span class="production-tool-dur">${toolDur}</span>` : ''}
+        </div>
       </div>
       <div class="farm-info-chips">
         <span class="farm-info-chip">📜 +${xpGain} XP Éleveur</span>

@@ -3395,22 +3395,29 @@ function renderCombat(game, el) {
 
     combatZone.monsters.forEach((monster, index) => {
       const kills = game.state.combatKillStats?.[monster.enemyId] || 0;
-      const unlockCheck = game.canStartFight(combatZone.id, false, index);
-      const monsterCheck = zoneUnlocked ? unlockCheck : { ok: false, reason: 'Zone verrouillée' };
+      const fightCheck = zoneUnlocked
+        ? game.canStartFight(combatZone.id, false, index)
+        : { ok: false, reason: 'Zone verrouillée' };
+      const unlockProg = game.getTrainingUnlock(combatZone.id, false, index);
       const row = document.createElement('div');
-      row.className = `combat-monster-row${!unlockCheck.ok ? ' combat-monster-locked' : ''}`;
-      const progressLine = index === 0
-        ? `${kills} victoire${kills !== 1 ? 's' : ''}`
-        : unlockCheck.ok
-          ? `Débloqué · ${kills} victoire${kills !== 1 ? 's' : ''}`
-          : `${unlockCheck.current || 0}/${unlockCheck.required || 0} vs ${unlockCheck.prevName || 'précédent'}`;
+      row.className = `combat-monster-row${!unlockProg.ok ? ' combat-monster-locked' : ''}`;
+      let progressLine;
+      if (index === 0) {
+        progressLine = `Victoires : ${kills}`;
+      } else if (unlockProg.ok) {
+        progressLine = `Débloqué · Victoires : ${kills}`;
+      } else {
+        const cur = unlockProg.current || 0;
+        const req = unlockProg.required || 0;
+        progressLine = `Déblocage : ${cur}/${req} vs ${unlockProg.prevName || 'précédent'}`;
+      }
       row.innerHTML = `
         <div class="combat-monster-info">
-          <span>${!unlockCheck.ok ? '🔒 ' : ''}${monster.emoji} ${monster.name}</span>
+          <span>${!unlockProg.ok ? '🔒 ' : ''}${monster.emoji} ${monster.name}</span>
           <small class="combat-drops">${formatDropList(monster.drops, game.resources)}</small>
-          <small class="${unlockCheck.ok ? 'combat-kill-ok' : ''}">${progressLine}</small>
+          <small class="combat-kill-progress${unlockProg.ok ? ' combat-kill-ok' : ''}">${progressLine}</small>
         </div>
-        <button type="button" class="btn btn-craft btn-fight" ${monsterCheck.ok ? '' : 'disabled'} title="${monsterCheck.reason || ''}">Combattre</button>
+        <button type="button" class="btn btn-craft btn-fight" ${fightCheck.ok ? '' : 'disabled'} title="${fightCheck.reason || unlockProg.reason || ''}">Combattre</button>
       `;
       row.querySelector('.btn-fight')?.addEventListener('click', () => {
         const result = game.startCombatFight(combatZone.id, index, false);
@@ -3420,21 +3427,23 @@ function renderCombat(game, el) {
     });
 
     const boss = combatZone.boss;
-    const bossUnlock = game.canStartFight(combatZone.id, true, 0);
-    const bossCheck = zoneUnlocked ? bossUnlock : { ok: false, reason: 'Zone verrouillée' };
+    const bossFight = zoneUnlocked
+      ? game.canStartFight(combatZone.id, true, 0)
+      : { ok: false, reason: 'Zone verrouillée' };
+    const bossProg = game.getTrainingUnlock(combatZone.id, true, 0);
     const bossSoloKills = game.state.combatKillStats?.[`boss_${boss.enemyId}`] || 0;
     const bossRow = document.createElement('div');
-    bossRow.className = `combat-monster-row combat-boss-row${!bossUnlock.ok ? ' combat-monster-locked' : ''}`;
-    const bossProgress = bossUnlock.ok
-      ? `Boss débloqué · ${bossSoloKills} victoire${bossSoloKills !== 1 ? 's' : ''} rapide`
-      : `${bossUnlock.current || 0}/${bossUnlock.required || 15} vs ${bossUnlock.prevName || 'dernier monstre'}`;
+    bossRow.className = `combat-monster-row combat-boss-row${!bossProg.ok ? ' combat-monster-locked' : ''}`;
+    const bossProgress = bossProg.ok
+      ? `Boss débloqué · Victoires : ${bossSoloKills}`
+      : `Déblocage : ${bossProg.current || 0}/${bossProg.required || 15} vs ${bossProg.prevName || 'dernier monstre'}`;
     bossRow.innerHTML = `
       <div class="combat-monster-info">
-        <span>${!bossUnlock.ok ? '🔒 ' : ''}${boss.emoji} ${boss.name} <strong>(Boss)</strong></span>
+        <span>${!bossProg.ok ? '🔒 ' : ''}${boss.emoji} ${boss.name} <strong>(Boss)</strong></span>
         <small class="combat-drops">${formatDropList(boss.drops, game.resources)}</small>
-        <small class="${bossUnlock.ok ? 'combat-kill-ok' : ''}">${bossProgress}</small>
+        <small class="combat-kill-progress${bossProg.ok ? ' combat-kill-ok' : ''}">${bossProgress}</small>
       </div>
-      <button type="button" class="btn btn-prestige btn-fight-boss" ${bossCheck.ok ? '' : 'disabled'} title="${bossCheck.reason || ''}">Boss</button>
+      <button type="button" class="btn btn-prestige btn-fight-boss" ${bossFight.ok ? '' : 'disabled'} title="${bossFight.reason || bossProg.reason || ''}">Boss</button>
     `;
     bossRow.querySelector('.btn-fight-boss')?.addEventListener('click', () => {
       const result = game.startCombatFight(combatZone.id, 0, true);

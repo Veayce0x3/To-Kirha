@@ -93,8 +93,14 @@ export function evaluateAchievementProgress(achievement, state, recipes) {
       return (state.crafted || []).includes(achievement.recipeId) ? 1 : 0;
     case 'craft_job':
       return (state.crafted || []).some((id) => recipes[id]?.craftJob === achievement.jobId) ? 1 : 0;
-    case 'craft_meal':
-      return (state.crafted || []).some((id) => recipes[id]?.craftJob === 'cook') ? 1 : 0;
+    case 'craft_meal': {
+      if ((state.stats?.mealsCrafted || 0) > 0) return 1;
+      if ((state.crafted || []).some((id) => recipes[id]?.craftJob === 'cook')) return 1;
+      // Rétrocompat : repas déjà en inventaire avant le correctif
+      return Object.keys(state.inventory || {}).some(
+        (id) => id.startsWith('meal_') && (state.inventory[id] || 0) > 0
+      ) ? 1 : 0;
+    }
     case 'combat_kills':
       return state.combatKillStats?.[achievement.enemyId] || 0;
     case 'combat_total':

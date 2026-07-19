@@ -124,6 +124,14 @@ function applyCraftResult(recipeId, recipe, state) {
     return;
   }
 
+  // Repas cuisine (répétables) : enregistrer le 1er craft pour les succès
+  if (recipe.craftJob === 'cook' && String(recipe.output || '').startsWith('meal_')) {
+    if (!state.crafted.includes(recipeId)) state.crafted.push(recipeId);
+    if (!state.stats) state.stats = {};
+    state.stats.mealsCrafted = (state.stats.mealsCrafted || 0) + 1;
+    return;
+  }
+
   if (recipe.unique && !recipe.repeatable && !state.crafted.includes(recipeId)) {
     state.crafted.push(recipeId);
   }

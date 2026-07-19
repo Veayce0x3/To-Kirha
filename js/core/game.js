@@ -109,6 +109,7 @@ import {
   getActiveMemberSkills,
   getActiveCombatMember,
   stepCombatEnemyTurn as resolveCombatEnemyStep,
+  getTrainingUnlockCheck,
   DEFEND_ACTION,
 } from '../systems/combatZone.js';
 import {
@@ -794,7 +795,7 @@ export class Game {
       }
     }
 
-    const toolCheck = getFarmToolCheck(this.state, this.recipes, this.equipment);
+    const toolCheck = getFarmToolCheck(this.state, this.recipes, this.equipment, building);
     if (!toolCheck.ok) {
       return { ok: false, reason: toolCheck.message };
     }
@@ -866,7 +867,7 @@ export class Game {
   getFarmToolBlockReason(buildingId) {
     const building = this.farmData.buildings?.[buildingId];
     if (!building) return null;
-    const check = getFarmToolCheck(this.state, this.recipes, this.equipment);
+    const check = getFarmToolCheck(this.state, this.recipes, this.equipment, building);
     return check.ok ? null : check.message;
   }
 
@@ -1539,6 +1540,13 @@ export class Game {
     const combatZone = this.combatZones[zoneId];
     if (!combatZone) return { ok: false, reason: 'Zone de combat inconnue' };
     return canFight(combatZone, this.state, this.balance, this.characterConfig, isBoss, monsterIndex);
+  }
+
+  /** Progression déblocage entraînement (indépendant d'un combat en cours). */
+  getTrainingUnlock(zoneId, isBoss = false, monsterIndex = 0) {
+    const combatZone = this.combatZones[zoneId];
+    if (!combatZone) return { ok: false, reason: 'Zone inconnue' };
+    return getTrainingUnlockCheck(combatZone, this.state, this.balance, isBoss, monsterIndex);
   }
 
   startCombatFight(zoneId, monsterIndex, isBoss = false) {

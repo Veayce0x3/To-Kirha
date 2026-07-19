@@ -36,18 +36,68 @@ export function getGatheringToolRecipe(state, jobId, recipes) {
   return recipe;
 }
 
-function findOwnedWorkingToolForJob(state, jobId, recipes, minTier = 1) {
+function findOwnedWorkingToolForJob(state, jobId, recipes, minTier = 1, toolKind = null) {
   let best = null;
   for (const recipeId of state.crafted || []) {
     const recipe = recipes[recipeId];
-    if (!recipe || !isDurabilityTool(recipe)) continue;
-    if (recipe.effect?.job !== jobId) continue;
-    if (!hasWorkingTool(state, recipeId, recipe)) continue;
+    if (!recipe || recipe.effect?.job !== jobId) continue;
+    if (!isDurabilityTool(recipe)) continue;
+    if (!isToolEffectActive(state, recipeId, recipe)) continue;
+    if (toolKind && (recipe.toolKind || 'bucket') !== toolKind) continue;
     const tier = getRecipeToolTier(recipe);
     if (tier < minTier) continue;
-    if (!best || tier < getRecipeToolTier(best)) best = recipe;
+    if (!best || tier > getRecipeToolTier(best)) best = recipe;
   }
   return best;
+}
+
+export function getFarmToolKindLabel(toolKind) {
+  if (toolKind === 'basket') return 'panier';
+  return 'seau';
+}
+
+export function getFarmToolCheck(state, recipes, equipmentData, building = null) {
+  const toolKind = building?.toolKind || 'bucket';
+  const kindLabel = getFarmToolKindLabel(toolKind);
+  const recipe = getGatheringToolRecipe(state, 'breeder', recipes);
+
+  if (recipe) {
+    const equippedKind = recipe.toolKind || 'bucket';
+    if (equippedKind !== toolKind) {
+      const owned = findOwnedWorkingToolForJob(state, 'breeder', recipes, building?.toolTier || 1, toolKind);
+      if (owned) {
+        return {
+          ok: false,
+          reason: 'wrong_tool',
+          message: `Équipe ton ${kindLabel} « ${owned.name} » (Perso → Outils). Le ${getFarmToolKindLabel(equippedKind)} sert ailleurs.`,
+          recipe: null,
+        };
+      }
+      return {
+        ok: false,
+        reason: 'wrong_tool',
+        message: `Il te faut un ${kindLabel} d'éleveur (Atelier Outilleur), pas un ${getFarmToolKindLabel(equippedKind)}.`,
+        recipe: null,
+      };
+    }
+    return { ok: true, recipe };
+  }
+
+  const owned = findOwnedWorkingToolForJob(state, 'breeder', recipes, building?.toolTier || 1, toolKind);
+  if (owned) {
+    return {
+      ok: false,
+      reason: 'not_equipped',
+      message: `Tu possèdes « ${owned.name} » — équipe-le sur Perso → Outils.`,
+      recipe: null,
+    };
+  }
+  return {
+    ok: false,
+    reason: 'no_tool',
+    message: `Craft et équipe un ${kindLabel} d'éleveur (Perso → Outils / Atelier Outilleur).`,
+    recipe: null,
+  };
 }
 
 export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentData, resources = null) {
@@ -94,26 +144,6 @@ export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentDa
     };
   }
 
-  return { ok: true, recipe };
-}
-
-export function getFarmToolCheck(state, recipes, equipmentData) {
-  const recipe = getGatheringToolRecipe(state, 'breeder', recipes);
-  if (!recipe) {
-    const owned = findOwnedWorkingToolForJob(state, 'breeder', recipes, 1);
-    if (owned) {
-      return {
-        ok: false,
-        reason: 'not_equipped',
-        message: `Tu possèdes « ${owned.name} » — équipe-le sur Perso → Outils.`,
-      };
-    }
-    return {
-      ok: false,
-      reason: 'no_tool',
-      message: 'Équipe un seau d\'éleveur sur Perso → Outils (Atelier Outilleur).',
-    };
-  }
   return { ok: true, recipe };
 }
 

@@ -702,16 +702,8 @@ export function initUI(game, audio) {
     }
     syncStaleFarmSlots(game);
     refreshCharToolsIfVisible(game);
-    const view = getView();
-    if (isFarmView(view)) {
-      const building = VIEWS[view]?.building;
-      if (animalExpired || !game.isFarmActive()) {
-        refreshView();
-      } else if (game.isFarmActive() && building) {
-        refreshFarmViewLight(game, building);
-      } else {
-        refreshView();
-      }
+    if (isFarmView(getView())) {
+      refreshView();
     }
     if (game.isFarmActive() && !animTimer) tickHarvestUI();
   });
@@ -723,6 +715,8 @@ export function initUI(game, audio) {
     if (buildingId != null && productId != null && unitIndex != null) {
       patchFarmUnitCard(game, buildingId, productId, unitIndex);
     }
+    // Rafraîchir stock ration + décompte outil après consommation
+    if (isFarmView(getView())) refreshView();
     if (!animTimer) tickHarvestUI();
   });
   on('equip', ({ recipeId }) => {
