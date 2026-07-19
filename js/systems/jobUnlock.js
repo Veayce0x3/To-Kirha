@@ -20,6 +20,12 @@ function meetsCondition(state, condition) {
       if ((state.jobs?.[jobId]?.level || 1) < minLevel) return false;
     }
   }
+  if (condition.buildingLevel) {
+    for (const [buildingId, minLevel] of Object.entries(condition.buildingLevel)) {
+      const lv = state.farmBuildingMeta?.[buildingId]?.level || 1;
+      if (lv < minLevel) return false;
+    }
+  }
   if (condition.characterLevel != null) {
     if ((state.character?.level || 1) < condition.characterLevel) return false;
   }
@@ -120,10 +126,29 @@ function buildJobLevelGates(when, state, jobs = {}) {
   });
 }
 
+function buildBuildingLevelGates(when, state) {
+  if (!when?.buildingLevel) return [];
+  return Object.entries(when.buildingLevel).map(([buildingId, requiredLevel]) => {
+    const currentLevel = state.farmBuildingMeta?.[buildingId]?.level || 1;
+    return {
+      type: 'buildingLevel',
+      buildingId,
+      jobName: FARM_BUILDING_LABELS[buildingId] || buildingId,
+      requiredLevel,
+      currentLevel,
+      progress: Math.min(1, currentLevel / requiredLevel),
+      ready: currentLevel >= requiredLevel,
+    };
+  });
+}
+
 function buildUnlockGates(rule, state, balance, jobs = {}) {
   if (!rule?.when) return [];
   const when = rule.when;
-  const gates = buildJobLevelGates(when, state, jobs);
+  const gates = [
+    ...buildJobLevelGates(when, state, jobs),
+    ...buildBuildingLevelGates(when, state),
+  ];
 
   if (when.characterLevel != null) {
     const currentLevel = state.character?.level || 1;

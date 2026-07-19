@@ -135,7 +135,10 @@ export function initUI(game, audio) {
     if (showLevel && view.job) {
       levelHtml = `<span class="nav-level">${game.getJobLevel(view.job)}</span>`;
     } else if (showLevel && view.building) {
-      levelHtml = `<span class="nav-level">${game.getJobLevel('breeder')}</span>`;
+      const lv = view.building === 'well'
+        ? '—'
+        : String(game.getFarmBuildingLevel?.(view.building) ?? game.state.farmBuildingMeta?.[view.building]?.level || 1);
+      levelHtml = `<span class="nav-level">${lv}</span>`;
     } else if (showLevel && viewId === 'character') {
       levelHtml = `<span class="nav-level">${game.getCharacterProgress().level}</span>`;
     }
@@ -300,7 +303,7 @@ export function initUI(game, audio) {
         hint.className = 'nav-cat-hint';
         hint.textContent = cat.id === 'recolte'
           ? 'Chiffre = niveau du métier · Point coloré = état récolte (prêt, en cours, repousse).'
-          : 'Chiffre = niveau Éleveur · Point coloré = production en cours dans le bâtiment.';
+          : 'Chiffre = niveau du bâtiment · Point coloré = production en cours.';
         items.appendChild(hint);
       }
 
@@ -729,9 +732,13 @@ export function initUI(game, audio) {
     showToast(els, `🍙 ${mealName} : +${healed} PV (${hp}/${maxHp})`, 'upgrade');
   });
   on('farmComplete', (outcome) => {
-    const { buildingId, products, animalExpired, animalName } = outcome || {};
+    const { buildingId, products, animalExpired, animalName, levelResult } = outcome || {};
     if (products && Object.keys(products).length) {
       audio.playSfx('harvest');
+    }
+    if (levelResult?.leveledUp) {
+      const label = game.farmData?.buildings?.[buildingId]?.name || buildingId;
+      showToast(els, `${label} Nv.${levelResult.level} !`, 'levelup');
     }
     if (animalExpired) {
       showToast(

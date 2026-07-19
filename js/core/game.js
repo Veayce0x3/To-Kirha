@@ -73,6 +73,10 @@ import {
 } from '../systems/productionLines.js';
 import { isCraftJobUnlocked, isCombatUnlocked } from '../systems/jobUnlock.js';
 import {
+  getFarmBuildingProgress as computeFarmBuildingProgress,
+  getFarmBuildingLevel as computeFarmBuildingLevel,
+} from '../systems/farmProgress.js';
+import {
   getCharacterProgress,
   getCombatStats,
   getCombatStatsBreakdown,
@@ -1226,6 +1230,14 @@ export class Game {
 
   getFarmMeta(buildingId) {
     return getFarmBuildingMeta(this.state, buildingId);
+  }
+
+  getFarmBuildingLevel(buildingId) {
+    return computeFarmBuildingLevel(this.state, buildingId);
+  }
+
+  getFarmBuildingProgress(buildingId) {
+    return computeFarmBuildingProgress(this.state, buildingId, this.jobs, this.balance);
   }
 
   isCraftUnlocked() {

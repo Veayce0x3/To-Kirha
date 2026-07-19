@@ -12,6 +12,7 @@ import {
   getFeedCost,
   getPrimaryFeedId,
 } from '../systems/farm.js';
+import { getFarmBuildingProgress } from '../systems/farmProgress.js';
 import { getFarmBuildingIcon, getJobIcon, iconHtml } from '../core/assets.js';
 import { getVisibleProductionResources } from '../systems/productionLines.js';
 import { getHarvestTime } from '../systems/harvest.js';
@@ -448,7 +449,7 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
     </div>
     <div class="farm-info-chips">
       <div class="farm-feed-chips" title="Stock inventaire (−coût par production)">${feedHtmlChips || `🍽️ ${feedLabel}`}</div>
-      ${xpGain > 0 ? `<span class="farm-info-chip">📜 +${xpGain} XP Éleveur</span>` : ''}
+      ${xpGain > 0 ? `<span class="farm-info-chip">📜 +${xpGain} XP</span>` : ''}
       <span class="farm-info-chip">${lifeLine}</span>
     </div>
     <p class="view-desc">Tape pour lancer une production, puis pour collecter. L'animal a une durée de vie limitée.</p>
@@ -465,8 +466,8 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
 export function renderFarmProduction(game, el, buildingId) {
   const building = getBuildingDef(game.farmData, buildingId);
   if (!building) return;
-  const prog = game.getJobProgress('breeder');
-  const pct = (prog.xp / prog.needed) * 100;
+  const prog = getFarmBuildingProgress(game.state, buildingId, game.jobs, game.balance);
+  const pct = prog.grantsXp ? (prog.xp / prog.needed) * 100 : 0;
   const meta = game.getFarmMeta(buildingId);
   const needsFeed = Object.keys(building.feed || {}).length > 0;
   const feedOptions = listFeedOptions(building);
@@ -504,8 +505,8 @@ export function renderFarmProduction(game, el, buildingId) {
       </div>`;
   } else {
     feedHtml = xpGain > 0
-      ? `<p class="farm-feed-preview">Gain : <strong>+${xpGain} XP Éleveur</strong> / production</p>`
-      : `<p class="farm-feed-preview">Le Puits fournit l’eau pour les animaux — <strong>pas d’XP Éleveur</strong> (XP au poulailler & co).</p>`;
+      ? `<p class="farm-feed-preview">Gain : <strong>+${xpGain} XP ${building.name}</strong> / production</p>`
+      : `<p class="farm-feed-preview">Le Puits fournit l’eau — <strong>pas d’XP</strong> (XP sur poulailler, étable…).</p>`;
   }
 
   let animalHtml = '';
@@ -534,8 +535,15 @@ export function renderFarmProduction(game, el, buildingId) {
   el.innerHTML = `
     <div class="skill-header">
       <div class="skill-header-title">${building.name}</div>
-      <div class="skill-header-meta">Éleveur Nv.${prog.level}${toolDur ? ` · ${toolDur}` : ''}</div>
-      <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
+      <div class="skill-header-meta">${
+        prog.grantsXp
+          ? `Nv.${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}${toolDur ? ` · ${toolDur}` : ''}`
+          : `Utilitaire${toolDur ? ` · ${toolDur}` : ''}`
+      }</div>
+      ${prog.grantsXp
+        ? `<div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
+      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${prog.xp} / ${prog.needed} XP`}</p>`
+        : ''}
     </div>
     <div class="panel-inner">
       ${animalHtml}
@@ -577,8 +585,8 @@ export function renderFarmProduction(game, el, buildingId) {
       </div>
       <div class="farm-info-chips">
         ${xpGain > 0
-          ? `<span class="farm-info-chip">📜 +${xpGain} XP Éleveur</span>`
-          : `<span class="farm-info-chip">Eau utilitaire · pas d’XP Éleveur</span>`}
+          ? `<span class="farm-info-chip">📜 +${xpGain} XP</span>`
+          : `<span class="farm-info-chip">Eau utilitaire · pas d’XP</span>`}
         <span class="farm-info-chip">${Math.round((building.cycleMs || 0) / 1000)}s / cycle</span>
       </div>
       <div class="slots-grid production-units-grid"></div>`;

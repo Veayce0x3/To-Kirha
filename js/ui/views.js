@@ -360,7 +360,9 @@ function renderJobSwitcherChip(game, viewId, activeViewId) {
     level = String(game.getJobLevel(view.job));
     status = game.getJobHarvestNavStatus(view.job);
   } else if (view.building) {
-    level = String(game.getJobLevel('breeder'));
+    level = view.building === 'well'
+      ? '—'
+      : String(game.getFarmBuildingLevel(view.building));
     status = game.getFarmBuildingNavStatus(view.building);
   }
 
@@ -2376,19 +2378,20 @@ export function syncStaleFarmSlots(game) {
 }
 
 export function refreshFarmViewLight(game, buildingId) {
-  const prog = game.getJobProgress('breeder');
+  const prog = game.getFarmBuildingProgress(buildingId);
   const bar = document.querySelector('.skill-header .xp-bar');
   const text = document.querySelector('.skill-header .xp-text');
   const meta = document.querySelector('.skill-header-meta');
-  if (bar) bar.style.width = `${(prog.xp / prog.needed) * 100}%`;
-  if (text) {
-    text.textContent = prog.atSeasonCap
-      ? `Plafond Saison ${game.state.season || 1} — passe à la suivante`
-      : `${prog.xp} / ${prog.needed} XP`;
-  }
-  if (meta) {
-    const zone = game.getCurrentZone();
-    meta.textContent = `Niveau ${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''} · ${zone?.name || ''}`;
+  if (prog.grantsXp) {
+    if (bar) bar.style.width = `${(prog.xp / prog.needed) * 100}%`;
+    if (text) {
+      text.textContent = prog.atSeasonCap
+        ? `Plafond Saison ${game.state.season || 1} — passe à la suivante`
+        : `${prog.xp} / ${prog.needed} XP`;
+    }
+    if (meta) {
+      meta.textContent = `Nv.${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}`;
+    }
   }
   if (buildingId) {
     const building = getBuildingDef(game.farmData, buildingId);

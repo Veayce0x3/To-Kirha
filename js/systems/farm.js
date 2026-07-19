@@ -1,7 +1,6 @@
-import { addJobXp } from './harvest.js';
 import { wearToolsForHarvest } from './toolDurability.js';
-
 import { isFarmBuildingUnlocked } from './jobUnlock.js';
+import { addFarmBuildingXp } from './farmProgress.js';
 
 export const FARM_BUILDING_IDS = [
   'well',
@@ -133,8 +132,8 @@ export function getFeedEfficiency(building, feedId, state) {
   const map = building.feedEfficiency || {};
   let eff = map[feedId];
   if (eff == null) eff = 0.55;
-  const breederLv = state.jobs?.breeder?.level || 1;
-  return eff * (1 + (breederLv - 1) * 0.01);
+  const lv = state?.farmBuildingMeta?.[building?.id]?.level || 1;
+  return eff * (1 + (lv - 1) * 0.01);
 }
 
 export function computeFarmDuration(building, feedId, state) {
@@ -170,7 +169,7 @@ export function getFeedCost(building, feedId) {
   return cost;
 }
 
-/** XP Éleveur par cycle — 0 si le bâtiment est utilitaire (ex. Puits). */
+/** XP bâtiment par cycle — 0 si utilitaire (ex. Puits). */
 export function getFarmProductionXp(building) {
   if (building?.grantsJobXp === false) return 0;
   return Math.floor(8 + (building?.cycleMs || 10000) / 2000);
@@ -296,8 +295,8 @@ export function completeFarmProduction(state, farmData, buildingId, slotIndex, j
   if (!slot?.active) return null;
 
   const products = { ...(building.products || {}) };
-  const breederLv = state.jobs?.breeder?.level || 1;
-  const yieldBonus = Math.floor((breederLv - 1) * 0.02);
+  const buildingLv = state?.farmBuildingMeta?.[buildingId]?.level || 1;
+  const yieldBonus = Math.floor((buildingLv - 1) * 0.02);
 
   for (const [resId, qty] of Object.entries(products)) {
     const amount = qty + (yieldBonus > 0 && Math.random() < yieldBonus ? 1 : 0);
@@ -305,7 +304,7 @@ export function completeFarmProduction(state, farmData, buildingId, slotIndex, j
   }
 
   const xp = getFarmProductionXp(building);
-  const levelResult = xp > 0 ? addJobXp(state, 'breeder', xp, jobs, balance) : null;
+  const levelResult = xp > 0 ? addFarmBuildingXp(state, buildingId, xp, jobs, balance) : null;
   state.stats.totalHarvests = (state.stats.totalHarvests || 0) + 1;
   slot.active = null;
   return { products, xp, levelResult, buildingId, slotIndex };

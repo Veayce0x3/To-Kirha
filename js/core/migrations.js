@@ -7,6 +7,7 @@ import {
 import { clearProgressionCache } from '../systems/progression.js';
 import { isJobUnlocked } from '../systems/jobUnlock.js';
 import { migrateAchievements } from '../systems/achievements.js';
+import { migrateBreederXpToBuildings } from '../systems/farmProgress.js';
 
 /**
  * Remap one-shot inventaire / lignes (anciens ids → liste 10×5).
@@ -237,10 +238,14 @@ const MIGRATIONS = {
     ensureProductionLines(state, ctx.resources, ctx.farmData, ctx.balance);
     clearProgressionCache();
   },
+  34(state) {
+    // XP ferme : métier Éleveur → niveau par bâtiment (poulailler, étable…)
+    migrateBreederXpToBuildings(state);
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 33;
+  const target = ctx.balance?.saveVersion ?? 34;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

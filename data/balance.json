@@ -1,8 +1,8 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 33,
-  "appBuildId": "20260719-1630",
+  "saveVersion": 34,
+  "appBuildId": "20260719-1645",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -38,7 +38,7 @@
     "dungeonGate": {
       "firstDungeonId": "village_sakura",
       "requireCookUnlocked": true,
-      "hint": "Débloque la Cuisine (Poulailler Éleveur Nv.6) pour préparer des repas avant le donjon."
+      "hint": "Débloque la Cuisine (Poulailler Nv.6) pour préparer des repas avant le donjon."
     },
     "trainingUnlockKills": [
       0,
@@ -531,12 +531,14 @@
     "cook": {
       "when": {
         "jobLevel": {
-          "farmer": 6,
-          "breeder": 6
+          "farmer": 6
+        },
+        "buildingLevel": {
+          "chicken_coop": 6
         },
         "buildingUnlocked": "chicken_coop"
       },
-      "hint": "Paysan Nv.6, Poulailler débloqué et Éleveur Nv.6 pour la Cuisine."
+      "hint": "Paysan Nv.6 et Poulailler Nv.6 pour la Cuisine."
     },
     "farm": {
       "chicken_coop": {
@@ -550,49 +552,59 @@
       "well": {
         "when": {
           "jobLevel": {
-            "farmer": 10,
-            "breeder": 5
+            "farmer": 10
+          },
+          "buildingLevel": {
+            "chicken_coop": 5
           }
         },
-        "hint": "Paysan Nv.10 et Éleveur Nv.5 pour le Puits."
+        "hint": "Paysan Nv.10 et Poulailler Nv.5 pour le Puits."
       },
       "barn": {
         "when": {
           "jobLevel": {
-            "breeder": 10,
             "lumberjack": 8
+          },
+          "buildingLevel": {
+            "chicken_coop": 10
           }
         },
-        "hint": "Éleveur Nv.10 et Bûcheron Nv.8 pour l'Étable."
+        "hint": "Poulailler Nv.10 et Bûcheron Nv.8 pour l'Étable."
       },
       "sheepfold": {
         "when": {
           "jobLevel": {
-            "breeder": 12,
             "lumberjack": 10,
             "farmer": 12
+          },
+          "buildingLevel": {
+            "barn": 12
           }
         },
-        "hint": "Éleveur Nv.12, Bûcheron Nv.10 et Paysan Nv.12 pour la Bergerie."
+        "hint": "Étable Nv.12, Bûcheron Nv.10 et Paysan Nv.12 pour la Bergerie."
       },
       "pigsty": {
         "when": {
           "jobLevel": {
-            "miner": 8,
-            "breeder": 14
+            "miner": 8
+          },
+          "buildingLevel": {
+            "sheepfold": 14
           }
         },
-        "hint": "Mineur Nv.8 et Éleveur Nv.14 pour la Porcherie."
+        "hint": "Mineur Nv.8 et Bergerie Nv.14 pour la Porcherie."
       },
       "beehive": {
         "when": {
           "jobLevel": {
             "alchemist": 6,
-            "breeder": 16,
             "farmer": 16
+          },
+          "buildingLevel": {
+            "pigsty": 16
           }
         },
-        "hint": "Alchimiste Nv.6, Éleveur Nv.16 et Paysan Nv.16 pour les Ruches."
+        "hint": "Alchimiste Nv.6, Porcherie Nv.16 et Paysan Nv.16 pour les Ruches."
       }
     },
     "farm_chicken_coop": {
@@ -606,49 +618,59 @@
     "farm_well": {
       "when": {
         "jobLevel": {
-          "farmer": 10,
-          "breeder": 5
+          "farmer": 10
+        },
+        "buildingLevel": {
+          "chicken_coop": 5
         }
       },
-      "hint": "Paysan Nv.10 et Éleveur Nv.5 pour le Puits."
+      "hint": "Paysan Nv.10 et Poulailler Nv.5 pour le Puits."
     },
     "farm_barn": {
       "when": {
         "jobLevel": {
-          "breeder": 10,
           "lumberjack": 8
+        },
+        "buildingLevel": {
+          "chicken_coop": 10
         }
       },
-      "hint": "Éleveur Nv.10 et Bûcheron Nv.8 pour l'Étable."
+      "hint": "Poulailler Nv.10 et Bûcheron Nv.8 pour l'Étable."
     },
     "farm_sheepfold": {
       "when": {
         "jobLevel": {
-          "breeder": 12,
           "lumberjack": 10,
           "farmer": 12
+        },
+        "buildingLevel": {
+          "barn": 12
         }
       },
-      "hint": "Éleveur Nv.12, Bûcheron Nv.10 et Paysan Nv.12 pour la Bergerie."
+      "hint": "Étable Nv.12, Bûcheron Nv.10 et Paysan Nv.12 pour la Bergerie."
     },
     "farm_pigsty": {
       "when": {
         "jobLevel": {
-          "miner": 8,
-          "breeder": 14
+          "miner": 8
+        },
+        "buildingLevel": {
+          "sheepfold": 14
         }
       },
-      "hint": "Mineur Nv.8 et Éleveur Nv.14 pour la Porcherie."
+      "hint": "Mineur Nv.8 et Bergerie Nv.14 pour la Porcherie."
     },
     "farm_beehive": {
       "when": {
         "jobLevel": {
           "alchemist": 6,
-          "breeder": 16,
           "farmer": 16
+        },
+        "buildingLevel": {
+          "pigsty": 16
         }
       },
-      "hint": "Alchimiste Nv.6, Éleveur Nv.16 et Paysan Nv.16 pour les Ruches."
+      "hint": "Alchimiste Nv.6, Porcherie Nv.16 et Paysan Nv.16 pour les Ruches."
     }
   }
 }

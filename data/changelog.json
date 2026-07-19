@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1645",
+      "date": "2026-07-19",
+      "title": "XP par bâtiment de ferme",
+      "highlights": [
+        "Ferme : plus de métier Éleveur partagé — chaque bâtiment (poulailler, bergerie…) a son propre niveau / XP",
+        "Le Puits reste sans XP ; les déblocages suivent la chaîne des bâtiments"
+      ]
+    },
+    {
       "buildId": "20260719-1630",
       "date": "2026-07-19",
       "title": "Puits sans XP Éleveur",

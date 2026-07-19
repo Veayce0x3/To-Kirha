@@ -27,6 +27,7 @@ import {
   rollFarmProductDrops,
   getFarmProductionXp,
 } from './farm.js';
+import { addFarmBuildingXp, getFarmBuildingLevel } from './farmProgress.js';
 
 function cfg(balance) {
   return balance?.productionLines || {};
@@ -238,10 +239,18 @@ function setFarmLine(state, buildingId, productId, line) {
 export function getFarmBuildingMeta(state, buildingId) {
   if (!state.farmBuildingMeta) state.farmBuildingMeta = {};
   if (!state.farmBuildingMeta[buildingId]) {
-    state.farmBuildingMeta[buildingId] = { hasAnimal: false, feedId: null, cyclesLeft: 0 };
+    state.farmBuildingMeta[buildingId] = {
+      hasAnimal: false,
+      feedId: null,
+      cyclesLeft: 0,
+      level: 1,
+      xp: 0,
+    };
   }
   const meta = state.farmBuildingMeta[buildingId];
   if (meta.cyclesLeft == null) meta.cyclesLeft = meta.hasAnimal ? 12 : 0;
+  if (meta.level == null || meta.level < 1) meta.level = 1;
+  if (meta.xp == null || meta.xp < 0) meta.xp = 0;
   return meta;
 }
 
@@ -557,8 +566,8 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
   const slot = line?.slots?.[unitIndex];
   if (!slot?.active) return null;
 
-  const breederLv = state.jobs?.breeder?.level || 1;
-  const yieldBonus = Math.floor((breederLv - 1) * 0.02);
+  const buildingLv = getFarmBuildingLevel(state, buildingId);
+  const yieldBonus = Math.floor((buildingLv - 1) * 0.02);
 
   let products;
   if (isUnifiedFarmBuilding(building)) {
@@ -578,7 +587,7 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
   }
 
   const xp = getFarmProductionXp(building);
-  const levelResult = xp > 0 ? addJobXp(state, 'breeder', xp, jobs, balance) : null;
+  const levelResult = xp > 0 ? addFarmBuildingXp(state, buildingId, xp, jobs, balance) : null;
   state.stats.totalHarvests = (state.stats.totalHarvests || 0) + 1;
   slot.active = null;
 
