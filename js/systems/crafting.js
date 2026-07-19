@@ -176,12 +176,18 @@ export function autoEquipIfEmpty(recipeId, ctx) {
   const meta = ctx.equipment.equipable?.[recipeId];
   if (!meta) return false;
 
-  const eq = ctx.state.equipment;
-  const slotEmpty = meta.job == null
-    ? !eq?.global
-    : meta.slot === 'accessory'
-      ? !eq?.accessories?.[meta.job]
-      : !getJobEquippedTool(ctx.state, meta.job);
+  const recipe = ctx.recipes[recipeId];
+  let slotEmpty;
+  if (meta.job == null) {
+    slotEmpty = !ctx.state.equipment?.global;
+  } else if (meta.slot === 'accessory') {
+    slotEmpty = !ctx.state.equipment?.accessories?.[meta.job];
+  } else if (meta.job === 'breeder') {
+    const kind = recipe?.toolKind || (String(recipeId).includes('basket') ? 'basket' : 'bucket');
+    slotEmpty = !getJobEquippedTool(ctx.state, 'breeder', kind);
+  } else {
+    slotEmpty = !getJobEquippedTool(ctx.state, meta.job);
+  }
 
   if (!slotEmpty) return false;
   return equip(recipeId, ctx.state, ctx.equipment, ctx.recipes);

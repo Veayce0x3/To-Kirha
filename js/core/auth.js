@@ -284,9 +284,9 @@ export async function syncProfileFromServer() {
   if (!isSupabaseConfigured() || authState.mode !== 'registered') return null;
   try {
     const supabase = await getSupabaseClient();
-    // S'assurer qu'une session est bien présente avant les RPC staff
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData?.session && authState.userId !== 'dev_local_user') {
+      console.warn('[auth] syncProfile: pas de session');
       return null;
     }
 
@@ -298,8 +298,8 @@ export async function syncProfileFromServer() {
       emit('navRefresh');
       return profile;
     }
+    if (error) console.warn('[auth] get_my_profile:', error.message);
 
-    // Repli si la RPC échoue : lire le rôle directement
     if (authState.userId && authState.userId !== 'dev_local_user') {
       const { data: row, error: rowErr } = await supabase
         .from('profiles')
@@ -315,9 +315,13 @@ export async function syncProfileFromServer() {
         emit('navRefresh');
         return row;
       }
+      if (rowErr) console.warn('[auth] profiles select:', rowErr.message);
     }
+    emit('navRefresh');
     return null;
-  } catch {
+  } catch (err) {
+    console.warn('[auth] syncProfile failed', err);
+    emit('navRefresh');
     return null;
   }
 }
@@ -414,6 +418,10 @@ export async function ensureProfile(supabase, user) {
 
 /** Finalise connexion / inscription : profil serveur, pseudo, save cloud. */
 export async function completeRegisteredLogin(game, user) {
+  const { markCloudSyncReady, loadCloudSave, mergeCloudAndLocal, isEmptyOrStarterSave } = await import('./cloudSave.js');
+  markCloudSyncReady(false);
+
+  const previousLocal = game.state;
   applyRegisteredToState(game.state, {
     userId: user.id,
     email: user.email,
@@ -429,20 +437,25 @@ export async function completeRegisteredLogin(game, user) {
   authState.displayName = serverName;
   applyServerDisplayNameToGame(game, serverName);
 
-  const { loadCloudSave, mergeCloudAndLocal } = await import('./cloudSave.js');
-  const cloud = await loadCloudSave(user.id);
-  if (cloud?.data) {
-    const merged = await mergeCloudAndLocal(cloud, game.state, game.balance);
-    if (merged) {
-      game.state = game.mergeState(merged);
-      applyRegisteredToState(game.state, {
-        userId: user.id,
-        email: user.email,
-        displayName: serverName,
-      });
-      applyServerDisplayNameToGame(game, serverName);
-      await syncProfileFromServer();
+  try {
+    const cloud = await loadCloudSave(user.id);
+    if (cloud?.data) {
+      const merged = await mergeCloudAndLocal(cloud, previousLocal, game.balance, { userId: user.id });
+      if (merged) {
+        game.state = game.mergeState(merged);
+        applyRegisteredToState(game.state, {
+          userId: user.id,
+          email: user.email,
+          displayName: serverName,
+        });
+        applyServerDisplayNameToGame(game, serverName);
+        await syncProfileFromServer();
+      }
+    } else if (isEmptyOrStarterSave(previousLocal)) {
+      // Nouveau compte / pas encore de cloud — garder l’état actuel
     }
+  } finally {
+    markCloudSyncReady(true);
   }
 
   game.scheduleSave?.();
@@ -469,11 +482,20 @@ export async function signUpWithEmail(email, password, displayName) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { display_name: nickCheck.name } },
+    options: {
+      data: { display_name: nickCheck.name },
+      emailRedirectTo: typeof window !== 'undefined'
+        ? `${window.location.origin}${window.location.pathname}`
+        : undefined,
+    },
   });
   if (error) return { ok: false, reason: error.message };
   if (!data.session) {
-    return { ok: true, needsEmailConfirm: true, message: 'Vérifie ta boîte mail pour confirmer le compte.' };
+    return {
+      ok: true,
+      needsEmailConfirm: true,
+      message: 'Compte créé ! Vérifie ta boîte mail et clique sur le lien pour activer ton compte — tu seras alors connecté automatiquement.',
+    };
   }
   return { ok: true, user: data.user, session: data.session };
 }
@@ -505,6 +527,43 @@ export async function signOutAccount() {
   } catch {}
   emit('authChange', getAuthState());
   return { ok: true };
+}
+
+let authListenerBound = false;
+
+/** Écoute la confirmation email / session URL → connexion auto. */
+export async function setupAuthStateListener(game) {
+  if (authListenerBound || !isSupabaseConfigured()) return;
+  const supabase = await getSupabaseClient();
+  if (!supabase) return;
+  authListenerBound = true;
+
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event !== 'SIGNED_IN') return;
+    const user = session?.user;
+    if (!user) return;
+
+    if (authState.mode === 'registered' && authState.userId === user.id && authState.profileSynced) {
+      window.dispatchEvent(new CustomEvent('tokirha:auth-session-ready'));
+      emit('navRefresh');
+      return;
+    }
+
+    try {
+      await completeRegisteredLogin(game, user);
+      try {
+        if (window.location.hash || /[?&](code|type)=/.test(window.location.search)) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      } catch {
+        // ignore
+      }
+      window.dispatchEvent(new CustomEvent('tokirha:auth-session-ready'));
+      emit('navRefresh');
+    } catch (err) {
+      console.warn('[auth] session auto-login failed', err);
+    }
+  });
 }
 
 /** Déconnexion complète : Supabase + efface le compte local + sauvegarde + écran d'accueil auth. */

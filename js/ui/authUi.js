@@ -180,7 +180,30 @@ function renderAuthBody(mode) {
       const result = await signUpWithEmail(email, password, name);
       if (!result.ok) return showAuthError(body, result.reason);
       if (result.needsEmailConfirm) {
-        showAuthError(body, result.message, 'info');
+        body.innerHTML = `
+          <h2 class="auth-title">Compte créé ✓</h2>
+          <p class="auth-desc auth-info">${result.message}</p>
+          <p class="auth-desc">Ouvre le mail (et les indésirables si besoin), clique sur le lien, puis reviens ici — la connexion se fait toute seule.</p>
+          <p class="auth-desc" id="auth-confirm-wait">En attente de confirmation…</p>
+          <button type="button" class="btn btn-muted" id="auth-back">← Retour</button>
+        `;
+        const waitEl = body.querySelector('#auth-confirm-wait');
+        const onReady = () => {
+          window.removeEventListener('tokirha:auth-session-ready', onReady);
+          if (waitEl) waitEl.textContent = 'Connecté ! Bonne aventure.';
+          if (isAccountBanned()) {
+            showBannedModalIfNeeded();
+            resolveAuthPromise?.(getAuthState());
+            resolveAuthPromise = null;
+            return;
+          }
+          finishAuth();
+        };
+        window.addEventListener('tokirha:auth-session-ready', onReady);
+        body.querySelector('#auth-back')?.addEventListener('click', () => {
+          window.removeEventListener('tokirha:auth-session-ready', onReady);
+          renderAuthBody('welcome');
+        });
         return;
       }
       await completeRegisteredLogin(gameRef, result.user);

@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1500",
+      "date": "2026-07-19",
+      "title": "Cloud, compte & Admin",
+      "highlights": [
+        "Connexion : la save cloud est prioritaire (plus d’écrasement par une partie vide sur un autre appareil)",
+        "Création de compte : message clair après inscription + connexion auto après validation email",
+        "Seau / panier : auto-équipement correct (slots séparés)",
+        "Onglet Admin : resync du rôle au lancement"
+      ]
+    },
+    {
       "buildId": "20260719-1400",
       "date": "2026-07-19",
       "title": "Ressources de récolte refondues",

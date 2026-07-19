@@ -1,7 +1,7 @@
 import { SaveProvider, mergeSettings } from './save.js';
 import { emit } from './events.js';
 import { isGuestAccount, isRegisteredAccount, getAuthState } from './auth.js';
-import { loadCloudSave, saveCloudSave, mergeCloudAndLocal } from './cloudSave.js';
+import { saveCloudSave } from './cloudSave.js';
 import { validateSaveSanity } from './saveIntegrity.js';
 import { submitLeaderboardSnapshot } from '../systems/leaderboard.js';
 import { sellResource } from '../systems/economy.js';
@@ -414,30 +414,33 @@ export class Game {
   }
 
   async init() {
+    const { markCloudSyncReady, loadCloudSave, mergeCloudAndLocal } = await import('./cloudSave.js');
     const saved = await SaveProvider.load(this.balance);
-    let localState = saved ? this.mergeState(saved) : null;
-    this.state = localState || this.getDefaultState();
+    const rawLocal = saved ? this.mergeState(saved) : null;
+    this.state = rawLocal || this.getDefaultState();
 
     const { initAuth, syncAuthFromState, getAuthState } = await import('./auth.js');
     syncAuthFromState(this.state);
     await initAuth(this);
-    localState = this.state;
 
     const auth = getAuthState();
     if (auth.mode === 'registered' && auth.userId && auth.userId !== 'dev_local_user') {
-      const cloud = await loadCloudSave(auth.userId);
-      const freshReset = SaveProvider.isFreshReset();
-      const hasLocalSave = !!localState;
-      const shouldMergeCloud = !freshReset && (
-        !hasLocalSave
-          ? !!cloud?.data
-          : !!localState?.careerChoice?.confirmed && !!cloud?.data
-      );
-      if (shouldMergeCloud) {
-        const merged = await mergeCloudAndLocal(cloud, localState, this.balance);
-        this.state = merged ? this.mergeState(merged) : localState;
-        syncAuthFromState(this.state);
+      markCloudSyncReady(false);
+      try {
+        const cloud = await loadCloudSave(auth.userId);
+        const freshReset = SaveProvider.isFreshReset();
+        if (!freshReset && cloud?.data) {
+          const merged = await mergeCloudAndLocal(cloud, rawLocal, this.balance, { userId: auth.userId });
+          if (merged) {
+            this.state = this.mergeState(merged);
+            syncAuthFromState(this.state);
+          }
+        }
+      } finally {
+        markCloudSyncReady(true);
       }
+    } else {
+      markCloudSyncReady(true);
     }
 
     if (this.balance.betaMode) applyBetaUnlocks(this.state, this.companions);

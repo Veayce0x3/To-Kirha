@@ -6,7 +6,8 @@ import { initAuthModal, showAuthModalIfNeeded, showBannedModalIfNeeded } from '.
 import { loadGameConfig, isMaintenanceMode } from './systems/gameConfig.js';
 import { tryAutoRefreshForNewBuild } from './core/startupRefresh.js';
 import { mountAnnouncementBanner } from './ui/announcements.js';
-import { isAccountBanned, syncProfileFromServer } from './core/auth.js';
+import { isAccountBanned, syncProfileFromServer, setupAuthStateListener } from './core/auth.js';
+import { emit } from './core/events.js';
 
 const DATA_BASE = new URL('../data/', import.meta.url);
 
@@ -60,6 +61,7 @@ async function main() {
   );
   game.changelog = changelog;
   await game.init();
+  await setupAuthStateListener(game);
 
   await loadGameConfig();
 
@@ -77,6 +79,12 @@ async function main() {
   }
 
   initUI(game, audio);
+
+  // Second passage rôle staff (évite onglet Admin manquant si sync lente)
+  if (game.state?.meta?.account?.mode === 'registered') {
+    await syncProfileFromServer();
+    emit('navRefresh');
+  }
 
   if (game.state?.meta?.account?.mode === 'registered') {
     syncProfileFromServer().catch(() => {});
