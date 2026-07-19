@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1705",
+      "date": "2026-07-19",
+      "title": "Màj auto sur téléphone",
+      "highlights": [
+        "Au lancement : détection de nouvelle version + hard refresh automatique (plus besoin de le faire à la main)"
+      ]
+    },
+    {
       "buildId": "20260719-1650",
       "date": "2026-07-19",
       "title": "Fix chargement jeu",

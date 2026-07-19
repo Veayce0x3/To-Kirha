@@ -33,6 +33,12 @@ async function loadJSON(file, opts = {}) {
 }
 
 async function main() {
+  try {
+    window.__tokirhaHideBootSplash?.();
+  } catch {
+    // ignore
+  }
+
   // Préchauffe Supabase (esm.sh) en parallèle du chargement des données
   if (isSupabaseConfigured()) {
     getSupabaseClient().catch(() => {});
@@ -40,6 +46,7 @@ async function main() {
 
   // Seul balance.json est forcé hors-cache (petit fichier) pour détecter les updates
   const balance = await loadJSON('balance.json', { fresh: true });
+  // Filet de sécurité si le bootstrap HTML n’a pas déjà rechargé
   if (await tryAutoRefreshForNewBuild(balance)) return;
 
   const bust = balance.appBuildId || String(balance.saveVersion || 'dev');

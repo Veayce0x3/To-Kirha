@@ -16,28 +16,201 @@
   <meta name="theme-color" content="#9B59B6">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="To-Kirha">
-  <link rel="stylesheet" href="./css/main.css?v=20260719-1530">
-  <link rel="stylesheet" href="./css/layout.css?v=20260719-1530">
-  <link rel="stylesheet" href="./css/online.css?v=20260719-1530">
-  <link rel="modulepreload" href="./js/main.js?v=20260719-1530">
+  <style id="boot-splash-style">
+    #boot-splash {
+      position: fixed; inset: 0; z-index: 99999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.75rem; padding: 1.5rem; text-align: center;
+      background: #F8E8EE; color: #4A3728;
+      font-family: "Zen Maru Gothic", system-ui, sans-serif;
+    }
+    #boot-splash[hidden] { display: none !important; }
+    #boot-splash .boot-title { font-size: 1.25rem; font-weight: 700; }
+    #boot-splash .boot-msg { font-size: 0.95rem; opacity: 0.85; max-width: 18rem; }
+  </style>
   <script>
-    /* Nettoyage d’anciens artefacts de cache (popup refresh / pull-to-refresh) */
+    /**
+     * Bootstrap mobile-first : détecte une nouvelle build via balance.json
+     * et force un hard refresh (caches + reload) sans action manuelle.
+     * Puis charge CSS + main.js avec ?v=appBuildId (anti-cache Safari).
+     */
     (function () {
-      try {
-        document.documentElement.classList.remove('startup-refresh-pending');
-        document.addEventListener('DOMContentLoaded', function () {
-          document.body.classList.remove('startup-refresh-pending', 'career-choice-pending');
-          var old = document.getElementById('startup-refresh-modal');
-          if (old) old.remove();
-          document.querySelectorAll('.top-pull-refresh, .bottom-pull-refresh').forEach(function (el) {
-            el.remove();
-          });
+      var LS_BUILD = 'tokirha_last_build';
+      var SS_JUST = 'tokirha_just_refreshed';
+      var splash = null;
+
+      function ensureSplash(msg) {
+        splash = document.getElementById('boot-splash');
+        if (!splash) {
+          splash = document.createElement('div');
+          splash.id = 'boot-splash';
+          splash.innerHTML = '<div class="boot-title">To-Kirha</div><div class="boot-msg" id="boot-splash-msg"></div>';
+          (document.body || document.documentElement).appendChild(splash);
+        }
+        var m = document.getElementById('boot-splash-msg');
+        if (m) m.textContent = msg || 'Chargement…';
+        splash.hidden = false;
+      }
+
+      function hideSplash() {
+        var el = document.getElementById('boot-splash');
+        if (el) el.hidden = true;
+      }
+
+      function cameFromRefresh() {
+        try {
+          var url = new URL(location.href);
+          if (url.searchParams.has('tokirha_refresh') || url.searchParams.has('_cb')) return true;
+          if (sessionStorage.getItem(SS_JUST) === '1') return true;
+        } catch (e) {}
+        return false;
+      }
+
+      function clearCachesThen(done) {
+        var finished = false;
+        function finish() {
+          if (finished) return;
+          finished = true;
+          done();
+        }
+        var tasks = [];
+        try {
+          if ('caches' in window) {
+            tasks.push(caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            }));
+          }
+        } catch (e) {}
+        try {
+          if ('serviceWorker' in navigator) {
+            tasks.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+              return Promise.all(regs.map(function (r) { return r.unregister(); }));
+            }));
+          }
+        } catch (e) {}
+        Promise.allSettled(tasks.length ? tasks : [Promise.resolve()]).then(finish, finish);
+        setTimeout(finish, 1500);
+      }
+
+      var reloadOnce = false;
+      function hardReload() {
+        if (reloadOnce) return;
+        reloadOnce = true;
+        try { sessionStorage.setItem(SS_JUST, '1'); } catch (e) {}
+        ensureSplash('Mise à jour en cours…');
+        clearCachesThen(function () {
+          var url = new URL(location.href);
+          url.searchParams.delete('tokirha_refresh');
+          url.searchParams.delete('_cb');
+          url.searchParams.delete('v');
+          url.searchParams.delete('_');
+          var bust = String(Date.now());
+          url.searchParams.set('_cb', bust);
+          url.searchParams.set('tokirha_refresh', bust);
+          location.replace(url.toString());
         });
-      } catch (e) {}
+      }
+
+      function injectStyles(buildId) {
+        [
+          './css/main.css',
+          './css/layout.css',
+          './css/online.css'
+        ].forEach(function (href) {
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = href + '?v=' + encodeURIComponent(buildId);
+          document.head.appendChild(link);
+        });
+      }
+
+      function injectMain(buildId) {
+        var pre = document.createElement('link');
+        pre.rel = 'modulepreload';
+        pre.href = './js/main.js?v=' + encodeURIComponent(buildId);
+        document.head.appendChild(pre);
+
+        var s = document.createElement('script');
+        s.type = 'module';
+        s.src = './js/main.js?v=' + encodeURIComponent(buildId);
+        s.onerror = function () {
+          ensureSplash('Échec de chargement — nouvel essai…');
+          hardReload();
+        };
+        document.body.appendChild(s);
+      }
+
+      function startApp(buildId) {
+        injectStyles(buildId);
+        injectMain(buildId);
+        // Le splash disparaît dès que le jeu est prêt (main.js)
+        window.__tokirhaHideBootSplash = hideSplash;
+        // Sécurité : cacher après 8 s même si init lente
+        setTimeout(hideSplash, 8000);
+      }
+
+      function boot() {
+        ensureSplash('Chargement…');
+        var fromRefresh = cameFromRefresh();
+        fetch('./data/balance.json?_=' + Date.now(), {
+          cache: 'no-store',
+          credentials: 'same-origin'
+        })
+          .then(function (r) {
+            if (!r.ok) throw new Error('balance ' + r.status);
+            return r.json();
+          })
+          .then(function (balance) {
+            var current = (balance && (balance.appBuildId || String(balance.saveVersion || 'dev'))) || 'dev';
+            var last = null;
+            try { last = localStorage.getItem(LS_BUILD); } catch (e) {}
+
+            if (!fromRefresh && last && last !== current) {
+              hardReload();
+              return;
+            }
+
+            if (fromRefresh || !last) {
+              try {
+                localStorage.setItem(LS_BUILD, current);
+                sessionStorage.setItem(SS_JUST, '1');
+              } catch (e) {}
+            }
+
+            // Nettoyer l’URL après un refresh auto
+            if (fromRefresh) {
+              try {
+                var url = new URL(location.href);
+                if (url.searchParams.has('tokirha_refresh') || url.searchParams.has('_cb')) {
+                  url.searchParams.delete('tokirha_refresh');
+                  url.searchParams.delete('_cb');
+                  url.searchParams.delete('v');
+                  url.searchParams.delete('_');
+                  var clean = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams : '') + url.hash;
+                  history.replaceState({}, '', clean);
+                }
+              } catch (e) {}
+            }
+
+            startApp(current);
+          })
+          .catch(function () {
+            // Réseau / cache : tenter quand même avec un bust temporel
+            startApp(String(Date.now()));
+          });
+      }
+
+      if (document.body) boot();
+      else document.addEventListener('DOMContentLoaded', boot);
     })();
   </script>
 </head>
 <body>
+  <div id="boot-splash" aria-live="polite">
+    <div class="boot-title">To-Kirha</div>
+    <div class="boot-msg" id="boot-splash-msg">Chargement…</div>
+  </div>
+
   <div class="sakura-bg"></div>
   <div class="sakura-petals" id="sakura-petals"></div>
   <div class="level-flash" id="level-flash"></div>
@@ -151,6 +324,21 @@
     </div>
   </div>
 
-  <script type="module" src="./js/main.js?v=20260719-1530"></script>
+  <script>
+    /* Nettoyage d’anciens artefacts de cache (popup refresh / pull-to-refresh) */
+    (function () {
+      try {
+        document.documentElement.classList.remove('startup-refresh-pending');
+        document.addEventListener('DOMContentLoaded', function () {
+          document.body.classList.remove('startup-refresh-pending', 'career-choice-pending');
+          var old = document.getElementById('startup-refresh-modal');
+          if (old) old.remove();
+          document.querySelectorAll('.top-pull-refresh, .bottom-pull-refresh').forEach(function (el) {
+            el.remove();
+          });
+        });
+      } catch (e) {}
+    })();
+  </script>
 </body>
 </html>
