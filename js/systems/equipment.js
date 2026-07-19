@@ -6,36 +6,62 @@ export function getDefaultEquipment() {
   return {
     jobs: Object.fromEntries(GATHER_JOBS.map((j) => [j, null])),
     accessories: Object.fromEntries(GATHER_JOBS.map((j) => [j, null])),
+    breederTools: { bucket: null, basket: null },
     global: null,
   };
+}
+
+function inferBreederToolKind(recipeId) {
+  return String(recipeId || '').includes('basket') ? 'basket' : 'bucket';
+}
+
+function syncBreederJobsMirror(state) {
+  const bt = state.equipment.breederTools || { bucket: null, basket: null };
+  state.equipment.jobs.breeder = bt.bucket || bt.basket || null;
 }
 
 export function migrateEquipment(saved, equipable = {}) {
   const defaults = getDefaultEquipment();
   if (!saved || typeof saved !== 'object') return defaults;
 
-  if (saved.jobs || saved.accessories || 'global' in saved) {
-    return {
+  let base;
+  if (saved.jobs || saved.accessories || 'global' in saved || saved.breederTools) {
+    base = {
       jobs: { ...defaults.jobs, ...(saved.jobs || {}) },
       accessories: { ...defaults.accessories, ...(saved.accessories || {}) },
+      breederTools: {
+        bucket: saved.breederTools?.bucket ?? null,
+        basket: saved.breederTools?.basket ?? null,
+      },
       global: saved.global ?? null,
     };
-  }
-
-  const migrated = getDefaultEquipment();
-  for (const legacyId of [saved.weapon, saved.accessory]) {
-    if (!legacyId) continue;
-    const item = equipable[legacyId];
-    if (!item) continue;
-    if (item.job == null) {
-      migrated.global = legacyId;
-    } else if (item.slot === 'accessory') {
-      migrated.accessories[item.job] = legacyId;
-    } else {
-      migrated.jobs[item.job] = legacyId;
+  } else {
+    base = getDefaultEquipment();
+    for (const legacyId of [saved.weapon, saved.accessory]) {
+      if (!legacyId) continue;
+      const item = equipable[legacyId];
+      if (!item) continue;
+      if (item.job == null) {
+        base.global = legacyId;
+      } else if (item.slot === 'accessory') {
+        base.accessories[item.job] = legacyId;
+      } else if (item.job === 'breeder') {
+        const kind = inferBreederToolKind(legacyId);
+        base.breederTools[kind] = legacyId;
+      } else {
+        base.jobs[item.job] = legacyId;
+      }
     }
   }
-  return migrated;
+
+  // Legacy : un seul jobs.breeder string → slot seau/panier
+  const legacyBreeder = base.jobs?.breeder;
+  if (typeof legacyBreeder === 'string' && legacyBreeder) {
+    const kind = inferBreederToolKind(legacyBreeder);
+    if (!base.breederTools[kind]) base.breederTools[kind] = legacyBreeder;
+  }
+  syncBreederJobsMirror({ equipment: base });
+  return base;
 }
 
 export function ensureEquipment(state, equipable = {}) {
@@ -52,10 +78,14 @@ export function getEquippedRecipeIds(state) {
   if (eq.accessories) {
     for (const id of Object.values(eq.accessories)) if (id) ids.push(id);
   }
+  if (eq.breederTools) {
+    if (eq.breederTools.bucket) ids.push(eq.breederTools.bucket);
+    if (eq.breederTools.basket) ids.push(eq.breederTools.basket);
+  }
   if (eq.global) ids.push(eq.global);
   if (eq.weapon) ids.push(eq.weapon);
   if (eq.accessory) ids.push(eq.accessory);
-  return ids;
+  return [...new Set(ids)];
 }
 
 export function isRecipeEquipped(state, recipeId) {
@@ -76,8 +106,13 @@ export function recipeBelongsToWorkshopTab(recipeId, recipe, craftJobId, equipme
   return !isGatheringTool;
 }
 
-export function getJobEquippedTool(state, jobId) {
+export function getJobEquippedTool(state, jobId, toolKind = null) {
   ensureEquipment(state);
+  if (jobId === 'breeder') {
+    const bt = state.equipment.breederTools || {};
+    if (toolKind === 'bucket' || toolKind === 'basket') return bt[toolKind] || null;
+    return bt.bucket || bt.basket || state.equipment.jobs?.breeder || null;
+  }
   return state.equipment.jobs?.[jobId] || null;
 }
 
@@ -95,11 +130,11 @@ export function canEquip(recipeId, state, equipmentData, recipes = {}) {
 
 export function equip(recipeId, state, equipmentData, recipes = {}) {
   if (!canEquip(recipeId, state, equipmentData, recipes)) return false;
-  return equipForced(recipeId, state, equipmentData);
+  return equipForced(recipeId, state, equipmentData, recipes);
 }
 
 /** Équipe sans garde-fous (formation, récompenses). */
-export function equipForced(recipeId, state, equipmentData) {
+export function equipForced(recipeId, state, equipmentData, recipes = {}) {
   const item = equipmentData.equipable[recipeId];
   if (!item) return false;
   ensureEquipment(state, equipmentData.equipable);
@@ -108,6 +143,12 @@ export function equipForced(recipeId, state, equipmentData) {
     state.equipment.global = recipeId;
   } else if (item.slot === 'accessory') {
     state.equipment.accessories[item.job] = recipeId;
+  } else if (item.job === 'breeder') {
+    const recipe = recipes[recipeId];
+    const kind = recipe?.toolKind || inferBreederToolKind(recipeId);
+    if (!state.equipment.breederTools) state.equipment.breederTools = { bucket: null, basket: null };
+    state.equipment.breederTools[kind] = recipeId;
+    syncBreederJobsMirror(state);
   } else {
     state.equipment.jobs[item.job] = recipeId;
   }
@@ -120,6 +161,23 @@ export function unequipGathering(state, jobId, slotKind = 'tool') {
     if (!state.equipment.global) return false;
     state.equipment.global = null;
     return true;
+  }
+  if (jobId === 'breeder' && (slotKind === 'bucket' || slotKind === 'basket')) {
+    if (!state.equipment.breederTools?.[slotKind]) return false;
+    state.equipment.breederTools[slotKind] = null;
+    syncBreederJobsMirror(state);
+    return true;
+  }
+  if (jobId === 'breeder' && slotKind === 'tool') {
+    // Retirer le miroir + les deux si on ne précise pas
+    const bt = state.equipment.breederTools;
+    const had = !!(bt?.bucket || bt?.basket || state.equipment.jobs?.breeder);
+    if (bt) {
+      bt.bucket = null;
+      bt.basket = null;
+    }
+    state.equipment.jobs.breeder = null;
+    return had;
   }
   const bag = slotKind === 'accessory' ? state.equipment.accessories : state.equipment.jobs;
   if (!bag?.[jobId]) return false;
@@ -176,7 +234,13 @@ export function getOwnedGatheringEquipment(state, equipmentData, recipes, jobs) 
     const recipe = recipes[recipeId];
     if (!recipe) continue;
     const job = meta.job ? jobs[meta.job] : null;
-    const slotKind = meta.job == null ? 'global' : (meta.slot === 'accessory' ? 'accessory' : 'tool');
+    const slotKind = meta.job == null
+      ? 'global'
+      : (meta.slot === 'accessory'
+        ? 'accessory'
+        : (meta.job === 'breeder'
+          ? (recipe.toolKind || (String(recipeId).includes('basket') ? 'basket' : 'bucket'))
+          : 'tool'));
     items.push({
       recipeId,
       recipe,

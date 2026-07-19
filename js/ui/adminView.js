@@ -24,6 +24,7 @@ import {
   flagCheat,
   deleteLeaderboardEntry,
   wipeAllLeaderboard,
+  rebuildLeaderboardFromSaves,
   wipePlayerMarket,
   resetCloudSave,
   fetchModerationLogs,
@@ -604,33 +605,43 @@ async function renderLeaderboardAdmin(container) {
         <option value="char_level" ${sort === 'char_level' ? 'selected' : ''}>Par niveau</option>
         <option value="total_earned" ${sort === 'total_earned' ? 'selected' : ''}>Par fortune</option>
         <option value="seasons_completed" ${sort === 'seasons_completed' ? 'selected' : ''}>Par saisons</option>
+        <option value="max_job_level" ${sort === 'max_job_level' ? 'selected' : ''}>Par métier max</option>
+        <option value="total_harvests" ${sort === 'total_harvests' ? 'selected' : ''}>Par récoltes</option>
       </select>
+      ${isAdmin() ? '<button type="button" class="btn btn-craft btn-sm" id="admin-rebuild-lb">Reconstruire depuis les saves</button>' : ''}
       ${isSuperAdmin() ? '<button type="button" class="btn btn-muted btn-sm" id="admin-wipe-lb">Vider tout le classement</button>' : ''}
     `)}
     <div class="admin-table-wrap">
       <table class="admin-table">
-        <thead><tr><th>#</th><th>Pseudo</th><th>Nv.</th><th>Saison</th><th>Fortune</th><th>Kirha</th><th>Statut</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Pseudo</th><th>Nv.</th><th>Métier</th><th>Saison</th><th>Fortune</th><th>Récoltes</th><th>Statut</th><th></th></tr></thead>
         <tbody>${rows.map((r, i) => `
           <tr class="${r.is_banned ? 'row-banned' : ''}${r.cheat_flagged ? ' row-flagged' : ''}">
             <td>${i + 1}</td>
             <td>${r.display_name}</td>
             <td>Nv.${r.char_level}</td>
+            <td>${r.max_job_level || 1}</td>
             <td>S${r.season}</td>
             <td>${fmtNum(r.total_earned)} 💰</td>
-            <td>${fmtNum(r.kirha_current || 0)}</td>
+            <td>${fmtNum(r.total_harvests || 0)}</td>
             <td>${r.is_banned ? '⛔' : r.cheat_flagged ? '⚠️' : '✓'}</td>
             <td>
               <button type="button" class="btn btn-muted btn-sm admin-view-player" data-uid="${r.user_id}">Voir</button>
               <button type="button" class="btn btn-muted btn-sm admin-del-lb-row" data-uid="${r.user_id}">Retirer</button>
             </td>
           </tr>
-        `).join('') || '<tr><td colspan="8">Aucun joueur classé.</td></tr>'}</tbody>
+        `).join('') || '<tr><td colspan="9">Aucun joueur classé.</td></tr>'}</tbody>
       </table>
     </div>
   `;
   container.querySelector('#admin-lb-sort')?.addEventListener('change', (e) => {
     container.dataset.sort = e.target.value;
     renderLeaderboardAdmin(container);
+  });
+  container.querySelector('#admin-rebuild-lb')?.addEventListener('click', async () => {
+    if (!confirm('Reconstruire le classement depuis toutes les saves cloud ?')) return;
+    const r = await rebuildLeaderboardFromSaves();
+    setStatus(r.ok ? `Classement reconstruit (${r.data?.upserted ?? '?'} entrées).` : r.reason, !r.ok);
+    if (r.ok) renderLeaderboardAdmin(container);
   });
   container.querySelector('#admin-wipe-lb')?.addEventListener('click', async () => {
     if (!confirm('Vider TOUT le classement ? (parties reset)')) return;

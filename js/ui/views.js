@@ -1007,6 +1007,7 @@ function refreshInventoryPanels(game) {
   if (panel) renderCharBagTab(game, panel);
   else if (bankEl && getView() === 'inventory') renderInventory(game, bankEl);
   refreshCharacterCombatPanels(game);
+  refreshAuctionHouseLight(game);
 }
 
 function appendOwnedCombatItemsToGrid(game, container, filter) {
@@ -1059,7 +1060,7 @@ function appendOwnedCombatItemsToGrid(game, container, filter) {
 
 function renderCharToolsTab(game, panel) {
   panel.innerHTML = `
-    <p class="view-desc char-tools-desc">Outils de récolte équipés ou en réserve.</p>
+    <p class="view-desc char-tools-desc">Outils de récolte équipés ou en réserve. Pour l’élevage : tu peux équiper le <strong>seau</strong> et le <strong>panier</strong> en même temps (eau + productions animales).</p>
     <div id="char-gather-equip" class="char-tools-list"></div>
   `;
   const gatherEl = panel.querySelector('#char-gather-equip');
@@ -1095,7 +1096,8 @@ function renderCharToolsTab(game, panel) {
 function appendGatheringToolRow(game, container, entry, { showUnequip = false, showEquip = false } = {}) {
   const s = game.state;
   const { recipeId, recipe, jobEmoji, jobName, slotKind, broken } = entry;
-  const slotIcon = slotKind === 'accessory' ? '🧰' : '🛠️';
+  const slotIcon = slotKind === 'accessory' ? '🧰' : (slotKind === 'basket' ? '🧺' : (slotKind === 'bucket' ? '🪣' : '🛠️'));
+  const slotLabel = slotKind === 'basket' ? 'Panier' : (slotKind === 'bucket' ? 'Seau' : (slotKind === 'accessory' ? 'Accessoire' : 'Outil'));
   const row = document.createElement('div');
   row.className = `char-tool-row${entry.equipped ? ' char-tool-equipped' : ''}${broken ? ' char-tool-broken' : ''}`;
 
@@ -1103,7 +1105,7 @@ function appendGatheringToolRow(game, container, entry, { showUnequip = false, s
   main.className = 'char-tool-main';
   main.innerHTML = `
     <span class="char-tool-name">${recipe.emoji} ${recipe.name}</span>
-    <span class="char-tool-meta">${slotIcon} ${jobEmoji} ${jobName}</span>
+    <span class="char-tool-meta">${slotIcon} ${slotLabel} · ${jobEmoji} ${jobName}</span>
   `;
   if (isDurabilityTool(recipe)) {
     main.insertAdjacentHTML('beforeend', renderDurabilityBar(s, recipeId, recipe));
@@ -1116,8 +1118,11 @@ function appendGatheringToolRow(game, container, entry, { showUnequip = false, s
     const btn = document.createElement('button');
     btn.className = 'btn btn-small';
     btn.textContent = 'Retirer';
-    const unequipKind = slotKind === 'global' ? 'global' : slotKind;
+    let unequipKind = slotKind === 'global' ? 'global' : slotKind;
     const jobId = slotKind === 'global' ? 'global' : entry.jobId;
+    if (entry.jobId === 'breeder' && (slotKind === 'tool' || slotKind === 'bucket' || slotKind === 'basket')) {
+      unequipKind = recipe?.toolKind || (String(recipeId).includes('basket') ? 'basket' : 'bucket');
+    }
     btn.addEventListener('click', () => game.doUnequip(jobId, unequipKind));
     actions.appendChild(btn);
   }
@@ -2859,6 +2864,15 @@ function mountAuctionNavigation(game, root) {
 export function refreshAuctionHouseLight(game) {
   if (!auctionRootEl?.isConnected) return;
   updateAuctionWallet(game, auctionRootEl);
+  if (hdvMainMode === 'sell') {
+    const grid = auctionRootEl.querySelector('#hdv-sell-grid');
+    if (grid) {
+      const total = renderInventoryGrid(game, grid, { filter: 'all' });
+      const totalEl = auctionRootEl.querySelector('#hdv-sell-total');
+      if (totalEl) totalEl.textContent = `Valeur totale : ${formatNumber(total)} 💰`;
+    }
+    return;
+  }
   if (hdvMainMode !== 'npc' && hdvMainMode !== 'test') return;
   const nuggetInfo = game.getGoldNuggetExchangeInfo?.();
   if (nuggetInfo) {
@@ -2868,36 +2882,69 @@ export function refreshAuctionHouseLight(game) {
   renderAuctionOfferList(game, auctionRootEl);
 }
 
+function mountAuctionSellPanel(game, root) {
+  const area = root.querySelector('#hdv-content-area');
+  const sticky = root.querySelector('.hdv-sticky .hdv-tabs');
+  const chips = root.querySelector('#hdv-vendor-chips');
+  if (sticky) sticky.innerHTML = '';
+  if (chips) chips.innerHTML = '';
+  if (!area) return;
+
+  area.innerHTML = `
+    <div class="panel-inner hdv-sell-panel">
+      <p class="view-desc">Vends tes récoltes et crafts aux PNJ. Épingle les objets à garder depuis la Banque.</p>
+      <div class="bank-toolbar">
+        <span class="bank-total" id="hdv-sell-total">Valeur totale : 0 💰</span>
+        <div class="bank-toolbar-actions">
+          <button type="button" class="btn btn-muted btn-small" id="hdv-sell-except">Tout vendre (sauf épinglés)</button>
+          <button type="button" class="btn btn-sell-all" id="hdv-sell-all">Tout vendre</button>
+        </div>
+      </div>
+      <div class="inventory-grid" id="hdv-sell-grid"></div>
+    </div>
+  `;
+
+  area.querySelector('#hdv-sell-all')?.addEventListener('click', () => {
+    if (!window.confirm('Vendre tout l\'inventaire ?')) return;
+    game.sellEverything();
+    refreshAuctionHouseLight(game);
+  });
+  area.querySelector('#hdv-sell-except')?.addEventListener('click', () => {
+    if (!window.confirm('Vendre tout sauf les objets épinglés ?')) return;
+    game.sellEverythingExcept(game.state.bankProtected || []);
+    refreshAuctionHouseLight(game);
+  });
+
+  const total = renderInventoryGrid(game, area.querySelector('#hdv-sell-grid'), { filter: 'all' });
+  const totalEl = area.querySelector('#hdv-sell-total');
+  if (totalEl) totalEl.textContent = `Valeur totale : ${formatNumber(total)} 💰`;
+}
+
 export function renderAuctionHouse(game, el) {
   auctionRootEl = el;
 
-  if (!canUseOnlineFeatures()) {
-    el.innerHTML = `
-      <div class="view-header"><h2>Place marchande</h2></div>
-      <div class="panel-inner">
-        <p class="view-desc">${getOnlineBlockReason()}</p>
-        <button type="button" class="btn btn-craft" id="hdv-need-account">Créer un compte</button>
-      </div>
-    `;
-    el.querySelector('#hdv-need-account')?.addEventListener('click', () => showAccountRequiredModal(getOnlineBlockReason()));
-    return;
-  }
-
+  const online = canUseOnlineFeatures();
   const scrollRes = game.resources.ancient_scroll;
   const nuggetRes = game.resources.gold_nugget;
   const nuggetInfo = game.getGoldNuggetExchangeInfo?.() || null;
   const testBanner = getTestHdvBanner(game.balance);
   const careerPending = isTestHdvEnabled(game.balance) && !game.state.careerChoice?.confirmed;
-  const showTest = isTestHdvEnabled(game.balance);
+  const showTest = online && isTestHdvEnabled(game.balance);
   const maintenance = isMaintenanceMode();
-  const modes = [
-    { id: 'npc', label: '📜 Archiviste' },
-    ...(showTest ? [{ id: 'test', label: '🧪 HDV Test' }] : []),
-  ];
+  const modes = online
+    ? [
+      { id: 'npc', label: '📜 Archiviste' },
+      { id: 'sell', label: '💰 Vendre' },
+      ...(showTest ? [{ id: 'test', label: '🧪 HDV Test' }] : []),
+    ]
+    : [{ id: 'sell', label: '💰 Vendre' }];
   if (hdvMainMode === 'players') hdvMainMode = 'npc';
-  if (!modes.some((m) => m.id === hdvMainMode)) hdvMainMode = 'npc';
+  if (!modes.some((m) => m.id === hdvMainMode)) hdvMainMode = modes[0].id;
 
   el.innerHTML = `
+    <div class="view-header"><h2>${iconHtml(getNavIcon('auction_house'), 'view-header-icon', 'Place')} Place marchande</h2>
+      ${!online ? `<p class="view-desc">${getOnlineBlockReason()} — la vente PNJ reste disponible.</p>` : ''}
+    </div>
     <div class="hdv-view hdv-mode-${hdvMainMode}">
       ${maintenance ? '<p class="hdv-banner warn">Maintenance — HDV joueurs et classement limités.</p>' : ''}
       ${testBanner && hdvMainMode === 'test' ? `<p class="hdv-banner">${testBanner}</p>` : ''}
@@ -2905,7 +2952,7 @@ export function renderAuctionHouse(game, el) {
       <nav class="hdv-main-tabs" id="hdv-main-tabs" aria-label="Type d\'HDV">
         ${modes.map((m) => `<button type="button" class="hdv-main-tab hdv-main-tab--${m.id}${hdvMainMode === m.id ? ' active' : ''}" data-hdv-mode="${m.id}">${m.label}</button>`).join('')}
       </nav>
-      <div class="hdv-sticky">
+      <div class="hdv-sticky"${hdvMainMode === 'sell' ? ' hidden' : ''}>
         <div class="hdv-wallet" id="hdv-wallet">
           <span class="hdv-wallet-item"><strong id="hdv-wallet-kirha">${formatNumber(game.state.kirha || 0)}</strong> 💰</span>
           <span class="hdv-wallet-item"><span id="hdv-wallet-scroll-icon">${renderResourceIcon(scrollRes, 'hdv-wallet-icon')}</span> <strong id="hdv-wallet-scrolls">${game.getScrollCount()}</strong></span>
@@ -2926,13 +2973,20 @@ export function renderAuctionHouse(game, el) {
       <div class="hdv-list-wrap" id="hdv-content-area">
         <div class="hdv-list" id="auction-offer-list"></div>
       </div>
-      <p class="hdv-tip">Vends tes récoltes à la <button type="button" class="link-btn" id="goto-bank">Banque</button> pour obtenir des Kirha.</p>
+      ${hdvMainMode === 'sell'
+    ? '<p class="hdv-tip">Astuce : épingle les objets à conserver dans la <button type="button" class="link-btn" id="goto-bank">Banque</button>.</p>'
+    : '<p class="hdv-tip">Pour vendre tes récoltes aux PNJ, ouvre l’onglet <strong>Vendre</strong>.</p>'}
     </div>
   `;
 
   el.querySelectorAll('[data-hdv-mode]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      hdvMainMode = btn.dataset.hdvMode;
+      const next = btn.dataset.hdvMode;
+      if ((next === 'npc' || next === 'test') && !canUseOnlineFeatures()) {
+        showAccountRequiredModal(getOnlineBlockReason());
+        return;
+      }
+      hdvMainMode = next;
       renderAuctionHouse(game, el);
     });
   });
@@ -2949,6 +3003,10 @@ export function renderAuctionHouse(game, el) {
     else refreshAuctionHouseLight(game);
   });
 
+  if (hdvMainMode === 'sell') {
+    mountAuctionSellPanel(game, el);
+    return;
+  }
 
   const catalog = buildAuctionCatalog(game, hdvMainMode);
   if (!catalog.vendorEntries.length) {
@@ -3037,32 +3095,28 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
 
 export function renderInventory(game, el) {
   el.innerHTML = `
-    <div class="view-header"><h2>${iconHtml(getNavIcon('inventory'), 'view-header-icon', 'Banque')} Banque</h2><p class="view-desc">Clique un objet pour vendre, épingler ou équiper. Les repas peuvent soigner directement hors combat. · <button type="button" class="link-btn" id="goto-char-bag">Voir sur Perso</button></p></div>
+    <div class="view-header"><h2>${iconHtml(getNavIcon('inventory'), 'view-header-icon', 'Banque')} Banque</h2><p class="view-desc">Stocke, épingle, équipe ou soigne-toi. Pour vendre aux PNJ : <button type="button" class="link-btn" id="goto-hdv-sell">Place marchande → Vendre</button> · <button type="button" class="link-btn" id="goto-char-bag">Voir sur Perso</button></p></div>
     <div class="panel-inner">
       <div class="bank-toolbar">
         <span class="bank-total" id="bank-total">Valeur totale : 0 💰</span>
         <div class="bank-toolbar-actions">
-          <button class="btn btn-muted btn-small" id="sell-all-except" title="Vend tout sauf les objets épinglés">Tout vendre (sauf épinglés)</button>
-          <button class="btn btn-sell-all" id="sell-all">Tout vendre</button>
+          <button type="button" class="btn btn-craft btn-small" id="goto-hdv-sell-btn">💰 Vendre à la Place</button>
         </div>
       </div>
       <div class="inventory-grid" id="bank-grid"></div>
     </div>
   `;
 
+  const goSell = () => {
+    hdvMainMode = 'sell';
+    navigate('auction_house');
+  };
   el.querySelector('#goto-char-bag')?.addEventListener('click', () => {
     charTab = 'bag';
     navigate('character');
   });
-
-  el.querySelector('#sell-all')?.addEventListener('click', () => {
-    if (!window.confirm('Vendre tout l\'inventaire ?')) return;
-    game.sellEverything();
-  });
-  el.querySelector('#sell-all-except')?.addEventListener('click', () => {
-    if (!window.confirm('Vendre tout sauf les objets épinglés ?')) return;
-    game.sellEverythingExcept(game.state.bankProtected || []);
-  });
+  el.querySelector('#goto-hdv-sell')?.addEventListener('click', goSell);
+  el.querySelector('#goto-hdv-sell-btn')?.addEventListener('click', goSell);
 
   const total = renderInventoryGrid(game, el.querySelector('#bank-grid'), { filter: 'all' });
   el.querySelector('#bank-total').textContent = `Valeur totale : ${formatNumber(total)} 💰`;
@@ -3128,26 +3182,31 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   body.querySelector('#modal-sell-1')?.addEventListener('click', () => {
     game.sell(resourceId, 1);
     modal.classList.remove('active');
+    refreshAuctionHouseLight(game);
   });
   for (const qty of [5, 10, 100]) {
     body.querySelector(`#modal-sell-${qty}`)?.addEventListener('click', () => {
       if (qty >= 10 && !window.confirm(`Vendre ×${Math.min(qty, amount)} ${resource.name} ?`)) return;
       game.sell(resourceId, Math.min(qty, amount));
       modal.classList.remove('active');
+      refreshAuctionHouseLight(game);
     });
   }
   body.querySelector('#modal-sell-all')?.addEventListener('click', () => {
     if (!window.confirm(`Vendre tout (×${amount}) ${resource.name} ?`)) return;
     game.sell(resourceId);
     modal.classList.remove('active');
+    refreshAuctionHouseLight(game);
   });
   body.querySelector('#modal-pin')?.addEventListener('click', () => {
     game.toggleBankProtected(resourceId);
     modal.classList.remove('active');
     refreshInventoryPanels(game);
+    refreshAuctionHouseLight(game);
   });
   body.querySelector('#modal-goto-auction')?.addEventListener('click', () => {
     modal.classList.remove('active');
+    hdvMainMode = 'sell';
     navigate('auction_house');
   });
   body.querySelector('#modal-equip')?.addEventListener('click', () => {

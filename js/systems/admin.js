@@ -94,6 +94,11 @@ export async function wipeAllLeaderboard() {
   return rpc('admin_wipe_all_leaderboard');
 }
 
+export async function rebuildLeaderboardFromSaves() {
+  if (!isAdmin()) return { ok: false, reason: 'Admin requis.' };
+  return rpc('rebuild_leaderboard_from_saves');
+}
+
 export async function wipePlayerMarket(userId) {
   if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
   return rpc('admin_wipe_market', { p_user_id: userId });

@@ -12,18 +12,25 @@ export const LEADERBOARD_TABS = [
   { id: 'combat', label: 'Combat', sortKey: 'boss_kills_total', desc: true },
 ];
 
+function safeInt(n, fallback = 0) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return fallback;
+  return Math.floor(v);
+}
+
 export function buildLeaderboardSnapshot(state) {
   const bossKills = Object.values(state.bossKills || {}).reduce((a, b) => a + (Number(b) || 0), 0);
-  const maxJobLevel = Math.max(1, ...Object.values(state.jobs || {}).map((j) => j?.level || 1));
+  const jobLevels = Object.values(state.jobs || {}).map((j) => safeInt(j?.level, 1));
+  const maxJobLevel = jobLevels.length ? Math.max(1, ...jobLevels) : 1;
   return {
-    char_level: state.character?.level || 1,
+    char_level: Math.max(1, safeInt(state.character?.level, 1)),
     max_job_level: maxJobLevel,
-    season: state.season || 1,
-    total_earned: state.lifetimeStats?.totalEarned || 0,
-    seasons_completed: state.lifetimeStats?.seasonsCompleted || 0,
-    total_harvests: state.lifetimeStats?.totalHarvests || state.stats?.totalHarvests || 0,
-    boss_kills_total: bossKills,
-    kirha_current: state.kirha || 0,
+    season: Math.max(1, safeInt(state.season, 1)),
+    total_earned: Math.max(0, safeInt(state.lifetimeStats?.totalEarned ?? state.stats?.totalEarned, 0)),
+    seasons_completed: Math.max(0, safeInt(state.lifetimeStats?.seasonsCompleted, 0)),
+    total_harvests: Math.max(0, safeInt(state.lifetimeStats?.totalHarvests ?? state.stats?.totalHarvests, 0)),
+    boss_kills_total: Math.max(0, safeInt(bossKills, 0)),
+    kirha_current: Math.max(0, safeInt(state.kirha, 0)),
   };
 }
 
@@ -40,23 +47,33 @@ export async function submitLeaderboardSnapshot(state, displayName) {
   }
   const metrics = buildLeaderboardSnapshot(state);
   const supabase = await getSupabaseClient();
+  const name = (displayName || auth.displayName || 'Voyageur').slice(0, 40);
+
+  const { error: rpcError } = await supabase.rpc('upsert_my_leaderboard', {
+    p_display_name: name,
+    p_char_level: metrics.char_level,
+    p_max_job_level: metrics.max_job_level,
+    p_season: metrics.season,
+    p_total_earned: metrics.total_earned,
+    p_seasons_completed: metrics.seasons_completed,
+    p_total_harvests: metrics.total_harvests,
+    p_boss_kills_total: metrics.boss_kills_total,
+    p_kirha_current: metrics.kirha_current,
+  });
+
+  if (!rpcError) return { ok: true };
+
+  // Repli upsert table (anciens déploiements)
   const row = {
     user_id: auth.userId,
-    display_name: (displayName || auth.displayName || 'Voyageur').slice(0, 40),
-    char_level: metrics.char_level,
-    max_job_level: metrics.max_job_level,
-    season: metrics.season,
-    total_earned: metrics.total_earned,
-    seasons_completed: metrics.seasons_completed,
-    total_harvests: metrics.total_harvests,
-    boss_kills_total: metrics.boss_kills_total,
-    kirha_current: metrics.kirha_current,
+    display_name: name,
+    ...metrics,
     updated_at: new Date().toISOString(),
   };
   const { error } = await supabase.from('leaderboard_entries').upsert(row, { onConflict: 'user_id' });
   if (error) {
-    console.warn('[leaderboard] upsert failed', error.message);
-    return { ok: false, reason: error.message };
+    console.warn('[leaderboard] upsert failed', rpcError?.message || error.message);
+    return { ok: false, reason: error.message || rpcError.message };
   }
   return { ok: true };
 }
@@ -75,10 +92,11 @@ export async function fetchLeaderboard(sortKey = 'char_level', limit = 50, local
     return { ok: false, reason: 'Supabase non configuré.', rows: [] };
   }
   const supabase = await getSupabaseClient();
+  const col = LEADERBOARD_TABS.some((t) => t.sortKey === sortKey) ? sortKey : 'char_level';
   const { data, error } = await supabase
     .from('leaderboard_entries')
     .select('*')
-    .order(sortKey, { ascending: false })
+    .order(col, { ascending: false })
     .limit(limit);
   if (error) return { ok: false, reason: error.message, rows: [] };
   return { ok: true, rows: data || [] };

@@ -37,6 +37,8 @@ export async function renderLeaderboard(game, el) {
   const result = await fetchLeaderboard(tabDef.sortKey, 50, game.state);
   const auth = getAuthState();
   const mySnap = buildLeaderboardSnapshot(game.state);
+  const rows = result.rows || [];
+  const showSyncWarn = !sync.ok && rows.length === 0;
 
   el.innerHTML = `
     <div class="view-header">
@@ -49,17 +51,17 @@ export async function renderLeaderboard(game, el) {
       `).join('')}
     </nav>
     <div class="panel-inner">
-      ${!sync.ok ? `<p class="auth-error">Sync classement : ${sync.reason || 'échec'}</p>` : ''}
+      ${showSyncWarn ? `<p class="auth-error">Sync classement : ${sync.reason || 'échec'}</p>` : ''}
       ${!result.ok ? `<p class="auth-error">${result.reason || 'Impossible de charger le classement.'}</p>` : ''}
       ${result.devLocal ? '<p class="view-desc">Mode dev local — classement solo (Supabase non configuré).</p>' : ''}
       <ol class="leaderboard-list">
-        ${(result.rows || []).map((row, i) => `
+        ${rows.map((row, i) => `
           <li class="leaderboard-row${row.user_id === auth.userId ? ' me' : ''}">
             <span class="lb-rank">#${i + 1}</span>
             <span class="lb-name">${row.display_name || 'Voyageur'}</span>
             <span class="lb-value">${formatLeaderboardValue(activeLeaderboardTab, row)}</span>
           </li>
-        `).join('') || '<li class="leaderboard-empty">Aucun joueur classé pour l\u2019instant.</li>'}
+        `).join('') || '<li class="leaderboard-empty">Aucun joueur classé pour l\u2019instant. Joue un peu puis reviens ici.</li>'}
       </ol>
       ${mySnap ? `<p class="view-desc lb-you">Toi : ${formatLeaderboardValue(activeLeaderboardTab, { ...mySnap, display_name: game.getCharacterDisplayName() })}</p>` : ''}
     </div>

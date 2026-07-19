@@ -762,6 +762,71 @@
   color: var(--brun, #4A3728);
 }
 
+.farm-feed-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.farm-feed-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 36px;
+  padding: 0.2rem 0.5rem 0.2rem 0.3rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(74, 55, 40, 0.14);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--brun, #4A3728);
+}
+
+.farm-feed-chip.missing {
+  border-color: rgba(185, 60, 60, 0.45);
+  background: rgba(255, 230, 230, 0.9);
+  color: #8a2a2a;
+}
+
+.farm-feed-chip.muted {
+  opacity: 0.75;
+  font-weight: 600;
+}
+
+.farm-feed-chip .farm-feed-icon,
+.farm-feed-chip .resource-icon-img,
+.farm-feed-chip .resource-icon-emoji {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.farm-feed-chip-qty {
+  font-variant-numeric: tabular-nums;
+}
+
+.farm-feed-chip-cost {
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.farm-feed-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.45rem;
+}
+
+.farm-feed-xp {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--vert-fonce, #2D5A27);
+}
+
 .farm-feed-block {
   margin-bottom: 0.75rem;
 }

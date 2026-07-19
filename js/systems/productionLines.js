@@ -594,7 +594,7 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
     }
   }
 
-  const wornTools = wearBreederTool(state, recipes, equipment);
+  const wornTools = wearBreederTool(state, recipes, equipment, building?.toolKind || null);
   return {
     products,
     xp,

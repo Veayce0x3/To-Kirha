@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1315",
+      "date": "2026-07-19",
+      "title": "Ferme, vente & admin",
+      "highlights": [
+        "Élevage : seau et panier s’équipent ensemble (eau + récoltes de ferme)",
+        "Ferme : stock de ration avec icônes inventaire (blé, etc.)",
+        "Place marchande : nouvel onglet Vendre (vente PNJ déplacée depuis la Banque)",
+        "Admin : onglet plus fiable (rôle mémorisé + sync)",
+        "Classement : plus de message rouge alarmant si la liste charge correctement"
+      ]
+    },
+    {
       "buildId": "20260719-1230",
       "date": "2026-07-19",
       "title": "Classement réparé",

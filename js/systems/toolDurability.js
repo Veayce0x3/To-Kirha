@@ -44,19 +44,26 @@ export function migrateToolDurability(state, recipes) {
 /**
  * Usure les outils équipés.
  * En récolte : n'use que si palier outil = palier ressource (pas sur la 1ʳᵉ ressource).
- * En ferme (sans resourceId) : usure à chaque production.
+ * En ferme : passer recipeIdOverride pour n'user que le seau ou le panier.
  */
-export function wearToolsForHarvest(state, recipes, equipmentData, jobId, resourceId = null, resources = null) {
+export function wearToolsForHarvest(state, recipes, equipmentData, jobId, resourceId = null, resources = null, recipeIdOverride = null) {
   const eq = state.equipment;
-  if (!eq?.jobs) return [];
+  if (!eq?.jobs && !eq?.breederTools) return [];
 
   const resource = resourceId && resources ? resources[resourceId] : null;
   const worn = [];
-  const checkIds = new Set([
-    eq.jobs[jobId],
-    eq.accessories?.[jobId],
-    eq.global,
-  ].filter(Boolean));
+  const checkIds = new Set();
+  if (recipeIdOverride) {
+    checkIds.add(recipeIdOverride);
+  } else if (jobId === 'breeder') {
+    if (eq.breederTools?.bucket) checkIds.add(eq.breederTools.bucket);
+    if (eq.breederTools?.basket) checkIds.add(eq.breederTools.basket);
+    if (eq.jobs?.breeder) checkIds.add(eq.jobs.breeder);
+  } else {
+    if (eq.jobs?.[jobId]) checkIds.add(eq.jobs[jobId]);
+  }
+  if (eq.accessories?.[jobId]) checkIds.add(eq.accessories[jobId]);
+  if (eq.global) checkIds.add(eq.global);
 
   for (const recipeId of checkIds) {
     const recipe = recipes[recipeId];
@@ -93,6 +100,11 @@ function unequipBrokenTool(state, equipmentData, recipeId) {
     if (state.equipment.accessories?.[item.job] === recipeId) {
       state.equipment.accessories[item.job] = null;
     }
+  } else if (item.job === 'breeder') {
+    const bt = state.equipment.breederTools;
+    if (bt?.bucket === recipeId) bt.bucket = null;
+    if (bt?.basket === recipeId) bt.basket = null;
+    state.equipment.jobs.breeder = bt?.bucket || bt?.basket || null;
   } else if (state.equipment.jobs?.[item.job] === recipeId) {
     state.equipment.jobs[item.job] = null;
   }

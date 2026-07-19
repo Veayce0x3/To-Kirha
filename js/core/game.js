@@ -1399,9 +1399,7 @@ export class Game {
   doUnequip(slotOrJob, slotKind = 'tool') {
     const ok = slotOrJob === 'global'
       ? unequipGathering(this.state, null, 'global')
-      : slotKind === 'accessory' || slotKind === 'tool'
-        ? unequipGathering(this.state, slotOrJob, slotKind)
-        : unequip(slotOrJob, this.state);
+      : unequipGathering(this.state, slotOrJob, slotKind);
     if (!ok) return false;
     emit('unequip', { slot: slotOrJob, slotKind });
     emit('stateChange', this.state);

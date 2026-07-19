@@ -64,7 +64,7 @@ export function initUI(game, audio) {
 
   setNavigateGuard((viewId) => {
     if (!game.needsCareerChoice()) {
-      if ((viewId === 'auction_house' || viewId === 'leaderboard') && !canUseOnlineFeatures()) {
+      if (viewId === 'leaderboard' && !canUseOnlineFeatures()) {
         showAccountRequiredModal(getOnlineBlockReason());
         return false;
       }

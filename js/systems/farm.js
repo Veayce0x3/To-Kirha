@@ -175,7 +175,7 @@ export function getFarmProductionXp(building) {
   return Math.floor(8 + (building?.cycleMs || 10000) / 2000);
 }
 
-/** Libellé ration avec stock actuel (ex. « Blé : 12 (−2) »). */
+/** Libellé ration avec stock actuel (texte). */
 export function formatFeedCostLabel(building, feedId, resources = {}, state = null) {
   const cost = getFeedCost(building, feedId);
   if (!cost || !Object.keys(cost).length) {
@@ -191,6 +191,23 @@ export function formatFeedCostLabel(building, feedId, resources = {}, state = nu
       return `${qty}× ${name}`;
     })
     .join(' · ');
+}
+
+/** HTML ration avec icônes inventaire + stock. */
+export function formatFeedStockHtml(building, feedId, resources = {}, state = null, renderIcon = null) {
+  const cost = getFeedCost(building, feedId);
+  if (!cost || !Object.keys(cost).length) {
+    return `<span class="farm-feed-chip muted">${Object.keys(building?.feed || {}).length === 0 ? 'Aucune ration' : 'Choisir une ration'}</span>`;
+  }
+  return Object.entries(cost).map(([id, qty]) => {
+    const res = resources[id];
+    const have = state?.inventory?.[id] || 0;
+    const ok = have >= qty;
+    const icon = typeof renderIcon === 'function'
+      ? (renderIcon(res, 'farm-feed-icon') || '')
+      : (res?.emoji || '');
+    return `<span class="farm-feed-chip${ok ? '' : ' missing'}">${icon}<span class="farm-feed-chip-qty">${have}</span><span class="farm-feed-chip-cost">−${qty}</span></span>`;
+  }).join('');
 }
 
 export function consumeFeed(building, feedId, state) {
@@ -320,8 +337,11 @@ export function syncExpiredFarmSlots(state, onComplete) {
   }
 }
 
-export function wearBreederTool(state, recipes, equipment) {
-  return wearToolsForHarvest(state, recipes, equipment, 'breeder');
+export function wearBreederTool(state, recipes, equipment, toolKind = null) {
+  const recipeId = toolKind
+    ? (state.equipment?.breederTools?.[toolKind] || null)
+    : null;
+  return wearToolsForHarvest(state, recipes, equipment, 'breeder', null, null, recipeId);
 }
 
 export function isUnifiedFarmBuilding(building) {
