@@ -475,7 +475,7 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
   const animalLabel = building.animalName || 'Animal';
   const alive = countAliveAnimals(meta);
   const lifeLine = building.requiresAnimal
-    ? `${building.animalEmoji || '🐾'} ${alive}/${meta.animalSlots || 1} ${animalLabel}${(alive !== 1) ? 's' : ''} · ${meta.cyclesLeft || 0} cycle(s)`
+    ? `${building.animalEmoji || '🐾'} ${alive}/${meta.animalSlots || 1} ${animalLabel}${(alive !== 1) ? 's' : ''} · ${meta.cyclesLeft || 0} utilisations restantes`
     : '';
 
   const section = document.createElement('div');
@@ -558,16 +558,7 @@ export function renderFarmProduction(game, el, buildingId) {
     const buyCost = (slotDead && building.animalRepurchase) ? building.animalRepurchase : (building.animalPurchase || {});
     const buyParts = formatAnimalCostParts(buyCost, game.resources);
     const buyLabel = slotDead ? `Racheter ${animalName}` : `Acheter ${animalName}`;
-
-    const slotChips = (meta.animals || []).map((a, i) => {
-      if (a && (a.cyclesLeft || 0) > 0) {
-        return `<span class="farm-animal-chip ok">${emoji} #${i + 1} · ${a.cyclesLeft} cycles</span>`;
-      }
-      if (a && (a.cyclesLeft || 0) <= 0) {
-        return `<span class="farm-animal-chip dead">${emoji} #${i + 1} · mort</span>`;
-      }
-      return `<span class="farm-animal-chip empty">Emplacement ${i + 1} vide</span>`;
-    }).join('');
+    const maxCycles = building.animalMaxCycles || 12;
 
     let unlockHtml = '';
     if (nextUnlock) {
@@ -582,13 +573,43 @@ export function renderFarmProduction(game, el, buildingId) {
 
     animalHtml = `
       <div class="farm-animal-panel">
-        <p class="farm-animal-status">${emoji} ${alive}/${meta.animalSlots || 1} ${animalName}${alive !== 1 ? 's' : ''} actif${alive !== 1 ? 's' : ''}</p>
-        <div class="farm-animal-chips">${slotChips}</div>
+        <p class="farm-animal-status">${emoji} ${alive}/${meta.animalSlots || 1} ${animalName}${alive !== 1 ? 's' : ''} · 1 emplacement = 1 ${animalName.toLowerCase()}</p>
+        <div class="farm-animal-grid" role="list">
+          ${(meta.animals || []).map((a, i) => {
+            if (a && (a.cyclesLeft || 0) > 0) {
+              const left = a.cyclesLeft;
+              const pct = Math.max(0, Math.min(100, Math.round((left / maxCycles) * 100)));
+              return `
+                <div class="farm-animal-card ok" role="listitem">
+                  <span class="farm-animal-avatar" aria-hidden="true">${emoji}</span>
+                  <strong class="farm-animal-card-name">${animalName} ${i + 1}</strong>
+                  <span class="farm-animal-uses">${left} / ${maxCycles} utilisations</span>
+                  <div class="xp-bar-container farm-animal-uses-bar" role="progressbar" aria-valuenow="${left}" aria-valuemin="0" aria-valuemax="${maxCycles}">
+                    <div class="xp-bar" style="width:${pct}%"></div>
+                  </div>
+                </div>`;
+            }
+            if (a && (a.cyclesLeft || 0) <= 0) {
+              return `
+                <div class="farm-animal-card dead" role="listitem">
+                  <span class="farm-animal-avatar" aria-hidden="true">${emoji}</span>
+                  <strong class="farm-animal-card-name">${animalName} ${i + 1}</strong>
+                  <span class="farm-animal-uses">Épuisé — à racheter</span>
+                </div>`;
+            }
+            return `
+              <div class="farm-animal-card empty" role="listitem">
+                <span class="farm-animal-avatar farm-animal-avatar-empty" aria-hidden="true">${emoji}</span>
+                <strong class="farm-animal-card-name">Emplacement ${i + 1}</strong>
+                <span class="farm-animal-uses">Vide — à acheter</span>
+              </div>`;
+          }).join('')}
+        </div>
         <div class="farm-animal-actions">
           ${emptyIdx >= 0 ? `<button type="button" class="btn btn-craft btn-buy-animal">${buyLabel} · ${buyParts.join(' + ')}</button>` : ''}
           ${unlockHtml}
         </div>
-        <p class="view-desc">Débloquer un nouvel animal est plus dur. Racheter un animal mort est moins cher.</p>
+        <p class="view-desc">Chaque production consomme 1 utilisation. À 0, rachète un animal (moins cher que le 1er achat).</p>
       </div>`;
   }
 

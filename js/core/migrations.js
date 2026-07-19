@@ -252,10 +252,32 @@ const MIGRATIONS = {
       meta.animals = [meta.hasAnimal ? { cyclesLeft: Math.max(1, Number(meta.cyclesLeft) || 12) } : null];
     }
   },
+  36(state) {
+    // Retrait outils rendement bûcheron / pêcheur (Panier renforcé, Nasse)
+    const removed = new Set(['herb_basket', 'fish_trap']);
+    if (Array.isArray(state.crafted)) {
+      state.crafted = state.crafted.filter((id) => !removed.has(id));
+    }
+    if (state.toolDurability && typeof state.toolDurability === 'object') {
+      for (const id of removed) delete state.toolDurability[id];
+    }
+    const eq = state.equipment;
+    if (eq?.accessories) {
+      for (const jobId of Object.keys(eq.accessories)) {
+        if (removed.has(eq.accessories[jobId])) eq.accessories[jobId] = null;
+      }
+    }
+    if (eq && removed.has(eq.accessory)) eq.accessory = null;
+    if (eq?.jobs) {
+      for (const jobId of Object.keys(eq.jobs)) {
+        if (removed.has(eq.jobs[jobId])) eq.jobs[jobId] = null;
+      }
+    }
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 35;
+  const target = ctx.balance?.saveVersion ?? 36;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

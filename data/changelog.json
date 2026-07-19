@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260719-2000",
+      "date": "2026-07-19",
+      "title": "Ferme claire, prix rares, sans rendement",
+      "highlights": [
+        "Ferme : une carte animal par emplacement avec utilisations restantes avant épuisement",
+        "Prix vente : produits rares (plume, cuir, lait de brebis, jambon, gelée) plus chers que les communs",
+        "Outilleur : retrait Panier renforcé (bûcheron) et Nasse (pêcheur)"
+      ]
+    },
+    {
       "buildId": "20260719-1930",
       "date": "2026-07-19",
       "title": "Outilleur ordonné, Fusion, teaser Saison",

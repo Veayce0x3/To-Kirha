@@ -104,50 +104,6 @@
     "requiredJobLevel": 1,
     "jobXp": 12
   },
-  "herb_basket": {
-    "id": "herb_basket",
-    "name": "Panier renforcé",
-    "emoji": "🧺",
-    "description": "+1 rendement bûcheron",
-    "kirhaCost": 280,
-    "maxUses": 200,
-    "ingredients": {
-      "frene": 12,
-      "pissenlit": 6,
-      "ancient_scroll": 1
-    },
-    "effect": {
-      "type": "yield",
-      "job": "lumberjack",
-      "bonus": 1
-    },
-    "unique": true,
-    "craftJob": "toolmaker",
-    "requiredJobLevel": 5,
-    "jobXp": 20
-  },
-  "fish_trap": {
-    "id": "fish_trap",
-    "name": "Nasse traditionnelle",
-    "emoji": "🪤",
-    "description": "+1 rendement pêcheur",
-    "kirhaCost": 280,
-    "maxUses": 200,
-    "ingredients": {
-      "frene": 8,
-      "ancient_scroll": 1,
-      "dorade": 5
-    },
-    "effect": {
-      "type": "yield",
-      "job": "fisher",
-      "bonus": 1
-    },
-    "unique": true,
-    "craftJob": "toolmaker",
-    "requiredJobLevel": 5,
-    "jobXp": 20
-  },
   "master_toolkit": {
     "id": "master_toolkit",
     "name": "Boîte à outils",

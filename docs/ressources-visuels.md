@@ -105,22 +105,17 @@ Référence pour les visuels.
 
 | ID             | Nom            | Emoji | Type      | Prix vente |
 | -------------- | -------------- | ----- | --------- | ---------- |
-| `avoine`       | Avoine         | 🌾    | farmer    | 10         |
-| `bacon`        | Bacon          | 🥓    | Ferme     | 14         |
-| `ble`          | Blé            | 🌾    | farmer    | 4          |
-| `cuir`         | Cuir           | 🟤    | Ferme     | 12         |
-| `dorade`       | Dorade         | 🐟    | fisher    | 4          |
 | `eau`          | Eau            | 💧    | Ferme     | 2          |
-| `gelee_royale` | Gelée royale   | 👑    | Ferme     | 25         |
-| `jambon`       | Jambon         | 🍖    | Ferme     | 18         |
-| `laine`        | Laine          | 🧶    | Ferme     | 10         |
-| `lait`         | Lait           | 🥛    | Ferme     | 8          |
-| `lait_brebis`  | Lait de brebis | 🍼    | Ferme     | 9          |
-| `miel`         | Miel           | 🍯    | Ferme     | 15         |
 | `oeuf`         | Œuf            | 🥚    | Ferme     | 6          |
-| `orge`         | Orge           | 🌾    | farmer    | 7          |
-| `pissenlit`    | Pissenlit      | 🌼    | alchemist | 4          |
-| `plume`        | Plume          | 🪶    | Ferme     | 4          |
+| `plume`        | Plume          | 🪶    | Ferme     | 14         |
+| `lait`         | Lait           | 🥛    | Ferme     | 8          |
+| `cuir`         | Cuir           | 🟤    | Ferme     | 16         |
+| `laine`        | Laine          | 🧶    | Ferme     | 10         |
+| `lait_brebis`  | Lait de brebis | 🍼    | Ferme     | 18         |
+| `bacon`        | Bacon          | 🥓    | Ferme     | 14         |
+| `jambon`       | Jambon         | 🍖    | Ferme     | 28         |
+| `miel`         | Miel           | 🍯    | Ferme     | 16         |
+| `gelee_royale` | Gelée royale   | 👑    | Ferme     | 36         |
 
 
 ### Cartes visuels — produits & rations ferme

@@ -965,6 +965,67 @@
   border: 1px solid rgba(155, 89, 182, 0.18);
 }
 
+.farm-animal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 0.55rem;
+  margin: 0.55rem 0 0.7rem;
+}
+
+.farm-animal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.65rem 0.45rem 0.55rem;
+  border-radius: 12px;
+  text-align: center;
+  background: rgba(255, 253, 249, 0.95);
+  border: 1.5px solid rgba(74, 55, 40, 0.12);
+  min-height: 110px;
+}
+
+.farm-animal-card.ok {
+  border-color: rgba(45, 90, 39, 0.35);
+}
+
+.farm-animal-card.dead {
+  border-color: rgba(192, 57, 43, 0.4);
+  background: rgba(255, 235, 232, 0.7);
+}
+
+.farm-animal-card.empty {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+.farm-animal-avatar {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.farm-animal-avatar-empty {
+  filter: grayscale(0.85);
+  opacity: 0.45;
+}
+
+.farm-animal-card-name {
+  font-size: 0.78rem;
+  color: var(--brun, #4A3728);
+}
+
+.farm-animal-uses {
+  font-size: 0.72rem;
+  color: var(--brun-doux, #6b5344);
+  line-height: 1.25;
+}
+
+.farm-animal-uses-bar {
+  width: 100%;
+  height: 6px;
+  margin: 0.2rem 0 0;
+}
+
 .farm-animal-chips {
   display: flex;
   flex-wrap: wrap;

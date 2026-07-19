@@ -72,16 +72,6 @@
       "slot": "accessory",
       "job": "cook"
     },
-    "herb_basket": {
-      "recipeId": "herb_basket",
-      "slot": "accessory",
-      "job": "lumberjack"
-    },
-    "fish_trap": {
-      "recipeId": "fish_trap",
-      "slot": "accessory",
-      "job": "fisher"
-    },
     "master_toolkit": {
       "recipeId": "master_toolkit",
       "slot": "accessory",
