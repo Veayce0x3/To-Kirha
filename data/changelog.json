@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1600",
+      "date": "2026-07-19",
+      "title": "Admin plus lisible",
+      "highlights": [
+        "Admin : interface épurée + colonne « Dernière connexion » (Actifs / Nouveaux)",
+        "Fiche joueur : date de connexion bien visible (plus d’« — » cassé)"
+      ]
+    },
+    {
       "buildId": "20260719-1545",
       "date": "2026-07-19",
       "title": "Admin Accès refusé corrigé",

@@ -254,10 +254,11 @@ export const REPORT_STATUS_LABELS = {
 };
 
 export const PLAYER_FILTER_LABELS = {
-  recent: 'Récents',
+  recent: 'Actifs',
+  new: 'Nouveaux',
   banned: 'Bannis',
-  flagged: 'Flag triche',
-  staff: 'Équipe staff',
+  flagged: 'Flag',
+  staff: 'Staff',
 };
 
 export const LOG_ACTION_LABELS = {

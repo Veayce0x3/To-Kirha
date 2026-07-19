@@ -76,28 +76,6 @@ function bindRefresh(container, fn) {
   container.querySelector('.admin-refresh-btn')?.addEventListener('click', fn);
 }
 
-function playerTableHtml(rows) {
-  if (!rows.length) return '<p class="view-desc">Aucun joueur.</p>';
-  return `
-    <div class="admin-table-wrap">
-      <table class="admin-table">
-        <thead><tr><th>Pseudo</th><th>Rôle</th><th>Nv.</th><th>Fortune</th><th>Inscrit</th><th>Statut</th><th></th></tr></thead>
-        <tbody>${rows.map((r) => `
-          <tr class="${r.is_banned ? 'row-banned' : ''}${r.cheat_flagged ? ' row-flagged' : ''}">
-            <td>${r.display_name || '?'}</td>
-            <td>${roleBadge(r.role)}</td>
-            <td>Nv.${r.char_level || 1}</td>
-            <td>${fmtNum(r.total_earned)} 💰</td>
-            <td>${fmtDate(r.created_at)}</td>
-            <td>${r.is_banned ? '⛔' : r.cheat_flagged ? '⚠️' : '✓'}</td>
-            <td><button type="button" class="btn btn-muted btn-sm admin-view-player" data-uid="${r.user_id}">Voir</button></td>
-          </tr>
-        `).join('')}</tbody>
-      </table>
-    </div>
-  `;
-}
-
 function bindPlayerTable(container, detailEl) {
   container.querySelectorAll('.admin-view-player').forEach((btn) => {
     btn.addEventListener('click', () => loadPlayerDetail(btn.dataset.uid, detailEl));
@@ -165,13 +143,54 @@ function fmtNum(n) {
   return Number(n || 0).toLocaleString('fr-FR');
 }
 
-function fmtDate(iso) {
-  if (!iso) return '—';
+/** Dates ISO, epoch ms (number / string numérique), ou Date. */
+function fmtDate(value) {
+  if (value == null || value === '') return '—';
   try {
-    return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+    let d;
+    if (value instanceof Date) {
+      d = value;
+    } else if (typeof value === 'number') {
+      d = new Date(value < 1e12 ? value * 1000 : value);
+    } else if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+      const n = Number(value);
+      d = new Date(n < 1e12 ? n * 1000 : n);
+    } else {
+      d = new Date(value);
+    }
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
   } catch {
-    return iso;
+    return '—';
   }
+}
+
+/** Relatif court : « il y a 2 h », sinon date courte. */
+function fmtLastSeen(rowOrTs) {
+  const raw = rowOrTs && typeof rowOrTs === 'object'
+    ? (rowOrTs.last_online ?? rowOrTs.save_updated_at ?? rowOrTs.created_at)
+    : rowOrTs;
+  if (raw == null || raw === '') return '—';
+  let ms;
+  if (typeof raw === 'number') {
+    ms = raw < 1e12 ? raw * 1000 : raw;
+  } else if (typeof raw === 'string' && /^\d+$/.test(raw.trim())) {
+    const n = Number(raw);
+    ms = n < 1e12 ? n * 1000 : n;
+  } else {
+    ms = new Date(raw).getTime();
+  }
+  if (!Number.isFinite(ms) || Number.isNaN(ms)) return '—';
+  const diff = Date.now() - ms;
+  if (diff < 0) return fmtDate(ms);
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'à l’instant';
+  if (min < 60) return `il y a ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 48) return `il y a ${h} h`;
+  const days = Math.floor(h / 24);
+  if (days < 14) return `il y a ${days} j`;
+  return fmtDate(ms);
 }
 
 function setStatus(msg, isError = false) {
@@ -186,6 +205,42 @@ function setStatus(msg, isError = false) {
 function roleBadge(role) {
   const cls = role === 'superadmin' ? 'super' : role === 'admin' ? 'admin' : role === 'moderator' ? 'mod' : '';
   return `<span class="admin-badge ${cls}">${ROLE_LABELS[role] || role}</span>`;
+}
+
+function playerStatusChip(r) {
+  if (r.is_banned) return '<span class="admin-chip-status banned">Banni</span>';
+  if (r.cheat_flagged) return '<span class="admin-chip-status flagged">Flag</span>';
+  return '<span class="admin-chip-status ok">OK</span>';
+}
+
+function playerTableHtml(rows) {
+  if (!rows.length) return '<p class="view-desc">Aucun joueur.</p>';
+  return `
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Pseudo</th>
+            <th>Rôle</th>
+            <th>Nv.</th>
+            <th>Dernière connexion</th>
+            <th>Statut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows.map((r) => `
+          <tr class="${r.is_banned ? 'row-banned' : ''}${r.cheat_flagged ? ' row-flagged' : ''}">
+            <td class="admin-td-name">${r.display_name || '?'}</td>
+            <td>${roleBadge(r.role)}</td>
+            <td>${r.char_level || 1}</td>
+            <td class="admin-td-muted" title="${fmtDate(r.last_online || r.save_updated_at)}">${fmtLastSeen(r)}</td>
+            <td>${playerStatusChip(r)}</td>
+            <td><button type="button" class="btn btn-muted btn-sm admin-view-player" data-uid="${r.user_id}">Fiche</button></td>
+          </tr>
+        `).join('')}</tbody>
+      </table>
+    </div>
+  `;
 }
 
 async function renderDashboard(container) {
@@ -204,49 +259,51 @@ async function renderDashboard(container) {
 
   container.innerHTML = `
     ${toolbarHtml()}
-    ${maintenance ? '<div class="admin-alert warn">⚠️ Mode maintenance actif — online limité pour les joueurs.</div>' : ''}
-    ${d.reports_pending > 0 ? `<div class="admin-alert info">🚩 ${d.reports_pending} signalement(s) en attente — <button type="button" class="btn-link admin-goto-tab" data-tab="reports">Voir</button></div>` : ''}
-    <div class="admin-stat-grid">
+    ${maintenance ? '<div class="admin-alert warn">Mode maintenance actif — online limité pour les joueurs.</div>' : ''}
+    ${d.reports_pending > 0 ? `<div class="admin-alert info">${d.reports_pending} signalement(s) en attente — <button type="button" class="btn-link admin-goto-tab" data-tab="reports">Traiter</button></div>` : ''}
+    <div class="admin-stat-grid admin-stat-grid-primary">
       <div class="admin-stat"><span class="admin-stat-val">${fmtNum(d.players_total)}</span><span class="admin-stat-lbl">Joueurs</span></div>
-      <div class="admin-stat accent"><span class="admin-stat-val">+${fmtNum(d.players_new_24h)}</span><span class="admin-stat-lbl">24 h</span></div>
-      <div class="admin-stat warn"><span class="admin-stat-val">${fmtNum(d.players_banned)}</span><span class="admin-stat-lbl">Bannis</span></div>
-      <div class="admin-stat warn"><span class="admin-stat-val">${fmtNum(d.players_flagged)}</span><span class="admin-stat-lbl">Flag triche</span></div>
+      <div class="admin-stat accent"><span class="admin-stat-val">+${fmtNum(d.players_new_24h)}</span><span class="admin-stat-lbl">Nouveaux 24 h</span></div>
       <div class="admin-stat"><span class="admin-stat-val">${fmtNum(d.reports_pending)}</span><span class="admin-stat-lbl">Signalements</span></div>
-      <div class="admin-stat"><span class="admin-stat-val">${fmtNum(d.leaderboard_entries)}</span><span class="admin-stat-lbl">Classement</span></div>
-      <div class="admin-stat"><span class="admin-stat-val">${fmtNum(d.market_sells_active)}</span><span class="admin-stat-lbl">Ventes HDV</span></div>
-      <div class="admin-stat"><span class="admin-stat-val">${fmtNum(d.market_buys_active)}</span><span class="admin-stat-lbl">Offres HDV</span></div>
-      <div class="admin-stat"><span class="admin-stat-val">${fmtNum(d.saves_total)}</span><span class="admin-stat-lbl">Saves cloud</span></div>
-      <div class="admin-stat"><span class="admin-stat-val">${fmtNum(d.staff_count)}</span><span class="admin-stat-lbl">Staff</span></div>
-      <div class="admin-stat"><span class="admin-stat-val">${fmtNum(d.announcements_active)}</span><span class="admin-stat-lbl">Annonces</span></div>
+      <div class="admin-stat warn"><span class="admin-stat-val">${fmtNum(d.players_banned)}</span><span class="admin-stat-lbl">Bannis</span></div>
+      <div class="admin-stat warn"><span class="admin-stat-val">${fmtNum(d.players_flagged)}</span><span class="admin-stat-lbl">Flags</span></div>
+      <div class="admin-stat"><span class="admin-stat-val">${fmtNum((d.market_sells_active || 0) + (d.market_buys_active || 0))}</span><span class="admin-stat-lbl">Annonces HDV</span></div>
     </div>
+    <p class="admin-meta-line">Classement ${fmtNum(d.leaderboard_entries)} · Saves ${fmtNum(d.saves_total)} · Staff ${fmtNum(d.staff_count)} · Annonces ${fmtNum(d.announcements_active)}</p>
     <div class="admin-dash-cols">
       <section class="admin-dash-section">
-        <h4 class="admin-section-title">🚩 Signalements récents</h4>
+        <h4 class="admin-section-title">Signalements</h4>
         ${pending.length ? pending.map((r) => `
           <div class="admin-mini-row">
-            <span><strong>${r.reported_name || '?'}</strong> — ${r.reason?.slice(0, 60) || '?'}</span>
-            <button type="button" class="btn btn-muted btn-sm admin-goto-player" data-uid="${r.reported_user_id}">Voir</button>
+            <div class="admin-mini-text">
+              <strong>${r.reported_name || '?'}</strong>
+              <span class="admin-td-muted">${(r.reason || '').slice(0, 70) || '—'}</span>
+            </div>
+            <button type="button" class="btn btn-muted btn-sm admin-goto-player" data-uid="${r.reported_user_id}">Fiche</button>
           </div>
-        `).join('') : '<p class="view-desc">Aucun signalement en attente.</p>'}
+        `).join('') : '<p class="view-desc">Rien en attente.</p>'}
       </section>
       <section class="admin-dash-section">
-        <h4 class="admin-section-title">👤 Inscriptions récentes</h4>
+        <h4 class="admin-section-title">Inscriptions récentes</h4>
         ${recentPlayers.length ? recentPlayers.map((p) => `
           <div class="admin-mini-row">
-            <span>${p.display_name} ${roleBadge(p.role)} · ${fmtDate(p.created_at)}</span>
-            <button type="button" class="btn btn-muted btn-sm admin-goto-player" data-uid="${p.user_id}">Voir</button>
+            <div class="admin-mini-text">
+              <strong>${p.display_name}</strong>
+              <span class="admin-td-muted">${fmtDate(p.created_at)} · ${ROLE_LABELS[p.role] || p.role}</span>
+            </div>
+            <button type="button" class="btn btn-muted btn-sm admin-goto-player" data-uid="${p.user_id}">Fiche</button>
           </div>
         `).join('') : '<p class="view-desc">Aucun joueur.</p>'}
       </section>
       <section class="admin-dash-section admin-dash-wide">
-        <h4 class="admin-section-title">📜 Activité modération</h4>
+        <h4 class="admin-section-title">Dernières actions staff</h4>
         ${recentLogs.length ? `
           <div class="admin-table-wrap">
             <table class="admin-table admin-table-compact">
-              <thead><tr><th>Date</th><th>Acteur</th><th>Action</th><th>Cible</th></tr></thead>
+              <thead><tr><th>Quand</th><th>Qui</th><th>Action</th><th>Cible</th></tr></thead>
               <tbody>${recentLogs.map((l) => `
                 <tr>
-                  <td>${fmtDate(l.created_at)}</td>
+                  <td class="admin-td-muted">${fmtLastSeen(l.created_at)}</td>
                   <td>${l.actor_name || '—'}</td>
                   <td>${LOG_ACTION_LABELS[l.action] || l.action}</td>
                   <td>${l.target_name || '—'}</td>
@@ -256,12 +313,6 @@ async function renderDashboard(container) {
           </div>
         ` : '<p class="view-desc">Aucune action récente.</p>'}
       </section>
-    </div>
-    <div class="admin-quick-nav">
-      <button type="button" class="btn btn-muted btn-sm admin-goto-tab" data-tab="players">👥 Joueurs</button>
-      <button type="button" class="btn btn-muted btn-sm admin-goto-tab" data-tab="reports">🚩 Signalements</button>
-      <button type="button" class="btn btn-muted btn-sm admin-goto-tab" data-tab="market">🏪 HDV</button>
-      <button type="button" class="btn btn-muted btn-sm admin-goto-tab" data-tab="logs">📜 Journal</button>
     </div>
   `;
 
@@ -363,65 +414,90 @@ async function loadPlayerDetail(userId, detailEl) {
     : '—';
 
   detailEl.innerHTML = `
-    <h4 class="admin-detail-title">${profile.display_name} ${roleBadge(profile.role)}</h4>
-    <p class="admin-detail-id">
-      <code id="admin-copy-uuid">${profile.user_id}</code>
-      <button type="button" class="btn btn-muted btn-sm" id="admin-copy-btn">Copier UUID</button>
-    </p>
-    <p class="view-desc">Inscrit le ${fmtDate(profile.created_at)}${profile.email ? ` · ${profile.email}` : ''}</p>
+    <div class="admin-detail-head">
+      <div>
+        <h4 class="admin-detail-title">${profile.display_name} ${roleBadge(profile.role)}</h4>
+        <p class="admin-detail-id">
+          <code id="admin-copy-uuid">${profile.user_id}</code>
+          <button type="button" class="btn btn-muted btn-sm" id="admin-copy-btn">Copier</button>
+        </p>
+      </div>
+      <div class="admin-last-seen-card" title="${fmtDate(save_summary?.last_online || save_summary?.save_updated_at)}">
+        <span class="admin-last-seen-lbl">Dernière connexion</span>
+        <span class="admin-last-seen-val">${save_summary ? fmtLastSeen(save_summary) : 'Jamais (pas de save)'}</span>
+        <span class="admin-td-muted">${save_summary?.last_online ? fmtDate(save_summary.last_online) : (save_summary ? 'via save cloud' : '—')}</span>
+      </div>
+    </div>
+    <p class="admin-meta-line">Inscrit le ${fmtDate(profile.created_at)}${profile.email ? ` · ${profile.email}` : ''}</p>
     ${profile.is_banned ? `<p class="guest-banner warn">Banni · ${profile.banned_reason || '—'} · ${fmtDate(profile.banned_at)}</p>` : ''}
     ${profile.cheat_flagged ? `<p class="guest-banner warn">Flag triche · ${profile.cheat_notes || '—'}</p>` : ''}
     <div class="admin-detail-grid">
-      <div><strong>Classement</strong><br>${leaderboard ? `Nv.${leaderboard.char_level} · S${leaderboard.season} · ${fmtNum(leaderboard.total_earned)} 💰 · ${fmtNum(leaderboard.kirha_current || 0)} en poche` : '—'}</div>
-      <div><strong>Save cloud</strong><br>${save_summary ? `${save_summary.nickname || '?'} · Nv.${save_summary.char_level} · S${save_summary.season} · ${fmtNum(save_summary.kirha)} 💰` : 'Aucune'}</div>
-      <div><strong>Carrière</strong><br>${save_summary?.career_confirmed ? `${save_summary.career_harvest || '?'} / ${save_summary.career_farm || '?'}` : 'Non choisie'}</div>
-      <div><strong>Dernière activité</strong><br>${save_summary?.last_online ? fmtDate(save_summary.last_online) : '—'}</div>
-      <div><strong>HDV</strong><br>${market_sells_active} vente(s) · ${market_buys_active} offre(s)</div>
-      <div><strong>Signalements</strong><br>${reports_against} reçus · ${reports_by || 0} envoyés</div>
-      <div><strong>Renommage gratuit</strong><br>${profile.free_rename_used ? 'Utilisé' : 'Disponible'}</div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Classement</span><span class="admin-info-val">${leaderboard ? `Nv.${leaderboard.char_level} · S${leaderboard.season}` : '—'}</span><span class="admin-td-muted">${leaderboard ? `${fmtNum(leaderboard.total_earned)} 💰 gagnés · ${fmtNum(leaderboard.kirha_current || 0)} en poche` : ''}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Save cloud</span><span class="admin-info-val">${save_summary ? `${save_summary.nickname || '?'} · Nv.${save_summary.char_level}` : 'Aucune'}</span><span class="admin-td-muted">${save_summary ? `S${save_summary.season} · ${fmtNum(save_summary.kirha)} 💰` : ''}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Carrière</span><span class="admin-info-val">${save_summary?.career_confirmed ? `${save_summary.career_harvest || '?'} / ${save_summary.career_farm || '?'}` : 'Non choisie'}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">HDV</span><span class="admin-info-val">${market_sells_active} vente(s) · ${market_buys_active} offre(s)</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Signalements</span><span class="admin-info-val">${reports_against} reçus · ${reports_by || 0} envoyés</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Renommage</span><span class="admin-info-val">${profile.free_rename_used ? 'Utilisé' : 'Disponible'}</span></div>
     </div>
-    <h5 class="admin-section-title">Métiers (save cloud)</h5>
-    <div class="admin-inventory-wrap">${jobsHtml}</div>
-    <h5 class="admin-section-title">Ressources (top 30)</h5>
-    <div class="admin-inventory-wrap">${invHtml}</div>
-    <h5 class="admin-section-title">Équipement combat (${(combat_items || []).length})</h5>
-    <div class="admin-inventory-wrap">${combatHtml}</div>
+    <details class="admin-fold" open>
+      <summary>Métiers & inventaire</summary>
+      <h5 class="admin-section-title">Métiers</h5>
+      <div class="admin-inventory-wrap">${jobsHtml}</div>
+      <h5 class="admin-section-title">Ressources (top 30)</h5>
+      <div class="admin-inventory-wrap">${invHtml}</div>
+      <h5 class="admin-section-title">Équipement combat (${(combat_items || []).length})</h5>
+      <div class="admin-inventory-wrap">${combatHtml}</div>
+    </details>
     ${(name_history || []).length ? `
-      <h5 class="admin-section-title">Historique pseudo</h5>
-      <div class="admin-table-wrap">
-        <table class="admin-table admin-table-compact">
-          <thead><tr><th>Date</th><th>Ancien</th><th>Nouveau</th><th>Type</th></tr></thead>
-          <tbody>${name_history.map((h) => `
-            <tr>
-              <td>${fmtDate(h.created_at)}</td>
-              <td>${h.old_name}</td>
-              <td>${h.new_name}</td>
-              <td>${h.change_type}</td>
-            </tr>
-          `).join('')}</tbody>
-        </table>
+      <details class="admin-fold">
+        <summary>Historique pseudo (${name_history.length})</summary>
+        <div class="admin-table-wrap">
+          <table class="admin-table admin-table-compact">
+            <thead><tr><th>Date</th><th>Ancien</th><th>Nouveau</th><th>Type</th></tr></thead>
+            <tbody>${name_history.map((h) => `
+              <tr>
+                <td>${fmtDate(h.created_at)}</td>
+                <td>${h.old_name}</td>
+                <td>${h.new_name}</td>
+                <td>${h.change_type}</td>
+              </tr>
+            `).join('')}</tbody>
+          </table>
+        </div>
+      </details>
+    ` : ''}
+    <div class="admin-actions-block">
+      <h5 class="admin-section-title">Modération</h5>
+      <div class="admin-actions">
+        ${profile.is_banned
+          ? `<button type="button" class="btn btn-craft" id="admin-unban">Débannir</button>`
+          : `<button type="button" class="btn btn-danger" id="admin-ban">Bannir</button>`}
+        <button type="button" class="btn btn-muted" id="admin-flag">${profile.cheat_flagged ? 'Retirer flag' : 'Flag triche'}</button>
+      </div>
+    </div>
+    <div class="admin-actions-block">
+      <h5 class="admin-section-title">Données</h5>
+      <div class="admin-actions">
+        <button type="button" class="btn btn-muted" id="admin-del-lb">Retirer classement</button>
+        <button type="button" class="btn btn-muted" id="admin-wipe-market">Vider HDV</button>
+        ${canResetSave ? '<button type="button" class="btn btn-muted" id="admin-reset-save">Reset save cloud</button>' : ''}
+        ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs">+1 tous métiers</button>' : ''}
+        ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs-5">+5 tous métiers</button>' : ''}
+      </div>
+    </div>
+    ${canSetRole ? `
+      <div class="admin-actions-block">
+        <h5 class="admin-section-title">Rôle staff</h5>
+        <div class="admin-actions admin-actions-role">
+          <select class="auth-input admin-role-select" id="admin-role-select">
+            ${['player', 'moderator', 'admin', 'superadmin'].map((r) => `
+              <option value="${r}" ${profile.role === r ? 'selected' : ''}>${ROLE_LABELS[r]}</option>
+            `).join('')}
+          </select>
+          <button type="button" class="btn btn-craft" id="admin-set-role">Appliquer</button>
+        </div>
       </div>
     ` : ''}
-    <div class="admin-actions">
-      ${profile.is_banned
-        ? `<button type="button" class="btn btn-craft" id="admin-unban">Débannir</button>`
-        : `<button type="button" class="btn btn-danger" id="admin-ban">Bannir</button>`}
-      <button type="button" class="btn btn-muted" id="admin-flag">${profile.cheat_flagged ? 'Retirer flag triche' : 'Flag triche'}</button>
-      <button type="button" class="btn btn-muted" id="admin-del-lb">Retirer classement</button>
-      <button type="button" class="btn btn-muted" id="admin-wipe-market">Vider HDV</button>
-      ${canResetSave ? '<button type="button" class="btn btn-muted" id="admin-reset-save">Reset save cloud</button>' : ''}
-      ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs">+1 tous les métiers</button>' : ''}
-      ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs-5">+5 tous les métiers</button>' : ''}
-      ${canSetRole ? `
-        <p class="view-desc admin-role-hint">Attribuer un rôle staff (modérateur, admin, superadmin) :</p>
-        <select class="auth-input admin-role-select" id="admin-role-select">
-          ${['player', 'moderator', 'admin', 'superadmin'].map((r) => `
-            <option value="${r}" ${profile.role === r ? 'selected' : ''}>${ROLE_LABELS[r]}</option>
-          `).join('')}
-        </select>
-        <button type="button" class="btn btn-craft" id="admin-set-role">Changer rôle</button>
-      ` : ''}
-    </div>
   `;
 
   detailEl.querySelector('#admin-copy-btn')?.addEventListener('click', async () => {
@@ -1036,15 +1112,16 @@ function paintAdmin(game, el) {
   }
 
   el.innerHTML = `
-    <div class="view-header">
-      <h2>🛡️ Administration</h2>
-      <p class="view-desc">Connecté en tant que ${ROLE_LABELS[role] || role}</p>
+    <div class="view-header admin-header">
+      <h2>Administration</h2>
+      <p class="view-desc">${roleBadge(role)} · panneau staff</p>
     </div>
-    <p id="admin-status" class="admin-status">${statusMsg}</p>
+    <p id="admin-status" class="admin-status${statusMsg ? (statusMsg.includes('refusé') || statusMsg.includes('erreur') ? ' error' : ' ok') : ''}">${statusMsg || ''}</p>
     <nav class="admin-tabs" role="tablist">
       ${tabs.map((t) => `
         <button type="button" class="admin-tab-btn${t.id === activeTab ? ' active' : ''}" data-tab="${t.id}" role="tab">
-          ${t.icon} ${t.label}
+          <span class="admin-tab-icon" aria-hidden="true">${t.icon}</span>
+          <span class="admin-tab-label">${t.label}</span>
         </button>
       `).join('')}
     </nav>
