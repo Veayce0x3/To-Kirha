@@ -1,5 +1,5 @@
 const COMBAT_EQUIP_SLOTS = [
-  'helmet', 'cape', 'amulet', 'weapon', 'shield',
+  'helmet', 'cape', 'amulet', 'weapon',
   'ring_left', 'ring_right', 'belt', 'chest', 'boots',
 ];
 

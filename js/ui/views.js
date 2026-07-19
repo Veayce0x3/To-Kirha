@@ -674,7 +674,6 @@ const DOFUS_SLOT_LAYOUT = [
   { id: 'portrait', area: 'portrait', isPortrait: true },
   { id: 'amulet', area: 'amulet' },
   { id: 'weapon', area: 'weapon' },
-  { id: 'shield', area: 'shield' },
   { id: 'chest', area: 'chest' },
   { id: 'boots', area: 'boots' },
   { id: 'ring_left', area: 'ringl' },

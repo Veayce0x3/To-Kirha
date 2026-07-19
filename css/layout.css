@@ -7656,7 +7656,7 @@ body.has-job-switcher .footer {
     ". helmet ."
     "cape portrait amulet"
     ". weapon ."
-    "shield chest boots"
+    ". chest boots"
     "ringl belt ringr";
   gap: 0.45rem;
   justify-content: center;
@@ -7688,7 +7688,6 @@ body.has-job-switcher .footer {
 .char-equip-portrait { grid-area: portrait; border: none; background: transparent; min-height: 86px; box-shadow: none; }
 .char-equip-amulet { grid-area: amulet; }
 .char-equip-weapon { grid-area: weapon; }
-.char-equip-shield { grid-area: shield; }
 .char-equip-chest { grid-area: chest; }
 .char-equip-boots { grid-area: boots; }
 .char-equip-ringl { grid-area: ringl; }

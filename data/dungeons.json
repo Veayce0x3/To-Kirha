@@ -17,7 +17,7 @@
       "set_sakura_ring": 0.22,
       "set_sakura_ring_right": 0.12,
       "set_sakura_amulet": 0.15,
-      "set_sakura_shield": 0.18
+      "set_sakura_belt": 0.18
     }
   },
   "petal_den": {
@@ -39,7 +39,7 @@
       "set_petal_ring": 0.14,
       "set_petal_ring_right": 0.1,
       "set_petal_amulet": 0.1,
-      "set_petal_shield": 0.12
+      "set_petal_belt": 0.12
     }
   },
   "jade_cavern": {
@@ -61,7 +61,7 @@
       "set_jade_ring": 0.12,
       "set_jade_ring_right": 0.08,
       "set_jade_amulet": 0.08,
-      "set_jade_shield": 0.1
+      "set_jade_belt": 0.1
     }
   }
 }

@@ -7,9 +7,9 @@ export const STARTER_WEAPON_CHOICES = [
     weaponType: 'sword_shield',
     itemId: 'set_sakura_guardian_blade',
     label: 'Guerrier',
-    emoji: '🛡️',
+    emoji: '⚔️',
     bonus: 'Bonus défense',
-    description: 'Épée + bouclier pour encaisser les gros combats.',
+    description: 'Épée et garde pour encaisser les gros combats.',
   },
   {
     weaponType: 'bow',

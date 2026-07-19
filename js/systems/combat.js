@@ -6,7 +6,7 @@ import {
 import { COMPANION_EQUIP_SLOTS, getCompanionDisplayName } from './companions.js';
 
 export const COMBAT_SLOT_IDS = [
-  'helmet', 'cape', 'amulet', 'weapon', 'shield',
+  'helmet', 'cape', 'amulet', 'weapon',
   'ring_left', 'ring_right', 'belt', 'chest', 'boots',
 ];
 
@@ -756,5 +756,6 @@ export function migrateCombatEquipment(saved) {
     delete eq.ring;
   }
   delete eq.ring;
+  delete eq.shield;
   return eq;
 }

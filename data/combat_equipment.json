@@ -20,11 +20,6 @@
       "name": "Arme",
       "emoji": "⚔️"
     },
-    "shield": {
-      "id": "shield",
-      "name": "Bouclier",
-      "emoji": "🛡️"
-    },
     "ring_left": {
       "id": "ring_left",
       "name": "Anneau G.",
@@ -95,21 +90,9 @@
       "slot": "chest",
       "zone": "village_sakura",
       "stats": {
-        "hp": 25,
+        "hp": 45,
         "atk": 3,
-        "def": 5
-      }
-    },
-    "set_sakura_shield": {
-      "id": "set_sakura_shield",
-      "name": "Bouclier Pétale",
-      "emoji": "🛡️",
-      "slot": "shield",
-      "zone": "village_sakura",
-      "stats": {
-        "hp": 20,
-        "atk": 0,
-        "def": 6
+        "def": 11
       }
     },
     "set_sakura_boots": {
@@ -127,7 +110,7 @@
     "set_sakura_guardian_blade": {
       "id": "set_sakura_guardian_blade",
       "name": "Épée-bouclier du Guerrier",
-      "emoji": "🛡️",
+      "emoji": "⚔️",
       "slot": "weapon",
       "zone": "village_sakura",
       "weaponType": "sword_shield",
@@ -245,21 +228,9 @@
       "slot": "chest",
       "zone": "petal_forest",
       "stats": {
-        "hp": 45,
-        "atk": 8,
-        "def": 10
-      }
-    },
-    "set_petal_shield": {
-      "id": "set_petal_shield",
-      "name": "Bouclier des Pétales",
-      "emoji": "🛡️",
-      "slot": "shield",
-      "zone": "petal_forest",
-      "stats": {
-        "hp": 42,
-        "atk": 2,
-        "def": 12
+        "hp": 87,
+        "atk": 10,
+        "def": 22
       }
     },
     "set_petal_weapon": {
@@ -279,7 +250,7 @@
     "set_petal_guardian_blade": {
       "id": "set_petal_guardian_blade",
       "name": "Épée-bouclier Florale",
-      "emoji": "🛡️",
+      "emoji": "⚔️",
       "slot": "weapon",
       "zone": "petal_forest",
       "weaponType": "sword_shield",
@@ -395,21 +366,9 @@
       "slot": "chest",
       "zone": "jade_mountains",
       "stats": {
-        "hp": 80,
-        "atk": 15,
-        "def": 18
-      }
-    },
-    "set_jade_shield": {
-      "id": "set_jade_shield",
-      "name": "Bouclier de Jade",
-      "emoji": "🛡️",
-      "slot": "shield",
-      "zone": "jade_mountains",
-      "stats": {
-        "hp": 75,
-        "atk": 4,
-        "def": 20
+        "hp": 155,
+        "atk": 19,
+        "def": 38
       }
     },
     "set_jade_weapon": {
@@ -429,7 +388,7 @@
     "set_jade_guardian_blade": {
       "id": "set_jade_guardian_blade",
       "name": "Épée-bouclier de Jade",
-      "emoji": "🛡️",
+      "emoji": "⚔️",
       "slot": "weapon",
       "zone": "jade_mountains",
       "weaponType": "sword_shield",

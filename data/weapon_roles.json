@@ -2,7 +2,7 @@
   "sword_shield": {
     "label": "Guerrier",
     "role": "Tank · Bonus défense",
-    "description": "Épée et bouclier — encaisse mieux les coups et protège la progression.",
+    "description": "Épée et garde — encaisse mieux les coups et protège la progression.",
     "signatureSkill": "ss_shield_bash",
     "signatureHint": "Coup de bouclier — frappe et peut étourdir."
   },
