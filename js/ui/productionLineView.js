@@ -448,7 +448,7 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
     </div>
     <div class="farm-info-chips">
       <div class="farm-feed-chips" title="Stock inventaire (−coût par production)">${feedHtmlChips || `🍽️ ${feedLabel}`}</div>
-      <span class="farm-info-chip">📜 +${xpGain} XP Éleveur</span>
+      ${xpGain > 0 ? `<span class="farm-info-chip">📜 +${xpGain} XP Éleveur</span>` : ''}
       <span class="farm-info-chip">${lifeLine}</span>
     </div>
     <p class="view-desc">Tape pour lancer une production, puis pour collecter. L'animal a une durée de vie limitée.</p>
@@ -503,7 +503,9 @@ export function renderFarmProduction(game, el, buildingId) {
         </div>
       </div>`;
   } else {
-    feedHtml = `<p class="farm-feed-preview">Gain : <strong>+${xpGain} XP Éleveur</strong> / production</p>`;
+    feedHtml = xpGain > 0
+      ? `<p class="farm-feed-preview">Gain : <strong>+${xpGain} XP Éleveur</strong> / production</p>`
+      : `<p class="farm-feed-preview">Le Puits fournit l’eau pour les animaux — <strong>pas d’XP Éleveur</strong> (XP au poulailler & co).</p>`;
   }
 
   let animalHtml = '';
@@ -574,7 +576,9 @@ export function renderFarmProduction(game, el, buildingId) {
         </div>
       </div>
       <div class="farm-info-chips">
-        <span class="farm-info-chip">📜 +${xpGain} XP Éleveur</span>
+        ${xpGain > 0
+          ? `<span class="farm-info-chip">📜 +${xpGain} XP Éleveur</span>`
+          : `<span class="farm-info-chip">Eau utilitaire · pas d’XP Éleveur</span>`}
         <span class="farm-info-chip">${Math.round((building.cycleMs || 0) / 1000)}s / cycle</span>
       </div>
       <div class="slots-grid production-units-grid"></div>`;

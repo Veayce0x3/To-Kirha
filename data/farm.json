@@ -10,6 +10,7 @@
       "toolTier": 1,
       "toolKind": "bucket",
       "cycleMs": 3500,
+      "grantsJobXp": false,
       "products": {
         "eau": 1
       },

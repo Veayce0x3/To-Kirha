@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1630",
+      "date": "2026-07-19",
+      "title": "Puits sans XP Éleveur",
+      "highlights": [
+        "Ferme : le Puits ne donne plus d’XP Éleveur (l’eau ne fait plus monter le poulailler)"
+      ]
+    },
+    {
       "buildId": "20260719-1615",
       "date": "2026-07-19",
       "title": "Temps de jeu Admin",

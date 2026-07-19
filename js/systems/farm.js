@@ -170,8 +170,9 @@ export function getFeedCost(building, feedId) {
   return cost;
 }
 
-/** XP Éleveur par cycle de production. */
+/** XP Éleveur par cycle — 0 si le bâtiment est utilitaire (ex. Puits). */
 export function getFarmProductionXp(building) {
+  if (building?.grantsJobXp === false) return 0;
   return Math.floor(8 + (building?.cycleMs || 10000) / 2000);
 }
 
@@ -303,8 +304,8 @@ export function completeFarmProduction(state, farmData, buildingId, slotIndex, j
     state.inventory[resId] = (state.inventory[resId] || 0) + amount;
   }
 
-  const xp = Math.floor(8 + (building.cycleMs || 10000) / 2000);
-  const levelResult = addJobXp(state, 'breeder', xp, jobs, balance);
+  const xp = getFarmProductionXp(building);
+  const levelResult = xp > 0 ? addJobXp(state, 'breeder', xp, jobs, balance) : null;
   state.stats.totalHarvests = (state.stats.totalHarvests || 0) + 1;
   slot.active = null;
   return { products, xp, levelResult, buildingId, slotIndex };

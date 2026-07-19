@@ -25,6 +25,7 @@ import {
   isUnifiedFarmBuilding,
   getUnifiedFarmLineKey,
   rollFarmProductDrops,
+  getFarmProductionXp,
 } from './farm.js';
 
 function cfg(balance) {
@@ -576,8 +577,8 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
     state.inventory[resId] = (state.inventory[resId] || 0) + amount;
   }
 
-  const xp = Math.floor(8 + (building.cycleMs || 10000) / 2000);
-  const levelResult = addJobXp(state, 'breeder', xp, jobs, balance);
+  const xp = getFarmProductionXp(building);
+  const levelResult = xp > 0 ? addJobXp(state, 'breeder', xp, jobs, balance) : null;
   state.stats.totalHarvests = (state.stats.totalHarvests || 0) + 1;
   slot.active = null;
 
