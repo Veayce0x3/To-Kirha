@@ -8,21 +8,42 @@ import { tryAutoRefreshForNewBuild } from './core/startupRefresh.js';
 import { mountAnnouncementBanner } from './ui/announcements.js';
 import { isAccountBanned, syncProfileFromServer, setupAuthStateListener } from './core/auth.js';
 import { emit } from './core/events.js';
+import { applyAssetPaths, applyJobIcons } from './core/assets.js';
+import { getSupabaseClient, isSupabaseConfigured } from './core/supabaseClient.js';
 
 const DATA_BASE = new URL('../data/', import.meta.url);
 
-async function loadJSON(file) {
+/**
+ * @param {string} file
+ * @param {{ fresh?: boolean, bust?: string }} [opts]
+ * - fresh: ignore le cache (ex. balance.json pour détecter une nouvelle build)
+ * - bust: clé de cache (= appBuildId) pour invalider proprement après déploiement
+ */
+async function loadJSON(file, opts = {}) {
   const url = new URL(file, DATA_BASE);
-  url.searchParams.set('_', String(Date.now()));
-  const res = await fetch(url, { cache: 'no-store', credentials: 'same-origin' });
+  if (opts.bust) url.searchParams.set('v', opts.bust);
+  else if (opts.fresh) url.searchParams.set('_', String(Date.now()));
+
+  const res = await fetch(url, {
+    credentials: 'same-origin',
+    cache: opts.fresh ? 'no-store' : 'force-cache',
+  });
   if (!res.ok) throw new Error(`Impossible de charger ${file} (${res.status})`);
   return res.json();
 }
 
 async function main() {
-  // Balance d’abord : détecte une nouvelle build et recharge automatiquement
-  const balance = await loadJSON('balance.json');
+  // Préchauffe Supabase (esm.sh) en parallèle du chargement des données
+  if (isSupabaseConfigured()) {
+    getSupabaseClient().catch(() => {});
+  }
+
+  // Seul balance.json est forcé hors-cache (petit fichier) pour détecter les updates
+  const balance = await loadJSON('balance.json', { fresh: true });
   if (await tryAutoRefreshForNewBuild(balance)) return;
+
+  const bust = balance.appBuildId || String(balance.saveVersion || 'dev');
+  const load = (file) => loadJSON(file, { bust });
 
   const [
     resources, jobs, recipes, aides, equipment, farmData,
@@ -30,27 +51,26 @@ async function main() {
     combatSkills, combatResources, companions, achievements, weaponRoles,
     changelog,
   ] = await Promise.all([
-    loadJSON('resources.json'),
-    loadJSON('jobs.json'),
-    loadJSON('recipes.json'),
-    loadJSON('aides.json'),
-    loadJSON('equipment.json'),
-    loadJSON('farm.json'),
-    loadJSON('character.json'),
-    loadJSON('combat_equipment.json'),
-    loadJSON('combat_zones.json'),
-    loadJSON('enemies.json'),
-    loadJSON('merchant.json'),
-    loadJSON('combat_skills.json'),
-    loadJSON('combat_resources.json'),
-    loadJSON('companions.json'),
-    loadJSON('achievements.json'),
-    loadJSON('weapon_roles.json'),
-    loadJSON('changelog.json').catch(() => ({ entries: [] })),
+    load('resources.json'),
+    load('jobs.json'),
+    load('recipes.json'),
+    load('aides.json'),
+    load('equipment.json'),
+    load('farm.json'),
+    load('character.json'),
+    load('combat_equipment.json'),
+    load('combat_zones.json'),
+    load('enemies.json'),
+    load('merchant.json'),
+    load('combat_skills.json'),
+    load('combat_resources.json'),
+    load('companions.json'),
+    load('achievements.json'),
+    load('weapon_roles.json'),
+    load('changelog.json').catch(() => ({ entries: [] })),
   ]);
 
   Object.assign(resources, combatResources);
-  const { applyAssetPaths, applyJobIcons } = await import('./core/assets.js');
   applyAssetPaths(resources);
   applyJobIcons(jobs);
 
@@ -60,14 +80,14 @@ async function main() {
     weaponRoles
   );
   game.changelog = changelog;
+
+  // Init jeu + config online en parallèle
+  const configPromise = loadGameConfig().catch(() => null);
   await game.init();
-  await setupAuthStateListener(game);
-
-  await loadGameConfig();
-
-  if (game.state?.meta?.account?.mode === 'registered') {
-    await syncProfileFromServer();
-  }
+  await Promise.all([
+    setupAuthStateListener(game),
+    configPromise,
+  ]);
 
   document.documentElement.dataset.theme = game.state.settings?.darkMode ? 'dark' : '';
   audio.updateSettings(game.state.settings);
@@ -80,14 +100,11 @@ async function main() {
 
   initUI(game, audio);
 
-  // Second passage rôle staff (évite onglet Admin manquant si sync lente)
+  // Resync staff / annonces hors du chemin critique (ne bloque plus l’UI)
   if (game.state?.meta?.account?.mode === 'registered') {
-    await syncProfileFromServer();
-    emit('navRefresh');
-  }
-
-  if (game.state?.meta?.account?.mode === 'registered') {
-    syncProfileFromServer().catch(() => {});
+    syncProfileFromServer()
+      .then(() => emit('navRefresh'))
+      .catch(() => {});
   }
 
   const bannerEl = document.getElementById('global-banners');
@@ -99,6 +116,7 @@ async function main() {
       mountAnnouncementBanner(bannerEl);
     }
   }
+
   const { showCareerChoiceIfNeeded } = await import('./ui/careerChoiceUi.js');
   showCareerChoiceIfNeeded(game);
 

@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1515",
+      "date": "2026-07-19",
+      "title": "Chargement plus rapide",
+      "highlights": [
+        "Démarrage accéléré : cache des données de jeu par version + moins d’attente réseau au lancement"
+      ]
+    },
+    {
       "buildId": "20260719-1500",
       "date": "2026-07-19",
       "title": "Cloud, compte & Admin",
