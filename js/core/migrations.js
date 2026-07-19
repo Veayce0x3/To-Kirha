@@ -274,10 +274,13 @@ const MIGRATIONS = {
       }
     }
   },
+  37() {
+    // Accès métiers après prestige cassé : géré par repairSeasonAccess() dans mergeState
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 36;
+  const target = ctx.balance?.saveVersion ?? 37;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

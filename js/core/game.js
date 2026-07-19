@@ -35,6 +35,7 @@ import { applyOfflineProgress } from '../systems/offline.js';
 import {
   canPrestige,
   applyPrestige,
+  repairSeasonAccess,
   getPrestigePreview,
   getPrestigeBonuses,
   getPrestigeProgress,
@@ -414,6 +415,9 @@ export class Game {
       resources: this.resources,
       farmData: this.farmData,
     });
+    if (repairSeasonAccess(merged)) {
+      // Métiers réouverts après prestige cassé — armes re-données plus bas si besoin
+    }
     ensureProductionLines(merged, this.resources, this.farmData, this.balance);
     migrateCombatItemInstances(merged, this.combatEquipment.items);
     migrateCombatDurability(merged, this.combatEquipment.items);
@@ -455,6 +459,11 @@ export class Game {
     }
 
     if (this.balance.betaMode) applyBetaUnlocks(this.state, this.companions);
+
+    // Saison réparée / prestige : remettre armes de départ si absentes
+    if (this.state.careerChoice?.weaponType && !this.state.careerChoice.starterWeaponsGranted) {
+      this.applyStarterWeaponTeam(this.state.careerChoice.weaponType);
+    }
 
     const offlineResult = applyOfflineProgress(this.state, this.aides, this.balance);
     this.state.lastOnline = Date.now();
@@ -1881,7 +1890,14 @@ export class Game {
     this.state = this.mergeState(newState);
     this.passiveAccum = {};
 
+    // Remet armes de départ + lignes Paysan (careerChoice conservé)
+    if (this.state.careerChoice?.weaponType && !this.state.careerChoice.starterWeaponsGranted) {
+      this.applyStarterWeaponTeam(this.state.careerChoice.weaponType);
+    }
+    ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
+
     emit('prestige', { season, prestige: this.state.prestige });
+    emit('careerChoiceApplied', { careerChoice: this.state.careerChoice });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;

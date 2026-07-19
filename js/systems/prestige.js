@@ -1,4 +1,6 @@
 import { isChapterComplete, areAchievementsEnabled, isAchievementCompleted } from './achievements.js';
+import { getDefaultCompanionEquipment } from './companions.js';
+import { isCareerChoiceComplete, STARTER_WEAPON_TYPES } from './careerChoice.js';
 
 function getPrestigeReqForSeason(balance, season) {
   const base = balance?.prestige || {};
@@ -254,6 +256,38 @@ export function getPrestigePreview(state, balance, achievements = {}, combatZone
   };
 }
 
+function preserveCareerChoice(state) {
+  const cc = state.careerChoice;
+  if (!cc?.confirmed || !STARTER_WEAPON_TYPES.includes(cc.weaponType)) return null;
+  return {
+    confirmed: true,
+    weaponType: cc.weaponType,
+    teamWeaponTypes: Array.isArray(cc.teamWeaponTypes) && cc.teamWeaponTypes.length
+      ? [...cc.teamWeaponTypes]
+      : [cc.weaponType, ...STARTER_WEAPON_TYPES.filter((t) => t !== cc.weaponType)],
+    // Remettre les armes de départ après reset inventaire combat
+    starterWeaponsGranted: false,
+  };
+}
+
+/** Garde les équipiers recrutés / en équipe ; reset l’équipement (loot effacé). */
+function preserveCompanions(state) {
+  const saved = state.companions;
+  if (!saved || typeof saved !== 'object') return null;
+  const out = {};
+  for (const [id, prev] of Object.entries(saved)) {
+    if (!prev || typeof prev !== 'object') continue;
+    out[id] = {
+      unlocked: !!prev.unlocked,
+      activeInParty: prev.activeInParty !== false,
+      nickname: prev.nickname || '',
+      assignedWeaponType: prev.assignedWeaponType || '',
+      equipment: getDefaultCompanionEquipment(),
+    };
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 export function applyPrestige(state, balance, getFreshState, achievements = {}, combatZones = {}) {
   if (!canPrestige(state, balance, achievements, combatZones)) return false;
 
@@ -282,10 +316,11 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
   const preservedMeta = state.meta && typeof state.meta === 'object'
     ? JSON.parse(JSON.stringify(state.meta))
     : {};
+  const preservedCareer = preserveCareerChoice(state);
+  const preservedCompanions = preserveCompanions(state);
 
   return {
     ...fresh,
-    // Départ saison : Kirha de base (pas le boost test 10 000)
     kirha: balance.startingKirha ?? 0,
     season,
     prestige: newPrestige,
@@ -293,9 +328,7 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     achievements: preservedAchievements,
     settings,
     lastOnline: Date.now(),
-    // Conserve le temps de jeu lifetime (admin)
     playtime: state.playtime || { foregroundMs: 0, backgroundMs: 0 },
-    // Compte + pseudo : sinon plus d’accès nav / onboarding
     meta: preservedMeta,
     character: {
       ...(fresh.character || { level: 1, xp: 0 }),
@@ -303,9 +336,28 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
       nicknameUpdatedAt: state.character?.nicknameUpdatedAt || null,
       freeRenameUsed: !!state.character?.freeRenameUsed,
     },
-    // Rechoisir l’arme de départ pour la nouvelle saison
-    careerChoice: null,
+    // Garde le parcours → métiers accessibles tout de suite
+    careerChoice: preservedCareer,
+    // Garde l’équipe recrutée (pas de re-paiement)
+    companions: preservedCompanions || fresh.companions,
   };
+}
+
+/** Répare une saison déjà cassée (pas de careerChoice → plus de métiers). */
+export function repairSeasonAccess(state) {
+  if ((state.season || 1) < 2 && !(state.lifetimeStats?.seasonsCompleted > 0)) return false;
+  if (isCareerChoiceComplete(state.careerChoice)) return false;
+  if (state.careerChoice?.confirmed && STARTER_WEAPON_TYPES.includes(state.careerChoice.weaponType)) {
+    state.careerChoice.starterWeaponsGranted = false;
+    return true;
+  }
+  state.careerChoice = {
+    confirmed: true,
+    weaponType: 'sword_shield',
+    teamWeaponTypes: [...STARTER_WEAPON_TYPES],
+    starterWeaponsGranted: false,
+  };
+  return true;
 }
 
 function getFreshProgress(balance) {
