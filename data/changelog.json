@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1830",
+      "date": "2026-07-19",
+      "title": "Ferme 2e animal, outilleur, minuteurs",
+      "highlights": [
+        "Ferme : débloquer un emplacement ajoute une unité de production visible",
+        "Outilleur : boutons par métier (Bûcheron, Pêcheur…)",
+        "Récolte : minuteur (10s, 30s…) à la place du %",
+        "Pêcheur : canne craftée avec des dorades (plus du fugu)",
+        "Admin : +1 niveaux corrigé (métiers + ferme + perso) — exécuter la migration SQL"
+      ]
+    },
+    {
       "buildId": "20260719-1800",
       "date": "2026-07-19",
       "title": "Outils, ferme, outilleur",

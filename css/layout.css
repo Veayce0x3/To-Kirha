@@ -988,6 +988,32 @@
   color: var(--vert-foret);
 }
 
+.craft-job-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.craft-job-tab {
+  min-height: 44px;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 90, 39, 0.25);
+  background: rgba(255, 253, 249, 0.95);
+  color: var(--brun-bois, #4A3728);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.craft-job-tab.active {
+  background: var(--vert-foret);
+  color: #fff;
+  border-color: var(--vert-foret);
+}
+
 .view-container {
   flex: 1;
   padding: 1rem 1.25rem 2rem;

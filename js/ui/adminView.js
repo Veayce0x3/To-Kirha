@@ -533,8 +533,9 @@ async function loadPlayerDetail(userId) {
       <div class="admin-actions">
         <button type="button" class="btn btn-muted" id="admin-del-lb">Retirer classement</button>
         ${canResetSave ? '<button type="button" class="btn btn-muted" id="admin-reset-save">Reset save cloud</button>' : ''}
-        ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs">+1 tous métiers</button>' : ''}
-        ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs-5">+5 tous métiers</button>' : ''}
+        ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs">+1 métiers + ferme + perso</button>' : ''}
+        ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs-5">+5 métiers + ferme + perso</button>' : ''}
+        ${canGrantJobs ? '<p class="view-desc admin-grant-hint">Le joueur doit <strong>recharger le jeu</strong> (ou se reconnecter) pour voir les niveaux. Ne pas jouer en parallèle sinon sa save locale écrase le gift.</p>' : ''}
       </div>
     </div>
     ${canSetRole ? `
@@ -598,14 +599,14 @@ async function loadPlayerDetail(userId) {
   });
 
   detailEl.querySelector('#admin-grant-jobs')?.addEventListener('click', async () => {
-    if (!confirm('Ajouter +1 niveau à tous les métiers de ce joueur (save cloud) ?')) return;
+    if (!confirm('Ajouter +1 niveau (métiers + bâtiments ferme + perso) sur la save cloud ?\nLe joueur doit recharger après.')) return;
     const r = await grantAllJobsLevel(userId);
-    setStatus(r.ok ? 'Tous les métiers +1.' : r.reason, !r.ok);
+    setStatus(r.ok ? 'Niveaux +1 appliqués (cloud). Demande au joueur de recharger.' : r.reason, !r.ok);
     if (r.ok) loadPlayerDetail(userId);
   });
 
   detailEl.querySelector('#admin-grant-jobs-5')?.addEventListener('click', async () => {
-    if (!confirm('Ajouter +5 niveaux à tous les métiers (5× +1) ?')) return;
+    if (!confirm('Ajouter +5 niveaux (5× +1 métiers/ferme/perso) ?\nLe joueur doit recharger après.')) return;
     let ok = true;
     let lastReason = '';
     for (let i = 0; i < 5; i++) {
@@ -616,7 +617,7 @@ async function loadPlayerDetail(userId) {
         break;
       }
     }
-    setStatus(ok ? 'Tous les métiers +5.' : lastReason, !ok);
+    setStatus(ok ? 'Niveaux +5 appliqués (cloud). Demande au joueur de recharger.' : lastReason, !ok);
     if (ok) loadPlayerDetail(userId);
   });
 

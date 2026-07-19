@@ -18,6 +18,7 @@ import {
   getEmptyAnimalSlotIndex,
   getNextAnimalSlotUnlock,
   formatAnimalCostParts,
+  ensureFarmUnitsForAnimalSlots,
 } from '../systems/productionLines.js';
 import { getHarvestTime } from '../systems/harvest.js';
 import { getHarvestXpForResource } from '../systems/progression.js';
@@ -43,11 +44,33 @@ function formatNumber(n) {
   return Math.floor(n).toLocaleString('fr-FR');
 }
 
-function getHarvestBtnLabel(phase, progress = 0) {
+function formatTimerMs(ms) {
+  if (ms == null || ms <= 0) return '0s';
+  const sec = Math.max(1, Math.ceil(ms / 1000));
+  if (sec >= 60) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+  return `${sec}s`;
+}
+
+function getHarvestBtnLabel(phase, progress = 0, remainingMs = null) {
+  if (phase === 'regrowing' && progress >= 1) return 'Prêt !';
+  if (remainingMs != null) {
+    const prefix = phase === 'regrowing' ? 'Repousse ' : '';
+    return `${prefix}${formatTimerMs(remainingMs)}`;
+  }
   const pct = Math.floor(progress * 100);
   if (phase === 'harvesting') return `Récolte ${pct}%`;
   if (phase === 'regrowing') return `Repousse ${pct}%`;
   return 'Récolter';
+}
+
+function getSlotRemainingMs(slot) {
+  if (!slot?.active) return null;
+  const elapsed = Date.now() - (slot.active.start || 0);
+  return Math.max(0, (slot.active.duration || 0) - elapsed);
 }
 
 function getAdjacentVisibleView(current, visible, direction) {
@@ -71,9 +94,10 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
     ? `<img class="slot-visual-sprite" src="${vis.sprite}" alt="" />`
     : `<span class="slot-visual-emoji">${vis.emoji || resource.emoji || '🌾'}</span>`;
 
+  const remainingMs = getSlotRemainingMs(slot);
   const progressPct = Math.floor(progress * 100);
   const statusLabel = active
-    ? (phase === 'regrowing' && progress >= 1 ? 'Prêt !' : getHarvestBtnLabel(phase, progress))
+    ? (phase === 'regrowing' && progress >= 1 ? 'Prêt !' : getHarvestBtnLabel(phase, progress, remainingMs))
     : (canHarvest ? 'Prêt' : '');
 
   const card = document.createElement('div');
@@ -313,23 +337,8 @@ export function renderJobProduction(game, el, jobId) {
 
 function getFarmBtnLabel(progress = 0, remainingMs = null) {
   if (progress >= 1) return 'Prêt !';
-  if (remainingMs != null && remainingMs > 0) {
-    const sec = Math.max(1, Math.ceil(remainingMs / 1000));
-    if (sec >= 60) {
-      const m = Math.floor(sec / 60);
-      const s = sec % 60;
-      return `${m}:${String(s).padStart(2, '0')}`;
-    }
-    return `${sec}s`;
-  }
-  const pct = Math.floor(progress * 100);
-  return `Production ${pct}%`;
-}
-
-function getSlotRemainingMs(slot) {
-  if (!slot?.active) return null;
-  const elapsed = Date.now() - (slot.active.start || 0);
-  return Math.max(0, (slot.active.duration || 0) - elapsed);
+  if (remainingMs != null && remainingMs > 0) return formatTimerMs(remainingMs);
+  return 'Production…';
 }
 
 function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
@@ -504,6 +513,9 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
 export function renderFarmProduction(game, el, buildingId) {
   const building = getBuildingDef(game.farmData, buildingId);
   if (!building) return;
+  if (building.requiresAnimal) {
+    ensureFarmUnitsForAnimalSlots(game.state, game.farmData, buildingId, game.balance);
+  }
   const prog = getFarmBuildingProgress(game.state, buildingId, game.jobs, game.balance);
   const pct = prog.grantsXp ? (prog.xp / prog.needed) * 100 : 0;
   const meta = game.getFarmMeta(buildingId);
@@ -663,7 +675,7 @@ export function updateProductionLineProgresses(game, jobId) {
       if (label) {
         label.textContent = phase === 'regrowing' && progress >= 1
           ? 'Prêt !'
-          : getHarvestBtnLabel(phase, progress);
+          : getHarvestBtnLabel(phase, progress, getSlotRemainingMs(slot));
       }
       if (progress >= 1 && phase === 'regrowing') {
         card.classList.add('slot-can-harvest');

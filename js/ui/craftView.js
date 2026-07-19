@@ -92,6 +92,8 @@ function renderRecipeGroup(title, items, game) {
 
 const TOOL_JOB_ORDER = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist', 'breeder', 'cook', '_other'];
 
+let selectedToolJob = null;
+
 function getToolTargetJob(info, game) {
   const fromEffect = info.recipe?.effect?.job;
   if (fromEffect) return fromEffect;
@@ -100,44 +102,71 @@ function getToolTargetJob(info, game) {
   return '_other';
 }
 
+function getVisibleToolJobs(groups, game) {
+  const present = new Set();
+  for (const info of [...groups.available, ...groups.owned, ...groups.locked]) {
+    const job = getToolTargetJob(info, game);
+    present.add(TOOL_JOB_ORDER.includes(job) ? job : '_other');
+  }
+  return TOOL_JOB_ORDER.filter((id) => present.has(id));
+}
+
 function renderToolmakerByJob(groups, game) {
-  const buckets = new Map();
-  for (const key of TOOL_JOB_ORDER) buckets.set(key, { available: [], owned: [], locked: [] });
+  const jobs = getVisibleToolJobs(groups, game);
+  if (!jobs.length) return '<p class="empty-text">Aucun outil disponible.</p>';
 
-  for (const info of groups.available) {
-    const job = getToolTargetJob(info, game);
-    (buckets.get(TOOL_JOB_ORDER.includes(job) ? job : '_other').available).push(info);
-  }
-  for (const info of groups.owned) {
-    const job = getToolTargetJob(info, game);
-    (buckets.get(TOOL_JOB_ORDER.includes(job) ? job : '_other').owned).push(info);
-  }
-  for (const info of groups.locked) {
-    const job = getToolTargetJob(info, game);
-    (buckets.get(TOOL_JOB_ORDER.includes(job) ? job : '_other').locked).push(info);
+  if (!selectedToolJob || !jobs.includes(selectedToolJob)) {
+    selectedToolJob = jobs[0];
   }
 
-  const parts = [];
-  for (const jobId of TOOL_JOB_ORDER) {
-    const g = buckets.get(jobId);
-    if (!g.available.length && !g.owned.length && !g.locked.length) continue;
+  const tabs = jobs.map((jobId) => {
     const job = game.jobs[jobId];
-    const title = jobId === '_other'
+    const label = jobId === '_other'
       ? '🛠️ Autres'
       : `${job?.emoji || '🛠️'} ${job?.name || jobId}`;
-    parts.push(`
-      <section class="craft-job-group">
-        <h3 class="craft-job-group-title">${title}</h3>
-        ${renderRecipeGroup('Disponibles', g.available, game)}
-        ${renderRecipeGroup('Possédé', g.owned, game)}
-        ${renderRecipeGroup('Verrouillées', g.locked, game)}
-      </section>
-    `);
+    const active = jobId === selectedToolJob ? ' active' : '';
+    return `<button type="button" class="craft-job-tab${active}" data-tool-job="${jobId}">${label}</button>`;
+  }).join('');
+
+  const filtered = { available: [], owned: [], locked: [] };
+  for (const info of groups.available) {
+    if (getToolTargetJob(info, game) === selectedToolJob) filtered.available.push(info);
   }
-  return parts.filter(Boolean).join('');
+  for (const info of groups.owned) {
+    if (getToolTargetJob(info, game) === selectedToolJob) filtered.owned.push(info);
+  }
+  for (const info of groups.locked) {
+    if (getToolTargetJob(info, game) === selectedToolJob) filtered.locked.push(info);
+  }
+
+  const job = game.jobs[selectedToolJob];
+  const title = selectedToolJob === '_other'
+    ? 'Autres outils'
+    : `Outils ${job?.name || selectedToolJob}`;
+
+  return `
+    <div class="craft-job-tabs" role="tablist">${tabs}</div>
+    <section class="craft-job-group">
+      <h3 class="craft-job-group-title">${title}</h3>
+      ${renderRecipeGroup('Disponibles', filtered.available, game)}
+      ${renderRecipeGroup('Possédé', filtered.owned, game)}
+      ${renderRecipeGroup('Verrouillées', filtered.locked, game)}
+      ${!filtered.available.length && !filtered.owned.length && !filtered.locked.length
+        ? '<p class="empty-text">Rien à fabriquer pour ce métier.</p>'
+        : ''}
+    </section>
+  `;
 }
 
 function handleCraftPanelClick(game, event, craftJobId, panelEl, headerEl) {
+  const jobTab = event.target.closest('[data-tool-job]');
+  if (jobTab) {
+    event.preventDefault();
+    selectedToolJob = jobTab.dataset.toolJob;
+    paintCraftPanel(game, craftJobId, panelEl, headerEl);
+    return;
+  }
+
   const equipBtn = event.target.closest('[data-equip-recipe]');
   if (equipBtn) {
     event.preventDefault();

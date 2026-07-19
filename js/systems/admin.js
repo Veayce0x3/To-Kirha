@@ -274,6 +274,8 @@ export const LOG_ACTION_LABELS = {
   set_config: 'Config',
   delete_listing: 'Annonce HDV suppr.',
   delete_buy_offer: 'Offre HDV suppr.',
+  grant_all_jobs_level: '+1 métiers / ferme',
+  wipe_all_leaderboard: 'Wipe classement',
 };
 
 export const ANN_KIND_LABELS = {

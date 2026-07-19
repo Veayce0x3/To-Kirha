@@ -591,7 +591,7 @@ export function completeHarvestUnit(state, resources, jobs, balance, jobId, reso
   return { phase: 'ready', resourceId, jobId, unitIndex };
 }
 
-export function buyFarmAnimal(state, farmData, buildingId) {
+export function buyFarmAnimal(state, farmData, buildingId, balance = null) {
   const building = getBuildingDef(farmData, buildingId);
   const meta = getFarmBuildingMeta(state, buildingId);
   if (!building?.requiresAnimal) return { ok: false, reason: 'Indisponible' };
@@ -612,6 +612,7 @@ export function buyFarmAnimal(state, farmData, buildingId) {
 
   meta.animals[emptyIdx] = { cyclesLeft: Math.max(1, building.animalMaxCycles || 12) };
   normalizeAnimalSlots(meta);
+  ensureFarmUnitsForAnimalSlots(state, farmData, buildingId, balance);
   return {
     ok: true,
     animalName: building.animalName || 'Animal',
@@ -621,7 +622,7 @@ export function buyFarmAnimal(state, farmData, buildingId) {
   };
 }
 
-export function unlockFarmAnimalSlot(state, farmData, buildingId) {
+export function unlockFarmAnimalSlot(state, farmData, buildingId, balance = null) {
   const building = getBuildingDef(farmData, buildingId);
   const meta = getFarmBuildingMeta(state, buildingId);
   if (!building?.requiresAnimal) return { ok: false, reason: 'Indisponible' };
@@ -641,7 +642,36 @@ export function unlockFarmAnimalSlot(state, farmData, buildingId) {
   meta.animalSlots += 1;
   meta.animals.push(null);
   normalizeAnimalSlots(meta);
+  // Une place animal = une unité de production visible
+  ensureFarmUnitsForAnimalSlots(state, farmData, buildingId, balance);
   return { ok: true, animalSlots: meta.animalSlots };
+}
+
+/** Aligne le nombre d’unités de production sur les emplacements animaux débloqués. */
+export function ensureFarmUnitsForAnimalSlots(state, farmData, buildingId, balance = null) {
+  const building = getBuildingDef(farmData, buildingId);
+  if (!building?.requiresAnimal) return;
+  const meta = getFarmBuildingMeta(state, buildingId);
+  const want = Math.max(1, Number(meta.animalSlots) || 1);
+  const maxUnits = getMaxUnits(balance);
+  const target = Math.min(want, maxUnits);
+
+  const lineKeys = isUnifiedFarmBuilding(building)
+    ? [getUnifiedFarmLineKey(building)]
+    : Object.keys(building.products || {});
+
+  for (const lineKey of lineKeys) {
+    let line = getFarmLine(state, buildingId, lineKey);
+    if (!line) {
+      setFarmLine(state, buildingId, lineKey, normalizeLine({ units: target }, target));
+      continue;
+    }
+    while (line.units < target) {
+      line.units += 1;
+      line.slots.push(emptySlot());
+    }
+    setFarmLine(state, buildingId, lineKey, line);
+  }
 }
 
 export function setFarmLineFeed(state, buildingId, feedId) {

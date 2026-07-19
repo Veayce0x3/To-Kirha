@@ -24,12 +24,12 @@
     "id": "fishing_rod",
     "name": "Canne en bambou",
     "emoji": "🎣",
-    "description": "Palier 1 — pêcheur (Dorade)",
+    "description": "Palier 1 — craftée avec des Dorades pour récolter le Crabe",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
     "ingredients": {
-      "fugu": 8
+      "dorade": 8
     },
     "effect": {
       "type": "speed",

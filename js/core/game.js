@@ -1048,7 +1048,7 @@ export class Game {
   }
 
   buyFarmAnimal(buildingId) {
-    const result = buyFarmAnimal(this.state, this.farmData, buildingId);
+    const result = buyFarmAnimal(this.state, this.farmData, buildingId, this.balance);
     if (!result.ok) return result;
     emit('farmAnimalBuy', result);
     emit('stateChange', this.state);
@@ -1057,7 +1057,7 @@ export class Game {
   }
 
   unlockFarmAnimalSlot(buildingId) {
-    const result = unlockFarmAnimalSlot(this.state, this.farmData, buildingId);
+    const result = unlockFarmAnimalSlot(this.state, this.farmData, buildingId, this.balance);
     if (!result.ok) return result;
     emit('farmAnimalSlotUnlock', result);
     emit('stateChange', this.state);
