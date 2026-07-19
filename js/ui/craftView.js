@@ -11,8 +11,9 @@ import { navigate } from './router.js';
 function renderIngredientLine(ingredients, kirhaCost, kirhaHave) {
   const parts = ingredients.map(({ res, need, have, ok }) => {
     const icon = res ? renderResourceIcon(res, 'ing-icon') : '?';
+    const name = res?.name || 'Ressource';
     const combatCls = res?.combatOnly ? ' ing-combat' : '';
-    return `<span class="${ok ? 'ing-ok' : 'ing-missing'}${combatCls}">${icon || ''} ${have}/${need}</span>`;
+    return `<span class="${ok ? 'ing-ok' : 'ing-missing'}${combatCls}">${icon || ''} ${name} ${have}/${need}</span>`;
   });
   if (kirhaCost > 0) {
     const ok = kirhaHave >= kirhaCost;
@@ -60,6 +61,9 @@ function renderRecipeCard(game, info) {
 
   const canClick = canMake && !locked;
   const btnClass = canClick ? 'btn btn-craft affordable' : 'btn btn-craft craft-blocked';
+  const tierBadge = recipe.toolTier
+    ? `<span class="craft-tier-badge">Palier ${recipe.toolTier}</span>`
+    : '';
 
   let equipBtn = '';
   if (owned && !broken && game.equipment.equipable[recipeId] && !isRecipeEquipped(game.state, recipeId)) {
@@ -68,7 +72,7 @@ function renderRecipeCard(game, info) {
 
   return `
     <div class="craft-tile${canClick ? ' affordable' : ''}${locked ? ' locked-res' : ''}${owned ? ' craft-owned' : ''}${broken ? ' craft-broken' : ''}" data-recipe-id="${recipeId}">
-      <div class="tile-name">${recipe.emoji} ${recipe.name}${recipe.repeatable ? ' ♻️' : ''}</div>
+      <div class="tile-name">${recipe.emoji} ${recipe.name}${recipe.repeatable ? ' ♻️' : ''}${tierBadge}</div>
       <p class="tile-stats">${recipe.description || ''}</p>
       ${durabilityHtml}
       ${combatHtml}
@@ -111,6 +115,15 @@ function getVisibleToolJobs(groups, game) {
   return TOOL_JOB_ORDER.filter((id) => present.has(id));
 }
 
+function sortToolsByTier(items) {
+  return [...items].sort((a, b) => {
+    const tierA = a.recipe?.toolTier || 0;
+    const tierB = b.recipe?.toolTier || 0;
+    if (tierA !== tierB) return tierA - tierB;
+    return (a.recipe?.name || a.recipeId || '').localeCompare(b.recipe?.name || b.recipeId || '', 'fr');
+  });
+}
+
 function renderToolmakerByJob(groups, game) {
   const jobs = getVisibleToolJobs(groups, game);
   if (!jobs.length) return '<p class="empty-text">Aucun outil disponible.</p>';
@@ -128,16 +141,12 @@ function renderToolmakerByJob(groups, game) {
     return `<button type="button" class="craft-job-tab${active}" data-tool-job="${jobId}">${label}</button>`;
   }).join('');
 
-  const filtered = { available: [], owned: [], locked: [] };
-  for (const info of groups.available) {
-    if (getToolTargetJob(info, game) === selectedToolJob) filtered.available.push(info);
-  }
-  for (const info of groups.owned) {
-    if (getToolTargetJob(info, game) === selectedToolJob) filtered.owned.push(info);
-  }
-  for (const info of groups.locked) {
-    if (getToolTargetJob(info, game) === selectedToolJob) filtered.locked.push(info);
-  }
+  const forJob = (list) => list.filter((info) => getToolTargetJob(info, game) === selectedToolJob);
+  const ordered = sortToolsByTier([
+    ...forJob(groups.available),
+    ...forJob(groups.owned),
+    ...forJob(groups.locked),
+  ]);
 
   const job = game.jobs[selectedToolJob];
   const title = selectedToolJob === '_other'
@@ -148,12 +157,10 @@ function renderToolmakerByJob(groups, game) {
     <div class="craft-job-tabs" role="tablist">${tabs}</div>
     <section class="craft-job-group">
       <h3 class="craft-job-group-title">${title}</h3>
-      ${renderRecipeGroup('Disponibles', filtered.available, game)}
-      ${renderRecipeGroup('Possédé', filtered.owned, game)}
-      ${renderRecipeGroup('Verrouillées', filtered.locked, game)}
-      ${!filtered.available.length && !filtered.owned.length && !filtered.locked.length
-        ? '<p class="empty-text">Rien à fabriquer pour ce métier.</p>'
-        : ''}
+      <p class="craft-job-hint">Un outil par palier — nommé d’après la ressource utilisée pour le craft.</p>
+      ${ordered.length
+        ? `<div class="craft-grid">${ordered.map((info) => renderRecipeCard(game, info)).join('')}</div>`
+        : '<p class="empty-text">Rien à fabriquer pour ce métier.</p>'}
     </section>
   `;
 }

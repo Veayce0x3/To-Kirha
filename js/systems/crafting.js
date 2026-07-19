@@ -277,6 +277,16 @@ export function listWorkshopRecipes(craftJobId, ctx) {
     else available.push(info);
   }
 
+  const byTier = (a, b) => {
+    const tierA = a.recipe?.toolTier || a.recipe?.requiredJobLevel || 0;
+    const tierB = b.recipe?.toolTier || b.recipe?.requiredJobLevel || 0;
+    if (tierA !== tierB) return tierA - tierB;
+    return (a.recipe?.name || a.recipeId || '').localeCompare(b.recipe?.name || b.recipeId || '', 'fr');
+  };
+  available.sort(byTier);
+  owned.sort(byTier);
+  locked.sort(byTier);
+
   return { available, owned, locked };
 }
 

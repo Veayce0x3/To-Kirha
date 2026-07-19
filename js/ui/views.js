@@ -177,30 +177,41 @@ function renderObjectiveBanner(game, container, { ready = false } = {}) {
 
 function renderPrestigeTeaser(game, container) {
   if (!container || !game.shouldShowPrestigeTeaser()) {
-    if (container) container.innerHTML = '';
+    if (container) {
+      container.innerHTML = '';
+      container.hidden = true;
+    }
     return;
   }
 
+  container.hidden = false;
   const proximity = game.getSeasonCapProximity();
   const progress = game.getPrestigeProgress();
   const info = game.getPrestigeInfo();
   const p = game.state.prestige || {};
-  const capHint = proximity.showTeaser && !proximity.atCap
-    ? `<p class="season-cap-hint">Tu approches du plafond Saison ${proximity.season} (perso ${proximity.charLevel}/${proximity.charCap} · métiers ${proximity.maxJobLevel}/${proximity.jobsCap}).</p>`
-    : proximity.atCap
-      ? `<p class="season-cap-hint">Plafond Saison ${proximity.season} atteint — passe à la Saison ${proximity.nextSeason} pour continuer.</p>`
+  const capHint = proximity.atCap
+    ? `Plafond Saison ${proximity.season} atteint`
+    : proximity.showTeaser
+      ? `Perso ${proximity.charLevel}/${proximity.charCap} · métiers ${proximity.maxJobLevel}/${proximity.jobsCap}`
       : '';
 
   container.innerHTML = `
-    <div class="prestige-teaser-head">
-      <span class="prestige-teaser-label">🌸 Saison suivante</span>
-      <strong>Saison ${info.nextSeason}</strong>
+    <div class="prestige-teaser-body">
+      <div class="prestige-teaser-head">
+        <span class="prestige-teaser-label">🌸 Saison suivante</span>
+        <strong class="prestige-teaser-season">Saison ${info.nextSeason}</strong>
+      </div>
+      <div class="prestige-teaser-meta">
+        <span>Prérequis ${progress.completed}/${progress.total}</span>
+        <span>+${Math.round((p.kirhaBonus || 0) * 100)}% 💰 · +${Math.round((p.xpBonus || 0) * 100)}% XP</span>
+      </div>
+      <div class="xp-bar-container prestige-teaser-bar" role="progressbar" aria-valuenow="${progress.percent}" aria-valuemin="0" aria-valuemax="100">
+        <div class="xp-bar" style="width:${Math.max(0, Math.min(100, progress.percent))}%"></div>
+      </div>
+      ${capHint ? `<p class="season-cap-hint">${capHint}</p>` : ''}
+      ${info.canDo ? '<p class="prestige-ready">Prêt pour une nouvelle saison</p>' : ''}
+      <button type="button" class="btn btn-small ${info.canDo ? 'btn-prestige' : 'btn-muted'}" id="char-prestige-btn">Ouvrir Saison</button>
     </div>
-    <p class="view-desc">Prérequis : ${progress.completed}/${progress.total} · Bonus actuels +${Math.round((p.kirhaBonus || 0) * 100)}% 💰 · +${Math.round((p.xpBonus || 0) * 100)}% XP</p>
-    <div class="xp-bar-container prestige-teaser-bar"><div class="xp-bar" style="width:${progress.percent}%"></div></div>
-    ${capHint}
-    ${info.canDo ? '<p class="prestige-ready">Tout est prêt pour une nouvelle saison !</p>' : ''}
-    <button type="button" class="btn btn-small ${info.canDo ? 'btn-prestige' : 'btn-muted'}" id="char-prestige-btn">Voir l'onglet Saison</button>
   `;
 
   container.querySelector('#char-prestige-btn')?.addEventListener('click', () => navigate('season'));
@@ -559,7 +570,7 @@ function renderCharacter(game, el) {
   el.innerHTML = `
     ${renderGuestBanner(game)}
     <div class="char-page">
-      <div class="prestige-teaser" id="char-prestige-teaser"></div>
+      <div class="prestige-teaser" id="char-prestige-teaser" hidden></div>
       <section class="char-hero panel-inner">
         <div class="char-hero-layout">
           <div class="char-hero-main">
@@ -860,23 +871,129 @@ function renderCharDofusEquipGrid(game, container) {
 }
 
 
+let fusionFilter = 'ready';
+
+function countFusionEquipped(game, refs) {
+  let equipped = 0;
+  for (const ref of refs) {
+    if (findCombatItemOwner(game.state, ref)) equipped += 1;
+  }
+  return equipped;
+}
+
+function formatFusionStats(stats) {
+  if (!stats) return '';
+  return [
+    stats.hp ? `+${stats.hp} PV` : '',
+    stats.atk ? `+${stats.atk} ATQ` : '',
+    stats.def ? `+${stats.def} DEF` : '',
+  ].filter(Boolean).join(' · ');
+}
+
 function renderFusionPanel(game, container) {
   if (!container) return;
-  const groups = game.getFusionGroups();
-  if (!groups.length) {
-    container.innerHTML = '<h3>🔮 Fusion</h3><p class="view-desc">Aucune pièce fusionnable (réserve ou équipée).</p>';
-    return;
+  const groups = game.getFusionGroups()
+    .map((g) => {
+      const need = getFusionInputCount(g.rarity);
+      const check = canFuseGroup(g, game.balance);
+      const nextRarity = getNextRarity(g.rarity);
+      const equipped = countFusionEquipped(game, g.refs);
+      return {
+        ...g,
+        key: `${g.itemId}::${g.rarity}`,
+        need,
+        check,
+        nextRarity,
+        equipped,
+        reserve: g.refs.length - equipped,
+        ready: !!check.ok,
+        percent: Math.min(100, Math.round((g.refs.length / need) * 100)),
+      };
+    })
+    .filter((g) => g.nextRarity)
+    .sort((a, b) => {
+      if (a.ready !== b.ready) return a.ready ? -1 : 1;
+      if (b.refs.length !== a.refs.length) return b.refs.length - a.refs.length;
+      return (a.item?.name || '').localeCompare(b.item?.name || '', 'fr');
+    });
+
+  const readyCount = groups.filter((g) => g.ready).length;
+  const progressCount = groups.filter((g) => !g.ready && g.refs.length > 0).length;
+  const filters = [
+    { id: 'ready', label: `Prêtes (${readyCount})` },
+    { id: 'progress', label: `En cours (${progressCount})` },
+    { id: 'all', label: `Toutes (${groups.length})` },
+  ];
+  if (!filters.some((f) => f.id === fusionFilter)) fusionFilter = 'ready';
+  if (fusionFilter === 'ready' && readyCount === 0 && groups.length > 0) {
+    fusionFilter = progressCount > 0 ? 'progress' : 'all';
   }
-  container.innerHTML = '<h3>🔮 Fusion</h3><p class="view-desc">Fusionne des pièces identiques pour monter en rareté — les stats augmentent à chaque palier.</p>' + groups.map((g) => {
-    const key = `${g.itemId}::${g.rarity}`;
-    const need = getFusionInputCount(g.rarity);
-    const check = canFuseGroup(g, game.balance);
+
+  const visible = groups.filter((g) => {
+    if (fusionFilter === 'ready') return g.ready;
+    if (fusionFilter === 'progress') return !g.ready;
+    return true;
+  });
+
+  const cards = visible.map((g) => {
     const cost = getFusionKirhaCost(g.rarity, game.balance);
-    const nextRarity = getNextRarity(g.rarity) || '—';
-    const item = g.item;
-    const curStats = item?.stats ? `PV+${item.stats.hp || 0} ATQ+${item.stats.atk || 0} DEF+${item.stats.def || 0}` : '';
-    return `<div class="fusion-row"><span>${g.item.emoji} ${g.item.name} ${RARITY_EMOJI[g.rarity] || ''} · ${g.refs.length}/${need}<br><small>${curStats} → ${RARITY_LABELS[nextRarity] || nextRarity}</small></span><button type="button" class="btn btn-craft btn-fusion" data-fusion="${key}" ${check.ok ? '' : 'disabled'}>Fusionner (${cost} 💰)</button></div>`;
+    const curStats = formatFusionStats(g.item?.stats);
+    const nextLabel = RARITY_LABELS[g.nextRarity] || g.nextRarity;
+    const rarityLabel = RARITY_LABELS[g.rarity] || g.rarity;
+    return `
+      <article class="fusion-card${g.ready ? ' fusion-card-ready' : ''}">
+        <div class="fusion-card-top">
+          <span class="fusion-card-emoji">${g.item?.emoji || '⚔️'}</span>
+          <div class="fusion-card-titles">
+            <strong>${g.item?.name || g.itemId}</strong>
+            <span class="fusion-card-rarity">${RARITY_EMOJI[g.rarity] || ''} ${rarityLabel} → ${RARITY_EMOJI[g.nextRarity] || ''} ${nextLabel}</span>
+          </div>
+        </div>
+        <div class="fusion-card-progress">
+          <div class="fusion-card-progress-label">
+            <span>${g.refs.length}/${g.need} pièces</span>
+            <span>${g.reserve} réserve · ${g.equipped} équipée${g.equipped > 1 ? 's' : ''}</span>
+          </div>
+          <div class="xp-bar-container fusion-progress-bar">
+            <div class="xp-bar" style="width:${g.percent}%"></div>
+          </div>
+        </div>
+        ${curStats ? `<p class="fusion-card-stats">${curStats}</p>` : ''}
+        <button type="button" class="btn btn-craft btn-fusion" data-fusion="${g.key}" ${g.ready ? '' : 'disabled'}>
+          ${g.ready ? `Fusionner · ${cost} 💰` : `Il en manque ${Math.max(0, g.need - g.refs.length)}`}
+        </button>
+      </article>
+    `;
   }).join('');
+
+  container.innerHTML = `
+    <div class="fusion-panel">
+      <div class="fusion-panel-head">
+        <h3>🔮 Fusion</h3>
+        <p class="view-desc">Assemble des pièces identiques (même nom + rareté) pour monter d’un palier. Les pièces en réserve sont consommées en priorité.</p>
+      </div>
+      <div class="fusion-filters" role="tablist">
+        ${filters.map((f) => `
+          <button type="button" class="fusion-filter-btn${fusionFilter === f.id ? ' active' : ''}" data-fusion-filter="${f.id}" role="tab" aria-selected="${fusionFilter === f.id}">
+            ${f.label}
+          </button>
+        `).join('')}
+      </div>
+      ${visible.length
+        ? `<div class="fusion-grid">${cards}</div>`
+        : `<p class="empty-text">${fusionFilter === 'ready'
+          ? 'Aucune fusion prête — farm des donjons ou passe sur « En cours ».'
+          : 'Aucune pièce fusionnable pour l’instant.'}</p>`}
+    </div>
+  `;
+
+  container.querySelectorAll('[data-fusion-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      fusionFilter = btn.dataset.fusionFilter;
+      renderFusionPanel(game, container);
+    });
+  });
+
   container.querySelectorAll('.btn-fusion').forEach((btn) => {
     btn.addEventListener('click', () => {
       const result = game.doFuseEquipment(btn.dataset.fusion);

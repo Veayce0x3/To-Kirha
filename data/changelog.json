@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1930",
+      "date": "2026-07-19",
+      "title": "Outilleur ordonné, Fusion, teaser Saison",
+      "highlights": [
+        "Outilleur : outils triés par palier (1→9), noms d’ingrédients visibles — chaîne Riz Sakura / Riz Doré (pas de riz violet)",
+        "Fusion : filtres Prêtes / En cours / Toutes + cartes avec barre de progression",
+        "Perso : bandeau « Saison suivante » corrigé (plus de cadre vide / bugué)"
+      ]
+    },
+    {
       "buildId": "20260719-1900",
       "date": "2026-07-19",
       "title": "Outils = ressources du jeu",
