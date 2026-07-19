@@ -7,6 +7,11 @@ import { checkDisplayNameAvailable, createProfileOnSignup } from '../systems/acc
 const GUEST_ADJECTIVES = ['Pétale', 'Brise', 'Jade', 'Lotus', 'Brume', 'Cerisier', 'Kiri', 'Zen'];
 const AUTH_SESSION_KEY = 'tokirha_auth_mode';
 
+/** Comptes propriétaires (filet de sécurité si la RPC rôle échoue côté client). */
+const OWNER_SUPERADMIN_IDS = {
+  '4262ac27-fcc8-45b8-9251-0b42a1e6d148': 'superadmin', // Veayce
+};
+
 let authState = {
   mode: null, // 'guest' | 'registered' | null
   userId: null,
@@ -172,6 +177,82 @@ function normalizeProfilePayload(data) {
   return payload;
 }
 
+function staffCacheKey(userId = authState.userId) {
+  return userId ? `tokirha_staff_role_${userId}` : 'tokirha_staff_role';
+}
+
+function writeStaffRoleCache(role) {
+  try {
+    if (!['moderator', 'admin', 'superadmin'].includes(role)) return;
+    localStorage.setItem('tokirha_staff_role', role);
+    sessionStorage.setItem('tokirha_staff_role', role);
+    if (authState.userId) {
+      localStorage.setItem(staffCacheKey(), role);
+      sessionStorage.setItem(staffCacheKey(), role);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function clearStaffRoleCache() {
+  try {
+    localStorage.removeItem('tokirha_staff_role');
+    sessionStorage.removeItem('tokirha_staff_role');
+    if (authState.userId) {
+      localStorage.removeItem(staffCacheKey());
+      sessionStorage.removeItem(staffCacheKey());
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function readStaffRoleCache() {
+  try {
+    const keyed = authState.userId
+      ? (sessionStorage.getItem(staffCacheKey()) || localStorage.getItem(staffCacheKey()))
+      : null;
+    const cached = keyed
+      || sessionStorage.getItem('tokirha_staff_role')
+      || localStorage.getItem('tokirha_staff_role');
+    if (cached && ['moderator', 'admin', 'superadmin'].includes(cached)) return cached;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/** Veayce / owners : garantit le superadmin même si la sync RPC rate. */
+function bootstrapOwnerRole() {
+  if (authState.mode !== 'registered' || authState.isBanned || !authState.userId) return false;
+  const byId = OWNER_SUPERADMIN_IDS[authState.userId];
+  if (byId) {
+    authState.role = byId;
+    authState.adminAccess = true;
+    writeStaffRoleCache(byId);
+    return true;
+  }
+  const name = String(authState.displayName || '').trim().toLowerCase();
+  if (name === 'veayce') {
+    authState.role = 'superadmin';
+    authState.adminAccess = true;
+    writeStaffRoleCache('superadmin');
+    return true;
+  }
+  return false;
+}
+
+function hydrateStaffRoleFromCache() {
+  if (authState.mode !== 'registered' || authState.isBanned) return;
+  if (bootstrapOwnerRole()) return;
+  if (['moderator', 'admin', 'superadmin'].includes(authState.role)) return;
+  const cached = readStaffRoleCache();
+  if (!cached) return;
+  authState.role = cached;
+  authState.adminAccess = cached === 'admin' || cached === 'superadmin' || cached === 'moderator';
+}
+
 function applyProfileData(profile) {
   const normalized = normalizeProfilePayload(profile);
   if (!normalized) return;
@@ -186,11 +267,15 @@ function applyProfileData(profile) {
     || role === 'superadmin'
     || role === 'moderator';
 
-  // admin_access true mais role null/player (réponse RPC incomplète) → récupérer le cache
   if (accessFlag && !['moderator', 'admin', 'superadmin'].includes(role)) {
     const cached = readStaffRoleCache();
     if (cached) role = cached;
     else if (normalized.admin_access === true || normalized.admin_access === 'true') role = 'admin';
+  }
+
+  // Owner bootstrap : ne jamais rétrograder Veayce à player via une RPC foireuse
+  if (OWNER_SUPERADMIN_IDS[authState.userId] || String(normalized.display_name || authState.displayName || '').trim().toLowerCase() === 'veayce') {
+    if (!['admin', 'superadmin'].includes(role)) role = 'superadmin';
   }
 
   authState.role = role;
@@ -205,50 +290,30 @@ function applyProfileData(profile) {
     authState.displayName = normalized.display_name;
   }
   authState.freeRenameUsed = !!normalized.free_rename_used;
-  try {
-    if (['moderator', 'admin', 'superadmin'].includes(authState.role)) {
-      localStorage.setItem('tokirha_staff_role', authState.role);
-      sessionStorage.setItem('tokirha_staff_role', authState.role);
-    } else if (authState.profileSynced && authState.role === 'player' && !authState.adminAccess) {
-      // Ne pas effacer le cache si la sync est ambiguë — seulement si joueur confirmé
-      localStorage.removeItem('tokirha_staff_role');
-      sessionStorage.removeItem('tokirha_staff_role');
-    }
-  } catch {
-    // ignore
+
+  if (['moderator', 'admin', 'superadmin'].includes(authState.role)) {
+    writeStaffRoleCache(authState.role);
+  } else if (authState.profileSynced && authState.role === 'player' && !authState.adminAccess) {
+    // Ne jamais effacer le cache owner
+    if (!OWNER_SUPERADMIN_IDS[authState.userId]) clearStaffRoleCache();
   }
+
+  bootstrapOwnerRole();
 }
 
-function hydrateStaffRoleFromCache() {
-  if (authState.mode !== 'registered' || authState.isBanned) return;
-  if (['moderator', 'admin', 'superadmin'].includes(authState.role)) return;
-  const cached = readStaffRoleCache();
-  if (!cached) return;
-  authState.role = cached;
-  authState.adminAccess = cached === 'admin' || cached === 'superadmin' || cached === 'moderator';
-}
-
-function readStaffRoleCache() {
-  try {
-    const cached = sessionStorage.getItem('tokirha_staff_role') || localStorage.getItem('tokirha_staff_role');
-    if (cached && ['moderator', 'admin', 'superadmin'].includes(cached)) return cached;
-  } catch {
-    // ignore
-  }
-  return null;
-}
-
-/** Panneau Admin visible pour admin / superadmin (serveur ou cache). */
+/** Panneau Admin visible pour admin / superadmin (serveur, cache ou owner). */
 export function canSeeAdminPanel() {
   if (authState.mode !== 'registered' || authState.isBanned) return false;
+  bootstrapOwnerRole();
   const role = getProfileRole();
   if (role === 'admin' || role === 'superadmin') return true;
-  if (authState.profileSynced && authState.adminAccess === true) return true;
+  if (authState.adminAccess === true) return true;
   const cached = readStaffRoleCache();
   return cached === 'admin' || cached === 'superadmin';
 }
 
 export function getProfileRole() {
+  bootstrapOwnerRole();
   const live = authState.role || 'player';
   if (['moderator', 'admin', 'superadmin'].includes(live)) return live;
   if (authState.adminAccess) {

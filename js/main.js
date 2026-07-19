@@ -98,14 +98,14 @@ async function main() {
     showBannedModalIfNeeded();
   }
 
-  initUI(game, audio);
-
-  // Resync staff / annonces hors du chemin critique (ne bloque plus l’UI)
+  // Sync rôle AVANT le menu (sinon onglet Admin invisible au 1er paint)
   if (game.state?.meta?.account?.mode === 'registered') {
-    syncProfileFromServer()
-      .then(() => emit('navRefresh'))
-      .catch(() => {});
+    await syncProfileFromServer();
+    emit('navRefresh');
   }
+
+  initUI(game, audio);
+  emit('navRefresh');
 
   const bannerEl = document.getElementById('global-banners');
   if (bannerEl) {

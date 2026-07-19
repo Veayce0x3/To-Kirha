@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1530",
+      "date": "2026-07-19",
+      "title": "Onglet Admin Veayce",
+      "highlights": [
+        "Admin : l’onglet réapparaît pour Veayce (superadmin) même si la sync rôle rate"
+      ]
+    },
+    {
       "buildId": "20260719-1515",
       "date": "2026-07-19",
       "title": "Chargement plus rapide",

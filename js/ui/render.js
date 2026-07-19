@@ -312,10 +312,12 @@ export function initUI(game, audio) {
       const btn = createNavBtn(viewId, false);
       if (btn) els.sidebarFooter.appendChild(btn);
     }
+    // Admin toujours en bas du menu si droits (re-check live à chaque buildNav)
     if (canSeeAdminPanel()) {
       const adminBtn = createNavBtn('admin', false);
       if (adminBtn) {
         adminBtn.classList.add('nav-admin-btn');
+        adminBtn.title = 'Administration';
         els.sidebarFooter.appendChild(adminBtn);
       }
     }
