@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260719-2130",
+      "date": "2026-07-19",
+      "title": "Nouvelle saison sans 10 000 Kirha",
+      "highlights": [
+        "Passage de saison : 0 Kirha (plus le boost test 10 000)",
+        "Nouvelle partie : départ à 25 Kirha comme prévu"
+      ]
+    },
+    {
       "buildId": "20260719-2030",
       "date": "2026-07-19",
       "title": "Ferme : animal dans l’emplacement",
