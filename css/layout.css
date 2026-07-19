@@ -827,6 +827,26 @@
   color: var(--vert-fonce, #2D5A27);
 }
 
+.bank-soon-panel {
+  text-align: center;
+  padding: 2rem 1.25rem;
+}
+
+.bank-soon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0 0 0.85rem;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  background: rgba(155, 89, 182, 0.12);
+  border: 1px solid rgba(155, 89, 182, 0.35);
+  color: #6b3a7a;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
 .farm-feed-block {
   margin-bottom: 0.75rem;
 }

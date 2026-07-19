@@ -2892,7 +2892,7 @@ function mountAuctionSellPanel(game, root) {
 
   area.innerHTML = `
     <div class="panel-inner hdv-sell-panel">
-      <p class="view-desc">Vends tes récoltes et crafts aux PNJ. Épingle les objets à garder depuis la Banque.</p>
+      <p class="view-desc">Vends tes récoltes et crafts aux PNJ.</p>
       <div class="bank-toolbar">
         <span class="bank-total" id="hdv-sell-total">Valeur totale : 0 💰</span>
         <div class="bank-toolbar-actions">
@@ -2974,7 +2974,7 @@ export function renderAuctionHouse(game, el) {
         <div class="hdv-list" id="auction-offer-list"></div>
       </div>
       ${hdvMainMode === 'sell'
-    ? '<p class="hdv-tip">Astuce : épingle les objets à conserver dans la <button type="button" class="link-btn" id="goto-bank">Banque</button>.</p>'
+    ? ''
     : '<p class="hdv-tip">Pour vendre tes récoltes aux PNJ, ouvre l’onglet <strong>Vendre</strong>.</p>'}
     </div>
   `;
@@ -3095,31 +3095,21 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
 
 export function renderInventory(game, el) {
   el.innerHTML = `
-    <div class="view-header"><h2>${iconHtml(getNavIcon('inventory'), 'view-header-icon', 'Banque')} Banque</h2><p class="view-desc">Stocke, épingle, équipe ou soigne-toi. Pour vendre aux PNJ : <button type="button" class="link-btn" id="goto-hdv-sell">Place marchande → Vendre</button> · <button type="button" class="link-btn" id="goto-char-bag">Voir sur Perso</button></p></div>
-    <div class="panel-inner">
-      <div class="bank-toolbar">
-        <span class="bank-total" id="bank-total">Valeur totale : 0 💰</span>
-        <div class="bank-toolbar-actions">
-          <button type="button" class="btn btn-craft btn-small" id="goto-hdv-sell-btn">💰 Vendre à la Place</button>
-        </div>
-      </div>
-      <div class="inventory-grid" id="bank-grid"></div>
+    <div class="view-header"><h2>${iconHtml(getNavIcon('inventory'), 'view-header-icon', 'Banque')} Banque</h2></div>
+    <div class="panel-inner bank-soon-panel">
+      <p class="bank-soon-badge">Bientôt disponible</p>
+      <p class="view-desc">La Banque arrive bientôt. En attendant, tes objets sont sur <button type="button" class="link-btn" id="goto-char-bag">Perso → Sac</button>, et la vente PNJ est à la <button type="button" class="link-btn" id="goto-hdv-sell">Place marchande → Vendre</button>.</p>
     </div>
   `;
 
-  const goSell = () => {
-    hdvMainMode = 'sell';
-    navigate('auction_house');
-  };
   el.querySelector('#goto-char-bag')?.addEventListener('click', () => {
     charTab = 'bag';
     navigate('character');
   });
-  el.querySelector('#goto-hdv-sell')?.addEventListener('click', goSell);
-  el.querySelector('#goto-hdv-sell-btn')?.addEventListener('click', goSell);
-
-  const total = renderInventoryGrid(game, el.querySelector('#bank-grid'), { filter: 'all' });
-  el.querySelector('#bank-total').textContent = `Valeur totale : ${formatNumber(total)} 💰`;
+  el.querySelector('#goto-hdv-sell')?.addEventListener('click', () => {
+    hdvMainMode = 'sell';
+    navigate('auction_house');
+  });
 }
 
 function openItemModal(game, resourceId, resource, amount, unitPrice, notSellable = false) {

@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1330",
+      "date": "2026-07-19",
+      "title": "Banque bientôt disponible",
+      "highlights": [
+        "Banque : écran « Bientôt disponible » (objets sur Perso → Sac, vente Place marchande)"
+      ]
+    },
+    {
       "buildId": "20260719-1315",
       "date": "2026-07-19",
       "title": "Ferme, vente & admin",
