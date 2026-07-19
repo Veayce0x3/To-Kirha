@@ -1,0 +1,19 @@
+{
+  "entries": [
+    {
+      "buildId": "20260719-1200",
+      "date": "2026-07-19",
+      "title": "Mises à jour récentes",
+      "highlights": [
+        "Popup Nouveautés : tu vois les changements après chaque mise à jour (plus de popup d’actualisation manuelle)",
+        "Actualisation automatique au lancement si une nouvelle version est détectée",
+        "Ferme : seau (puits) et panier (animaux), décompte d’outil à côté du stock, ration affichée en stock",
+        "Animaux d’élevage avec durée de vie ; étable / bergerie / etc. comme le poulailler",
+        "Combat : déblocage clair en X/Y (victoires uniquement) ; attaques fortes limitées",
+        "Retrait des boucliers d’équipement (inutiles selon l’arme) — stats reportées sur les plastrons",
+        "Succès « Premier repas » corrigé",
+        "Repousse des ressources plus longue selon le palier ; moins de chauffe téléphone"
+      ]
+    }
+  ]
+}

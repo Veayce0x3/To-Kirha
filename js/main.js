@@ -4,7 +4,7 @@ import { SaveProvider } from './core/save.js';
 import { audio } from './core/audio.js';
 import { initAuthModal, showAuthModalIfNeeded, showBannedModalIfNeeded } from './ui/authUi.js';
 import { loadGameConfig, isMaintenanceMode } from './systems/gameConfig.js';
-import { recordBuildSeen, cleanRefreshParamsFromUrl, cameFromHardRefresh } from './core/startupRefresh.js';
+import { tryAutoRefreshForNewBuild } from './core/startupRefresh.js';
 import { mountAnnouncementBanner } from './ui/announcements.js';
 import { isAccountBanned, syncProfileFromServer } from './core/auth.js';
 
@@ -18,15 +18,19 @@ async function loadJSON(file) {
   return res.json();
 }
 
-  async function main() {
+async function main() {
+  // Balance d’abord : détecte une nouvelle build et recharge automatiquement
+  const balance = await loadJSON('balance.json');
+  if (await tryAutoRefreshForNewBuild(balance)) return;
+
   const [
-    resources, jobs, balance, recipes, aides, equipment, farmData,
+    resources, jobs, recipes, aides, equipment, farmData,
     characterConfig, combatEquipment, combatZones, enemies, merchant,
     combatSkills, combatResources, companions, achievements, weaponRoles,
+    changelog,
   ] = await Promise.all([
     loadJSON('resources.json'),
     loadJSON('jobs.json'),
-    loadJSON('balance.json'),
     loadJSON('recipes.json'),
     loadJSON('aides.json'),
     loadJSON('equipment.json'),
@@ -41,6 +45,7 @@ async function loadJSON(file) {
     loadJSON('companions.json'),
     loadJSON('achievements.json'),
     loadJSON('weapon_roles.json'),
+    loadJSON('changelog.json').catch(() => ({ entries: [] })),
   ]);
 
   Object.assign(resources, combatResources);
@@ -53,12 +58,8 @@ async function loadJSON(file) {
     characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, achievements,
     weaponRoles
   );
+  game.changelog = changelog;
   await game.init();
-
-  if (cameFromHardRefresh()) {
-    recordBuildSeen(balance);
-    cleanRefreshParamsFromUrl();
-  }
 
   await loadGameConfig();
 
@@ -77,7 +78,6 @@ async function loadJSON(file) {
 
   initUI(game, audio);
 
-  // 2e sync après UI : reconstruit le menu Admin si le profil staff arrive en retard
   if (game.state?.meta?.account?.mode === 'registered') {
     syncProfileFromServer().catch(() => {});
   }

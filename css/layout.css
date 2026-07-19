@@ -8035,12 +8035,51 @@ img.inventory-grid-icon,
   -webkit-overflow-scrolling: touch;
 }
 
-#startup-refresh-modal.modal-overlay.active {
+#whats-new-modal.modal-overlay.active {
   z-index: 14000;
 }
 
-.modal-refresh {
-  max-width: 460px;
+.modal-whats-new {
+  max-width: 480px;
+  max-height: min(80vh, 640px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.whats-new-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0.75rem 0 1rem;
+  text-align: left;
+}
+
+.whats-new-entry + .whats-new-entry {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(74, 55, 40, 0.12);
+}
+
+.whats-new-entry-title {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.whats-new-date {
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.whats-new-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
 }
 
 .modal-actions-refresh {

@@ -22,6 +22,13 @@ import { initAuthModal, showAuthModalIfNeeded, showAccountRequiredModal } from '
 import { canUseOnlineFeatures, getOnlineBlockReason, canSeeAdminPanel } from '../core/auth.js';
 import { getFeatureUnlockProgress, getUnlockedGatheringJobs } from '../systems/careerChoice.js';
 import {
+  shouldShowWhatsNew,
+  getWhatsNewEntries,
+  getChangelogSeenBuildId,
+  getAppBuildId,
+  markChangelogSeen,
+} from '../core/startupRefresh.js';
+import {
   renderView,
   renderJobSwitcherDock,
   updateJobSwitcherDockStatus,
@@ -96,12 +103,12 @@ export function initUI(game, audio) {
     prestigeGains: document.getElementById('prestige-gains'),
     prestigeCancel: document.getElementById('prestige-cancel'),
     prestigeConfirm: document.getElementById('prestige-confirm'),
-    startupRefreshModal: document.getElementById('startup-refresh-modal'),
-    startupRefreshTitle: document.getElementById('startup-refresh-title'),
-    startupRefreshDesc: document.getElementById('startup-refresh-desc'),
-    startupRefreshVersion: document.getElementById('startup-refresh-version'),
-    startupRefreshConfirm: document.getElementById('startup-refresh-confirm'),
-    startupRefreshSkip: document.getElementById('startup-refresh-skip'),
+    whatsNewModal: document.getElementById('whats-new-modal'),
+    whatsNewTitle: document.getElementById('whats-new-title'),
+    whatsNewDesc: document.getElementById('whats-new-desc'),
+    whatsNewVersion: document.getElementById('whats-new-version'),
+    whatsNewBody: document.getElementById('whats-new-body'),
+    whatsNewConfirm: document.getElementById('whats-new-confirm'),
   };
 
   let lastKirha = game.state.kirha;
@@ -421,13 +428,47 @@ export function initUI(game, audio) {
     }
   });
 
-  function showStartupRefreshPrompt() {
-    // Désactivé : laissait pointer-events:none sur tout le jeu.
-    document.body.classList.remove('startup-refresh-pending', 'career-choice-pending');
-    if (els.startupRefreshModal) {
-      els.startupRefreshModal.classList.remove('active');
-      els.startupRefreshModal.setAttribute('aria-hidden', 'true');
+  function showWhatsNewIfNeeded() {
+    document.body.classList.remove('startup-refresh-pending');
+    const modal = els.whatsNewModal;
+    if (!modal) return;
+
+    if (!shouldShowWhatsNew(game.balance)) {
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+      return;
     }
+
+    const current = getAppBuildId(game.balance);
+    const since = getChangelogSeenBuildId();
+    const entries = getWhatsNewEntries(game.changelog, since, current);
+    if (!entries.length) {
+      markChangelogSeen(game.balance);
+      return;
+    }
+
+    const latest = entries[0];
+    if (els.whatsNewTitle) els.whatsNewTitle.textContent = `✨ ${latest.title || 'Nouveautés'}`;
+    if (els.whatsNewDesc) {
+      els.whatsNewDesc.textContent = entries.length > 1
+        ? `${entries.length} mises à jour depuis ta dernière session.`
+        : 'Voici ce qui a changé dans cette version.';
+    }
+    if (els.whatsNewVersion) els.whatsNewVersion.textContent = `Build ${current}`;
+
+    if (els.whatsNewBody) {
+      els.whatsNewBody.innerHTML = entries.map((entry) => {
+        const highlights = (entry.highlights || []).map((h) => `<li>${h}</li>`).join('');
+        const date = entry.date ? `<p class="whats-new-date">${entry.date}</p>` : '';
+        const heading = entries.length > 1
+          ? `<h3 class="whats-new-entry-title">${entry.title || entry.buildId}</h3>`
+          : '';
+        return `<section class="whats-new-entry">${heading}${date}<ul class="whats-new-list">${highlights}</ul></section>`;
+      }).join('');
+    }
+
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
   }
 
   buildNav();
@@ -746,7 +787,12 @@ export function initUI(game, audio) {
 
   refreshHeader(game.state);
   refreshView();
-  showStartupRefreshPrompt();
+  showWhatsNewIfNeeded();
+  els.whatsNewConfirm?.addEventListener('click', () => {
+    markChangelogSeen(game.balance);
+    els.whatsNewModal?.classList.remove('active');
+    els.whatsNewModal?.setAttribute('aria-hidden', 'true');
+  });
   cleanupPullRefreshArtifacts();
   if (game.isHarvesting() || game.isFarmActive()) tickHarvestUI();
 }

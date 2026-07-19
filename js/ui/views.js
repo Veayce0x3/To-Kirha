@@ -3189,7 +3189,7 @@ export function renderOptions(game, el) {
     <div class="panel-inner"><div id="settings-grid" class="settings-grid"></div></div>
     <div class="panel-inner panel-refresh">
       <h3>🔄 Actualisation forcée</h3>
-      <p class="view-desc">Vide le cache navigateur et recharge la dernière version du jeu (même action que la popup au lancement).</p>
+      <p class="view-desc">Vide le cache navigateur et recharge la dernière version. En général inutile : le jeu s’actualise tout seul au lancement.</p>
       <p class="startup-refresh-version" id="options-build-id"></p>
       <button type="button" class="btn btn-prestige" id="reload-app">Vider le cache et actualiser</button>
     </div>
