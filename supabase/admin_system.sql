@@ -242,7 +242,7 @@ begin
     'banned_reason', v.banned_reason,
     'cheat_flagged', v.cheat_flagged,
     'admin_access', v.role in ('admin', 'superadmin'),
-    'role', case when v.role in ('moderator', 'admin', 'superadmin') then v.role else null end
+    'role', coalesce(nullif(v.role, ''), 'player')
   );
 end;
 $$;
