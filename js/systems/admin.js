@@ -16,9 +16,33 @@ function mapRpcError(message) {
 async function rpc(name, params = {}) {
   if (!isSupabaseConfigured()) return { ok: false, reason: 'Supabase non configuré.' };
   const supabase = await getSupabaseClient();
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData?.session) {
+    return { ok: false, reason: 'Session expirée — déconnecte-toi puis reconnecte-toi avec le compte Veayce.' };
+  }
   const { data, error } = await supabase.rpc(name, params);
-  if (error) return { ok: false, reason: mapRpcError(error.message) };
+  if (error) {
+    const msg = mapRpcError(error.message);
+    if (/accès refusé/i.test(msg)) {
+      return {
+        ok: false,
+        reason: `${msg} — le serveur ne te voit pas comme staff. Reconnecte-toi (compte Veayce).`,
+      };
+    }
+    return { ok: false, reason: msg };
+  }
   return { ok: true, data };
+}
+
+/** Répare le rôle superadmin owner côté serveur (Veayce). */
+export async function claimOwnerSuperadmin() {
+  return rpc('claim_owner_superadmin');
+}
+
+function denyIfNotStaff() {
+  // canSeeAdminPanel couvre le bootstrap owner ; isStaff le rôle live/cache
+  if (canSeeAdminPanel() || isStaff()) return null;
+  return { ok: false, reason: 'Accès refusé.' };
 }
 
 export const ADMIN_TABS = [
@@ -50,27 +74,32 @@ export function canAccessAdminPanel() {
 }
 
 export async function fetchDashboard() {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_get_dashboard');
 }
 
 export async function searchPlayers(query, limit = 30) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_search_players', { p_query: query, p_limit: limit });
 }
 
 export async function getPlayerDetail(userId) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_get_player_detail', { p_user_id: userId });
 }
 
 export async function banUser(userId, reason) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_ban_user', { p_target: userId, p_reason: reason });
 }
 
 export async function unbanUser(userId, reason = null) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_unban_user', { p_target: userId, p_reason: reason });
 }
 
@@ -80,12 +109,14 @@ export async function setUserRole(userId, role) {
 }
 
 export async function flagCheat(userId, flagged, notes = null) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_flag_cheat', { p_target: userId, p_flagged: flagged, p_notes: notes });
 }
 
 export async function deleteLeaderboardEntry(userId) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_delete_leaderboard', { p_user_id: userId });
 }
 
@@ -100,7 +131,8 @@ export async function rebuildLeaderboardFromSaves() {
 }
 
 export async function wipePlayerMarket(userId) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_wipe_market', { p_user_id: userId });
 }
 
@@ -115,12 +147,14 @@ export async function grantAllJobsLevel(userId) {
 }
 
 export async function fetchModerationLogs(limit = 50, action = null) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_get_logs', { p_limit: limit, p_action: action || null });
 }
 
 export async function fetchPlayerList(filter = 'recent', limit = 40) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_list_players', { p_filter: filter, p_limit: limit });
 }
 
@@ -130,12 +164,14 @@ export async function fetchCloudSaves(limit = 40) {
 }
 
 export async function fetchReports(status = 'pending', limit = 50) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_get_reports', { p_status: status, p_limit: limit });
 }
 
 export async function reviewReport(reportId, status, note = null) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_review_report', { p_report_id: reportId, p_status: status, p_note: note });
 }
 
@@ -167,22 +203,26 @@ export async function setAdminConfig(key, value) {
 }
 
 export async function fetchMarketAdmin(limit = 50) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_list_market', { p_limit: limit });
 }
 
 export async function deleteListing(listingId) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_delete_listing', { p_listing_id: listingId });
 }
 
 export async function deleteBuyOffer(offerId) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_delete_buy_offer', { p_offer_id: offerId });
 }
 
 export async function fetchLeaderboardAdmin(sort = 'char_level', limit = 50) {
-  if (!isStaff()) return { ok: false, reason: 'Accès refusé.' };
+  const deny = denyIfNotStaff();
+  if (deny) return deny;
   return rpc('admin_list_leaderboard', { p_sort: sort, p_limit: limit });
 }
 

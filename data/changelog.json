@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1545",
+      "date": "2026-07-19",
+      "title": "Admin Accès refusé corrigé",
+      "highlights": [
+        "Admin : plus d’« Accès refusé » sur les onglets (staff serveur + sync session)",
+        "Compte Veayce reconnu côté serveur même si le profil était désynchronisé"
+      ]
+    },
+    {
       "buildId": "20260719-1530",
       "date": "2026-07-19",
       "title": "Onglet Admin Veayce",

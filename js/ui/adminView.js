@@ -3,7 +3,14 @@
  */
 
 import { navigate } from './router.js';
-import { getProfileRole, isAdmin, isSuperAdmin, refreshProfile, canSeeAdminPanel } from '../core/auth.js';
+import {
+  getProfileRole,
+  getAuthState,
+  isAdmin,
+  isSuperAdmin,
+  refreshProfile,
+  canSeeAdminPanel,
+} from '../core/auth.js';
 import {
   ADMIN_TABS,
   ROLE_LABELS,
@@ -41,8 +48,10 @@ import {
   fetchLeaderboardAdmin,
   fetchCloudSaves,
   submitPlayerReport,
+  claimOwnerSuperadmin,
 } from '../systems/admin.js';
 import { refreshGameConfig, isReportingEnabled } from '../systems/gameConfig.js';
+import { getSupabaseClient, isSupabaseConfigured } from '../core/supabaseClient.js';
 
 let gameRef = null;
 let activeTab = 'dashboard';
@@ -964,11 +973,43 @@ export function renderAdmin(game, el) {
     <p class="view-desc">Vérification des droits…</p>
   `;
 
-  refreshProfile()
-    .catch(() => null)
-    .then(() => {
+  (async () => {
+    try {
+      if (isSupabaseConfigured()) {
+        const supabase = await getSupabaseClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          el.innerHTML = `
+            <div class="view-header"><h2>🛡️ Administration</h2></div>
+            <p class="admin-error">Session expirée — reconnecte-toi avec le compte Veayce.</p>
+          `;
+          return;
+        }
+        if (game.state?.meta?.account) {
+          game.state.meta.account.mode = 'registered';
+          game.state.meta.account.userId = session.user.id;
+          game.state.meta.account.email = session.user.email || game.state.meta.account.email;
+        }
+      }
+
+      await refreshProfile().catch(() => null);
+
+      // Répare le rôle owner côté serveur si la RPC existe
+      const claim = await claimOwnerSuperadmin().catch(() => ({ ok: false }));
+      if (claim?.ok) await refreshProfile().catch(() => null);
+
       paintAdmin(game, el);
-    });
+    } catch (err) {
+      console.warn('[admin] init failed', err);
+      const uid = getAuthState()?.userId || '?';
+      el.innerHTML = `
+        <div class="view-header"><h2>🛡️ Administration</h2></div>
+        <p class="admin-error">Impossible de charger l’admin (${err?.message || 'erreur'}). Compte : ${uid}</p>
+        <button type="button" class="btn btn-muted" id="admin-retry-profile">Réessayer</button>
+      `;
+      el.querySelector('#admin-retry-profile')?.addEventListener('click', () => renderAdmin(game, el));
+    }
+  })();
 }
 
 function paintAdmin(game, el) {

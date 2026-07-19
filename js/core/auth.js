@@ -40,9 +40,12 @@ export function isAccountBanned() {
   return authState.isBanned === true;
 }
 
-/** Panneau Admin — défini plus bas (après applyProfileData / cache session). */
+/** Panneau Admin — admin / superadmin (pas simple modérateur). */
 export function isAdmin() {
-  return canSeeAdminPanel();
+  if (authState.mode !== 'registered' || authState.isBanned) return false;
+  bootstrapOwnerRole();
+  const role = getProfileRole();
+  return role === 'admin' || role === 'superadmin' || authState.adminAccess === true;
 }
 
 export function isGuestAccount() {
@@ -184,12 +187,12 @@ function staffCacheKey(userId = authState.userId) {
 function writeStaffRoleCache(role) {
   try {
     if (!['moderator', 'admin', 'superadmin'].includes(role)) return;
-    localStorage.setItem('tokirha_staff_role', role);
-    sessionStorage.setItem('tokirha_staff_role', role);
-    if (authState.userId) {
-      localStorage.setItem(staffCacheKey(), role);
-      sessionStorage.setItem(staffCacheKey(), role);
-    }
+    if (!authState.userId) return;
+    // Uniquement par userId — jamais de clé globale (sinon un autre compte hérite du staff)
+    localStorage.setItem(staffCacheKey(), role);
+    sessionStorage.setItem(staffCacheKey(), role);
+    localStorage.removeItem('tokirha_staff_role');
+    sessionStorage.removeItem('tokirha_staff_role');
   } catch {
     // ignore
   }
@@ -210,12 +213,8 @@ function clearStaffRoleCache() {
 
 function readStaffRoleCache() {
   try {
-    const keyed = authState.userId
-      ? (sessionStorage.getItem(staffCacheKey()) || localStorage.getItem(staffCacheKey()))
-      : null;
-    const cached = keyed
-      || sessionStorage.getItem('tokirha_staff_role')
-      || localStorage.getItem('tokirha_staff_role');
+    if (!authState.userId) return null;
+    const cached = sessionStorage.getItem(staffCacheKey()) || localStorage.getItem(staffCacheKey());
     if (cached && ['moderator', 'admin', 'superadmin'].includes(cached)) return cached;
   } catch {
     // ignore
@@ -223,7 +222,7 @@ function readStaffRoleCache() {
   return null;
 }
 
-/** Veayce / owners : garantit le superadmin même si la sync RPC rate. */
+/** Owners connus (UUID) : garantit le superadmin même si la sync RPC rate. */
 function bootstrapOwnerRole() {
   if (authState.mode !== 'registered' || authState.isBanned || !authState.userId) return false;
   const byId = OWNER_SUPERADMIN_IDS[authState.userId];
@@ -231,13 +230,6 @@ function bootstrapOwnerRole() {
     authState.role = byId;
     authState.adminAccess = true;
     writeStaffRoleCache(byId);
-    return true;
-  }
-  const name = String(authState.displayName || '').trim().toLowerCase();
-  if (name === 'veayce') {
-    authState.role = 'superadmin';
-    authState.adminAccess = true;
-    writeStaffRoleCache('superadmin');
     return true;
   }
   return false;
@@ -274,8 +266,9 @@ function applyProfileData(profile) {
   }
 
   // Owner bootstrap : ne jamais rétrograder Veayce à player via une RPC foireuse
-  if (OWNER_SUPERADMIN_IDS[authState.userId] || String(normalized.display_name || authState.displayName || '').trim().toLowerCase() === 'veayce') {
-    if (!['admin', 'superadmin'].includes(role)) role = 'superadmin';
+  // Filet owner UUID uniquement (pas le pseudo — évite faux admin + Accès refusé serveur)
+  if (OWNER_SUPERADMIN_IDS[authState.userId] && !['admin', 'superadmin'].includes(role)) {
+    role = 'superadmin';
   }
 
   authState.role = role;
@@ -324,7 +317,12 @@ export function getProfileRole() {
 
 export function isStaff() {
   if (authState.mode !== 'registered' || authState.isBanned) return false;
-  return ['moderator', 'admin', 'superadmin'].includes(getProfileRole());
+  bootstrapOwnerRole();
+  const role = getProfileRole();
+  if (['moderator', 'admin', 'superadmin'].includes(role)) return true;
+  if (authState.adminAccess === true) return true;
+  const cached = readStaffRoleCache();
+  return cached === 'moderator' || cached === 'admin' || cached === 'superadmin';
 }
 
 export function isSuperAdmin() {
@@ -350,9 +348,18 @@ export async function syncProfileFromServer() {
   try {
     const supabase = await getSupabaseClient();
     const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData?.session && authState.userId !== 'dev_local_user') {
+    const sessionUser = sessionData?.session?.user;
+    if (!sessionUser && authState.userId !== 'dev_local_user') {
       console.warn('[auth] syncProfile: pas de session');
       return null;
+    }
+
+    // Toujours aligner le userId local sur le JWT (sinon onglet Admin faux + Accès refusé)
+    if (sessionUser?.id && authState.userId !== sessionUser.id) {
+      authState.userId = sessionUser.id;
+      authState.email = sessionUser.email || authState.email;
+      authState.mode = 'registered';
+      authState.isGuest = false;
     }
 
     const { data, error } = await supabase.rpc('get_my_profile');
