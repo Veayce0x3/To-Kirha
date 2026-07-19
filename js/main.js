@@ -129,6 +129,9 @@ async function main() {
   document.addEventListener('click', unlockAudio);
   document.addEventListener('touchstart', unlockAudio);
 
+  const { startPlaytimeTracker } = await import('./systems/playtime.js');
+  startPlaytimeTracker(game);
+
   window.addEventListener('beforeunload', () => {
     if (SaveProvider.isResetting()) return;
     game.state.lastOnline = Date.now();

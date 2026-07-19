@@ -697,6 +697,10 @@ body.auth-modal-open #career-choice-modal {
   font-weight: 600;
 }
 
+.admin-info-card-wide {
+  grid-column: 1 / -1;
+}
+
 .admin-fold {
   margin: 0.65rem 0;
   padding: 0.45rem 0.55rem;

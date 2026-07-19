@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1615",
+      "date": "2026-07-19",
+      "title": "Temps de jeu Admin",
+      "highlights": [
+        "Admin : temps de jeu visible sur la fiche (premier plan + arrière-plan)"
+      ]
+    },
+    {
       "buildId": "20260719-1600",
       "date": "2026-07-19",
       "title": "Admin plus lisible",

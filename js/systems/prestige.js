@@ -286,6 +286,8 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     achievements: preservedAchievements,
     settings,
     lastOnline: Date.now(),
+    // Conserve le temps de jeu lifetime (admin)
+    playtime: state.playtime || { foregroundMs: 0, backgroundMs: 0 },
   };
 }
 

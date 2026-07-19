@@ -306,6 +306,7 @@ export class Game {
       lifetimeStats: { totalEarned: 0, totalHarvests: 0, seasonsCompleted: 0 },
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
+      playtime: { foregroundMs: 0, backgroundMs: 0 },
       stats: { totalHarvests: 0, totalEarned: 0, passiveHarvests: 0, offlineHarvests: 0 },
       achievements: buildDefaultAchievementState(),
       farmSlots: {},
@@ -387,6 +388,10 @@ export class Game {
       },
       lifetimeStats: { ...defaults.lifetimeStats, ...(saved.lifetimeStats || {}) },
       settings: mergeSettings(saved.settings),
+      playtime: {
+        foregroundMs: Math.max(0, Number(saved.playtime?.foregroundMs) || 0),
+        backgroundMs: Math.max(0, Number(saved.playtime?.backgroundMs) || 0),
+      },
       stats: { ...defaults.stats, ...(saved.stats || {}) },
       harvestSlots: saved.harvestSlots || {},
       farmSlots: saved.farmSlots || {},

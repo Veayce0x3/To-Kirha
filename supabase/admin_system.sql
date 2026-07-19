@@ -358,7 +358,9 @@ begin
       'last_online', v_save->>'lastOnline',
       'career_confirmed', coalesce((v_save->'careerChoice'->>'confirmed')::boolean, false),
       'career_harvest', v_save->'careerChoice'->>'harvest',
-      'career_farm', v_save->'careerChoice'->>'farm'
+      'career_farm', v_save->'careerChoice'->>'farm',
+      'playtime_foreground_ms', coalesce((v_save->'playtime'->>'foregroundMs')::bigint, 0),
+      'playtime_background_ms', coalesce((v_save->'playtime'->>'backgroundMs')::bigint, 0)
     ) end,
     'market_sells_active', v_sells,
     'market_buys_active', v_buys,

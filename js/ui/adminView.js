@@ -52,6 +52,7 @@ import {
 } from '../systems/admin.js';
 import { refreshGameConfig, isReportingEnabled } from '../systems/gameConfig.js';
 import { getSupabaseClient, isSupabaseConfigured } from '../core/supabaseClient.js';
+import { formatPlayDuration } from '../systems/playtime.js';
 
 let gameRef = null;
 let activeTab = 'dashboard';
@@ -438,6 +439,22 @@ async function loadPlayerDetail(userId, detailEl) {
       <div class="admin-info-card"><span class="admin-info-lbl">HDV</span><span class="admin-info-val">${market_sells_active} vente(s) · ${market_buys_active} offre(s)</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Signalements</span><span class="admin-info-val">${reports_against} reçus · ${reports_by || 0} envoyés</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Renommage</span><span class="admin-info-val">${profile.free_rename_used ? 'Utilisé' : 'Disponible'}</span></div>
+      <div class="admin-info-card admin-info-card-wide">
+        <span class="admin-info-lbl">Temps de jeu</span>
+        <span class="admin-info-val">${(() => {
+          const fg = Number(save_summary?.playtime_foreground_ms) || 0;
+          const bg = Number(save_summary?.playtime_background_ms) || 0;
+          if (!save_summary || (fg <= 0 && bg <= 0)) return 'Pas encore mesuré';
+          const total = fg + bg;
+          return `${formatPlayDuration(total)} au total`;
+        })()}</span>
+        <span class="admin-td-muted">${(() => {
+          const fg = Number(save_summary?.playtime_foreground_ms) || 0;
+          const bg = Number(save_summary?.playtime_background_ms) || 0;
+          if (!save_summary || (fg <= 0 && bg <= 0)) return 'Compteur depuis la maj Admin';
+          return `Premier plan ${formatPlayDuration(fg)} · Arrière-plan ${formatPlayDuration(bg)}`;
+        })()}</span>
+      </div>
     </div>
     <details class="admin-fold" open>
       <summary>Métiers & inventaire</summary>
