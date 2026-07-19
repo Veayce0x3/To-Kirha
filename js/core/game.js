@@ -1890,14 +1890,9 @@ export class Game {
     this.state = this.mergeState(newState);
     this.passiveAccum = {};
 
-    // Remet armes de départ + lignes Paysan (careerChoice conservé)
-    if (this.state.careerChoice?.weaponType && !this.state.careerChoice.starterWeaponsGranted) {
-      this.applyStarterWeaponTeam(this.state.careerChoice.weaponType);
-    }
     ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
 
     emit('prestige', { season, prestige: this.state.prestige });
-    emit('careerChoiceApplied', { careerChoice: this.state.careerChoice });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;

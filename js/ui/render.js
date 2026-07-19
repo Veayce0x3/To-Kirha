@@ -507,7 +507,7 @@ export function initUI(game, audio) {
       updateNavActive();
       refreshView();
       refreshHeader(game.state);
-      // Career conservé → métiers déjà accessibles (pas de re-modal sauf si cassé)
+      // Reset complet → rechoisir l’arme pour débloquer les métiers
       showCareerChoiceIfNeeded(game);
     }
   });

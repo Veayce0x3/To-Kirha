@@ -1,5 +1,4 @@
 import { isChapterComplete, areAchievementsEnabled, isAchievementCompleted } from './achievements.js';
-import { getDefaultCompanionEquipment } from './companions.js';
 import { isCareerChoiceComplete, STARTER_WEAPON_TYPES } from './careerChoice.js';
 
 function getPrestigeReqForSeason(balance, season) {
@@ -256,38 +255,6 @@ export function getPrestigePreview(state, balance, achievements = {}, combatZone
   };
 }
 
-function preserveCareerChoice(state) {
-  const cc = state.careerChoice;
-  if (!cc?.confirmed || !STARTER_WEAPON_TYPES.includes(cc.weaponType)) return null;
-  return {
-    confirmed: true,
-    weaponType: cc.weaponType,
-    teamWeaponTypes: Array.isArray(cc.teamWeaponTypes) && cc.teamWeaponTypes.length
-      ? [...cc.teamWeaponTypes]
-      : [cc.weaponType, ...STARTER_WEAPON_TYPES.filter((t) => t !== cc.weaponType)],
-    // Remettre les armes de départ après reset inventaire combat
-    starterWeaponsGranted: false,
-  };
-}
-
-/** Garde les équipiers recrutés / en équipe ; reset l’équipement (loot effacé). */
-function preserveCompanions(state) {
-  const saved = state.companions;
-  if (!saved || typeof saved !== 'object') return null;
-  const out = {};
-  for (const [id, prev] of Object.entries(saved)) {
-    if (!prev || typeof prev !== 'object') continue;
-    out[id] = {
-      unlocked: !!prev.unlocked,
-      activeInParty: prev.activeInParty !== false,
-      nickname: prev.nickname || '',
-      assignedWeaponType: prev.assignedWeaponType || '',
-      equipment: getDefaultCompanionEquipment(),
-    };
-  }
-  return Object.keys(out).length ? out : null;
-}
-
 export function applyPrestige(state, balance, getFreshState, achievements = {}, combatZones = {}) {
   if (!canPrestige(state, balance, achievements, combatZones)) return false;
 
@@ -311,13 +278,13 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
   const settings = state.settings || getDefaultSettings();
   const preservedAchievements = state.achievements || state.quests;
 
+  // Reset complet : inventaire vide, métiers Nv.1, équipe à recruter, etc.
+  // On garde seulement : bonus saison, succès, compte, pseudo, réglages, temps de jeu.
   const fresh = typeof getFreshState === 'function' ? getFreshState() : getFreshProgress(balance);
   const preservedNickname = state.character?.nickname || null;
   const preservedMeta = state.meta && typeof state.meta === 'object'
     ? JSON.parse(JSON.stringify(state.meta))
     : {};
-  const preservedCareer = preserveCareerChoice(state);
-  const preservedCompanions = preserveCompanions(state);
 
   return {
     ...fresh,
@@ -336,10 +303,7 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
       nicknameUpdatedAt: state.character?.nicknameUpdatedAt || null,
       freeRenameUsed: !!state.character?.freeRenameUsed,
     },
-    // Garde le parcours → métiers accessibles tout de suite
-    careerChoice: preservedCareer,
-    // Garde l’équipe recrutée (pas de re-paiement)
-    companions: preservedCompanions || fresh.companions,
+    careerChoice: null,
   };
 }
 

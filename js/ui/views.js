@@ -3384,7 +3384,7 @@ export function renderSeason(game, el) {
         ? `<p class="prestige-req prestige-ready">Prêt pour la Saison ${info.nextSeason} !</p>`
         : `<p class="prestige-req">Encore requis :</p>${blockerHtml}`}
 
-      <p class="view-desc season-reset-hint">Au passage : inventaire, métiers, ferme, zones et équipement repartent à zéro. Succès et bonus de saison sont conservés.</p>
+      <p class="view-desc season-reset-hint">Au passage : inventaire vide, métiers, ferme, équipe, zones et équipement repartent à zéro. Tu gardes compte, pseudo, succès et bonus (+Kirha / +XP) pour recommencer plus vite.</p>
       <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
     </div>
   `;
