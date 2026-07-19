@@ -3,12 +3,12 @@
     "id": "sakura_axe",
     "name": "Hache de Frêne",
     "emoji": "🪓",
-    "description": "Palier 1 — bûcheron",
+    "description": "Palier 1 — craftée avec Frêne pour récolter Séquoia",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
     "ingredients": {
-      "frene": 5
+      "frene": 8
     },
     "effect": {
       "type": "speed",
@@ -22,9 +22,9 @@
   },
   "fishing_rod": {
     "id": "fishing_rod",
-    "name": "Canne en bambou",
+    "name": "Canne de Dorade",
     "emoji": "🎣",
-    "description": "Palier 1 — craftée avec des Dorades pour récolter le Crabe",
+    "description": "Palier 1 — craftée avec Dorade pour récolter Crabe",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
@@ -43,9 +43,9 @@
   },
   "farm_sickle": {
     "id": "farm_sickle",
-    "name": "Faucille du Paysan",
+    "name": "Faucille de Blé",
     "emoji": "🌾",
-    "description": "Palier 1 — récolte l'Orge (le Blé n'use pas l'outil)",
+    "description": "Palier 1 — craftée avec Blé pour récolter Orge",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
@@ -64,9 +64,9 @@
   },
   "miner_pickaxe": {
     "id": "miner_pickaxe",
-    "name": "Pioche du Village",
+    "name": "Pioche de Pierre",
     "emoji": "⛏️",
-    "description": "Palier 1 — mineur",
+    "description": "Palier 1 — craftée avec Pierre pour récolter Fer",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
@@ -85,9 +85,9 @@
   },
   "herb_gloves": {
     "id": "herb_gloves",
-    "name": "Gants d'alchimiste",
+    "name": "Gants de Pissenlit",
     "emoji": "🧤",
-    "description": "Palier 1 — alchimiste",
+    "description": "Palier 1 — craftée avec Pissenlit pour récolter Ortie",
     "kirhaCost": 5,
     "maxUses": 25,
     "toolTier": 1,
@@ -135,8 +135,8 @@
     "maxUses": 200,
     "ingredients": {
       "frene": 8,
-      "fugu": 5,
-      "ancient_scroll": 1
+      "ancient_scroll": 1,
+      "dorade": 5
     },
     "effect": {
       "type": "yield",
@@ -268,7 +268,7 @@
     "id": "sequoia_axe",
     "name": "Hache de Séquoia",
     "emoji": "🪓",
-    "description": "Palier 2 — bûcheron Nv.14",
+    "description": "Palier 2 — craftée avec Séquoia pour récolter Chêne",
     "kirhaCost": 120,
     "maxUses": 50,
     "toolTier": 2,
@@ -282,7 +282,7 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 14,
+    "requiredJobLevel": 20,
     "jobXp": 18
   },
   "recipe_onigiri": {
@@ -719,14 +719,14 @@
   },
   "coal_pickaxe": {
     "id": "coal_pickaxe",
-    "name": "Pioche du Charbon",
+    "name": "Pioche de Fer",
     "emoji": "⛏️",
-    "description": "Palier 2 — mineur",
+    "description": "Palier 2 — craftée avec Fer pour récolter Cuivre",
     "kirhaCost": 120,
     "maxUses": 50,
     "toolTier": 2,
     "ingredients": {
-      "pierre": 6
+      "fer": 6
     },
     "effect": {
       "type": "speed",
@@ -735,19 +735,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 14,
+    "requiredJobLevel": 20,
     "jobXp": 18
   },
   "oak_axe": {
     "id": "oak_axe",
     "name": "Hache de Chêne",
     "emoji": "🪓",
-    "description": "Palier 3 — lumberjack",
+    "description": "Palier 3 — craftée avec Chêne pour récolter Bouleau",
     "kirhaCost": 350,
     "maxUses": 75,
     "toolTier": 3,
     "ingredients": {
-      "bouleau": 8
+      "chene": 8
     },
     "effect": {
       "type": "speed",
@@ -756,14 +756,14 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 15,
+    "requiredJobLevel": 40,
     "jobXp": 21
   },
   "birch_axe": {
     "id": "birch_axe",
     "name": "Hache de Bouleau",
     "emoji": "🪓",
-    "description": "Palier 4 — lumberjack",
+    "description": "Palier 4 — craftée avec Bouleau pour récolter Ginkgo",
     "kirhaCost": 800,
     "maxUses": 100,
     "toolTier": 4,
@@ -777,19 +777,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 28,
+    "requiredJobLevel": 60,
     "jobXp": 24
   },
   "maple_axe": {
     "id": "maple_axe",
-    "name": "Hache d'Érable",
+    "name": "Hache de Ginkgo",
     "emoji": "🪓",
-    "description": "Palier 5 — lumberjack",
+    "description": "Palier 5 — craftée avec Ginkgo pour récolter Érable",
     "kirhaCost": 1500,
     "maxUses": 125,
     "toolTier": 5,
     "ingredients": {
-      "bambou": 12
+      "ginkgo": 12
     },
     "effect": {
       "type": "speed",
@@ -798,19 +798,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 36,
+    "requiredJobLevel": 80,
     "jobXp": 27
   },
   "bamboo_axe": {
     "id": "bamboo_axe",
-    "name": "Hache de Bambou",
+    "name": "Hache d'Érable",
     "emoji": "🪓",
-    "description": "Palier 6 — lumberjack",
+    "description": "Palier 6 — craftée avec Érable pour récolter Magnolia",
     "kirhaCost": 2800,
     "maxUses": 150,
     "toolTier": 6,
     "ingredients": {
-      "magnolia": 14
+      "erable": 14
     },
     "effect": {
       "type": "speed",
@@ -819,19 +819,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 44,
+    "requiredJobLevel": 100,
     "jobXp": 30
   },
   "sakura_wood_axe": {
     "id": "sakura_wood_axe",
-    "name": "Hache de Sakura",
+    "name": "Hache de Magnolia",
     "emoji": "🪓",
-    "description": "Palier 7 — lumberjack",
+    "description": "Palier 7 — craftée avec Magnolia pour récolter Bambou",
     "kirhaCost": 5000,
     "maxUses": 175,
     "toolTier": 7,
     "ingredients": {
-      "sakura": 16
+      "magnolia": 16
     },
     "effect": {
       "type": "speed",
@@ -840,19 +840,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 52,
+    "requiredJobLevel": 120,
     "jobXp": 33
   },
   "millennium_axe": {
     "id": "millennium_axe",
-    "name": "Hache Millénaire",
+    "name": "Hache de Sakura",
     "emoji": "🪓",
-    "description": "Palier 10 — lumberjack",
+    "description": "Palier 9 — craftée avec Sakura pour récolter Sakura Doré",
     "kirhaCost": 15000,
     "maxUses": 250,
-    "toolTier": 10,
+    "toolTier": 9,
     "ingredients": {
-      "sakura_dore": 20
+      "sakura": 20
     },
     "effect": {
       "type": "speed",
@@ -861,14 +861,14 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 70,
+    "requiredJobLevel": 170,
     "jobXp": 42
   },
   "carpe_rod": {
     "id": "carpe_rod",
-    "name": "Canne du Crabe",
+    "name": "Canne de Crabe",
     "emoji": "🎣",
-    "description": "Palier 2 — fisher",
+    "description": "Palier 2 — craftée avec Crabe pour récolter Saumon",
     "kirhaCost": 120,
     "maxUses": 50,
     "toolTier": 2,
@@ -882,14 +882,14 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 14,
+    "requiredJobLevel": 20,
     "jobXp": 18
   },
   "salmon_rod": {
     "id": "salmon_rod",
-    "name": "Canne du Saumon",
+    "name": "Canne de Saumon",
     "emoji": "🎣",
-    "description": "Palier 3 — fisher",
+    "description": "Palier 3 — craftée avec Saumon pour récolter Calmar",
     "kirhaCost": 350,
     "maxUses": 75,
     "toolTier": 3,
@@ -903,19 +903,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 20,
+    "requiredJobLevel": 40,
     "jobXp": 21
   },
   "lobster_rod": {
     "id": "lobster_rod",
-    "name": "Canne du Homard",
+    "name": "Canne de Calmar",
     "emoji": "🎣",
-    "description": "Palier 4 — fisher",
+    "description": "Palier 4 — craftée avec Calmar pour récolter Homard",
     "kirhaCost": 800,
     "maxUses": 100,
     "toolTier": 4,
     "ingredients": {
-      "homard": 10
+      "calmar": 10
     },
     "effect": {
       "type": "speed",
@@ -924,19 +924,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 28,
+    "requiredJobLevel": 60,
     "jobXp": 24
   },
   "naso_rod": {
     "id": "naso_rod",
-    "name": "Canne du Naso",
+    "name": "Canne de Homard",
     "emoji": "🎣",
-    "description": "Palier 5 — fisher",
+    "description": "Palier 5 — craftée avec Homard pour récolter Naso",
     "kirhaCost": 1500,
     "maxUses": 125,
     "toolTier": 5,
     "ingredients": {
-      "naso": 12
+      "homard": 12
     },
     "effect": {
       "type": "speed",
@@ -945,19 +945,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 36,
+    "requiredJobLevel": 80,
     "jobXp": 27
   },
   "octopus_rod": {
     "id": "octopus_rod",
-    "name": "Canne de la Pieuvre",
+    "name": "Canne de Naso",
     "emoji": "🎣",
-    "description": "Palier 6 — fisher",
+    "description": "Palier 6 — craftée avec Naso pour récolter Fugu",
     "kirhaCost": 2800,
     "maxUses": 150,
     "toolTier": 6,
     "ingredients": {
-      "pieuvre": 14
+      "naso": 14
     },
     "effect": {
       "type": "speed",
@@ -966,19 +966,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 44,
+    "requiredJobLevel": 100,
     "jobXp": 30
   },
   "koi_rod": {
     "id": "koi_rod",
-    "name": "Canne Koï",
+    "name": "Canne de Fugu",
     "emoji": "🎣",
-    "description": "Palier 7 — fisher",
+    "description": "Palier 7 — craftée avec Fugu pour récolter Pieuvre",
     "kirhaCost": 5000,
     "maxUses": 175,
     "toolTier": 7,
     "ingredients": {
-      "koi_dore": 16
+      "fugu": 16
     },
     "effect": {
       "type": "speed",
@@ -987,19 +987,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 52,
+    "requiredJobLevel": 120,
     "jobXp": 33
   },
   "dragon_rod": {
     "id": "dragon_rod",
-    "name": "Canne du Dragon",
+    "name": "Canne de Carpe Koï",
     "emoji": "🎣",
-    "description": "Palier 10 — fisher",
+    "description": "Palier 9 — craftée avec Carpe Koï pour récolter Carpe Koï dorée",
     "kirhaCost": 15000,
     "maxUses": 250,
-    "toolTier": 10,
+    "toolTier": 9,
     "ingredients": {
-      "koi_dore": 20
+      "carpe_koi": 20
     },
     "effect": {
       "type": "speed",
@@ -1008,19 +1008,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 70,
+    "requiredJobLevel": 170,
     "jobXp": 42
   },
   "copper_pickaxe": {
     "id": "copper_pickaxe",
-    "name": "Pioche du Cuivre",
+    "name": "Pioche de Cuivre",
     "emoji": "⛏️",
-    "description": "Palier 3 — miner",
+    "description": "Palier 3 — craftée avec Cuivre pour récolter Topaze",
     "kirhaCost": 350,
     "maxUses": 75,
     "toolTier": 3,
     "ingredients": {
-      "fer": 8
+      "cuivre": 8
     },
     "effect": {
       "type": "speed",
@@ -1029,19 +1029,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 20,
+    "requiredJobLevel": 40,
     "jobXp": 21
   },
   "iron_depth_pickaxe": {
     "id": "iron_depth_pickaxe",
-    "name": "Pioche profonde",
+    "name": "Pioche de Topaze",
     "emoji": "⛏️",
-    "description": "Palier 4 — miner",
+    "description": "Palier 4 — craftée avec Topaze pour récolter Jade",
     "kirhaCost": 800,
     "maxUses": 100,
     "toolTier": 4,
     "ingredients": {
-      "pierre": 10
+      "topaze": 10
     },
     "effect": {
       "type": "speed",
@@ -1050,19 +1050,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 28,
+    "requiredJobLevel": 60,
     "jobXp": 24
   },
   "diamond_pickaxe": {
     "id": "diamond_pickaxe",
-    "name": "Pioche du Diamant",
+    "name": "Pioche de Jade",
     "emoji": "⛏️",
-    "description": "Palier 5 — miner",
+    "description": "Palier 5 — craftée avec Jade pour récolter Saphir",
     "kirhaCost": 1500,
     "maxUses": 125,
     "toolTier": 5,
     "ingredients": {
-      "diamant": 12
+      "jade": 12
     },
     "effect": {
       "type": "speed",
@@ -1071,19 +1071,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 36,
+    "requiredJobLevel": 80,
     "jobXp": 27
   },
   "emerald_pickaxe": {
     "id": "emerald_pickaxe",
-    "name": "Pioche de l'Émeraude",
+    "name": "Pioche de Saphir",
     "emoji": "⛏️",
-    "description": "Palier 6 — miner",
+    "description": "Palier 6 — craftée avec Saphir pour récolter Émeraude",
     "kirhaCost": 2800,
     "maxUses": 150,
     "toolTier": 6,
     "ingredients": {
-      "emeraude": 14
+      "saphir": 14
     },
     "effect": {
       "type": "speed",
@@ -1092,19 +1092,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 44,
+    "requiredJobLevel": 100,
     "jobXp": 30
   },
   "koi_crystal_pickaxe": {
     "id": "koi_crystal_pickaxe",
-    "name": "Pioche Cristal Koï",
+    "name": "Pioche d'Émeraude",
     "emoji": "⛏️",
-    "description": "Palier 7 — miner",
+    "description": "Palier 7 — craftée avec Émeraude pour récolter Diamant",
     "kirhaCost": 5000,
     "maxUses": 175,
     "toolTier": 7,
     "ingredients": {
-      "cristal": 16
+      "emeraude": 16
     },
     "effect": {
       "type": "speed",
@@ -1113,19 +1113,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 52,
+    "requiredJobLevel": 120,
     "jobXp": 33
   },
   "temple_pickaxe": {
     "id": "temple_pickaxe",
-    "name": "Pioche du Temple",
+    "name": "Pioche de Cristal",
     "emoji": "⛏️",
-    "description": "Palier 10 — miner",
+    "description": "Palier 9 — craftée avec Cristal pour récolter Cristal Doré",
     "kirhaCost": 15000,
     "maxUses": 250,
-    "toolTier": 10,
+    "toolTier": 9,
     "ingredients": {
-      "cristal_dore": 20
+      "cristal": 20
     },
     "effect": {
       "type": "speed",
@@ -1134,14 +1134,14 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 70,
+    "requiredJobLevel": 170,
     "jobXp": 42
   },
   "orge_sickle": {
     "id": "orge_sickle",
     "name": "Faucille d'Orge",
     "emoji": "🌾",
-    "description": "Palier 2 — récolte le Seigle (l'Orge n'use pas cet outil)",
+    "description": "Palier 2 — craftée avec Orge pour récolter Avoine",
     "kirhaCost": 120,
     "maxUses": 50,
     "toolTier": 2,
@@ -1155,19 +1155,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 14,
+    "requiredJobLevel": 20,
     "jobXp": 18
   },
   "seigle_sickle": {
     "id": "seigle_sickle",
-    "name": "Faucille de Seigle",
+    "name": "Faucille d'Avoine",
     "emoji": "🌾",
-    "description": "Palier 3 — farmer",
+    "description": "Palier 3 — craftée avec Avoine pour récolter Seigle",
     "kirhaCost": 350,
     "maxUses": 75,
     "toolTier": 3,
     "ingredients": {
-      "riz_sakura": 8
+      "avoine": 8
     },
     "effect": {
       "type": "speed",
@@ -1176,14 +1176,14 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 20,
+    "requiredJobLevel": 40,
     "jobXp": 21
   },
   "avoine_sickle": {
     "id": "avoine_sickle",
-    "name": "Faucille d'Avoine",
+    "name": "Faucille de Seigle",
     "emoji": "🌾",
-    "description": "Palier 4 — farmer",
+    "description": "Palier 4 — craftée avec Seigle pour récolter Sarrasin",
     "kirhaCost": 800,
     "maxUses": 100,
     "toolTier": 4,
@@ -1197,19 +1197,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 28,
+    "requiredJobLevel": 60,
     "jobXp": 24
   },
   "mais_sickle": {
     "id": "mais_sickle",
-    "name": "Faucille de Maïs",
+    "name": "Faucille de Sarrasin",
     "emoji": "🌾",
-    "description": "Palier 5 — farmer",
+    "description": "Palier 5 — craftée avec Sarrasin pour récolter Houblon",
     "kirhaCost": 1500,
     "maxUses": 125,
     "toolTier": 5,
     "ingredients": {
-      "riz_sakura": 12
+      "sarrasin": 12
     },
     "effect": {
       "type": "speed",
@@ -1218,19 +1218,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 36,
+    "requiredJobLevel": 80,
     "jobXp": 27
   },
   "riz_sickle": {
     "id": "riz_sickle",
-    "name": "Faucille de Riz",
+    "name": "Faucille de Houblon",
     "emoji": "🌾",
-    "description": "Palier 6 — farmer",
+    "description": "Palier 6 — craftée avec Houblon pour récolter Lin",
     "kirhaCost": 2800,
     "maxUses": 150,
     "toolTier": 6,
     "ingredients": {
-      "riz_sakura": 14
+      "houblon": 14
     },
     "effect": {
       "type": "speed",
@@ -1239,19 +1239,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 44,
+    "requiredJobLevel": 100,
     "jobXp": 30
   },
   "lotus_sickle": {
     "id": "lotus_sickle",
-    "name": "Faucille de Lotus",
+    "name": "Faucille de Lin",
     "emoji": "🌾",
-    "description": "Palier 7 — farmer",
+    "description": "Palier 7 — craftée avec Lin pour récolter Maïs",
     "kirhaCost": 5000,
     "maxUses": 175,
     "toolTier": 7,
     "ingredients": {
-      "riz_sakura": 16
+      "lin": 16
     },
     "effect": {
       "type": "speed",
@@ -1260,19 +1260,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 52,
+    "requiredJobLevel": 120,
     "jobXp": 33
   },
   "eternal_sickle": {
     "id": "eternal_sickle",
-    "name": "Faucille Éternelle",
+    "name": "Faucille de Riz Sakura",
     "emoji": "🌾",
-    "description": "Palier 10 — farmer",
+    "description": "Palier 9 — craftée avec Riz Sakura pour récolter Riz Doré",
     "kirhaCost": 15000,
     "maxUses": 250,
-    "toolTier": 10,
+    "toolTier": 9,
     "ingredients": {
-      "riz_dore": 20
+      "riz_sakura": 20
     },
     "effect": {
       "type": "speed",
@@ -1281,19 +1281,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 70,
+    "requiredJobLevel": 170,
     "jobXp": 42
   },
   "mint_gloves": {
     "id": "mint_gloves",
-    "name": "Gants de Menthe",
+    "name": "Gants d'Ortie",
     "emoji": "🧤",
-    "description": "Palier 2 — alchemist",
+    "description": "Palier 2 — craftée avec Ortie pour récolter Menthe",
     "kirhaCost": 120,
     "maxUses": 50,
     "toolTier": 2,
     "ingredients": {
-      "lavande": 6
+      "ortie": 6
     },
     "effect": {
       "type": "speed",
@@ -1302,19 +1302,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 14,
+    "requiredJobLevel": 20,
     "jobXp": 18
   },
   "nettle_gloves": {
     "id": "nettle_gloves",
-    "name": "Gants d'Ortie",
+    "name": "Gants de Menthe",
     "emoji": "🧤",
-    "description": "Palier 3 — alchemist",
+    "description": "Palier 3 — craftée avec Menthe pour récolter Chrysanthème",
     "kirhaCost": 350,
     "maxUses": 75,
     "toolTier": 3,
     "ingredients": {
-      "pissenlit": 8
+      "menthe": 8
     },
     "effect": {
       "type": "speed",
@@ -1323,19 +1323,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 20,
+    "requiredJobLevel": 40,
     "jobXp": 21
   },
   "lavender_gloves": {
     "id": "lavender_gloves",
-    "name": "Gants de Lavande",
+    "name": "Gants de Chrysanthème",
     "emoji": "🧤",
-    "description": "Palier 4 — alchemist",
+    "description": "Palier 4 — craftée avec Chrysanthème pour récolter Lavande",
     "kirhaCost": 800,
     "maxUses": 100,
     "toolTier": 4,
     "ingredients": {
-      "lavande": 10
+      "chrysantheme": 10
     },
     "effect": {
       "type": "speed",
@@ -1344,19 +1344,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 28,
+    "requiredJobLevel": 60,
     "jobXp": 24
   },
   "peony_gloves": {
     "id": "peony_gloves",
-    "name": "Gants de Pivoine",
+    "name": "Gants de Lavande",
     "emoji": "🧤",
-    "description": "Palier 5 — alchemist",
+    "description": "Palier 5 — craftée avec Lavande pour récolter Ginseng",
     "kirhaCost": 1500,
     "maxUses": 125,
     "toolTier": 5,
     "ingredients": {
-      "pivoine": 12
+      "lavande": 12
     },
     "effect": {
       "type": "speed",
@@ -1365,19 +1365,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 36,
+    "requiredJobLevel": 80,
     "jobXp": 27
   },
   "wisteria_gloves": {
     "id": "wisteria_gloves",
-    "name": "Gants Wisteria",
+    "name": "Gants de Ginseng",
     "emoji": "🧤",
-    "description": "Palier 6 — alchemist",
+    "description": "Palier 6 — craftée avec Ginseng pour récolter Pivoine",
     "kirhaCost": 2800,
     "maxUses": 150,
     "toolTier": 6,
     "ingredients": {
-      "wisteria": 14
+      "ginseng": 14
     },
     "effect": {
       "type": "speed",
@@ -1386,19 +1386,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 44,
+    "requiredJobLevel": 100,
     "jobXp": 30
   },
   "koi_herb_gloves": {
     "id": "koi_herb_gloves",
-    "name": "Gants Herbe Koï",
+    "name": "Gants de Pivoine",
     "emoji": "🧤",
-    "description": "Palier 7 — alchemist",
+    "description": "Palier 7 — craftée avec Pivoine pour récolter Wisteria",
     "kirhaCost": 5000,
     "maxUses": 175,
     "toolTier": 7,
     "ingredients": {
-      "lotus_sacre": 16
+      "pivoine": 16
     },
     "effect": {
       "type": "speed",
@@ -1407,19 +1407,19 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 52,
+    "requiredJobLevel": 120,
     "jobXp": 33
   },
   "essence_gloves": {
     "id": "essence_gloves",
-    "name": "Gants d'Essence",
+    "name": "Gants de Lotus Sacré",
     "emoji": "🧤",
-    "description": "Palier 10 — alchemist",
+    "description": "Palier 9 — craftée avec Lotus Sacré pour récolter Lotus Sacré Doré",
     "kirhaCost": 15000,
     "maxUses": 250,
-    "toolTier": 10,
+    "toolTier": 9,
     "ingredients": {
-      "lotus_sacre_dore": 20
+      "lotus_sacre": 20
     },
     "effect": {
       "type": "speed",
@@ -1428,7 +1428,112 @@
     },
     "unique": true,
     "craftJob": "toolmaker",
-    "requiredJobLevel": 70,
+    "requiredJobLevel": 170,
     "jobXp": 42
+  },
+  "bambou_ready_axe": {
+    "id": "bambou_ready_axe",
+    "name": "Hache de Bambou",
+    "emoji": "🪓",
+    "description": "Palier 8 — craftée avec Bambou pour récolter Sakura",
+    "kirhaCost": 9000,
+    "maxUses": 200,
+    "toolTier": 8,
+    "ingredients": {
+      "bambou": 18
+    },
+    "effect": {
+      "type": "speed",
+      "job": "lumberjack",
+      "bonus": 0.22
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 140,
+    "jobXp": 36
+  },
+  "pieuvre_ready_rod": {
+    "id": "pieuvre_ready_rod",
+    "name": "Canne de Pieuvre",
+    "emoji": "🎣",
+    "description": "Palier 8 — craftée avec Pieuvre pour récolter Carpe Koï",
+    "kirhaCost": 9000,
+    "maxUses": 200,
+    "toolTier": 8,
+    "ingredients": {
+      "pieuvre": 18
+    },
+    "effect": {
+      "type": "speed",
+      "job": "fisher",
+      "bonus": 0.22
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 140,
+    "jobXp": 36
+  },
+  "diamant_ready_pickaxe": {
+    "id": "diamant_ready_pickaxe",
+    "name": "Pioche de Diamant",
+    "emoji": "⛏️",
+    "description": "Palier 8 — craftée avec Diamant pour récolter Cristal",
+    "kirhaCost": 9000,
+    "maxUses": 200,
+    "toolTier": 8,
+    "ingredients": {
+      "diamant": 18
+    },
+    "effect": {
+      "type": "speed",
+      "job": "miner",
+      "bonus": 0.22
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 140,
+    "jobXp": 36
+  },
+  "mais_ready_sickle": {
+    "id": "mais_ready_sickle",
+    "name": "Faucille de Maïs",
+    "emoji": "🌾",
+    "description": "Palier 8 — craftée avec Maïs pour récolter Riz Sakura",
+    "kirhaCost": 9000,
+    "maxUses": 200,
+    "toolTier": 8,
+    "ingredients": {
+      "mais": 18
+    },
+    "effect": {
+      "type": "speed",
+      "job": "farmer",
+      "bonus": 0.22
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 140,
+    "jobXp": 36
+  },
+  "wisteria_ready_gloves": {
+    "id": "wisteria_ready_gloves",
+    "name": "Gants de Wisteria",
+    "emoji": "🧤",
+    "description": "Palier 8 — craftée avec Wisteria pour récolter Lotus Sacré",
+    "kirhaCost": 9000,
+    "maxUses": 200,
+    "toolTier": 8,
+    "ingredients": {
+      "wisteria": 18
+    },
+    "effect": {
+      "type": "speed",
+      "job": "alchemist",
+      "bonus": 0.22
+    },
+    "unique": true,
+    "craftJob": "toolmaker",
+    "requiredJobLevel": 140,
+    "jobXp": 36
   }
 }

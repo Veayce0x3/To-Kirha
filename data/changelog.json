@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260719-1900",
+      "date": "2026-07-19",
+      "title": "Outils = ressources du jeu",
+      "highlights": [
+        "Outilleur : noms et crafts alignés sur Frêne→Sakura, Dorade→Koï, etc. (plus de Hache Millénaire / bambou hors chaîne)",
+        "9 paliers d’outils par métier de récolte — tableau dans docs/outils-recolte.md"
+      ]
+    },
+    {
       "buildId": "20260719-1830",
       "date": "2026-07-19",
       "title": "Ferme 2e animal, outilleur, minuteurs",

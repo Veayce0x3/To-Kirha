@@ -256,6 +256,31 @@
       "recipeId": "essence_gloves",
       "slot": "weapon",
       "job": "alchemist"
+    },
+    "bambou_ready_axe": {
+      "recipeId": "bambou_ready_axe",
+      "slot": "weapon",
+      "job": "lumberjack"
+    },
+    "pieuvre_ready_rod": {
+      "recipeId": "pieuvre_ready_rod",
+      "slot": "weapon",
+      "job": "fisher"
+    },
+    "diamant_ready_pickaxe": {
+      "recipeId": "diamant_ready_pickaxe",
+      "slot": "weapon",
+      "job": "miner"
+    },
+    "mais_ready_sickle": {
+      "recipeId": "mais_ready_sickle",
+      "slot": "weapon",
+      "job": "farmer"
+    },
+    "wisteria_ready_gloves": {
+      "recipeId": "wisteria_ready_gloves",
+      "slot": "weapon",
+      "job": "alchemist"
     }
   }
 }
