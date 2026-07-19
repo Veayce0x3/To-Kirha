@@ -688,13 +688,15 @@ export function startFarmUnit(state, farmData, jobs, balance, buildingId, produc
   if (!building || !slot || slot.active) return { ok: false, reason: 'Occupé' };
 
   if (building.requiresAnimal) {
-    const alive = countAliveAnimals(meta);
-    if (alive <= 0) {
-      return { ok: false, reason: 'Achète un animal pour ce bâtiment' };
-    }
-    const producing = countActiveFarmProductions(state, buildingId);
-    if (producing >= alive) {
-      return { ok: false, reason: `Pas assez d’animaux (${alive} actif${alive > 1 ? 's' : ''})` };
+    const animal = meta.animals?.[unitIndex];
+    const left = animal?.cyclesLeft || 0;
+    if (!animal || left <= 0) {
+      return {
+        ok: false,
+        reason: animal
+          ? `${building.animalName || 'Animal'} épuisé — rachète-en un`
+          : `Achète un ${building.animalName || 'animal'} pour cet emplacement`,
+      };
     }
   }
 
@@ -757,19 +759,11 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
   let expiredName = null;
   if (building?.requiresAnimal) {
     const meta = getFarmBuildingMeta(state, buildingId);
-    // Usure sur l'animal avec le moins de cycles restants
-    let bestIdx = -1;
-    let bestCycles = Infinity;
-    meta.animals.forEach((a, i) => {
-      if (a && (a.cyclesLeft || 0) > 0 && a.cyclesLeft < bestCycles) {
-        bestCycles = a.cyclesLeft;
-        bestIdx = i;
-      }
-    });
-    if (bestIdx >= 0) {
-      meta.animals[bestIdx].cyclesLeft -= 1;
-      if (meta.animals[bestIdx].cyclesLeft <= 0) {
-        meta.animals[bestIdx] = { cyclesLeft: 0 };
+    const animal = meta.animals?.[unitIndex];
+    if (animal && (animal.cyclesLeft || 0) > 0) {
+      animal.cyclesLeft -= 1;
+      if (animal.cyclesLeft <= 0) {
+        meta.animals[unitIndex] = { cyclesLeft: 0 };
         animalExpired = true;
         expiredName = building.animalName || 'Animal';
       }

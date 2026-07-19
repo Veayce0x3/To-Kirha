@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260719-2030",
+      "date": "2026-07-19",
+      "title": "Ferme : animal dans l’emplacement",
+      "highlights": [
+        "Poulailler etc. : poule + utilisations + coût nourriture dans chaque emplacement",
+        "Stock nourriture en gros en haut (diminue à chaque clic) — plus de message « animaux occupés »"
+      ]
+    },
+    {
       "buildId": "20260719-2000",
       "date": "2026-07-19",
       "title": "Ferme claire, prix rares, sans rendement",
