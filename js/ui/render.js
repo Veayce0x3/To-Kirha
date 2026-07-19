@@ -137,7 +137,7 @@ export function initUI(game, audio) {
     } else if (showLevel && view.building) {
       const lv = view.building === 'well'
         ? '—'
-        : String(game.getFarmBuildingLevel?.(view.building) ?? game.state.farmBuildingMeta?.[view.building]?.level || 1);
+        : String(game.getFarmBuildingLevel(view.building) || 1);
       levelHtml = `<span class="nav-level">${lv}</span>`;
     } else if (showLevel && viewId === 'character') {
       levelHtml = `<span class="nav-level">${game.getCharacterProgress().level}</span>`;
