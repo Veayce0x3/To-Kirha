@@ -183,9 +183,9 @@ export function getPrestigeBlockers(state, balance, achievements = {}, combatZon
     if (!ok) blockers.push(`Zone ${balance.zones[z]?.name || z} requise`);
   }
 
-  const earned = state.lifetimeStats?.totalEarned || 0;
-  if (earned < (req.minTotalEarned || 0)) {
-    blockers.push(`${((req.minTotalEarned || 0) - earned).toLocaleString('fr-FR')} 💰 à gagner encore (total vie)`);
+  const seasonEarned = Number(state.stats?.totalEarned) || 0;
+  if (seasonEarned < (req.minTotalEarned || 0)) {
+    blockers.push(`${((req.minTotalEarned || 0) - seasonEarned).toLocaleString('fr-FR')} 💰 à gagner encore cette saison`);
   }
 
   for (const [zoneId, min] of Object.entries(req.minBossKills || {})) {
@@ -264,7 +264,7 @@ export function getPrestigeProgress(state, balance, achievements = {}, combatZon
   if (req.minCharacterLevel > 0) {
     steps.push({
       id: 'char_level',
-      label: `Personnage Nv.${req.minCharacterLevel}`,
+      label: `Personnage Nv.${charLevel}/${req.minCharacterLevel}`,
       done: charLevel >= req.minCharacterLevel,
       progress: Math.min(1, charLevel / req.minCharacterLevel),
     });
@@ -274,7 +274,7 @@ export function getPrestigeProgress(state, balance, achievements = {}, combatZon
   if (req.minJobLevel > 0) {
     steps.push({
       id: 'job_level',
-      label: `Métiers Nv.${req.minJobLevel} (max actuel ${maxJob})`,
+      label: `Métiers Nv.${maxJob}/${req.minJobLevel} (meilleur métier)`,
       done: maxJob >= req.minJobLevel,
       progress: Math.min(1, maxJob / req.minJobLevel),
     });
@@ -286,14 +286,15 @@ export function getPrestigeProgress(state, balance, achievements = {}, combatZon
     steps.push({ id: `zone_${z}`, label: `Zone ${name}`, done: ok });
   }
 
-  const earned = state.lifetimeStats?.totalEarned || 0;
+  // Kirha gagnés pendant la saison en cours (stats se reset au prestige)
+  const seasonEarned = Number(state.stats?.totalEarned) || 0;
   const kirhaTarget = req.minTotalEarned || 0;
   if (kirhaTarget > 0) {
     steps.push({
       id: 'kirha',
-      label: `${kirhaTarget.toLocaleString('fr-FR')} 💰 gagnés (total vie)`,
-      done: earned >= kirhaTarget,
-      progress: Math.min(1, earned / kirhaTarget),
+      label: `${seasonEarned.toLocaleString('fr-FR')}/${kirhaTarget.toLocaleString('fr-FR')} 💰 gagnés cette saison`,
+      done: seasonEarned >= kirhaTarget,
+      progress: Math.min(1, seasonEarned / kirhaTarget),
     });
   }
 

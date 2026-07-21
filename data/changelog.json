@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260721-2150",
+      "date": "2026-07-21",
+      "title": "Outils, 4 prérequis S3, admin Jayler",
+      "highlights": [
+        "Améliorer un outil : Atelier Outilleur ou Perso → Outils (après craft)",
+        "Saison suivante : toujours 4 objectifs (perso, métiers, Kirha de la saison, donjon)",
+        "Fiche admin renforcée (SQL + secours) pour les joueurs post-saison"
+      ]
+    },
+    {
       "buildId": "20260721-2140",
       "date": "2026-07-21",
       "title": "Boost ×2 = 1 h puis fini",

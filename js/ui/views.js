@@ -1220,7 +1220,9 @@ function renderCharToolsTab(game, panel) {
   const equipped = tools.filter((t) => t.equipped);
   const reserve = tools.filter((t) => !t.equipped);
   if (!equipped.length && !reserve.length) {
-    gatherEl.innerHTML = '<p class="empty-text">Aucun outil — fabrique-les à l\'Atelier Outilleur.</p>';
+    gatherEl.innerHTML = season >= (game.balance.toolSeasonUpgrade?.minSeason ?? 2)
+      ? `<p class="empty-text">Aucun outil pour l’instant.<br/>1) Fabrique une hache / canne / pioche à l’<strong>Atelier Outilleur</strong>.<br/>2) Reviens ici (Perso → Outils) pour le bouton <strong>Améliorer (+${game.balance.toolSeasonUpgrade?.bonusUses ?? 10})</strong>.</p>`
+      : '<p class="empty-text">Aucun outil — fabrique-les à l\'Atelier Outilleur.</p>';
     return;
   }
   if (equipped.length) {
@@ -3436,8 +3438,8 @@ export function renderSeason(game, el) {
         </div>
       </div>
 
-      <h3 class="admin-section-title">Prérequis Saison ${info.nextSeason}</h3>
-      <p class="view-desc">${progress.completed}/${progress.total} conditions</p>
+      <h3 class="admin-section-title">Prérequis Saison ${info.nextSeason} (${progress.total} objectifs)</h3>
+      <p class="view-desc">${progress.completed}/${progress.total} remplis — perso, métiers, Kirha de la saison, donjon</p>
       <div class="xp-bar-container prestige-teaser-bar"><div class="xp-bar" style="width:${progress.percent}%"></div></div>
       ${stepsHtml}
       ${info.canDo

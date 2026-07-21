@@ -5,6 +5,7 @@ import { listWorkshopRecipes, inspectRecipe } from '../systems/crafting.js';
 import { renderResourceIcon } from '../systems/resourceVisual.js';
 import { getCombatItemPreview, renderCraftDurabilityInfo } from '../systems/equipmentDisplay.js';
 import { isRecipeEquipped } from '../systems/equipment.js';
+import { isDurabilityTool, canUpgradeTool, isToolUpgraded } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { navigate } from './router.js';
 
@@ -70,6 +71,16 @@ function renderRecipeCard(game, info) {
     equipBtn = `<button type="button" class="btn btn-small btn-muted" data-equip-recipe="${recipeId}">Équiper</button>`;
   }
 
+  let upgradeBtn = '';
+  if (owned && isDurabilityTool(recipe)) {
+    const up = canUpgradeTool(game.state, recipeId, recipe, game.balance);
+    if (up.ok) {
+      upgradeBtn = `<button type="button" class="btn btn-small btn-prestige" data-upgrade-recipe="${recipeId}">Améliorer (+${game.balance.toolSeasonUpgrade?.bonusUses ?? 10})</button>`;
+    } else if (isToolUpgraded(game.state, recipeId)) {
+      upgradeBtn = '<span class="craft-upgrade-done">✓ Amélioré cette saison</span>';
+    }
+  }
+
   return `
     <div class="craft-tile${canClick ? ' affordable' : ''}${locked ? ' locked-res' : ''}${owned ? ' craft-owned' : ''}${broken ? ' craft-broken' : ''}" data-recipe-id="${recipeId}">
       <div class="tile-name">${recipe.emoji} ${recipe.name}${recipe.repeatable ? ' ♻️' : ''}${tierBadge}</div>
@@ -81,6 +92,7 @@ function renderRecipeCard(game, info) {
       ${xpLine}
       <button type="button" class="${btnClass}" data-craft-recipe="${recipeId}" ${canClick ? '' : 'aria-disabled="true"'}>${buttonLabel}</button>
       ${equipBtn}
+      ${upgradeBtn}
     </div>
   `;
 }
@@ -178,6 +190,14 @@ function handleCraftPanelClick(game, event, craftJobId, panelEl, headerEl) {
   if (equipBtn) {
     event.preventDefault();
     game.doEquip(equipBtn.dataset.equipRecipe);
+    paintCraftPanel(game, craftJobId, panelEl, headerEl);
+    return;
+  }
+
+  const upgradeBtn = event.target.closest('[data-upgrade-recipe]');
+  if (upgradeBtn) {
+    event.preventDefault();
+    game.doUpgradeTool(upgradeBtn.dataset.upgradeRecipe);
     paintCraftPanel(game, craftJobId, panelEl, headerEl);
     return;
   }

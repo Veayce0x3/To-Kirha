@@ -87,7 +87,100 @@ export async function searchPlayers(query, limit = 30) {
 export async function getPlayerDetail(userId) {
   const deny = denyIfNotStaff();
   if (deny) return deny;
-  return rpc('admin_get_player_detail', { p_user_id: userId });
+  const res = await rpc('admin_get_player_detail', { p_user_id: userId });
+  if (res.ok) return res;
+  // Fallback si la RPC plante (ex. save post-prestige) : lire profile + save côté client
+  try {
+    const fallback = await buildPlayerDetailFallback(userId);
+    if (fallback.ok) return fallback;
+  } catch (err) {
+    console.warn('[admin] detail fallback failed', err);
+  }
+  return res;
+}
+
+async function buildPlayerDetailFallback(userId) {
+  if (!isSupabaseConfigured()) return { ok: false, reason: 'Supabase non configuré.' };
+  const supabase = await getSupabaseClient();
+  const [{ data: profile, error: pErr }, { data: saveRow, error: sErr }, { data: lb }] = await Promise.all([
+    supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+    supabase.from('saves').select('save_data, updated_at').eq('user_id', userId).maybeSingle(),
+    supabase.from('leaderboard_entries').select('*').eq('user_id', userId).maybeSingle(),
+  ]);
+  if (pErr) return { ok: false, reason: pErr.message };
+  if (!profile) return { ok: false, reason: 'Joueur introuvable' };
+  if (sErr) return { ok: false, reason: sErr.message };
+
+  const save = saveRow?.save_data || null;
+  const jobs = save?.jobs && typeof save.jobs === 'object' ? save.jobs : {};
+  const jobs_summary = {};
+  for (const [id, data] of Object.entries(jobs)) {
+    jobs_summary[id] = Number(data?.level) || 1;
+  }
+
+  const inventory = save?.inventory && typeof save.inventory === 'object' ? save.inventory : {};
+  const inventory_summary = Object.entries(inventory)
+    .filter(([, qty]) => Number(qty) > 0)
+    .sort((a, b) => Number(b[1]) - Number(a[1]))
+    .slice(0, 30)
+    .map(([id, qty]) => ({ id, qty: Number(qty) || 0 }));
+
+  const owned = Array.isArray(save?.ownedCombatItems) ? save.ownedCombatItems : [];
+  const instances = Array.isArray(save?.combatItemInstances) ? save.combatItemInstances : [];
+  const combat_items = owned.map((ref) => {
+    const inst = instances.find((e) => e?.instanceId === ref);
+    return {
+      ref,
+      item_id: inst?.itemId || ref,
+      rarity: inst?.rarity || 'common',
+    };
+  });
+
+  return {
+    ok: true,
+    data: {
+      profile: {
+        user_id: profile.user_id,
+        display_name: profile.display_name,
+        role: profile.role,
+        is_banned: profile.is_banned,
+        banned_at: profile.banned_at,
+        banned_reason: profile.banned_reason,
+        cheat_flagged: profile.cheat_flagged,
+        cheat_notes: profile.cheat_notes,
+        free_rename_used: profile.free_rename_used,
+        email: null,
+        created_at: profile.created_at,
+      },
+      name_history: [],
+      leaderboard: lb || null,
+      save_summary: save ? {
+        kirha: Number(save.kirha) || 0,
+        season: Number(save.season) || 1,
+        char_level: Number(save.character?.level) || 1,
+        nickname: save.character?.nickname || null,
+        last_online: save.lastOnline || null,
+        career_confirmed: !!save.careerChoice?.confirmed,
+        career_harvest: save.careerChoice?.harvest || null,
+        career_farm: save.careerChoice?.farm || null,
+        career_weapon: save.careerChoice?.weaponType || null,
+        career_team: save.careerChoice?.teamWeaponTypes || null,
+        playtime_foreground_ms: Number(save.playtime?.foregroundMs) || 0,
+        playtime_background_ms: Number(save.playtime?.backgroundMs) || 0,
+        lifetime_earned: Number(save.lifetimeStats?.totalEarned) || 0,
+        season_earned: Number(save.stats?.totalEarned) || 0,
+        seasons_completed: Number(save.lifetimeStats?.seasonsCompleted) || 0,
+      } : null,
+      inventory_summary,
+      jobs_summary,
+      combat_items,
+      market_sells_active: 0,
+      market_buys_active: 0,
+      reports_against: 0,
+      reports_by: 0,
+      _fallback: true,
+    },
+  };
 }
 
 export async function banUser(userId, reason) {
