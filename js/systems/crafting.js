@@ -6,6 +6,7 @@ import { hasWorkingCombatItem } from './combatDurability.js';
 import { equip, getJobEquippedTool, recipeBelongsToWorkshopTab } from './equipment.js';
 import { initToolDurability, isDurabilityTool, isToolEffectActive } from './toolDurability.js';
 import { addJobXp } from './harvest.js';
+import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBoostMult } from './prestige.js';
 import { GATHERING_JOB_IDS, isGatheringJobUnlocked } from './careerChoice.js';
 
 export function makeCraftContext(game) {
@@ -163,7 +164,8 @@ export function performCraft(recipeId, ctx) {
   applyCraftResult(recipeId, recipe, ctx.state);
 
   let levelResult = null;
-  const jobXp = recipe.jobXp ?? 0;
+  const rawJobXp = recipe.jobXp ?? 0;
+  const jobXp = applyMultiplierBonus(rawJobXp, getPrestigeBonuses(ctx.state).jobXp) * getSeasonBoostMult(ctx.state);
   const craftJob = recipe.craftJob || 'blacksmith';
   if (jobXp > 0) {
     levelResult = addJobXp(ctx.state, craftJob, jobXp, ctx.jobs, ctx.balance);

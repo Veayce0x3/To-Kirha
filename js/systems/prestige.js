@@ -4,15 +4,68 @@ import { isCareerChoiceComplete, STARTER_WEAPON_TYPES } from './careerChoice.js'
 function getPrestigeReqForSeason(balance, season) {
   const base = balance?.prestige || {};
   const override = base.seasonRequirements?.[String(season)] || {};
+  const has = (key) => Object.prototype.hasOwnProperty.call(override, key);
+
   return {
-    ...base,
-    minTotalEarned: override.minTotalEarned ?? base.minTotalEarned,
-    requiredZones: override.requiredZones ?? base.requiredZones ?? [],
-    minBossKills: override.minBossKills ?? base.minBossKills ?? {},
-    requireAchievements: override.requireAchievements ?? base.requireAchievements ?? [],
-    requireQuestsChapter: override.requireQuestsChapter ?? base.requireQuestsChapter,
-    requireAtSeasonCap: override.requireAtSeasonCap ?? base.requireAtSeasonCap ?? true,
+    minTotalEarned: has('minTotalEarned') ? override.minTotalEarned : (base.minTotalEarned ?? 0),
+    requiredZones: has('requiredZones') ? (override.requiredZones || []) : (base.requiredZones || []),
+    minBossKills: has('minBossKills') ? (override.minBossKills || {}) : (base.minBossKills || {}),
+    requireAchievements: has('requireAchievements')
+      ? (override.requireAchievements || [])
+      : (base.requireAchievements || []),
+    requireQuestsChapter: has('requireQuestsChapter')
+      ? override.requireQuestsChapter
+      : base.requireQuestsChapter,
+    requireAtSeasonCap: has('requireAtSeasonCap')
+      ? !!override.requireAtSeasonCap
+      : (base.requireAtSeasonCap ?? false),
+    minCharacterLevel: has('minCharacterLevel')
+      ? (override.minCharacterLevel || 0)
+      : (base.minCharacterLevel || 0),
+    minJobLevel: has('minJobLevel')
+      ? (override.minJobLevel || 0)
+      : (base.minJobLevel || 0),
+    bonusesPerSeason: base.bonusesPerSeason,
+    seasonStartKirha: base.seasonStartKirha,
+    levelCaps: base.levelCaps,
+    seasonBoostMs: base.seasonBoostMs ?? 3600000,
   };
+}
+
+export function getMaxJobLevel(state) {
+  const jobs = state?.jobs || {};
+  let max = 1;
+  for (const data of Object.values(jobs)) {
+    max = Math.max(max, Number(data?.level) || 1);
+  }
+  return max;
+}
+
+/** Boost de relance 1 h après nouvelle saison. */
+export function isSeasonBoostActive(state, now = Date.now()) {
+  const endsAt = Number(state?.seasonBoost?.endsAt) || 0;
+  return endsAt > now;
+}
+
+export function getSeasonBoostRemainingMs(state, now = Date.now()) {
+  const endsAt = Number(state?.seasonBoost?.endsAt) || 0;
+  return Math.max(0, endsAt - now);
+}
+
+export function getSeasonBoostMult(state) {
+  return isSeasonBoostActive(state) ? 2 : 1;
+}
+
+export function createSeasonBoost(balance, now = Date.now()) {
+  const ms = balance?.prestige?.seasonBoostMs ?? 3600000;
+  return { endsAt: now + ms };
+}
+
+/** Multiplicateur de stats ennemis selon la saison (S1 = 1, S2 = +12 %, …). */
+export function getSeasonEnemyScale(season, balance) {
+  const per = Number(balance?.seasonCombatScalePerSeason);
+  const step = Number.isFinite(per) ? per : 0.12;
+  return 1 + Math.max(0, (Number(season) || 1) - 1) * step;
 }
 
 export function getPrestigeBonuses(state) {
@@ -20,8 +73,29 @@ export function getPrestigeBonuses(state) {
   const ach = state.achievements?.bonuses || state.quests?.bonuses || {};
   return {
     kirha: 1 + (p.kirhaBonus || 0) + (ach.kirha || 0),
+    /** XP personnage / combat */
     xp: 1 + (p.xpBonus || 0) + (ach.xp || 0),
+    /** XP métiers (récolte, ferme, craft) */
+    jobXp: 1 + (p.jobXpBonus || 0) + (ach.xp || 0),
+    /** Fraction additive : réduit le temps de repousse (0.05 = −5 %) */
+    regrowthSpeed: (p.regrowthSpeedBonus || 0) + (ach.harvestSpeed || 0),
   };
+}
+
+/** Pourcentages affichés des bonus de saison (hors succès). */
+export function getSeasonBonusPercents(state) {
+  const p = state?.prestige || {};
+  return {
+    kirhaPct: Math.round((Number(p.kirhaBonus) || 0) * 100),
+    xpPct: Math.round((Number(p.xpBonus) || 0) * 100),
+    jobXpPct: Math.round((Number(p.jobXpBonus) || 0) * 100),
+    regrowthPct: Math.round((Number(p.regrowthSpeedBonus) || 0) * 100),
+  };
+}
+
+export function hasSeasonBonus(state) {
+  const { kirhaPct, xpPct, jobXpPct, regrowthPct } = getSeasonBonusPercents(state);
+  return kirhaPct > 0 || xpPct > 0 || jobXpPct > 0 || regrowthPct > 0;
 }
 
 /**
@@ -80,11 +154,21 @@ export function getPrestigeBlockers(state, balance, achievements = {}, combatZon
 
   const blockers = [];
 
-  if (req.requireAtSeasonCap !== false) {
+  if (req.requireAtSeasonCap) {
     const proximity = getSeasonCapProximity(state, balance);
     if (!proximity.atCap) {
       blockers.push(`Plafond Saison ${season} non atteint (perso ou métier)`);
     }
+  }
+
+  const charLevel = state.character?.level || 1;
+  if (req.minCharacterLevel > 0 && charLevel < req.minCharacterLevel) {
+    blockers.push(`Personnage Nv.${req.minCharacterLevel} (actuel ${charLevel})`);
+  }
+
+  const maxJob = getMaxJobLevel(state);
+  if (req.minJobLevel > 0 && maxJob < req.minJobLevel) {
+    blockers.push(`Métiers Nv.${req.minJobLevel} (max actuel ${maxJob})`);
   }
 
   for (const z of req.requiredZones || []) {
@@ -102,7 +186,7 @@ export function getPrestigeBlockers(state, balance, achievements = {}, combatZon
     if (kills < min) {
       const cz = combatZones[zoneId];
       const name = cz?.boss?.name || cz?.name || zoneId;
-      blockers.push(`Vaincre ${name} (${kills}/${min})`);
+      blockers.push(`Vaincre le donjon : ${name} (${kills}/${min})`);
     }
   }
 
@@ -126,13 +210,11 @@ export function canPrestige(state, balance, quests = {}, combatZones = {}) {
   return getPrestigeBlockers(state, balance, quests, combatZones).length === 0;
 }
 
-const GATHER_JOBS = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist', 'breeder'];
-
 export function getSeasonCapProximity(state, balance) {
   const charCap = getSeasonLevelCap('character', state, balance);
   const jobsCap = getSeasonLevelCap('jobs', state, balance);
   const charLevel = state.character?.level || 1;
-  const maxJobLevel = Math.max(...GATHER_JOBS.map((j) => state.jobs?.[j]?.level || 1));
+  const maxJobLevel = getMaxJobLevel(state);
   const charRatio = charCap > 0 ? charLevel / charCap : 0;
   const jobRatio = jobsCap > 0 ? maxJobLevel / jobsCap : 0;
   const maxRatio = Math.max(charRatio, jobRatio);
@@ -162,12 +244,32 @@ export function getPrestigeProgress(state, balance, achievements = {}, combatZon
 
   const steps = [];
 
-  if (req.requireAtSeasonCap !== false) {
+  if (req.requireAtSeasonCap) {
     const proximity = getSeasonCapProximity(state, balance);
     steps.push({
       id: 'season_cap',
       label: `Plafond Saison ${season} (perso ${proximity.charLevel}/${proximity.charCap} ou métier ${proximity.maxJobLevel}/${proximity.jobsCap})`,
       done: proximity.atCap,
+    });
+  }
+
+  const charLevel = state.character?.level || 1;
+  if (req.minCharacterLevel > 0) {
+    steps.push({
+      id: 'char_level',
+      label: `Personnage Nv.${req.minCharacterLevel}`,
+      done: charLevel >= req.minCharacterLevel,
+      progress: Math.min(1, charLevel / req.minCharacterLevel),
+    });
+  }
+
+  const maxJob = getMaxJobLevel(state);
+  if (req.minJobLevel > 0) {
+    steps.push({
+      id: 'job_level',
+      label: `Métiers Nv.${req.minJobLevel} (max actuel ${maxJob})`,
+      done: maxJob >= req.minJobLevel,
+      progress: Math.min(1, maxJob / req.minJobLevel),
     });
   }
 
@@ -179,12 +281,14 @@ export function getPrestigeProgress(state, balance, achievements = {}, combatZon
 
   const earned = state.lifetimeStats?.totalEarned || 0;
   const kirhaTarget = req.minTotalEarned || 0;
-  steps.push({
-    id: 'kirha',
-    label: `${kirhaTarget.toLocaleString('fr-FR')} 💰 gagnés (total vie)`,
-    done: earned >= kirhaTarget,
-    progress: kirhaTarget > 0 ? Math.min(1, earned / kirhaTarget) : 1,
-  });
+  if (kirhaTarget > 0) {
+    steps.push({
+      id: 'kirha',
+      label: `${kirhaTarget.toLocaleString('fr-FR')} 💰 gagnés (total vie)`,
+      done: earned >= kirhaTarget,
+      progress: Math.min(1, earned / kirhaTarget),
+    });
+  }
 
   for (const [zoneId, min] of Object.entries(req.minBossKills || {})) {
     const kills = state.bossKills?.[zoneId] || 0;
@@ -192,7 +296,7 @@ export function getPrestigeProgress(state, balance, achievements = {}, combatZon
     const name = cz?.boss?.name || cz?.name || zoneId;
     steps.push({
       id: `boss_${zoneId}`,
-      label: `Vaincre ${name}`,
+      label: `Donjon : vaincre ${name}`,
       done: kills >= min,
       progress: min > 0 ? Math.min(1, kills / min) : 1,
     });
@@ -256,13 +360,18 @@ export function getPrestigePreview(state, balance, achievements = {}, combatZone
     currentEarned: state.lifetimeStats?.totalEarned || 0,
     caps,
     nextBonuses: {
-      kirha: ((current.kirhaBonus || 0) + bonuses.kirhaMultiplier) * 100,
-      xp: ((current.xpBonus || 0) + bonuses.xpMultiplier) * 100,
+      kirha: ((current.kirhaBonus || 0) + (bonuses.kirhaMultiplier || 0)) * 100,
+      xp: ((current.xpBonus || 0) + (bonuses.xpMultiplier || 0)) * 100,
+      jobXp: ((current.jobXpBonus || 0) + (bonuses.jobXpMultiplier || 0)) * 100,
+      regrowth: ((current.regrowthSpeedBonus || 0) + (bonuses.regrowthSpeed || 0)) * 100,
     },
     gainBonuses: {
-      kirha: bonuses.kirhaMultiplier * 100,
-      xp: bonuses.xpMultiplier * 100,
+      kirha: (bonuses.kirhaMultiplier || 0) * 100,
+      xp: (bonuses.xpMultiplier || 0) * 100,
+      jobXp: (bonuses.jobXpMultiplier || 0) * 100,
+      regrowth: (bonuses.regrowthSpeed || 0) * 100,
     },
+    seasonStartKirha: balance.prestige?.seasonStartKirha ?? balance.startingKirha ?? 0,
   };
 }
 
@@ -274,8 +383,10 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
   const current = state.prestige || {};
 
   const newPrestige = {
-    kirhaBonus: (current.kirhaBonus || 0) + bonuses.kirhaMultiplier,
-    xpBonus: (current.xpBonus || 0) + bonuses.xpMultiplier,
+    kirhaBonus: (current.kirhaBonus || 0) + (bonuses.kirhaMultiplier || 0),
+    xpBonus: (current.xpBonus || 0) + (bonuses.xpMultiplier || 0),
+    jobXpBonus: (current.jobXpBonus || 0) + (bonuses.jobXpMultiplier || 0),
+    regrowthSpeedBonus: (current.regrowthSpeedBonus || 0) + (bonuses.regrowthSpeed || 0),
   };
 
   const lifetimeStats = {
@@ -299,9 +410,12 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
 
   return {
     ...fresh,
-    kirha: balance.startingKirha ?? 0,
+    // Aide de relance : Kirha de départ de saison (fixe), pas le boost test
+    kirha: balance.prestige?.seasonStartKirha ?? balance.startingKirha ?? 0,
     season,
     prestige: newPrestige,
+    seasonBoost: createSeasonBoost(balance),
+    toolUpgrades: {},
     lifetimeStats,
     achievements: preservedAchievements,
     settings,

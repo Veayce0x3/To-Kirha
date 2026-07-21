@@ -27,7 +27,7 @@ import {
   getResourcesForJob,
   getJobLevel,
 } from '../systems/zones.js';
-import { migrateToolDurability, wearToolsForHarvest } from '../systems/toolDurability.js';
+import { migrateToolDurability, wearToolsForHarvest, canUpgradeTool, upgradeTool } from '../systems/toolDurability.js';
 import { getVendorOffer, canBuyOffer, buyOffer, canSellOffer, sellOffer } from '../systems/merchant.js';
 import { buildTestHdvVendors, mergeMerchantVendors } from '../systems/testHdv.js';
 import { getAideCost } from '../systems/passive.js';
@@ -45,6 +45,9 @@ import {
   getSeasonLevelCap,
   shouldShowPrestigeTeaser,
   getDefaultSettings,
+  getSeasonBoostMult,
+  isSeasonBoostActive,
+  getSeasonBoostRemainingMs,
 } from '../systems/prestige.js';
 import { runSaveMigrations } from './migrations.js';
 import {
@@ -310,7 +313,9 @@ export class Game {
       unlockedZones: ['village_sakura'],
       zone: 'village_sakura',
       season: 1,
-      prestige: { kirhaBonus: 0, xpBonus: 0 },
+      prestige: { kirhaBonus: 0, xpBonus: 0, jobXpBonus: 0, regrowthSpeedBonus: 0 },
+      seasonBoost: null,
+      toolUpgrades: {},
       lifetimeStats: { totalEarned: 0, totalHarvests: 0, seasonsCompleted: 0 },
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
@@ -393,7 +398,15 @@ export class Game {
       prestige: {
         kirhaBonus: saved.prestige?.kirhaBonus || 0,
         xpBonus: saved.prestige?.xpBonus || 0,
+        jobXpBonus: saved.prestige?.jobXpBonus || 0,
+        regrowthSpeedBonus: saved.prestige?.regrowthSpeedBonus || 0,
       },
+      seasonBoost: saved.seasonBoost && Number(saved.seasonBoost.endsAt) > 0
+        ? { endsAt: Number(saved.seasonBoost.endsAt) }
+        : null,
+      toolUpgrades: saved.toolUpgrades && typeof saved.toolUpgrades === 'object'
+        ? { ...saved.toolUpgrades }
+        : {},
       lifetimeStats: { ...defaults.lifetimeStats, ...(saved.lifetimeStats || {}) },
       settings: mergeSettings(saved.settings),
       playtime: {
@@ -519,7 +532,16 @@ export class Game {
   }
 
   applyKirhaBonus(amount) {
-    return applyMultiplierBonus(amount, getPrestigeBonuses(this.state).kirha);
+    const withPrestige = applyMultiplierBonus(amount, getPrestigeBonuses(this.state).kirha);
+    return withPrestige * getSeasonBoostMult(this.state);
+  }
+
+  isSeasonBoostActive() {
+    return isSeasonBoostActive(this.state);
+  }
+
+  getSeasonBoostRemainingMs() {
+    return getSeasonBoostRemainingMs(this.state);
   }
 
   getCurrentZone() {
@@ -1491,6 +1513,23 @@ export class Game {
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
+  }
+
+  doUpgradeTool(recipeId) {
+    const recipe = this.recipes[recipeId];
+    const result = upgradeTool(this.state, recipeId, recipe, this.balance);
+    if (!result.ok) {
+      emit('toolUpgradeBlocked', { message: result.reason });
+      return result;
+    }
+    emit('toolUpgrade', { recipeId, ...result });
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return result;
+  }
+
+  canUpgradeTool(recipeId) {
+    return canUpgradeTool(this.state, recipeId, this.recipes[recipeId], this.balance);
   }
 
   doEquipCombat(ref) {

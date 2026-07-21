@@ -277,10 +277,33 @@ const MIGRATIONS = {
   37() {
     // Accès métiers après prestige cassé : géré par repairSeasonAccess() dans mergeState
   },
+  38(state, ctx) {
+    // Recalcule les bonus prestige (15 % Kirha / 10 % XP par saison)
+    const done = state.lifetimeStats?.seasonsCompleted || 0;
+    if (done <= 0) return;
+    const b = ctx.balance?.prestige?.bonusesPerSeason || {};
+    state.prestige = state.prestige || {};
+    state.prestige.kirhaBonus = done * (b.kirhaMultiplier ?? 0.15);
+    state.prestige.xpBonus = done * (b.xpMultiplier ?? 0.1);
+  },
+  39(state, ctx) {
+    // XP métiers + vitesse repousse (cumul par saison)
+    const done = state.lifetimeStats?.seasonsCompleted || 0;
+    const b = ctx.balance?.prestige?.bonusesPerSeason || {};
+    state.prestige = state.prestige || {};
+    state.prestige.jobXpBonus = done * (b.jobXpMultiplier ?? 0.1);
+    state.prestige.regrowthSpeedBonus = done * (b.regrowthSpeed ?? 0.05);
+  },
+  40(state) {
+    if (!state.toolUpgrades || typeof state.toolUpgrades !== 'object') state.toolUpgrades = {};
+    if (state.seasonBoost && !(Number(state.seasonBoost.endsAt) > Date.now())) {
+      state.seasonBoost = null;
+    }
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 37;
+  const target = ctx.balance?.saveVersion ?? 40;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

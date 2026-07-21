@@ -1,3 +1,4 @@
+import { getSeasonBonusPercents, hasSeasonBonus, isSeasonBoostActive, getSeasonBoostRemainingMs } from '../systems/prestige.js';
 import { on } from '../core/events.js';
 import { cleanupPullRefreshArtifacts } from './pullRefresh.js';
 import { RARITY_LABELS } from '../systems/equipmentRarity.js';
@@ -82,6 +83,8 @@ export function initUI(game, audio) {
     goldNuggetAmount: document.getElementById('gold-nugget-amount'),
     quickScroll: document.getElementById('quick-scroll'),
     seasonBadge: document.getElementById('season-badge'),
+    seasonBonusChip: document.getElementById('season-bonus-chip'),
+    seasonBoostChip: document.getElementById('season-boost-chip'),
     viewTitle: document.getElementById('view-title'),
     zoneSubtitle: document.getElementById('zone-subtitle'),
     viewContainer: document.getElementById('view-container'),
@@ -377,7 +380,47 @@ export function initUI(game, audio) {
     els.kirha.textContent = formatNumber(state.kirha);
     if (els.scrollAmount) els.scrollAmount.textContent = formatNumber(game.getScrollCount());
     if (els.goldNuggetAmount) els.goldNuggetAmount.textContent = formatNumber(game.getGoldNuggetCount());
-    els.seasonBadge.textContent = `Saison ${state.season || 1}`;
+
+    const season = state.season || 1;
+    const { kirhaPct, xpPct, jobXpPct, regrowthPct } = getSeasonBonusPercents(state);
+    if (els.seasonBadge) {
+      if (hasSeasonBonus(state)) {
+        const bits = [];
+        if (kirhaPct > 0) bits.push(`+${kirhaPct}% 💰`);
+        if (jobXpPct > 0) bits.push(`+${jobXpPct}% métiers`);
+        if (regrowthPct > 0) bits.push(`+${regrowthPct}% ⏱`);
+        els.seasonBadge.innerHTML = `Saison ${season}<span class="season-badge-bonus">${bits.join(' · ')}</span>`;
+      } else {
+        els.seasonBadge.textContent = `Saison ${season}`;
+      }
+    }
+    if (els.seasonBonusChip) {
+      if (hasSeasonBonus(state)) {
+        els.seasonBonusChip.hidden = false;
+        const vals = [];
+        if (kirhaPct > 0) vals.push(`+${kirhaPct}% 💰`);
+        if (xpPct > 0) vals.push(`+${xpPct}% perso`);
+        if (jobXpPct > 0) vals.push(`+${jobXpPct}% métiers`);
+        if (regrowthPct > 0) vals.push(`+${regrowthPct}% ⏱`);
+        els.seasonBonusChip.innerHTML = `<span class="season-bonus-chip-label">S${season}</span><span class="season-bonus-chip-vals">${vals.join(' · ')}</span>`;
+        els.seasonBonusChip.title = `Bonus saison : ${vals.join(' · ')}`;
+      } else {
+        els.seasonBonusChip.hidden = true;
+        els.seasonBonusChip.innerHTML = '';
+      }
+    }
+    if (els.seasonBoostChip) {
+      if (isSeasonBoostActive(state)) {
+        const mins = Math.max(1, Math.ceil(getSeasonBoostRemainingMs(state) / 60000));
+        els.seasonBoostChip.hidden = false;
+        els.seasonBoostChip.textContent = `⚡ ×2 · ${mins} min`;
+        els.seasonBoostChip.title = 'Boost de relance : XP ×2, ventes ×2, repousse ÷2';
+      } else {
+        els.seasonBoostChip.hidden = true;
+        els.seasonBoostChip.textContent = '';
+      }
+    }
+
     els.viewTitle.textContent = getViewTitle();
     const zone = game.getCurrentZone();
     els.zoneSubtitle.textContent = zone ? `${zone.emoji} ${zone.name}` : '';
@@ -493,6 +536,8 @@ export function initUI(game, audio) {
       navigate('season');
     }
   });
+  els.seasonBonusChip?.addEventListener('click', () => navigate('season'));
+  els.seasonBoostChip?.addEventListener('click', () => navigate('season'));
 
   on('sidebarClose', closeSidebar);
 
@@ -522,8 +567,12 @@ export function initUI(game, audio) {
       : '';
     els.prestigeGains.innerHTML = `
       ${capLine}
-      <div class="prestige-gain-row">💰 Kirha : +${info.nextBonuses.kirha.toFixed(0)}% total</div>
-      <div class="prestige-gain-row">📜 XP : +${info.nextBonuses.xp.toFixed(0)}% total</div>
+      <div class="prestige-gain-row">💰 Départ saison : ${info.seasonStartKirha} 💰</div>
+      <div class="prestige-gain-row">⚡ Boost 1 h : XP ×2 · ventes ×2 · repousse ÷2</div>
+      <div class="prestige-gain-row">💰 Kirha : +${info.nextBonuses.kirha.toFixed(0)}% total (+${info.gainBonuses.kirha.toFixed(0)}%/saison)</div>
+      <div class="prestige-gain-row">🧘 XP perso : +${info.nextBonuses.xp.toFixed(0)}% total (+${info.gainBonuses.xp.toFixed(0)}%/saison)</div>
+      <div class="prestige-gain-row">🛠️ XP métiers : +${info.nextBonuses.jobXp.toFixed(0)}% total (+${info.gainBonuses.jobXp.toFixed(0)}%/saison)</div>
+      <div class="prestige-gain-row">🌱 Repousse : +${info.nextBonuses.regrowth.toFixed(0)}% total (+${info.gainBonuses.regrowth.toFixed(0)}%/saison)</div>
       ${info.canDo ? '' : `<p class="prestige-modal-warn">Conditions non remplies pour l'instant.</p>`}
     `;
     els.prestigeConfirm.textContent = `Commencer la Saison ${info.nextSeason}`;
@@ -805,7 +854,22 @@ export function initUI(game, audio) {
     showToast(els, `🏆 Succès : ${achievement.title}`, 'upgrade');
   });
   on('offlineProgress', (r) => showOfflineModal(game, els, r));
-  on('prestige', ({ season }) => showToast(els, `🌸 Saison ${season} !`, 'prestige'));
+  on('prestige', ({ season }) => {
+    const { kirhaPct, xpPct, jobXpPct, regrowthPct } = getSeasonBonusPercents(game.state);
+    const bits = [];
+    if (kirhaPct > 0) bits.push(`+${kirhaPct}% 💰`);
+    if (xpPct > 0) bits.push(`+${xpPct}% perso`);
+    if (jobXpPct > 0) bits.push(`+${jobXpPct}% métiers`);
+    if (regrowthPct > 0) bits.push(`+${regrowthPct}% repousse`);
+    bits.push('boost ×2 pendant 1 h');
+    const bonusTxt = bits.length ? ` · ${bits.join(' · ')}` : '';
+    showToast(els, `🌸 Saison ${season} !${bonusTxt}`, 'prestige');
+  });
+  on('toolUpgrade', ({ recipeId }) => {
+    const name = game.recipes[recipeId]?.name || 'Outil';
+    showToast(els, `🔧 ${name} amélioré (+${game.balance.toolSeasonUpgrade?.bonusUses ?? 10} utilisations)`, 'upgrade');
+  });
+  on('toolUpgradeBlocked', ({ message }) => showToast(els, message || 'Amélioration impossible', 'sell'));
   on('settingsChange', (s) => {
     audio.updateSettings(s);
     document.documentElement.dataset.theme = s.darkMode ? 'dark' : '';

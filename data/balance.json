@@ -1,8 +1,8 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 37,
-  "appBuildId": "20260719-2230",
+  "saveVersion": 40,
+  "appBuildId": "20260721-2115",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -274,33 +274,69 @@
     "unlockResourceAmountPerSlot": 3
   },
   "prestige": {
-    "minTotalEarned": 100000,
-    "requiredZones": [
-      "lotus_sanctuary"
-    ],
-    "minBossKills": {
-      "lotus_sanctuary": 1
-    },
-    "requireQuestsChapter": "lotus_sanctuary",
+    "minTotalEarned": 0,
+    "requiredZones": [],
+    "minBossKills": {},
+    "requireQuestsChapter": null,
+    "requireAtSeasonCap": false,
+    "seasonBoostMs": 3600000,
     "seasonRequirements": {
       "1": {
-        "minTotalEarned": 2500,
+        "minCharacterLevel": 10,
+        "minJobLevel": 20,
+        "minTotalEarned": 30000,
         "requiredZones": [],
-        "minBossKills": {},
-        "requireAchievements": [
-          "ach_s1_harvest_30",
-          "ach_s1_farmer_12",
-          "ach_s1_first_tool",
-          "ach_s1_first_meal",
-          "ach_s1_combat_5"
-        ],
+        "minBossKills": {
+          "village_sakura": 1
+        },
+        "requireAchievements": [],
+        "requireQuestsChapter": null,
+        "requireAtSeasonCap": false
+      },
+      "2": {
+        "minCharacterLevel": 30,
+        "minJobLevel": 40,
+        "minTotalEarned": 60000,
+        "requiredZones": [],
+        "minBossKills": {
+          "mist_river": 1
+        },
+        "requireAchievements": [],
+        "requireQuestsChapter": null,
+        "requireAtSeasonCap": false
+      },
+      "3": {
+        "minCharacterLevel": 50,
+        "minJobLevel": 60,
+        "minTotalEarned": 100000,
+        "requiredZones": [],
+        "minBossKills": {
+          "jade_mountains": 1
+        },
+        "requireAchievements": [],
+        "requireQuestsChapter": null,
+        "requireAtSeasonCap": false
+      },
+      "4": {
+        "minCharacterLevel": 70,
+        "minJobLevel": 80,
+        "minTotalEarned": 150000,
+        "requiredZones": [],
+        "minBossKills": {
+          "lotus_sanctuary": 1
+        },
+        "requireAchievements": [],
+        "requireQuestsChapter": null,
         "requireAtSeasonCap": false
       }
     },
     "bonusesPerSeason": {
-      "kirhaMultiplier": 0.05,
-      "xpMultiplier": 0.05
+      "kirhaMultiplier": 0.15,
+      "xpMultiplier": 0.1,
+      "jobXpMultiplier": 0.1,
+      "regrowthSpeed": 0.05
     },
+    "seasonStartKirha": 400,
     "levelCaps": {
       "character": {
         "firstSeasonCap": 55,
@@ -314,6 +350,11 @@
       }
     }
   },
+  "toolSeasonUpgrade": {
+    "minSeason": 2,
+    "bonusUses": 10
+  },
+  "seasonCombatScalePerSeason": 0.12,
   "upgrades": {},
   "zoneBossUnlocks": {
     "petal_forest": {

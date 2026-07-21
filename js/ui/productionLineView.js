@@ -19,6 +19,7 @@ import {
   ensureFarmUnitsForAnimalSlots,
 } from '../systems/productionLines.js';
 import { getHarvestTime, getHarvestXp } from '../systems/harvest.js';
+import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, getSeasonBoostMult } from '../systems/prestige.js';
 import { getHarvestToolCheck, getFarmToolCheck } from '../systems/toolTier.js';
 import { getToolUsesRemaining, isDurabilityTool } from '../systems/toolDurability.js';
 import { getJobEquippedTool } from '../systems/equipment.js';
@@ -36,9 +37,14 @@ import {
 } from '../systems/careerChoice.js';
 
 function formatNumber(n) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 10_000) return `${(n / 1_000).toFixed(1)}K`;
-  return Math.floor(n).toLocaleString('fr-FR');
+  const x = Number(n) || 0;
+  if (x >= 1_000_000) return `${(x / 1_000_000).toFixed(1)}M`;
+  if (x >= 10_000) return `${(x / 1_000).toFixed(1)}K`;
+  const rounded = Math.round(x * 100) / 100;
+  if (Math.abs(rounded - Math.round(rounded)) > 1e-9) {
+    return rounded.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+  }
+  return Math.round(rounded).toLocaleString('fr-FR');
 }
 
 function formatTimerMs(ms) {
@@ -165,6 +171,10 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   const xpPerHarvest = getHarvestXp(resource, game.state, game.balance, game.resources);
   const harvestMs = Math.round(getHarvestTime(resource, game.state, game.jobs, game.balance, game.resources) / 1000);
   const toolDurability = getLineToolDurability(game, jobId, resource);
+  const xpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
+  const xpBonusTag = xpBonusPct > 0
+    ? `<span class="bonus-tag" title="Bonus XP métiers">+${xpBonusPct}%</span>`
+    : '';
 
   const section = document.createElement('div');
   section.className = 'production-line-section';
@@ -175,7 +185,7 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
         ${renderResourceIcon(resource, 'tile-resource-icon')}
         <strong>${resource.name}</strong>
         <span class="production-stock">Stock : ${qty}</span>
-        <span class="production-xp">+${Number(xpPerHarvest).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} XP</span>
+        <span class="production-xp">+${formatNumber(xpPerHarvest)} XP${xpBonusTag}</span>
         ${toolDurability ? `<span class="production-tool-dur">🛠️ ${toolDurability}</span>` : ''}
       </div>
       <div class="production-line-meta">
@@ -517,7 +527,12 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
     return `${renderResourceIcon(res, 'tile-resource-icon') || ''}${res?.name || id} : ${game.state.inventory[id] || 0}`;
   });
   const cycleSec = Math.round((building.cycleMs || 10000) / 1000);
-  const xpGain = getFarmProductionXp(building);
+  const xpGain = applyMultiplierBonus(getFarmProductionXp(building), getPrestigeBonuses(game.state).jobXp)
+    * getSeasonBoostMult(game.state);
+  const xpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
+  const xpBonusTag = xpBonusPct > 0
+    ? `<span class="bonus-tag" title="Bonus XP métiers">+${xpBonusPct}%</span>`
+    : '';
   const toolDur = getFarmToolDurabilityLabel(game, building);
 
   const section = document.createElement('div');
@@ -533,7 +548,7 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
       </div>
       <div class="production-line-meta">
         <span class="production-units">${line.units} emplacement${line.units > 1 ? 's' : ''}</span>
-        <span class="production-harvest-time">${cycleSec}s/prod.${xpGain > 0 ? ` · +${xpGain} XP` : ''}</span>
+        <span class="production-harvest-time">${cycleSec}s/prod.${xpGain > 0 ? ` · +${formatNumber(xpGain)} XP${xpBonusTag}` : ''}</span>
       </div>
     </div>
     <div class="slots-grid production-units-grid"></div>
@@ -556,7 +571,12 @@ export function renderFarmProduction(game, el, buildingId) {
   const pct = prog.grantsXp ? (prog.xp / prog.needed) * 100 : 0;
   const meta = game.getFarmMeta(buildingId);
   const needsFeed = Object.keys(building.feed || {}).length > 0;
-  const xpGain = getFarmProductionXp(building);
+  const xpGain = applyMultiplierBonus(getFarmProductionXp(building), getPrestigeBonuses(game.state).jobXp)
+    * getSeasonBoostMult(game.state);
+  const xpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
+  const xpBonusTag = xpBonusPct > 0
+    ? `<span class="bonus-tag" title="Bonus XP métiers">+${xpBonusPct}%</span>`
+    : '';
   const feedId = getPrimaryFeedId(building) || meta.feedId;
   if (needsFeed && feedId) {
     game.setFarmFeed(buildingId, feedId);
@@ -584,11 +604,11 @@ export function renderFarmProduction(game, el, buildingId) {
       <div class="farm-feed-stock-hero${anyMissing ? ' missing' : ''}">
         <span class="farm-feed-stock-label">Nourriture</span>
         <div class="farm-feed-stock-main">${stocks || '—'}</div>
-        ${xpGain > 0 ? `<span class="farm-feed-stock-xp">+${xpGain} XP</span>` : ''}
+        ${xpGain > 0 ? `<span class="farm-feed-stock-xp">+${formatNumber(xpGain)} XP${xpBonusTag}</span>` : ''}
       </div>`;
   } else if (!building.requiresAnimal) {
     feedHtml = xpGain > 0
-      ? `<p class="farm-feed-preview">Gain : <strong>+${xpGain} XP ${building.name}</strong> / production</p>`
+      ? `<p class="farm-feed-preview">Gain : <strong>+${formatNumber(xpGain)} XP ${building.name}</strong>${xpBonusTag} / production</p>`
       : `<p class="farm-feed-preview">Le Puits fournit l’eau — <strong>pas d’XP</strong>.</p>`;
   }
 
@@ -676,7 +696,7 @@ export function renderFarmProduction(game, el, buildingId) {
       </div>
       <div class="farm-info-chips">
         ${xpGain > 0
-          ? `<span class="farm-info-chip">📜 +${xpGain} XP</span>`
+          ? `<span class="farm-info-chip">📜 +${formatNumber(xpGain)} XP${xpBonusTag}</span>`
           : `<span class="farm-info-chip">Eau utilitaire · pas d’XP</span>`}
         <span class="farm-info-chip">${Math.round((building.cycleMs || 0) / 1000)}s / cycle</span>
       </div>

@@ -1,5 +1,5 @@
 import { getCraftBonus } from './craft.js';
-import { getPrestigeBonuses, getSeasonLevelCap, applyMultiplierBonus } from './prestige.js';
+import { getPrestigeBonuses, getSeasonLevelCap, applyMultiplierBonus, getSeasonBoostMult, isSeasonBoostActive } from './prestige.js';
 import { getHarvestXpForResource, getRegrowthTier } from './progression.js';
 
 const ZONE_REGROWTH_BONUS = {
@@ -37,9 +37,14 @@ export function getRegrowthTime(resource, state, jobs, balance, resources = null
     resource.baseRegrowthTime ??
     (cfg.regrowthBaseMs ?? 8000) + tier * (cfg.regrowthPerTierMs ?? 2000) + zoneBonus;
 
-  const speedBonus = getSpeedBonus(resource, state, jobs, balance);
-  const time = base * (1 - Math.min(speedBonus, 0.85));
-  return Math.max(time, cfg.minRegrowthTimeMs ?? 3000);
+  const speedBonus = getSpeedBonus(resource, state, jobs, balance)
+    + (getPrestigeBonuses(state).regrowthSpeed || 0);
+  let time = base * (1 - Math.min(speedBonus, 0.85));
+  time = Math.max(time, cfg.minRegrowthTimeMs ?? 3000);
+  if (isSeasonBoostActive(state)) {
+    time = Math.ceil(time / 2);
+  }
+  return time;
 }
 
 export function getHarvestCycleTime(resource, state, jobs, balance) {
@@ -56,11 +61,12 @@ export function getHarvestYield(resource, state, jobs, balance) {
 }
 
 export function getHarvestXp(resource, state, balance, resources = null) {
-  const prestigeBonus = getPrestigeBonuses(state).xp;
+  const prestigeBonus = getPrestigeBonuses(state).jobXp;
   const base = resources
     ? getHarvestXpForResource(resource, resources, balance)
     : (resource.xpPerHarvest ?? 10);
-  return applyMultiplierBonus(base, prestigeBonus);
+  const withPrestige = applyMultiplierBonus(base, prestigeBonus);
+  return withPrestige * getSeasonBoostMult(state);
 }
 
 export function getXpForLevel(job, level) {

@@ -427,29 +427,52 @@ async function loadPlayerDetail(userId) {
   const titleEl = sheet.querySelector('.admin-player-sheet-title');
   if (titleEl) titleEl.textContent = 'Fiche joueur';
   detailEl.innerHTML = '<p class="admin-loading">Chargement fiche…</p>';
-  const res = await getPlayerDetail(userId);
-  if (!res.ok) {
-    detailEl.innerHTML = `<p class="admin-error">${res.reason}</p>`;
+  try {
+    const res = await getPlayerDetail(userId);
+    if (!res.ok) {
+      detailEl.innerHTML = `<p class="admin-error">${res.reason || 'Erreur RPC'}</p>`;
+      return;
+    }
+    paintPlayerDetail(userId, res.data, detailEl, titleEl);
+  } catch (err) {
+    console.warn('[admin] player detail failed', err);
+    detailEl.innerHTML = `<p class="admin-error">Impossible d’afficher la fiche (${err?.message || 'erreur'}). La save cloud est peut‑être incomplète après une nouvelle saison.</p>
+      <button type="button" class="btn btn-muted" id="admin-detail-retry">Réessayer</button>`;
+    detailEl.querySelector('#admin-detail-retry')?.addEventListener('click', () => loadPlayerDetail(userId));
+  }
+}
+
+function paintPlayerDetail(userId, data, detailEl, titleEl) {
+  const { profile, leaderboard, save_summary, reports_against, reports_by, name_history, inventory_summary, jobs_summary, combat_items } = data || {};
+  if (!profile) {
+    detailEl.innerHTML = '<p class="admin-error">Profil manquant dans la réponse serveur.</p>';
     return;
   }
-  const { profile, leaderboard, save_summary, reports_against, reports_by, name_history, inventory_summary, jobs_summary, combat_items } = res.data;
   const canSetRole = isSuperAdmin();
   const canResetSave = isAdmin();
   const canGrantJobs = isAdmin();
 
   if (titleEl) titleEl.textContent = profile.display_name || 'Fiche joueur';
 
-  const jobsHtml = jobs_summary && Object.keys(jobs_summary).length
+  const jobsHtml = jobs_summary && typeof jobs_summary === 'object' && Object.keys(jobs_summary).length
     ? Object.entries(jobs_summary).map(([id, lv]) => `<span class="admin-tag">${id} Nv.${lv}</span>`).join(' ')
     : '—';
 
-  const invHtml = (inventory_summary || []).length
-    ? inventory_summary.map((r) => `<span class="admin-tag">${r.id} ×${r.qty}</span>`).join(' ')
+  const invHtml = Array.isArray(inventory_summary) && inventory_summary.length
+    ? inventory_summary.map((r) => `<span class="admin-tag">${r?.id || '?'} ×${r?.qty ?? 0}</span>`).join(' ')
     : '—';
 
-  const combatHtml = (combat_items || []).length
-    ? combat_items.map((c) => `<span class="admin-tag">${c.item_id} ${c.rarity || ''}</span>`).join(' ')
+  const combatHtml = Array.isArray(combat_items) && combat_items.length
+    ? combat_items.map((c) => `<span class="admin-tag">${c?.item_id || c?.ref || '?'} ${c?.rarity || ''}</span>`).join(' ')
     : '—';
+
+  const careerLabel = (() => {
+    if (!save_summary?.career_confirmed) return 'Non choisie';
+    const weapon = save_summary.career_weapon || save_summary.career_harvest;
+    const team = save_summary.career_team || save_summary.career_farm;
+    if (weapon || team) return `${weapon || '?'} / ${team || '?'}`;
+    return 'Confirmée';
+  })();
 
   detailEl.innerHTML = `
     <div class="admin-detail-head">
@@ -472,8 +495,8 @@ async function loadPlayerDetail(userId) {
     <div class="admin-detail-grid">
       <div class="admin-info-card"><span class="admin-info-lbl">Classement</span><span class="admin-info-val">${leaderboard ? `Nv.${leaderboard.char_level} · S${leaderboard.season}` : '—'}</span><span class="admin-td-muted">${leaderboard ? `${fmtNum(leaderboard.total_earned)} 💰 gagnés · ${fmtNum(leaderboard.kirha_current || 0)} en poche` : ''}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Save cloud</span><span class="admin-info-val">${save_summary ? `${save_summary.nickname || '?'} · Nv.${save_summary.char_level}` : 'Aucune'}</span><span class="admin-td-muted">${save_summary ? `S${save_summary.season} · ${fmtNum(save_summary.kirha)} 💰` : ''}</span></div>
-      <div class="admin-info-card"><span class="admin-info-lbl">Carrière</span><span class="admin-info-val">${save_summary?.career_confirmed ? `${save_summary.career_harvest || '?'} / ${save_summary.career_farm || '?'}` : 'Non choisie'}</span></div>
-      <div class="admin-info-card"><span class="admin-info-lbl">Signalements</span><span class="admin-info-val">${reports_against} reçus · ${reports_by || 0} envoyés</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Carrière</span><span class="admin-info-val">${careerLabel}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Signalements</span><span class="admin-info-val">${reports_against ?? 0} reçus · ${reports_by || 0} envoyés</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Renommage</span><span class="admin-info-val">${profile.free_rename_used ? 'Utilisé' : 'Disponible'}</span></div>
       <div class="admin-info-card admin-info-card-wide">
         <span class="admin-info-lbl">Temps de jeu</span>
@@ -498,10 +521,10 @@ async function loadPlayerDetail(userId) {
       <div class="admin-inventory-wrap">${jobsHtml}</div>
       <h5 class="admin-section-title">Ressources (top 30)</h5>
       <div class="admin-inventory-wrap">${invHtml}</div>
-      <h5 class="admin-section-title">Équipement combat (${(combat_items || []).length})</h5>
+      <h5 class="admin-section-title">Équipement combat (${Array.isArray(combat_items) ? combat_items.length : 0})</h5>
       <div class="admin-inventory-wrap">${combatHtml}</div>
     </details>
-    ${(name_history || []).length ? `
+    ${Array.isArray(name_history) && name_history.length ? `
       <details class="admin-fold">
         <summary>Historique pseudo (${name_history.length})</summary>
         <div class="admin-table-wrap">
@@ -553,6 +576,10 @@ async function loadPlayerDetail(userId) {
     ` : ''}
   `;
 
+  bindPlayerDetailActions(userId, profile, detailEl);
+}
+
+function bindPlayerDetailActions(userId, profile, detailEl) {
   detailEl.querySelector('#admin-copy-btn')?.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(profile.user_id);

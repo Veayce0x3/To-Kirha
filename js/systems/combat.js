@@ -284,19 +284,20 @@ function nextEnemyInstanceId() {
   return `foe_${enemyInstanceCounter}`;
 }
 
-export function createEnemyInstance(foe, enemiesDb, partySize, { hpScale = 1, isPrimary = false } = {}) {
+export function createEnemyInstance(foe, enemiesDb, partySize, { hpScale = 1, isPrimary = false, seasonScale = 1 } = {}) {
   const base = enemiesDb[foe.enemyId];
   if (!base) return null;
   const scale = getPartyScale(partySize);
-  const scaledHp = Math.max(1, Math.floor(base.hp * scale * hpScale));
+  const s = Math.max(0.01, Number(seasonScale) || 1);
+  const scaledHp = Math.max(1, Math.floor(base.hp * scale * hpScale * s));
   return {
     id: nextEnemyInstanceId(),
     enemyId: foe.enemyId,
     name: foe.name,
     emoji: foe.emoji,
     boss: !!foe.boss,
-    atk: base.atk,
-    def: base.def,
+    atk: Math.max(1, Math.floor((base.atk || 1) * s)),
+    def: Math.max(0, Math.floor((base.def || 0) * s)),
     hp: scaledHp,
     maxHp: scaledHp,
     stunned: false,
@@ -307,11 +308,12 @@ export function createEnemyInstance(foe, enemiesDb, partySize, { hpScale = 1, is
   };
 }
 
-export function buildEncounterEnemies(primaryFoe, enemiesDb, partySize, combatZone, isBoss) {
+export function buildEncounterEnemies(primaryFoe, enemiesDb, partySize, combatZone, isBoss, seasonScale = 1) {
   const list = [];
   const primary = createEnemyInstance({ ...primaryFoe, boss: isBoss }, enemiesDb, partySize, {
     isPrimary: true,
     hpScale: isBoss ? 1 : 1,
+    seasonScale,
   });
   if (primary) list.push(primary);
 
@@ -324,7 +326,10 @@ export function buildEncounterEnemies(primaryFoe, enemiesDb, partySize, combatZo
 
   for (let i = 0; i < extraCount && pool.length; i += 1) {
     const pick = pool[Math.floor(Math.random() * pool.length)];
-    const add = createEnemyInstance(pick, enemiesDb, partySize, { hpScale: isBoss ? 0.5 : 0.7 });
+    const add = createEnemyInstance(pick, enemiesDb, partySize, {
+      hpScale: isBoss ? 0.5 : 0.7,
+      seasonScale,
+    });
     if (add) list.push(add);
   }
 
@@ -349,11 +354,11 @@ export function getActiveEnemy(combat) {
   return getLivingEnemies(combat)[0] || null;
 }
 
-export function initEncounter(run, foe, enemies, partySize = 1, combatZone = null) {
+export function initEncounter(run, foe, enemies, partySize = 1, combatZone = null, seasonScale = 1) {
   const isBoss = !!foe.boss;
   const enemyList = combatZone
-    ? buildEncounterEnemies(foe, enemies, partySize, combatZone, isBoss)
-    : [createEnemyInstance(foe, enemies, partySize, { isPrimary: true })].filter(Boolean);
+    ? buildEncounterEnemies(foe, enemies, partySize, combatZone, isBoss, seasonScale)
+    : [createEnemyInstance(foe, enemies, partySize, { isPrimary: true, seasonScale })].filter(Boolean);
 
   run.combat = {
     enemies: enemyList,

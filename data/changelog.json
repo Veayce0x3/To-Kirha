@@ -1,6 +1,52 @@
 {
   "entries": [
     {
+      "buildId": "20260721-2115",
+      "date": "2026-07-21",
+      "title": "Saisons : objectifs, boost 1 h, outils",
+      "highlights": [
+        "Déblocage S2/S3+ : niveaux perso & métiers, Kirha gagnés, donjon requis",
+        "Nouvelle saison : boost 1 h (XP ×2, ventes ×2, repousse ÷2) + monstres plus forts",
+        "Saison 2+ : améliorer chaque outil une fois (+10 utilisations)",
+        "Admin : fiche joueur plus robuste après prestige"
+      ]
+    },
+    {
+      "buildId": "20260719-2320",
+      "date": "2026-07-19",
+      "title": "Bonus saison : XP métiers + repousse",
+      "highlights": [
+        "+10 % XP métiers et +5 % rapidité de repousse par saison (cumulatifs)",
+        "XP perso / combat reste à +10 % ; Kirha +15 % — pastilles mises à jour"
+      ]
+    },
+    {
+      "buildId": "20260719-2310",
+      "date": "2026-07-19",
+      "title": "Décimales limitées à 2",
+      "highlights": [
+        "XP et Kirha affichés avec au plus 2 chiffres après la virgule (ex. 10,5 · 4,6)"
+      ]
+    },
+    {
+      "buildId": "20260719-2300",
+      "date": "2026-07-19",
+      "title": "Bonus saison visibles",
+      "highlights": [
+        "Pastille permanente en haut : +% Kirha / +% XP (cliquable → Saison)",
+        "Pastilles sur Perso ; badge +% sur XP récolte/ferme et prix de vente"
+      ]
+    },
+    {
+      "buildId": "20260719-2245",
+      "date": "2026-07-19",
+      "title": "Saison : +400 💰 et bonus renforcés",
+      "highlights": [
+        "Chaque nouvelle saison : 400 💰 pour relancer",
+        "+15 % Kirha et +10 % XP par saison (cumulatifs) — les saisons déjà passées sont recalculées"
+      ]
+    },
+    {
       "buildId": "20260719-2230",
       "date": "2026-07-19",
       "title": "Bonus saison = % exact",

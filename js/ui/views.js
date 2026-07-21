@@ -1,6 +1,6 @@
 import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats, getSkillUsesLeft, getSkillMaxUses } from '../systems/combat.js';
 import { getCraftSellBonus, getRecipeRequiredLevel } from '../systems/crafting.js';
-import { getPrestigeBonuses, applyMultiplierBonus } from '../systems/prestige.js';
+import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, hasSeasonBonus, getSeasonBoostMult, isSeasonBoostActive } from '../systems/prestige.js';
 import { mountCraftWorkshop } from './craftView.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
 import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped } from '../systems/equipment.js';
@@ -23,7 +23,7 @@ import {
   getAchievementBonuses,
 } from '../systems/achievements.js';
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
-import { isDurabilityTool, isToolBroken } from '../systems/toolDurability.js';
+import { isDurabilityTool, canUpgradeTool, isToolUpgraded } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, getPrimaryFeedId, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
 import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consumables.js';
@@ -65,6 +65,24 @@ function resetCombatUiTurn() {
 }
 
 const SET_LABELS = { sakura: 'Sakura', petal: 'Pétale', jade: 'Jade' };
+
+function bonusTagHtml(pct) {
+  if (!pct || pct <= 0) return '';
+  return `<span class="bonus-tag" title="Bonus de saison">+${pct}%</span>`;
+}
+
+function renderSeasonBonusPills(state) {
+  if (!hasSeasonBonus(state)) return '';
+  const { kirhaPct, xpPct, jobXpPct, regrowthPct } = getSeasonBonusPercents(state);
+  return `
+    <div class="char-bonus-pills" aria-label="Bonus de saison">
+      ${kirhaPct > 0 ? `<span class="char-bonus-pill char-bonus-kirha">+${kirhaPct}% 💰</span>` : ''}
+      ${xpPct > 0 ? `<span class="char-bonus-pill char-bonus-xp">+${xpPct}% XP perso</span>` : ''}
+      ${jobXpPct > 0 ? `<span class="char-bonus-pill char-bonus-job">+${jobXpPct}% XP métiers</span>` : ''}
+      ${regrowthPct > 0 ? `<span class="char-bonus-pill char-bonus-regrowth">+${regrowthPct}% repousse</span>` : ''}
+    </div>
+  `;
+}
 
 function renderLockedUnlockPanel(game, el, entry) {
   const pct = Math.floor((entry.progress || 0) * 100);
@@ -189,12 +207,18 @@ function renderPrestigeTeaser(game, container) {
   const proximity = game.getSeasonCapProximity();
   const progress = game.getPrestigeProgress();
   const info = game.getPrestigeInfo();
-  const p = game.state.prestige || {};
+  const { kirhaPct, xpPct, jobXpPct, regrowthPct } = getSeasonBonusPercents(game.state);
   const capHint = proximity.atCap
     ? `Plafond Saison ${proximity.season} atteint`
     : proximity.showTeaser
       ? `Perso ${proximity.charLevel}/${proximity.charCap} · métiers ${proximity.maxJobLevel}/${proximity.jobsCap}`
       : '';
+
+  const activeBits = [];
+  if (kirhaPct > 0) activeBits.push(`+${kirhaPct}% 💰`);
+  if (xpPct > 0) activeBits.push(`+${xpPct}% XP perso`);
+  if (jobXpPct > 0) activeBits.push(`+${jobXpPct}% XP métiers`);
+  if (regrowthPct > 0) activeBits.push(`+${regrowthPct}% repousse`);
 
   container.innerHTML = `
     <div class="prestige-teaser-body">
@@ -204,8 +228,11 @@ function renderPrestigeTeaser(game, container) {
       </div>
       <div class="prestige-teaser-meta">
         <span>Prérequis ${progress.completed}/${progress.total}</span>
-        <span>+${Math.round((p.kirhaBonus || 0) * 100)}% 💰 · +${Math.round((p.xpBonus || 0) * 100)}% XP</span>
+        ${activeBits.length
+          ? `<span class="prestige-teaser-bonuses">Actifs : ${activeBits.join(' · ')}</span>`
+          : '<span class="prestige-teaser-bonuses muted">Pas encore de bonus</span>'}
       </div>
+      ${renderSeasonBonusPills(game.state)}
       <div class="xp-bar-container prestige-teaser-bar" role="progressbar" aria-valuenow="${progress.percent}" aria-valuemin="0" aria-valuemax="100">
         <div class="xp-bar" style="width:${Math.max(0, Math.min(100, progress.percent))}%"></div>
       </div>
@@ -523,7 +550,6 @@ function renderCharacter(game, el) {
   charTab = normalizeCharTab(charTab);
   const s = game.state;
   const zone = game.getCurrentZone();
-  const p = s.prestige || {};
   const charProg = game.getCharacterProgress();
   const charPct = Math.min(100, (charProg.xp / charProg.needed) * 100);
   const displayName = game.getCharacterDisplayName();
@@ -583,7 +609,7 @@ function renderCharacter(game, el) {
               <span class="xp-text">${charProg.atSeasonCap ? `Plafond Saison ${s.season || 1}` : `${charProg.xp} / ${charProg.needed} XP`}</span>
             </div>
             ${renderCharStatPills(statsBreakdown.total)}
-            <p class="char-bonus-line">Bonus saison : +${Math.round((p.kirhaBonus || 0) * 100)}% 💰 · +${Math.round((p.xpBonus || 0) * 100)}% XP</p>
+            ${renderSeasonBonusPills(s)}
             <button class="btn btn-muted btn-small char-combat-link" id="goto-combat" type="button">⚔️ Zones de combat</button>
           </div>
           <div class="char-equip-wrap">
@@ -1180,8 +1206,13 @@ function appendOwnedCombatItemsToGrid(game, container, filter) {
 }
 
 function renderCharToolsTab(game, panel) {
+  const season = game.state.season || 1;
+  const upgradeHint = season >= (game.balance.toolSeasonUpgrade?.minSeason ?? 2)
+    ? `<p class="view-desc char-tools-upgrade-hint">Saison ${season}+ : tu peux améliorer chaque outil <strong>1 fois</strong> (+${game.balance.toolSeasonUpgrade?.bonusUses ?? 10} utilisations).</p>`
+    : '';
   panel.innerHTML = `
     <p class="view-desc char-tools-desc">Outils de récolte équipés ou en réserve. Pour l’élevage : tu peux équiper le <strong>seau</strong> et le <strong>panier</strong> en même temps (eau + productions animales).</p>
+    ${upgradeHint}
     <div id="char-gather-equip" class="char-tools-list"></div>
   `;
   const gatherEl = panel.querySelector('#char-gather-equip');
@@ -1259,6 +1290,22 @@ function appendGatheringToolRow(game, container, entry, { showUnequip = false, s
     hint.textContent = 'Usé — refabrique à l\'Atelier';
     actions.appendChild(hint);
   }
+
+  const upgradeCheck = canUpgradeTool(s, recipeId, recipe, game.balance);
+  if (isDurabilityTool(recipe) && upgradeCheck.ok) {
+    const up = document.createElement('button');
+    up.type = 'button';
+    up.className = 'btn btn-small btn-prestige';
+    up.textContent = `Améliorer (+${game.balance.toolSeasonUpgrade?.bonusUses ?? 10})`;
+    up.addEventListener('click', () => game.doUpgradeTool(recipeId));
+    actions.appendChild(up);
+  } else if (isDurabilityTool(recipe) && isToolUpgraded(s, recipeId)) {
+    const badge = document.createElement('span');
+    badge.className = 'char-tool-hint';
+    badge.textContent = 'Amélioré';
+    actions.appendChild(badge);
+  }
+
   if (actions.children.length) row.appendChild(actions);
   container.appendChild(row);
 }
@@ -1854,6 +1901,7 @@ function createHarvestSlotCard(game, jobId, slotIndex) {
     ? (game.getHarvestSlotHint?.(jobId, selectedId) || toolBlock)
     : null;
   const harvestXp = selected && !active ? getHarvestXp(selected, game.state, game.balance) : 0;
+  const jobXpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
 
   const card = document.createElement('div');
   card.className = `harvest-slot state-${display.visualState}${active ? ' active-harvest' : ''}${canHarvest ? ' slot-can-harvest' : ''}`;
@@ -1873,7 +1921,7 @@ function createHarvestSlotCard(game, jobId, slotIndex) {
     <div class="slot-footer">
       <div class="slot-picker-mount"></div>
       ${harvestHint ? `<p class="slot-tool-hint">${harvestHint}</p>` : ''}
-      ${harvestXp > 0 && !active ? `<p class="slot-xp-hint">+${harvestXp} XP ${game.jobs[jobId]?.name || ''}</p>` : ''}
+      ${harvestXp > 0 && !active ? `<p class="slot-xp-hint">+${formatNumber(harvestXp)} XP ${game.jobs[jobId]?.name || ''}${bonusTagHtml(jobXpBonusPct)}</p>` : ''}
       <button type="button" class="btn btn-harvest-compact btn-start${active ? ' harvesting-btn' : ''}${!active && selectedId && !toolBlock ? ' affordable' : ''}" ${active || !selectedId || toolBlock ? 'disabled' : ''} title="${harvestHint || 'Récolter'}">
         ${btnLabel}
       </button>
@@ -3164,7 +3212,7 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
     const isProtected = protectedIds.has(id);
     const bonus = resource.craftOnly && !notSellable ? getCraftSellBonus(game.state, game.jobs) : 1;
     const baseUnit = notSellable ? 0 : Math.floor(resource.sellPrice * bonus);
-    const unitPrice = notSellable ? 0 : applyMultiplierBonus(baseUnit, getPrestigeBonuses(game.state).kirha);
+    const unitPrice = notSellable ? 0 : applyMultiplierBonus(baseUnit, getPrestigeBonuses(game.state).kirha) * getSeasonBoostMult(game.state);
     const value = unitPrice * amount;
     if (!notSellable && !isProtected) totalValue += value;
 
@@ -3282,7 +3330,7 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   body.innerHTML = `
     <h3 class="item-modal-title">${renderResourceIcon(resource, 'item-modal-icon')} ${resource.name}</h3>
     <p>Quantité : ×${amount}</p>
-    ${notSellable ? '' : `<p>Prix unitaire : ${formatNumber(unitPrice)} 💰${isProtected ? ' · <span class="item-pinned-badge">Épinglé</span>' : ''}</p>`}
+    ${notSellable ? '' : `<p>Prix unitaire : ${formatNumber(unitPrice)} 💰${bonusTagHtml(getSeasonBonusPercents(game.state).kirhaPct)}${isProtected ? ' · <span class="item-pinned-badge">Épinglé</span>' : ''}</p>`}
     ${compareHtml}
     <div class="modal-item-actions">
       ${mealEffect ? `<button type="button" class="btn btn-craft" id="modal-consume-meal" ${mealInfo.canHeal ? '' : 'disabled'} title="${mealInfo.disabledReason || ''}">🍙 Se soigner</button>` : ''}
@@ -3349,16 +3397,25 @@ function emitPrestigeModal() {
 export function renderSeason(game, el) {
   const info = game.getPrestigeInfo();
   const caps = info.caps || game.getSeasonCapPreview();
-  const p = game.state.prestige || {};
   const progress = game.getPrestigeProgress();
   const seasonsDone = game.state.lifetimeStats?.seasonsCompleted || 0;
-  const blockerHtml = info.blockers?.length
-    ? `<ul class="prestige-blockers">${info.blockers.map((b) => `<li>${b}</li>`).join('')}</ul>`
+  const stepsHtml = (progress.steps || []).length
+    ? `<ul class="prestige-steps">${progress.steps.map((s) => `
+        <li class="${s.done ? 'step-done' : 'step-todo'}">${s.done ? '✓' : '○'} ${s.label}</li>
+      `).join('')}</ul>`
+    : blockerHtml;
+
+  const boostActive = isSeasonBoostActive(game.state);
+  const boostMs = game.getSeasonBoostRemainingMs?.() || 0;
+  const boostMin = Math.ceil(boostMs / 60000);
+  const boostBanner = boostActive
+    ? `<p class="season-boost-banner">⚡ Boost de relance actif : encore ~${boostMin} min — XP ×2 · ventes ×2 · repousse ÷2</p>`
     : '';
 
   el.innerHTML = `
     <div class="view-header"><h2><span class="nav-emoji" aria-hidden="true">🌸</span> Nouvelle saison</h2></div>
-    <p class="view-desc">Reset complet de la progression. Tu gardes tes bonus Kirha et XP permanents — plus tu changes de saison, plus tu vas loin.</p>
+    <p class="view-desc">Objectifs clairs pour débloquer la saison suivante : niveau perso, métiers, Kirha gagnés et donjon. Une nouvelle saison te donne aussi 1 h de boost ×2.</p>
+    ${boostBanner}
 
     <div class="panel-inner panel-prestige season-panel">
       <div class="season-status-grid">
@@ -3372,21 +3429,22 @@ export function renderSeason(game, el) {
           <span class="admin-info-val">Perso Nv.${caps.character.cap} · Métiers Nv.${caps.jobs.cap}</span>
           <span class="admin-td-muted">Saison ${info.nextSeason} : Nv.${caps.nextSeason.character} / ${caps.nextSeason.jobs}</span>
         </div>
-        <div class="admin-info-card">
+        <div class="admin-info-card season-bonus-card">
           <span class="admin-info-lbl">Bonus permanents</span>
-          <span class="admin-info-val">+${Math.round((p.kirhaBonus || 0) * 100)}% 💰 · +${Math.round((p.xpBonus || 0) * 100)}% XP</span>
-          <span class="admin-td-muted">Prochaine : +${info.gainBonuses.kirha}% 💰 · +${info.gainBonuses.xp}% XP</span>
+          ${renderSeasonBonusPills(game.state) || '<span class="admin-info-val">Aucun pour l’instant</span>'}
+          <span class="admin-td-muted">Prochaine : +${info.gainBonuses.kirha}% 💰 · +${info.gainBonuses.xp}% XP perso · +${info.gainBonuses.jobXp}% XP métiers · +${info.gainBonuses.regrowth}% repousse · ${formatNumber(info.seasonStartKirha)} 💰 au départ</span>
         </div>
       </div>
 
       <h3 class="admin-section-title">Prérequis Saison ${info.nextSeason}</h3>
       <p class="view-desc">${progress.completed}/${progress.total} conditions</p>
       <div class="xp-bar-container prestige-teaser-bar"><div class="xp-bar" style="width:${progress.percent}%"></div></div>
+      ${stepsHtml}
       ${info.canDo
         ? `<p class="prestige-req prestige-ready">Prêt pour la Saison ${info.nextSeason} !</p>`
-        : `<p class="prestige-req">Encore requis :</p>${blockerHtml}`}
+        : ''}
 
-      <p class="view-desc season-reset-hint">Au passage : inventaire vide, métiers, ferme, équipe, zones et équipement repartent à zéro. Tu gardes compte, pseudo, succès et bonus (+Kirha / +XP) pour recommencer plus vite.</p>
+      <p class="view-desc season-reset-hint">Au passage : inventaire vide, métiers, ferme, équipe, zones et équipement repartent à zéro. Tu gardes compte, pseudo, succès et bonus permanents. Tu repars avec ${formatNumber(game.balance.prestige?.seasonStartKirha ?? game.balance.startingKirha ?? 0)} 💰 et <strong>1 h de boost ×2</strong> (XP, ventes, repousse).</p>
       <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
     </div>
   `;
@@ -4116,11 +4174,12 @@ export function formatNumber(n) {
   const x = Number(n) || 0;
   if (x >= 1_000_000) return (x / 1_000_000).toFixed(1) + 'M';
   if (x >= 10_000) return (x / 1_000).toFixed(1) + 'K';
-  // Garder les décimales du bonus saison (ex. 10,5 XP / 4,2 💰)
-  if (Math.abs(x - Math.round(x)) > 1e-9) {
-    return x.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  // Max 2 décimales (bonus saison, évite les flottants genre 4,6000001)
+  const rounded = Math.round(x * 100) / 100;
+  if (Math.abs(rounded - Math.round(rounded)) > 1e-9) {
+    return rounded.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
   }
-  return Math.round(x).toLocaleString('fr-FR');
+  return Math.round(rounded).toLocaleString('fr-FR');
 }
 
 export function initSakuraPetals() {

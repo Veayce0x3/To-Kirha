@@ -54,13 +54,177 @@
 }
 
 .season-badge {
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
   font-size: 0.65rem;
   background: var(--rose-pale);
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 10px;
   margin-top: 0.25rem;
   color: var(--vert-foret);
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.season-badge-bonus {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--vert-foret);
+  opacity: 0.95;
+}
+
+.season-bonus-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 32px;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 90, 39, 0.28);
+  background: linear-gradient(135deg, rgba(248, 232, 238, 0.98), rgba(45, 90, 39, 0.12));
+  color: var(--brun);
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.season-bonus-chip[hidden] {
+  display: none !important;
+}
+
+.season-boost-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 168, 56, 0.45);
+  background: linear-gradient(135deg, rgba(255, 244, 214, 0.98), rgba(232, 168, 56, 0.22));
+  color: #8a5a12;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.season-boost-chip[hidden] {
+  display: none !important;
+}
+
+.season-boost-banner {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(232, 168, 56, 0.16);
+  border: 1px solid rgba(232, 168, 56, 0.35);
+  color: var(--brun);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.prestige-steps {
+  list-style: none;
+  margin: 0.5rem 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.prestige-steps li {
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background: rgba(248, 232, 238, 0.6);
+}
+
+.prestige-steps .step-done {
+  background: rgba(45, 90, 39, 0.12);
+  color: var(--vert-foret);
+  font-weight: 600;
+}
+
+.prestige-steps .step-todo {
+  color: var(--brun);
+}
+
+.season-bonus-chip-label {
+  color: var(--violet-sakura);
+  font-weight: 700;
+}
+
+.season-bonus-chip-vals {
+  color: var(--vert-foret);
+}
+
+.bonus-tag {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(45, 90, 39, 0.14);
+  color: var(--vert-foret);
+  font-size: 0.72em;
+  font-weight: 700;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.char-bonus-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.45rem 0 0.3rem;
+}
+
+.char-bonus-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.char-bonus-kirha {
+  background: rgba(155, 89, 182, 0.14);
+  border-color: rgba(155, 89, 182, 0.3);
+  color: var(--violet-sakura);
+}
+
+.char-bonus-xp {
+  background: rgba(45, 90, 39, 0.12);
+  border-color: rgba(45, 90, 39, 0.28);
+  color: var(--vert-foret);
+}
+
+.char-bonus-job {
+  background: rgba(74, 55, 40, 0.1);
+  border-color: rgba(74, 55, 40, 0.25);
+  color: var(--brun);
+}
+
+.char-bonus-regrowth {
+  background: rgba(232, 168, 56, 0.16);
+  border-color: rgba(232, 168, 56, 0.35);
+  color: #8a5a12;
+}
+
+.season-bonus-card .char-bonus-pills {
+  margin: 0.35rem 0;
+}
+
+.prestige-teaser-bonuses.muted {
+  opacity: 0.65;
 }
 
 .sidebar-nav {

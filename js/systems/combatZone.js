@@ -19,7 +19,7 @@ import {
   clearDungeonPartySnapshot,
 } from './combat.js';
 import { addCharacterXp } from './character.js';
-import { getPrestigeBonuses, applyMultiplierBonus } from './prestige.js';
+import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBoostMult, getSeasonEnemyScale } from './prestige.js';
 import {
   peekMealHeal,
   consumeMealFromInventory,
@@ -232,7 +232,14 @@ export function startFight(
     killStats: state.combatKillStats || {},
   };
 
-  initEncounter(state.combatEncounter, { ...foe, boss: isBoss }, enemies, 1, combatZone);
+  initEncounter(
+    state.combatEncounter,
+    { ...foe, boss: isBoss },
+    enemies,
+    1,
+    combatZone,
+    getSeasonEnemyScale(state.season, balance)
+  );
   return { ok: true, encounter: state.combatEncounter };
 }
 
@@ -272,7 +279,14 @@ export function startDungeonRun(
     party,
   };
 
-  initEncounter(state.combatEncounter, { ...first.foe, boss: first.isBoss }, enemies, party.length, combatZone);
+  initEncounter(
+    state.combatEncounter,
+    { ...first.foe, boss: first.isBoss },
+    enemies,
+    party.length,
+    combatZone,
+    getSeasonEnemyScale(state.season, balance)
+  );
   return { ok: true, encounter: state.combatEncounter, roomCount: rooms.length };
 }
 
@@ -284,7 +298,7 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, c
   const run = state.combatEncounter;
   const xpMult = balance.combat?.soloXpMultiplier ?? 0.25;
   const rawXp = Math.floor((foe.charXpReward || 0) * xpMult);
-  const charXp = applyMultiplierBonus(rawXp, getPrestigeBonuses(state).xp);
+  const charXp = applyMultiplierBonus(rawXp, getPrestigeBonuses(state).xp) * getSeasonBoostMult(state);
   const levelResult = charXp > 0 ? addCharacterXp(state, charXp, characterConfig, balance) : null;
   recordKill(state, zoneId, foe, isBoss);
 
@@ -320,7 +334,8 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, c
 }
 
 function finishDungeonRun(run, state, characterConfig, balance, combatItems) {
-  const totalXp = applyMultiplierBonus(run.dungeonCharXp || 0, getPrestigeBonuses(state).xp);
+  const totalXp = applyMultiplierBonus(run.dungeonCharXp || 0, getPrestigeBonuses(state).xp)
+    * getSeasonBoostMult(state);
   const levelResult = totalXp > 0 ? addCharacterXp(state, totalXp, characterConfig, balance) : null;
   applyDrops(state, run.dungeonDrops || {});
   const roomCount = run.rooms?.length || 0;
@@ -386,7 +401,14 @@ function advanceDungeonRoom(run, state, characterConfig, enemies, balance, comba
   const next = run.rooms[run.roomIndex];
   run.foe = next.foe;
   run.isBoss = next.isBoss;
-  initEncounter(run, { ...next.foe, boss: next.isBoss }, enemies, run.party.length, run.combatZone);
+  initEncounter(
+    run,
+    { ...next.foe, boss: next.isBoss },
+    enemies,
+    run.party.length,
+    run.combatZone,
+    getSeasonEnemyScale(state.season, balance)
+  );
 
   if (roomHealTotal > 0 && run.combat?.log) {
     run.combat.log.push({

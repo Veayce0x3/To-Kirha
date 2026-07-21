@@ -1,6 +1,7 @@
 import { wearToolsForHarvest } from './toolDurability.js';
 import { isFarmBuildingUnlocked } from './jobUnlock.js';
 import { addFarmBuildingXp } from './farmProgress.js';
+import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBoostMult } from './prestige.js';
 
 export const FARM_BUILDING_IDS = [
   'well',
@@ -303,7 +304,8 @@ export function completeFarmProduction(state, farmData, buildingId, slotIndex, j
     state.inventory[resId] = (state.inventory[resId] || 0) + amount;
   }
 
-  const xp = getFarmProductionXp(building);
+  const xp = applyMultiplierBonus(getFarmProductionXp(building), getPrestigeBonuses(state).jobXp)
+    * getSeasonBoostMult(state);
   const levelResult = xp > 0 ? addFarmBuildingXp(state, buildingId, xp, jobs, balance) : null;
   state.stats.totalHarvests = (state.stats.totalHarvests || 0) + 1;
   slot.active = null;

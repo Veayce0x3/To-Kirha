@@ -293,7 +293,9 @@ export function getCombinedBonuses(state) {
   return {
     kirha: 1 + (prestige.kirhaBonus || 0) + ach.kirha,
     xp: 1 + (prestige.xpBonus || 0) + ach.xp,
+    jobXp: 1 + (prestige.jobXpBonus || 0) + ach.xp,
     harvestSpeed: ach.harvestSpeed,
+    regrowthSpeed: (prestige.regrowthSpeedBonus || 0) + (ach.harvestSpeed || 0),
   };
 }
 
