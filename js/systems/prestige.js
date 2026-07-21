@@ -41,17 +41,24 @@ export function getMaxJobLevel(state) {
   return max;
 }
 
-/** Boost de relance 1 h après nouvelle saison. */
+/** Boost de relance 1 h après nouvelle saison (temporaire, non cumulable). */
 export function isSeasonBoostActive(state, now = Date.now()) {
   const endsAt = Number(state?.seasonBoost?.endsAt) || 0;
-  return endsAt > now;
+  if (endsAt <= now) {
+    // Expire → on nettoie pour ne pas laisser croire à un bonus permanent
+    if (state?.seasonBoost) state.seasonBoost = null;
+    return false;
+  }
+  return true;
 }
 
 export function getSeasonBoostRemainingMs(state, now = Date.now()) {
+  if (!isSeasonBoostActive(state, now)) return 0;
   const endsAt = Number(state?.seasonBoost?.endsAt) || 0;
   return Math.max(0, endsAt - now);
 }
 
+/** ×2 uniquement pendant le boost 1 h ; sinon 1 (les % saison restent séparés). */
 export function getSeasonBoostMult(state) {
   return isSeasonBoostActive(state) ? 2 : 1;
 }

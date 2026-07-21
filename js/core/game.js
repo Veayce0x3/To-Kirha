@@ -401,7 +401,7 @@ export class Game {
         jobXpBonus: saved.prestige?.jobXpBonus || 0,
         regrowthSpeedBonus: saved.prestige?.regrowthSpeedBonus || 0,
       },
-      seasonBoost: saved.seasonBoost && Number(saved.seasonBoost.endsAt) > 0
+      seasonBoost: saved.seasonBoost && Number(saved.seasonBoost.endsAt) > Date.now()
         ? { endsAt: Number(saved.seasonBoost.endsAt) }
         : null,
       toolUpgrades: saved.toolUpgrades && typeof saved.toolUpgrades === 'object'

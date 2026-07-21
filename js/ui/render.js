@@ -414,7 +414,7 @@ export function initUI(game, audio) {
         const mins = Math.max(1, Math.ceil(getSeasonBoostRemainingMs(state) / 60000));
         els.seasonBoostChip.hidden = false;
         els.seasonBoostChip.textContent = `⚡ ×2 · ${mins} min`;
-        els.seasonBoostChip.title = 'Boost de relance : XP ×2, ventes ×2, repousse ÷2';
+        els.seasonBoostChip.title = 'Boost temporaire de relance (1 h max) : XP ×2, ventes ×2, repousse ÷2 — puis c’est fini';
       } else {
         els.seasonBoostChip.hidden = true;
         els.seasonBoostChip.textContent = '';
@@ -568,7 +568,7 @@ export function initUI(game, audio) {
     els.prestigeGains.innerHTML = `
       ${capLine}
       <div class="prestige-gain-row">💰 Départ saison : ${info.seasonStartKirha} 💰</div>
-      <div class="prestige-gain-row">⚡ Boost 1 h : XP ×2 · ventes ×2 · repousse ÷2</div>
+      <div class="prestige-gain-row">⚡ Boost temporaire 1 h (puis fini) : XP ×2 · ventes ×2 · repousse ÷2</div>
       <div class="prestige-gain-row">💰 Kirha : +${info.nextBonuses.kirha.toFixed(0)}% total (+${info.gainBonuses.kirha.toFixed(0)}%/saison)</div>
       <div class="prestige-gain-row">🧘 XP perso : +${info.nextBonuses.xp.toFixed(0)}% total (+${info.gainBonuses.xp.toFixed(0)}%/saison)</div>
       <div class="prestige-gain-row">🛠️ XP métiers : +${info.nextBonuses.jobXp.toFixed(0)}% total (+${info.gainBonuses.jobXp.toFixed(0)}%/saison)</div>

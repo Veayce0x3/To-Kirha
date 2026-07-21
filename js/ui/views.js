@@ -3409,7 +3409,7 @@ export function renderSeason(game, el) {
   const boostMs = game.getSeasonBoostRemainingMs?.() || 0;
   const boostMin = Math.ceil(boostMs / 60000);
   const boostBanner = boostActive
-    ? `<p class="season-boost-banner">⚡ Boost de relance actif : encore ~${boostMin} min — XP ×2 · ventes ×2 · repousse ÷2</p>`
+    ? `<p class="season-boost-banner">⚡ Boost temporaire actif (~${boostMin} min) — XP ×2 · ventes ×2 · repousse ÷2. Ensuite le ×2 disparaît (les bonus % de saison restent).</p>`
     : '';
 
   el.innerHTML = `
@@ -3444,7 +3444,7 @@ export function renderSeason(game, el) {
         ? `<p class="prestige-req prestige-ready">Prêt pour la Saison ${info.nextSeason} !</p>`
         : ''}
 
-      <p class="view-desc season-reset-hint">Au passage : inventaire vide, métiers, ferme, équipe, zones et équipement repartent à zéro. Tu gardes compte, pseudo, succès et bonus permanents. Tu repars avec ${formatNumber(game.balance.prestige?.seasonStartKirha ?? game.balance.startingKirha ?? 0)} 💰 et <strong>1 h de boost ×2</strong> (XP, ventes, repousse).</p>
+      <p class="view-desc season-reset-hint">Au passage : inventaire vide, métiers, ferme, équipe, zones et équipement repartent à zéro. Tu gardes compte, pseudo, succès et bonus permanents (%). Tu repars avec ${formatNumber(game.balance.prestige?.seasonStartKirha ?? game.balance.startingKirha ?? 0)} 💰 et un <strong>boost temporaire 1 h</strong> (XP/ventes ×2, repousse ÷2) — après quoi le ×2 s’arrête.</p>
       <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
     </div>
   `;
