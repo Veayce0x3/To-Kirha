@@ -170,6 +170,7 @@ async function buildPlayerDetailFallback(userId) {
         lifetime_earned: Number(save.lifetimeStats?.totalEarned) || 0,
         season_earned: Number(save.stats?.totalEarned) || 0,
         seasons_completed: Number(save.lifetimeStats?.seasonsCompleted) || 0,
+        season_history: Array.isArray(save.seasonHistory) ? save.seasonHistory : [],
       } : null,
       inventory_summary,
       jobs_summary,

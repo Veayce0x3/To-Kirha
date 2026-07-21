@@ -408,22 +408,38 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
   const settings = state.settings || getDefaultSettings();
   const preservedAchievements = state.achievements || state.quests;
 
-  // Reset complet : inventaire vide, métiers Nv.1, équipe à recruter, etc.
-  // On garde seulement : bonus saison, succès, compte, pseudo, réglages, temps de jeu.
+  // Nouvelle saison = recommencer la progression de jeu pour gagner des bonus.
+  // Ce n’est PAS une suppression de compte : on conserve identité, succès, stats de vie, bonus.
   const fresh = typeof getFreshState === 'function' ? getFreshState() : getFreshProgress(balance);
   const preservedNickname = state.character?.nickname || null;
   const preservedMeta = state.meta && typeof state.meta === 'object'
     ? JSON.parse(JSON.stringify(state.meta))
     : {};
 
+  const previousSeasonSummary = {
+    season: state.season || 1,
+    endedAt: Date.now(),
+    charLevel: state.character?.level || 1,
+    maxJobLevel: getMaxJobLevel(state),
+    seasonEarned: Number(state.stats?.totalEarned) || 0,
+    lifetimeEarned: Number(state.lifetimeStats?.totalEarned) || 0,
+    kirha: Number(state.kirha) || 0,
+    harvests: Number(state.stats?.totalHarvests) || 0,
+  };
+  const seasonHistory = [
+    ...(Array.isArray(state.seasonHistory) ? state.seasonHistory : []),
+    previousSeasonSummary,
+  ].slice(-20);
+
   return {
     ...fresh,
-    // Aide de relance : Kirha de départ de saison (fixe), pas le boost test
+    // Aide de relance : Kirha de départ de saison (fixe)
     kirha: balance.prestige?.seasonStartKirha ?? balance.startingKirha ?? 0,
     season,
     prestige: newPrestige,
     seasonBoost: createSeasonBoost(balance),
     toolUpgrades: {},
+    seasonHistory,
     lifetimeStats,
     achievements: preservedAchievements,
     settings,
@@ -436,6 +452,7 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
       nicknameUpdatedAt: state.character?.nicknameUpdatedAt || null,
       freeRenameUsed: !!state.character?.freeRenameUsed,
     },
+    // Rechoix d’arme pour la nouvelle saison (parcours métier) — le compte reste
     careerChoice: null,
   };
 }

@@ -3416,7 +3416,7 @@ export function renderSeason(game, el) {
 
   el.innerHTML = `
     <div class="view-header"><h2><span class="nav-emoji" aria-hidden="true">🌸</span> Nouvelle saison</h2></div>
-    <p class="view-desc">Objectifs clairs pour débloquer la saison suivante : niveau perso, métiers, Kirha gagnés et donjon. Une nouvelle saison te donne aussi 1 h de boost ×2.</p>
+    <p class="view-desc">Passer en saison suivante, ce n’est <strong>pas</strong> perdre ton compte : tu gardes pseudo, succès, stats de vie et bonus. Tu recommences seulement la progression (métiers, inventaire…) pour aller plus loin avec des bonus.</p>
     ${boostBanner}
 
     <div class="panel-inner panel-prestige season-panel">
@@ -3446,7 +3446,7 @@ export function renderSeason(game, el) {
         ? `<p class="prestige-req prestige-ready">Prêt pour la Saison ${info.nextSeason} !</p>`
         : ''}
 
-      <p class="view-desc season-reset-hint">Au passage : inventaire vide, métiers, ferme, équipe, zones et équipement repartent à zéro. Tu gardes compte, pseudo, succès et bonus permanents (%). Tu repars avec ${formatNumber(game.balance.prestige?.seasonStartKirha ?? game.balance.startingKirha ?? 0)} 💰 et un <strong>boost temporaire 1 h</strong> (XP/ventes ×2, repousse ÷2) — après quoi le ×2 s’arrête.</p>
+      <p class="view-desc season-reset-hint">À la nouvelle saison : métiers / inventaire / ferme / équipe repartent pour recommencer plus fort. Tu <strong>gardes</strong> compte, pseudo, succès, stats de vie et bonus permanents. Départ : ${formatNumber(game.balance.prestige?.seasonStartKirha ?? game.balance.startingKirha ?? 0)} 💰 + boost temporaire 1 h (XP/ventes ×2).</p>
       <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
     </div>
   `;

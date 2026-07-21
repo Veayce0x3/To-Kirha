@@ -567,6 +567,8 @@ export function initUI(game, audio) {
       : '';
     els.prestigeGains.innerHTML = `
       ${capLine}
+      <div class="prestige-gain-row">✅ Conservé : compte, pseudo, succès, stats de vie, bonus %</div>
+      <div class="prestige-gain-row">🔄 Recommence : métiers, inventaire, ferme, équipe (pour aller plus loin)</div>
       <div class="prestige-gain-row">💰 Départ saison : ${info.seasonStartKirha} 💰</div>
       <div class="prestige-gain-row">⚡ Boost temporaire 1 h (puis fini) : XP ×2 · ventes ×2 · repousse ÷2</div>
       <div class="prestige-gain-row">💰 Kirha : +${info.nextBonuses.kirha.toFixed(0)}% total (+${info.gainBonuses.kirha.toFixed(0)}%/saison)</div>

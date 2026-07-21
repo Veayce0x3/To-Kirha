@@ -316,6 +316,7 @@ export class Game {
       prestige: { kirhaBonus: 0, xpBonus: 0, jobXpBonus: 0, regrowthSpeedBonus: 0 },
       seasonBoost: null,
       toolUpgrades: {},
+      seasonHistory: [],
       lifetimeStats: { totalEarned: 0, totalHarvests: 0, seasonsCompleted: 0 },
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
@@ -407,6 +408,9 @@ export class Game {
       toolUpgrades: saved.toolUpgrades && typeof saved.toolUpgrades === 'object'
         ? { ...saved.toolUpgrades }
         : {},
+      seasonHistory: Array.isArray(saved.seasonHistory)
+        ? saved.seasonHistory.slice(-20)
+        : [],
       lifetimeStats: { ...defaults.lifetimeStats, ...(saved.lifetimeStats || {}) },
       settings: mergeSettings(saved.settings),
       playtime: {

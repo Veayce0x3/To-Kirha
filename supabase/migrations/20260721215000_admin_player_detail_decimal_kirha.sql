@@ -117,7 +117,8 @@ begin
       'playtime_background_ms', coalesce(round(coalesce((v_save->'playtime'->>'backgroundMs')::numeric, 0))::bigint, 0),
       'lifetime_earned', coalesce(round(coalesce((v_save->'lifetimeStats'->>'totalEarned')::numeric, 0)), 0),
       'season_earned', coalesce(round(coalesce((v_save->'stats'->>'totalEarned')::numeric, 0)), 0),
-      'seasons_completed', coalesce((v_save->'lifetimeStats'->>'seasonsCompleted')::int, 0)
+      'seasons_completed', coalesce((v_save->'lifetimeStats'->>'seasonsCompleted')::int, 0),
+      'season_history', coalesce(v_save->'seasonHistory', '[]'::jsonb)
     ) end,
     'inventory_summary', v_inventory,
     'jobs_summary', v_jobs,

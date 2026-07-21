@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260721-2200",
+      "date": "2026-07-21",
+      "title": "Nouvelle saison ≠ perte de compte",
+      "highlights": [
+        "Compte, pseudo, succès et stats de vie sont toujours conservés",
+        "Historique des saisons archivé pour l’admin (voir avant/après renaissance)"
+      ]
+    },
+    {
       "buildId": "20260721-2150",
       "date": "2026-07-21",
       "title": "Outils, 4 prérequis S3, admin Jayler",

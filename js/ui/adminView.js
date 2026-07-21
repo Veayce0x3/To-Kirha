@@ -474,6 +474,29 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
     return 'Confirmée';
   })();
 
+  const history = Array.isArray(save_summary?.season_history) ? save_summary.season_history : [];
+  const historyHtml = history.length
+    ? `<details class="admin-fold" open>
+        <summary>Saisons précédentes (${history.length}) — progression avant renaissance</summary>
+        <div class="admin-table-wrap">
+          <table class="admin-table admin-table-compact">
+            <thead><tr><th>Saison</th><th>Perso</th><th>Métier max</th><th>Kirha saison</th><th>Vie</th><th>Fin</th></tr></thead>
+            <tbody>${history.map((h) => `
+              <tr>
+                <td>S${h.season ?? '?'}</td>
+                <td>Nv.${h.charLevel ?? '?'}</td>
+                <td>Nv.${h.maxJobLevel ?? '?'}</td>
+                <td>${fmtNum(h.seasonEarned)}</td>
+                <td>${fmtNum(h.lifetimeEarned)}</td>
+                <td>${h.endedAt ? fmtDate(new Date(h.endedAt).toISOString()) : '—'}</td>
+              </tr>
+            `).join('')}</tbody>
+          </table>
+        </div>
+        <p class="view-desc">Le compte n’est jamais effacé : seule la progression de saison recommence pour les bonus.</p>
+      </details>`
+    : `<p class="view-desc admin-meta-line">Pas encore d’historique de saison archivé (disponible après la prochaine renaissance).</p>`;
+
   detailEl.innerHTML = `
     <div class="admin-detail-head">
       <div>
@@ -515,6 +538,7 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
         })()}</span>
       </div>
     </div>
+    ${historyHtml}
     <details class="admin-fold" open>
       <summary>Métiers & inventaire</summary>
       <h5 class="admin-section-title">Métiers</h5>
