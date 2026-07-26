@@ -7,10 +7,15 @@
   --vert-bambou-clair: #7BA86E;
   --vert-bambou-mist: #E4F0DF;
   --bois: #4A3728;
-  --violet-sakura: #9B59B6;
-  --violet-clair: #C39BD3;
+  /* Ancien violet → vert bambou (boutons / actions) ; le sakura reste via --rose-* */
+  --violet-sakura: #3E6B3A;
+  --violet-clair: #7BA86E;
+  --violet: #3E6B3A;
+  --violet-principal: #3E6B3A;
+  --btn-primary: #3E6B3A;
+  --btn-primary-hover: #4A8C3F;
   --blanc: #FFFDF9;
-  --ombre: rgba(74, 55, 40, 0.12);
+  --ombre: rgba(45, 90, 39, 0.12);
   --rayon: 16px;
 }
 
@@ -103,7 +108,7 @@ body {
 }
 
 .panel-kirha {
-  background: linear-gradient(135deg, var(--violet-sakura), var(--violet-clair));
+  background: var(--vert-bambou);
   color: white;
   text-align: center;
 }
@@ -187,8 +192,8 @@ body {
 }
 
 .btn-harvest:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(155, 89, 182, 0.2);
-  border-color: var(--violet-sakura);
+  box-shadow: 0 4px 12px rgba(62, 107, 58, 0.22);
+  border-color: var(--vert-bambou);
 }
 
 .btn-emoji {
@@ -224,7 +229,7 @@ body {
 }
 
 .progress-bar-container {
-  background: rgba(155, 89, 182, 0.15);
+  background: rgba(62, 107, 58, 0.15);
   border-radius: 999px;
   height: 8px;
   overflow: hidden;
@@ -232,7 +237,7 @@ body {
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--violet-sakura), var(--rose-medium));
+  background: var(--vert-bambou);
   border-radius: 999px;
   width: 0%;
 }
@@ -311,14 +316,14 @@ body {
 
 .btn-sell-all {
   padding: 0.4rem 0.75rem;
-  background: var(--violet-sakura);
+  background: var(--btn-primary);
   color: white;
   font-size: 0.8rem;
   font-weight: 500;
 }
 
 .btn-sell-all:hover:not(:disabled) {
-  background: var(--violet-clair);
+  background: var(--btn-primary-hover);
 }
 
 .upgrades-list {
@@ -370,7 +375,7 @@ body {
 
 .btn-upgrade {
   padding: 0.5rem 0.75rem;
-  background: var(--violet-sakura);
+  background: var(--btn-primary);
   color: white;
   font-size: 0.8rem;
   font-weight: 500;
@@ -378,7 +383,7 @@ body {
 }
 
 .btn-upgrade:hover:not(:disabled) {
-  background: var(--violet-clair);
+  background: var(--btn-primary-hover);
 }
 
 .panel-stats {
@@ -543,7 +548,7 @@ body {
 
 .btn-craft {
   padding: 0.5rem 0.75rem;
-  background: var(--vert-foret);
+  background: var(--btn-primary);
   color: white;
   font-size: 0.8rem;
   font-weight: 500;
@@ -551,7 +556,7 @@ body {
 }
 
 .btn-craft:hover:not(:disabled) {
-  background: var(--vert-clair);
+  background: var(--btn-primary-hover);
 }
 
 .crafted-label {
@@ -569,7 +574,7 @@ body {
 
 .crafted-badge {
   padding: 0.3rem 0.6rem;
-  background: linear-gradient(135deg, var(--violet-sakura), var(--violet-clair));
+  background: var(--vert-bambou);
   color: white;
   border-radius: 999px;
   font-size: 0.75rem;
@@ -705,14 +710,14 @@ body {
 .btn-modal-close {
   width: 100%;
   padding: 0.75rem;
-  background: var(--violet-sakura);
+  background: var(--btn-primary);
   color: white;
   font-size: 0.9rem;
   font-weight: 500;
 }
 
 .btn-modal-close:hover {
-  background: var(--violet-clair);
+  background: var(--btn-primary-hover);
 }
 
 .save-actions {
@@ -724,14 +729,14 @@ body {
 .btn-save {
   flex: 1;
   padding: 0.6rem;
-  background: var(--violet-sakura);
+  background: var(--btn-primary);
   color: white;
   font-size: 0.8rem;
   font-weight: 500;
 }
 
 .btn-save:hover {
-  background: var(--violet-clair);
+  background: var(--btn-primary-hover);
 }
 
 .btn-danger {
@@ -772,8 +777,8 @@ body {
 }
 
 .inventory-item.craft-item {
-  background: linear-gradient(135deg, #FFF5F8, #F0E8F5);
-  border: 1px solid var(--violet-clair);
+  background: linear-gradient(135deg, #FFF5F8, var(--vert-bambou-mist));
+  border: 1px solid rgba(62, 107, 58, 0.25);
 }
 
 .req-tools {
@@ -786,17 +791,17 @@ body {
 }
 
 .toast-prestige {
-  background: linear-gradient(135deg, var(--violet-sakura), #e8a0bf);
+  background: var(--vert-bambou);
 }
 
 .season-badge {
   display: inline-block;
   margin-top: 0.4rem;
   padding: 0.25rem 0.75rem;
-  background: rgba(155, 89, 182, 0.15);
+  background: rgba(62, 107, 58, 0.15);
   border-radius: 999px;
   font-size: 0.75rem;
-  color: var(--violet-sakura);
+  color: var(--vert-bambou);
   font-weight: 500;
   cursor: pointer;
   min-height: 44px;
@@ -865,7 +870,7 @@ body.page-hidden .nav-btn-unlock-ready {
 .level-flash {
   position: fixed;
   inset: 0;
-  background: radial-gradient(circle, rgba(155, 89, 182, 0.25) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(62, 107, 58, 0.25) 0%, transparent 70%);
   pointer-events: none;
   z-index: 150;
   opacity: 0;
@@ -904,14 +909,15 @@ body.page-hidden .nav-btn-unlock-ready {
 .btn-prestige {
   width: 100%;
   padding: 0.75rem;
-  background: linear-gradient(135deg, var(--violet-sakura), #e8a0bf);
+  background: var(--btn-primary);
   color: white;
   font-size: 0.9rem;
   font-weight: 600;
 }
 
 .btn-prestige:hover:not(:disabled) {
-  box-shadow: 0 4px 16px rgba(155, 89, 182, 0.35);
+  box-shadow: 0 4px 16px rgba(62, 107, 58, 0.35);
+  background: var(--btn-primary-hover);
 }
 
 .btn-prestige:disabled {
@@ -967,7 +973,7 @@ body.page-hidden .nav-btn-unlock-ready {
 .setting-row input[type="checkbox"] {
   width: 20px;
   height: 20px;
-  accent-color: var(--violet-sakura);
+  accent-color: var(--vert-bambou);
 }
 
 .setting-row input[type="range"] {
@@ -1015,8 +1021,12 @@ html[data-theme="dark"] {
   --vert-bambou-clair: #A8C98A;
   --vert-bambou-mist: #243028;
   --bois: #e8ddd0;
-  --violet-sakura: #c39bd3;
-  --violet-clair: #9b59b6;
+  --violet-sakura: #7BA86E;
+  --violet-clair: #A8C98A;
+  --violet: #7BA86E;
+  --violet-principal: #7BA86E;
+  --btn-primary: #7BA86E;
+  --btn-primary-hover: #A8C98A;
   --blanc: #1a1620;
   --ombre: rgba(0, 0, 0, 0.4);
 }

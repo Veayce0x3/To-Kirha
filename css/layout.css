@@ -196,8 +196,8 @@
 }
 
 .char-bonus-kirha {
-  background: rgba(155, 89, 182, 0.14);
-  border-color: rgba(155, 89, 182, 0.3);
+  background: rgba(62, 107, 58, 0.14);
+  border-color: rgba(62, 107, 58, 0.3);
   color: var(--violet-sakura);
 }
 
@@ -446,7 +446,7 @@
 
 .season-cap-hint {
   font-size: 0.82rem;
-  color: var(--accent-purple, #9B59B6);
+  color: var(--accent-bambou, #3E6B3A);
   margin: 0.25rem 0 0;
 }
 
@@ -476,7 +476,7 @@
   display: block;
   margin: 0;
   padding: 0;
-  border: 1px solid rgba(155, 89, 182, 0.28);
+  border: 1px solid rgba(62, 107, 58, 0.28);
   border-radius: var(--rayon, 14px);
   background:
     linear-gradient(135deg, rgba(248, 232, 238, 0.98), rgba(255, 255, 255, 0.92));
@@ -506,7 +506,7 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--violet-sakura, #9B59B6);
+  color: var(--violet-sakura, #3E6B3A);
 }
 
 .prestige-teaser-season {
@@ -637,7 +637,7 @@
 }
 
 .nav-btn.active {
-  background: linear-gradient(135deg, var(--violet-sakura), var(--violet-clair));
+  background: var(--btn-primary, var(--vert-bambou));
   color: white;
   font-weight: 500;
 }
@@ -672,7 +672,7 @@
 }
 
 .nav-btn.nav-harvest-harvesting:not(.active) {
-  background: rgba(155, 89, 182, 0.14);
+  background: rgba(62, 107, 58, 0.14);
   color: var(--violet-sakura);
   font-weight: 600;
   border-left: 3px solid var(--violet-sakura);
@@ -680,7 +680,7 @@
 
 .nav-btn.nav-harvest-harvesting:not(.active) .nav-status-dot {
   background: var(--violet-sakura);
-  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.3);
+  box-shadow: 0 0 0 2px rgba(62, 107, 58, 0.3);
 }
 
 .nav-btn.nav-harvest-regrowing:not(.active) {
@@ -865,7 +865,7 @@
   min-height: 36px;
   padding: 0 0.5rem;
   border-radius: 10px;
-  border: 1px solid rgba(155, 89, 182, 0.35);
+  border: 1px solid rgba(62, 107, 58, 0.35);
   background: var(--blanc);
   font-size: 0.9rem;
   font-weight: 600;
@@ -1091,8 +1091,8 @@
   margin: 0 0 0.85rem;
   padding: 0.45rem 1rem;
   border-radius: 999px;
-  background: rgba(155, 89, 182, 0.12);
-  border: 1px solid rgba(155, 89, 182, 0.35);
+  background: rgba(62, 107, 58, 0.12);
+  border: 1px solid rgba(62, 107, 58, 0.35);
   color: #6b3a7a;
   font-weight: 700;
   font-size: 0.95rem;
@@ -1198,7 +1198,7 @@
   padding: 0.45rem 0.5rem;
   border-radius: 10px;
   background: rgba(248, 232, 238, 0.55);
-  border: 1px solid rgba(155, 89, 182, 0.18);
+  border: 1px solid rgba(62, 107, 58, 0.18);
   text-align: left;
 }
 
@@ -1291,7 +1291,7 @@
   padding: 0.65rem 0.75rem;
   border-radius: 12px;
   background: rgba(248, 232, 238, 0.55);
-  border: 1px solid rgba(155, 89, 182, 0.18);
+  border: 1px solid rgba(62, 107, 58, 0.18);
 }
 
 .farm-animal-grid {
@@ -1713,20 +1713,20 @@
 .tile-progress {
   width: 100%;
   height: 8px;
-  background: rgba(155, 89, 182, 0.15);
+  background: rgba(62, 107, 58, 0.15);
   border-radius: 999px;
   overflow: hidden;
 }
 
 .tile-progress .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--violet-sakura), var(--vert-clair));
+  background: var(--vert-bambou);
   transition: width 0.1s linear;
 }
 
 .btn-harvest-sm {
   padding: 0.5rem 0.85rem;
-  background: var(--violet-sakura);
+  background: var(--btn-primary, var(--vert-bambou));
   color: white;
   border: none;
   border-radius: 8px;
@@ -1819,7 +1819,7 @@
   width: 88px;
   height: 88px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--rose-pale), var(--violet-clair));
+  background: linear-gradient(135deg, var(--rose-pale), var(--vert-bambou-mist));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2120,7 +2120,7 @@
   gap: 0.75rem;
   margin-bottom: 0.75rem;
   padding: 0.75rem 1rem;
-  background: rgba(155, 89, 182, 0.08);
+  background: rgba(62, 107, 58, 0.08);
   border-radius: 12px;
   font-size: 0.9rem;
 }
@@ -2216,7 +2216,7 @@
 
 .auction-test-banner {
   margin-bottom: 0.75rem;
-  border: 1px dashed rgba(155, 89, 182, 0.4);
+  border: 1px dashed rgba(62, 107, 58, 0.4);
   background: rgba(248, 232, 238, 0.65);
 }
 
@@ -2337,7 +2337,7 @@
 }
 
 .auction-vendor-chip.active {
-  background: rgba(155, 89, 182, 0.14);
+  background: rgba(62, 107, 58, 0.14);
   border-color: var(--violet-sakura);
   color: var(--violet-sakura);
 }
@@ -2470,8 +2470,8 @@
 }
 
 .auction-qty-btn.sell.affordable {
-  border-color: rgba(155, 89, 182, 0.45);
-  background: rgba(155, 89, 182, 0.08);
+  border-color: rgba(62, 107, 58, 0.45);
+  background: rgba(62, 107, 58, 0.08);
 }
 
 .auction-qty-label {
@@ -2568,7 +2568,7 @@
   background: var(--violet-sakura);
   border-color: var(--violet-sakura);
   color: #fff;
-  box-shadow: 0 6px 18px rgba(155, 89, 182, 0.18);
+  box-shadow: 0 6px 18px rgba(62, 107, 58, 0.18);
 }
 
 .auction-cat-btn.test:not(.active) {
@@ -2606,10 +2606,10 @@
   margin: 0.35rem 0 0.05rem;
   padding: 0.45rem 0.7rem;
   border-radius: 10px;
-  background: rgba(155, 89, 182, 0.1);
+  background: rgba(62, 107, 58, 0.1);
   color: var(--violet-sakura);
   font-weight: 800;
-  border: 1px solid rgba(155, 89, 182, 0.18);
+  border: 1px solid rgba(62, 107, 58, 0.18);
 }
 
 .auction-list-row {
@@ -2698,7 +2698,7 @@
   line-height: 1.35;
   color: var(--brun);
   background: rgba(248, 232, 238, 0.75);
-  border: 1px dashed rgba(155, 89, 182, 0.35);
+  border: 1px dashed rgba(62, 107, 58, 0.35);
 }
 
 .hdv-banner.warn {
@@ -2815,7 +2815,7 @@
 }
 
 .hdv-chip.active {
-  background: rgba(155, 89, 182, 0.14);
+  background: rgba(62, 107, 58, 0.14);
   border-color: var(--violet-sakura);
   color: var(--violet-sakura);
 }
@@ -2988,8 +2988,8 @@
 }
 
 .hdv-action-btn.sell.ok {
-  border-color: rgba(155, 89, 182, 0.45);
-  background: rgba(155, 89, 182, 0.08);
+  border-color: rgba(62, 107, 58, 0.45);
+  background: rgba(62, 107, 58, 0.08);
   color: var(--violet-sakura);
 }
 
@@ -3193,7 +3193,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 .char-equip-picker-row.equipped {
   cursor: default;
   border-color: var(--violet-sakura);
-  background: rgba(155, 89, 182, 0.08);
+  background: rgba(62, 107, 58, 0.08);
 }
 
 .char-equip-picker-row:not(:disabled):active {
@@ -3314,7 +3314,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .bank-row.selected {
-  background: rgba(155, 89, 182, 0.1);
+  background: rgba(62, 107, 58, 0.1);
 }
 
 /* ── Craft tiles ── */
@@ -3532,7 +3532,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .harvest-slot.state-regrowing {
-  border-color: rgba(155, 89, 182, 0.35);
+  border-color: rgba(62, 107, 58, 0.35);
   background: linear-gradient(135deg, #f5f0f8, var(--rose-pale));
 }
 
@@ -3632,7 +3632,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   padding: 0.75rem;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(155, 89, 182, 0.25);
+  border: 1px solid rgba(62, 107, 58, 0.25);
 }
 
 .job-unlock-banner-title {
@@ -3799,7 +3799,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 .job-inline-unlock-fill {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--violet-principal), var(--vert-clair));
+  background: var(--vert-bambou);
 }
 
 .job-next-footer {
@@ -3984,7 +3984,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 
 .nav-unlock-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--violet-principal), var(--vert-clair));
+  background: var(--vert-bambou);
   transition: width 0.3s ease;
 }
 
@@ -4094,7 +4094,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   padding: 0.35rem 0.75rem;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, var(--vert-bambou, #3E6B3A), var(--vert-clair, #4A8C3F));
+  background: var(--btn-primary, var(--vert-bambou));
   border: 1.5px solid var(--vert-foret, #2D5A27);
   border-radius: 10px;
   box-shadow: 0 2px 0 rgba(45, 90, 39, 0.25);
@@ -4191,7 +4191,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   flex-shrink: 0;
   width: 100%;
   padding: 0.55rem 0.75rem;
-  background: var(--violet-sakura);
+  background: var(--btn-primary, var(--vert-bambou));
   color: white;
   border: none;
   border-radius: 8px;
@@ -4212,8 +4212,8 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .btn-harvest-compact.regrowing-btn {
-  background: var(--violet-sakura);
-  opacity: 0.85;
+  background: var(--vert-clair);
+  opacity: 0.9;
 }
 
 .slot-progress {
@@ -4267,7 +4267,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   display: block;
   height: 100%;
   min-width: 0;
-  background: linear-gradient(90deg, var(--violet-sakura), var(--vert-clair));
+  background: var(--vert-bambou);
   transition: width 0.1s linear;
   border-radius: 999px;
 }
@@ -4277,7 +4277,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .slot-progress.phase-regrowing .slot-progress-bar {
-  background: linear-gradient(90deg, var(--violet-sakura), var(--violet-clair));
+  background: var(--vert-bambou);
 }
 
 .slot-regrowth-pct {
@@ -4322,7 +4322,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   width: 100%;
   min-height: 46px;
   padding: 0.36rem 0.45rem;
-  border: 2px solid rgba(155, 89, 182, 0.35);
+  border: 2px solid rgba(62, 107, 58, 0.35);
   border-radius: 9px;
   background: var(--blanc);
   cursor: pointer;
@@ -4449,8 +4449,8 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 
 .resource-picker.picker-slot .resource-pick-btn.selected {
   border-color: var(--violet-sakura);
-  background: rgba(155, 89, 182, 0.1);
-  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.2);
+  background: rgba(62, 107, 58, 0.1);
+  box-shadow: 0 0 0 2px rgba(62, 107, 58, 0.2);
 }
 
 .resource-picker.picker-slot .resource-pick-btn.selected .pick-name {
@@ -4567,7 +4567,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 .resource-pick-btn.selected {
   border-color: var(--violet-sakura);
   background: var(--rose-pale);
-  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.2);
+  box-shadow: 0 0 0 2px rgba(62, 107, 58, 0.2);
 }
 
 .resource-pick-btn.state-regrowing,
@@ -4880,7 +4880,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   background: var(--rose-pale) !important;
   box-shadow:
     0 0 0 2px var(--violet-sakura),
-    0 4px 16px rgba(155, 89, 182, 0.2) !important;
+    0 4px 16px rgba(62, 107, 58, 0.2) !important;
   animation: tutorial-btn-pulse 1.4s ease-in-out infinite;
 }
 
@@ -4935,9 +4935,9 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 
 .combat-heal-panel {
   margin-bottom: 0.85rem;
-  border: 1px solid rgba(155, 89, 182, 0.18);
+  border: 1px solid rgba(62, 107, 58, 0.18);
   background:
-    radial-gradient(circle at 96% 0%, rgba(155, 89, 182, 0.14), transparent 32%),
+    radial-gradient(circle at 96% 0%, rgba(62, 107, 58, 0.14), transparent 32%),
     linear-gradient(180deg, rgba(255, 253, 249, 0.96), rgba(248, 232, 238, 0.72));
 }
 
@@ -5085,7 +5085,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 .dq-battlefield.dq-boss-room {
   background:
     radial-gradient(circle at 74% 18%, rgba(248, 232, 238, 0.34), transparent 16%),
-    radial-gradient(circle at 20% 12%, rgba(155, 89, 182, 0.34), transparent 24%),
+    radial-gradient(circle at 20% 12%, rgba(62, 107, 58, 0.34), transparent 24%),
     linear-gradient(180deg, #4a2d5a 0%, #304f55 38%, #2d5a27 66%, #101f15 100%);
 }
 
@@ -5192,7 +5192,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   font-size: 0.74rem;
   font-weight: 900;
   letter-spacing: 0.02em;
-  background: linear-gradient(90deg, rgba(45, 90, 39, 0.86), rgba(155, 89, 182, 0.76));
+  background: linear-gradient(90deg, rgba(45, 90, 39, 0.86), rgba(62, 107, 58, 0.76));
   border: 1px solid rgba(255, 253, 249, 0.24);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
   pointer-events: none;
@@ -5239,7 +5239,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .dq-party-member.dq-active-fighter .dq-sprite-party {
-  filter: drop-shadow(0 0 8px rgba(155, 89, 182, 0.65));
+  filter: drop-shadow(0 0 8px rgba(62, 107, 58, 0.65));
 }
 
 .dq-party-member.dq-ko {
@@ -5397,7 +5397,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 
 .dq-status-chip.dq-status-active {
   border-color: var(--violet-sakura);
-  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.25);
+  box-shadow: 0 0 0 2px rgba(62, 107, 58, 0.25);
 }
 
 .dq-status-chip.dq-ko {
@@ -5445,7 +5445,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   align-items: center;
   background:
     linear-gradient(90deg, rgba(255, 253, 249, 0.86), rgba(255, 253, 249, 0.58)),
-    radial-gradient(circle at 0% 0%, rgba(155, 89, 182, 0.1), transparent 36%);
+    radial-gradient(circle at 0% 0%, rgba(62, 107, 58, 0.1), transparent 36%);
 }
 
 .dq-dialogue-text {
@@ -5494,7 +5494,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 
 .dq-cmd-btn.affordable .dq-cmd-icon,
 .dq-cmd-btn.dq-cmd-main.affordable .dq-cmd-icon {
-  filter: drop-shadow(0 0 4px rgba(155, 89, 182, 0.3));
+  filter: drop-shadow(0 0 4px rgba(62, 107, 58, 0.3));
 }
 
 .dq-cmd-btn {
@@ -5526,7 +5526,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 
 .dq-cmd-btn:not(:disabled):active,
 .dq-cmd-btn.dq-cmd-main:not(:disabled):hover {
-  background: rgba(155, 89, 182, 0.14);
+  background: rgba(62, 107, 58, 0.14);
   transform: translateY(-1px);
 }
 
@@ -5568,7 +5568,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   gap: 0.15rem;
   padding: 0.2rem 0.45rem;
   border-radius: 999px;
-  background: rgba(155, 89, 182, 0.1);
+  background: rgba(62, 107, 58, 0.1);
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--bois);
@@ -5799,9 +5799,9 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 
 .btn-party-toggle {
   margin-left: auto;
-  background: rgba(155, 89, 182, 0.12);
+  background: rgba(62, 107, 58, 0.12);
   color: var(--bois);
-  border: 1px solid rgba(155, 89, 182, 0.25);
+  border: 1px solid rgba(62, 107, 58, 0.25);
 }
 
 .btn-party-toggle.active {
@@ -5939,8 +5939,8 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .combat-boss-row {
-  border-color: rgba(155, 89, 182, 0.5);
-  background: rgba(155, 89, 182, 0.06);
+  border-color: rgba(62, 107, 58, 0.5);
+  background: rgba(62, 107, 58, 0.06);
 }
 
 .combat-monster-info {
@@ -5965,7 +5965,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .ing-combat {
-  border-bottom: 1px dashed rgba(155, 89, 182, 0.4);
+  border-bottom: 1px dashed rgba(62, 107, 58, 0.4);
 }
 
 .dungeon-rooms {
@@ -6218,7 +6218,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 
 .quest-row.quest-ready {
   border-color: var(--violet);
-  box-shadow: 0 0 0 1px rgba(155, 89, 182, 0.2);
+  box-shadow: 0 0 0 1px rgba(62, 107, 58, 0.2);
 }
 
 .quest-row-head {
@@ -6253,8 +6253,8 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   padding: 0.55rem 0.75rem;
   margin-bottom: 0.75rem;
   border-radius: 10px;
-  background: rgba(155, 89, 182, 0.12);
-  border: 1px solid rgba(155, 89, 182, 0.25);
+  background: rgba(62, 107, 58, 0.12);
+  border: 1px solid rgba(62, 107, 58, 0.25);
 }
 
 .quest-banner-label {
@@ -6296,7 +6296,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   margin-left: 0.35rem;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
-  background: rgba(155, 89, 182, 0.12);
+  background: rgba(62, 107, 58, 0.12);
   color: var(--violet-sakura);
   font-size: 0.72rem;
   font-weight: 700;
@@ -6405,7 +6405,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   font-weight: 700;
   padding: 0.05rem 0.35rem;
   border-radius: 999px;
-  background: rgba(155, 89, 182, 0.14);
+  background: rgba(62, 107, 58, 0.14);
   color: var(--violet-sakura);
 }
 
@@ -6448,7 +6448,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 
 .workshop-tab.active {
   border-color: var(--violet);
-  background: rgba(155, 89, 182, 0.15);
+  background: rgba(62, 107, 58, 0.15);
   font-weight: 700;
 }
 
@@ -6515,7 +6515,7 @@ button.dq-enemy-card.dq-targetable,
   padding: 0.45rem 0.75rem;
   border: 2px solid var(--violet);
   border-radius: 10px;
-  background: rgba(155, 89, 182, 0.12);
+  background: rgba(62, 107, 58, 0.12);
   font-family: inherit;
   font-size: 0.85rem;
 }
@@ -6541,7 +6541,7 @@ button.dq-enemy-card.dq-targetable,
 .mission-current {
   border: 2px solid var(--violet);
   border-radius: 12px;
-  background: rgba(155, 89, 182, 0.08);
+  background: rgba(62, 107, 58, 0.08);
 }
 
 .mission-current-label {
@@ -6631,10 +6631,10 @@ body.tutorial-active .sidebar-overlay.active {
 /* ── Bouton tutoriel unique (étape 6 / modale formation) ── */
 @keyframes tutorial-btn-pulse {
   0%, 100% {
-    box-shadow: 0 4px 14px rgba(155, 89, 182, 0.28);
+    box-shadow: 0 4px 14px rgba(62, 107, 58, 0.28);
   }
   50% {
-    box-shadow: 0 6px 22px rgba(155, 89, 182, 0.48);
+    box-shadow: 0 6px 22px rgba(62, 107, 58, 0.48);
   }
 }
 
@@ -6647,13 +6647,13 @@ body.tutorial-active .sidebar-overlay.active {
   padding: 0.65rem 1.1rem;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--violet-sakura), var(--violet-clair));
+  background: var(--btn-primary, var(--vert-bambou));
   color: white;
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  box-shadow: 0 4px 14px rgba(155, 89, 182, 0.28);
+  box-shadow: 0 4px 14px rgba(62, 107, 58, 0.28);
   transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
   cursor: pointer;
   text-align: center;
@@ -6665,7 +6665,7 @@ body.tutorial-active .sidebar-overlay.active {
 
 .btn-tutorial:hover:not(:disabled) {
   filter: brightness(1.05);
-  box-shadow: 0 6px 18px rgba(155, 89, 182, 0.38);
+  box-shadow: 0 6px 18px rgba(62, 107, 58, 0.38);
 }
 
 .btn-tutorial:active:not(:disabled) {
@@ -6715,7 +6715,7 @@ body.tutorial-active #tutorial-craft-sakura_axe,
 body.tutorial-active #tutorial-farm-start-well,
 body.tutorial-active #tutorial-farm-start-chicken,
 body.tutorial-active .farm-feed-btn.btn-tutorial {
-  background: linear-gradient(135deg, var(--violet-sakura), var(--violet-clair)) !important;
+  background: var(--btn-primary, var(--vert-bambou)) !important;
   color: white !important;
   border: none !important;
   position: relative;
@@ -6746,13 +6746,13 @@ body.tutorial-active .bank-row.tutorial-hint {
     box-shadow:
       0 0 0 3px #E8B4CB,
       0 0 0 6px rgba(232, 180, 203, 0.55),
-      0 4px 16px rgba(155, 89, 182, 0.25);
+      0 4px 16px rgba(62, 107, 58, 0.25);
   }
   50% {
     box-shadow:
       0 0 0 4px #E8B4CB,
       0 0 0 10px rgba(232, 180, 203, 0.75),
-      0 8px 28px rgba(155, 89, 182, 0.45);
+      0 8px 28px rgba(62, 107, 58, 0.45);
   }
 }
 
@@ -6852,12 +6852,12 @@ body.tutorial-active .bank-row.tutorial-hint {
 
 .tutorial-fight-panel {
   border: 2px solid var(--violet);
-  background: rgba(155, 89, 182, 0.06);
+  background: rgba(62, 107, 58, 0.06);
 }
 
 .tutorial-dungeon-panel {
   border: 2px solid var(--violet);
-  background: rgba(155, 89, 182, 0.06);
+  background: rgba(62, 107, 58, 0.06);
   margin-bottom: 0.75rem;
 }
 
@@ -6865,14 +6865,14 @@ body.tutorial-active .bank-row.tutorial-hint {
   font-size: 0.95rem;
   font-weight: 700;
   padding: 0.85rem 1.1rem;
-  background: linear-gradient(135deg, var(--violet-sakura), var(--violet-clair));
+  background: var(--btn-primary, var(--vert-bambou));
   color: white;
   border: none;
   border-radius: 10px;
   max-width: min(360px, calc(100vw - 2rem));
   text-align: center;
   line-height: 1.4;
-  box-shadow: 0 6px 20px rgba(155, 89, 182, 0.35);
+  box-shadow: 0 6px 20px rgba(62, 107, 58, 0.35);
 }
 
 #tutorial-modal.modal-overlay {
@@ -7104,7 +7104,7 @@ body:has(#dungeon-combat-modal.active) .tutorial-overlay {
   background: linear-gradient(135deg, rgba(248, 232, 238, 0.98) 0%, rgba(232, 180, 203, 0.35) 100%);
   color: var(--bois);
   font-size: 0.84rem;
-  border-bottom: 2px solid rgba(155, 89, 182, 0.25);
+  border-bottom: 2px solid rgba(62, 107, 58, 0.25);
 }
 
 .dq-tutorial-combat-step {
@@ -7126,7 +7126,7 @@ body:has(#dungeon-combat-modal.active) .tutorial-overlay {
 }
 
 .dq-combat.dq-tutorial-fight .dq-cmd-signature {
-  background: rgba(155, 89, 182, 0.15);
+  background: rgba(62, 107, 58, 0.15);
   border-left: 3px solid var(--violet);
 }
 
@@ -7691,7 +7691,7 @@ body.picker-sheet-open #picker-sheet-portal .picker-sheet-header {
 }
 
 .bank-row-protected {
-  background: rgba(155, 89, 182, 0.06);
+  background: rgba(62, 107, 58, 0.06);
 }
 
 @media (max-width: 640px) {
@@ -7854,8 +7854,8 @@ body.picker-sheet-open #picker-sheet-portal .picker-sheet-header {
 }
 
 .job-switcher-chip.nav-harvest-harvesting:not(.active) {
-  background: rgba(155, 89, 182, 0.14);
-  border-color: rgba(155, 89, 182, 0.4);
+  background: rgba(62, 107, 58, 0.14);
+  border-color: rgba(62, 107, 58, 0.4);
   color: var(--violet-sakura);
 }
 
@@ -7900,7 +7900,7 @@ body.picker-sheet-open #picker-sheet-portal .picker-sheet-header {
 
 .job-switcher-unlock-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--violet-principal), var(--vert-clair));
+  background: var(--vert-bambou);
 }
 
 body.has-job-switcher .view-container {
@@ -7990,7 +7990,7 @@ body.has-job-switcher .footer {
 .farm-tool-banner {
   margin-top: 0.5rem;
   padding: 0.5rem;
-  background: rgba(155, 89, 182, 0.08);
+  background: rgba(62, 107, 58, 0.08);
   border-radius: 8px;
 }
 
@@ -8014,8 +8014,8 @@ body.has-job-switcher .footer {
   margin-bottom: 0.5rem;
   padding: 0.5rem;
   border-radius: 8px;
-  background: rgba(155, 89, 182, 0.06);
-  border: 1px solid rgba(155, 89, 182, 0.15);
+  background: rgba(62, 107, 58, 0.06);
+  border: 1px solid rgba(62, 107, 58, 0.15);
 }
 
 .farm-animal-head {
@@ -8107,8 +8107,8 @@ body.has-job-switcher .footer {
 }
 
 .farm-feed-btn.selected {
-  border-color: var(--color-accent, #9B59B6);
-  background: rgba(155, 89, 182, 0.1);
+  border-color: var(--color-accent, #3E6B3A);
+  background: rgba(62, 107, 58, 0.1);
 }
 
 .farm-feed-btn.farm-feed-unaffordable:not(.selected) {
@@ -8170,8 +8170,8 @@ body.has-job-switcher .footer {
 }
 
 .meal-option-btn.selected {
-  border-color: var(--color-accent, #9B59B6);
-  background: rgba(155, 89, 182, 0.08);
+  border-color: var(--color-accent, #3E6B3A);
+  background: rgba(62, 107, 58, 0.08);
 }
 
 .meal-effect-label {
@@ -8245,8 +8245,8 @@ body.has-job-switcher .footer {
   margin: 0.35rem 0;
   padding: 0.5rem 0.65rem;
   border-radius: 10px;
-  background: rgba(155, 89, 182, 0.1);
-  border: 1px solid rgba(155, 89, 182, 0.25);
+  background: rgba(62, 107, 58, 0.1);
+  border: 1px solid rgba(62, 107, 58, 0.25);
   font-size: 0.82rem;
   color: var(--brun);
 }
@@ -8429,7 +8429,7 @@ body.has-job-switcher .footer {
 
 .char-equip-slot.filled {
   border-color: var(--violet-sakura);
-  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.12), 0 5px 14px rgba(74, 55, 40, 0.12);
+  box-shadow: 0 0 0 2px rgba(62, 107, 58, 0.12), 0 5px 14px rgba(74, 55, 40, 0.12);
 }
 
 .char-equip-helmet { grid-area: helmet; }
@@ -8545,8 +8545,8 @@ body.has-job-switcher .footer {
 }
 
 .char-stat-total {
-  background: rgba(155, 89, 182, 0.1);
-  border-color: rgba(155, 89, 182, 0.22);
+  background: rgba(62, 107, 58, 0.1);
+  border-color: rgba(62, 107, 58, 0.22);
 }
 
 .char-stat-total strong {
@@ -8629,7 +8629,7 @@ body.has-job-switcher .footer {
 }
 
 .inventory-grid-cell.pinned {
-  border-color: var(--violet, #9B59B6);
+  border-color: var(--violet, #3E6B3A);
 }
 
 .inventory-grid-cell.meal {
@@ -8704,7 +8704,7 @@ img.inventory-grid-icon,
   min-height: 24px;
   border: none;
   border-radius: 999px;
-  background: rgba(155, 89, 182, 0.22);
+  background: rgba(62, 107, 58, 0.22);
   color: var(--brun, #4A3728);
   font-size: 0.7rem;
   font-weight: 700;
@@ -8734,7 +8734,7 @@ img.inventory-grid-icon,
 }
 
 .farm-tool-banner {
-  background: rgba(155, 89, 182, 0.12);
+  background: rgba(62, 107, 58, 0.12);
   padding: 0.5rem 0.65rem;
   border-radius: 8px;
   margin-top: 0.35rem;
@@ -8893,12 +8893,12 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
 .career-nickname-input {
   width: 100%;
   min-height: 46px;
-  border: 2px solid rgba(155, 89, 182, 0.35);
+  border: 2px solid rgba(62, 107, 58, 0.35);
   background: rgba(255, 253, 249, 0.96);
 }
 
 .career-nickname-summary {
-  background: rgba(155, 89, 182, 0.06);
+  background: rgba(62, 107, 58, 0.06);
   border-radius: 12px;
   padding: 0.65rem 0.75rem;
 }
@@ -8908,7 +8908,7 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
 }
 
 .career-pick-grid { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.5rem 0; }
-.career-pick-btn { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; padding: 0.45rem 0.75rem; border-radius: 10px; border: 2px solid #9B59B6; background: #fff; cursor: pointer; font-family: inherit; }
+.career-pick-btn { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; padding: 0.45rem 0.75rem; border-radius: 10px; border: 2px solid #3E6B3A; background: #fff; cursor: pointer; font-family: inherit; }
 .career-pick-btn.picked { background: #F8E8EE; border-color: #2D5A27; }
 .career-pick-btn.recommended {
   box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.1);
@@ -8946,7 +8946,7 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
   min-height: 104px;
   padding: 0.75rem;
   border-radius: 14px;
-  border: 2px solid rgba(155, 89, 182, 0.45);
+  border: 2px solid rgba(62, 107, 58, 0.45);
   background: linear-gradient(180deg, #fffdf9, #f8e8ee);
   color: var(--brun);
   text-align: left;
@@ -9003,7 +9003,7 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
   min-height: 44px;
   padding: 0.45rem 0.85rem;
   border-radius: 999px;
-  border: 1.5px solid rgba(155, 89, 182, 0.28);
+  border: 1.5px solid rgba(62, 107, 58, 0.28);
   background: rgba(255, 255, 255, 0.85);
   color: var(--brun, #4A3728);
   font: inherit;
@@ -9013,9 +9013,9 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
 }
 
 .fusion-filter-btn.active {
-  border-color: var(--violet-sakura, #9B59B6);
-  background: rgba(155, 89, 182, 0.12);
-  color: var(--violet-sakura, #9B59B6);
+  border-color: var(--violet-sakura, #3E6B3A);
+  background: rgba(62, 107, 58, 0.12);
+  color: var(--violet-sakura, #3E6B3A);
 }
 
 .fusion-grid {
