@@ -79,20 +79,21 @@ export function getCumulativeUnitIndex(tiers, lines, resourceId) {
 }
 
 export function getUnitUnlockRequirements(jobId, resourceId, state, balance, resources) {
-  const tiers = getJobHarvestResources(resources, jobId);
   const lines = state.productionLines?.harvest?.[jobId] || {};
-  const cumulativeIndex = getCumulativeUnitIndex(tiers, lines, resourceId);
-  const kirha = getUnitUnlockCost(cumulativeIndex, balance);
+  const line = lines[resourceId];
+  // Coût basé sur les unités DE CETTE ressource uniquement (pas cumulatif entre tiers)
+  const unitIndex = Math.max(0, Number(line?.units) || 0);
+  const kirha = getUnitUnlockCost(unitIndex, balance);
   const sameRes = cfg(balance).unitUnlockSameResource || [];
-  const amount = extrapolateCost(cumulativeIndex, sameRes) ?? 0;
+  const amount = extrapolateCost(unitIndex, sameRes) ?? 0;
   const resAmount = amount > 0 ? { [resourceId]: amount } : null;
   return { kirha, resources: resAmount };
 }
 
 export function getNewTierUnlockRequirements(_jobId, _resourceId, prevResourceId, tierIndex, balance) {
   const c = cfg(balance);
-  const kirha = (c.newTierKirhaBase ?? 50) + tierIndex * (c.newTierKirhaStep ?? 40);
-  const amount = (c.newTierResourceBase ?? 25) + tierIndex * (c.newTierResourceStep ?? 15);
+  const kirha = (c.newTierKirhaBase ?? 40) + tierIndex * (c.newTierKirhaStep ?? 25);
+  const amount = (c.newTierResourceBase ?? 20) + tierIndex * (c.newTierResourceStep ?? 10);
   return { kirha, resources: { [prevResourceId]: amount } };
 }
 

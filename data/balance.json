@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 41,
-  "appBuildId": "20260726-2155",
+  "appBuildId": "20260726-2205",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -108,9 +108,9 @@
   ],
   "resourceUnlock": {
     "starterLevel": 1,
-    "baseLevel": 20,
-    "perTierStep": 20,
-    "comment": "Ressource tier 1→Nv.20, tier 2→Nv.40, tier 3→Nv.60… (≠ XP récolte)"
+    "baseLevel": 16,
+    "perTierStep": 16,
+    "comment": "Ressource tier 1→Nv.16, tier 2→Nv.32, tier 3→Nv.48… (≠ XP récolte)"
   },
   "harvestSlots": {
     "startingSlots": 2,
@@ -510,22 +510,23 @@
     "maxUnits": 5,
     "unitUnlockCosts": [
       0,
-      10,
-      30,
+      12,
+      35,
       80,
-      200
+      160
     ],
     "unitUnlockSameResource": [
       0,
-      10,
-      20,
-      35,
-      50
+      8,
+      16,
+      28,
+      40
     ],
-    "newTierKirhaBase": 50,
-    "newTierKirhaStep": 40,
-    "newTierResourceBase": 25,
-    "newTierResourceStep": 15,
+    "newTierKirhaBase": 40,
+    "newTierKirhaStep": 25,
+    "newTierResourceBase": 20,
+    "newTierResourceStep": 10,
+    "comment": "Coûts d’unités par ressource (reset à chaque nouvelle ressource). 5e plant ≈ 160💰 + 40 de la ressource.",
     "farmUnitUnlockCosts": [
       0,
       600,
