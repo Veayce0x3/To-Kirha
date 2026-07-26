@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260726-1555",
+      "date": "2026-07-26",
+      "title": "Refaire l’outil sur place + contraste bambou",
+      "highlights": [
+        "Outil usé : bouton Refaire directement sur la ligne de récolte (à côté de l’info)",
+        "Contraste renforcé et accents vert bambou sur les lignes de production"
+      ]
+    },
+    {
       "buildId": "20260726-1540",
       "date": "2026-07-26",
       "title": "Progression, outils & succès récolte",

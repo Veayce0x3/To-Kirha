@@ -1,5 +1,5 @@
 import { getJobEquippedTool } from './equipment.js';
-import { isDurabilityTool, isToolEffectActive } from './toolDurability.js';
+import { isDurabilityTool, isToolEffectActive, getToolUsesRemaining, getEffectiveMaxUses } from './toolDurability.js';
 import { getResourceTierIndex } from './progression.js';
 import { isStarterHarvestResource } from './zones.js';
 
@@ -139,4 +139,64 @@ export function toolMatchesResourceTier(recipe, resource, resources) {
   const resourceTier = getResourceHarvestTier(resource, resources);
   if (resourceTier <= 0) return false;
   return getRecipeToolTier(recipe) === resourceTier;
+}
+
+/**
+ * Outil usé (0 utilisations) correspondant au palier de la ressource —
+ * même s’il a été déséquipé à la casse.
+ */
+export function findBrokenToolForResource(state, jobId, resource, recipes, resources = null) {
+  if (!resource || !jobId) return null;
+  const needTier = getResourceHarvestTier(resource, resources);
+  if (needTier <= 0) return null;
+
+  let best = null;
+  for (const recipeId of state.crafted || []) {
+    const recipe = recipes[recipeId];
+    if (!recipe || recipe.effect?.job !== jobId) continue;
+    if (!isDurabilityTool(recipe)) continue;
+    const remaining = getToolUsesRemaining(state, recipeId);
+    if (remaining === null || remaining > 0) continue;
+    if (getRecipeToolTier(recipe) !== needTier) continue;
+    if (!best || (recipe.name || '').localeCompare(best.recipe.name || '', 'fr') < 0) {
+      best = { recipeId, recipe };
+    }
+  }
+  return best;
+}
+
+/** Statut outil pour l’UI ligne de récolte (ok / bas / usé + refabrication). */
+export function getHarvestLineToolStatus(state, jobId, resource, recipes, equipmentData, resources = null) {
+  const check = getHarvestToolCheck(state, jobId, resource, recipes, equipmentData, resources);
+  const equippedId = getJobEquippedTool(state, jobId);
+
+  if (check.ok && check.recipe && equippedId && isDurabilityTool(check.recipe)) {
+    const remaining = getToolUsesRemaining(state, equippedId);
+    const max = getEffectiveMaxUses(state, check.recipe) || check.recipe.maxUses;
+    if (remaining != null && max) {
+      return {
+        kind: remaining <= 3 ? 'low' : 'ok',
+        recipeId: equippedId,
+        recipe: check.recipe,
+        remaining,
+        max,
+        label: `${remaining}/${max}`,
+      };
+    }
+  }
+
+  const broken = findBrokenToolForResource(state, jobId, resource, recipes, resources);
+  if (broken) {
+    const max = getEffectiveMaxUses(state, broken.recipe) || broken.recipe.maxUses || 0;
+    return {
+      kind: 'broken',
+      recipeId: broken.recipeId,
+      recipe: broken.recipe,
+      remaining: 0,
+      max,
+      label: `0/${max}`,
+    };
+  }
+
+  return null;
 }

@@ -785,7 +785,7 @@ export function initUI(game, audio) {
     audio.playSfx('craft');
   });
   on('toolBroken', ({ name }) => {
-    showToast(els, `🔧 ${name || 'Outil'} usé — refabrique-le à l'atelier`, 'sell');
+    showToast(els, `🔧 ${name || 'Outil'} usé — tape Refaire sur la ligne de récolte`, 'sell');
   });
   on('craftBlocked', ({ message }) => {
     showToast(els, message || 'Fabrication impossible', 'sell');

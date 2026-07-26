@@ -20,8 +20,8 @@ import {
 } from '../systems/productionLines.js';
 import { getHarvestTime, getHarvestXp } from '../systems/harvest.js';
 import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, getSeasonBoostMult } from '../systems/prestige.js';
-import { getHarvestToolCheck, getFarmToolCheck } from '../systems/toolTier.js';
-import { getToolUsesRemaining, isDurabilityTool } from '../systems/toolDurability.js';
+import { getFarmToolCheck, getHarvestLineToolStatus } from '../systems/toolTier.js';
+import { getToolUsesRemaining, isDurabilityTool, getEffectiveMaxUses } from '../systems/toolDurability.js';
 import { getJobEquippedTool } from '../systems/equipment.js';
 import { emit } from '../core/events.js';
 import {
@@ -35,6 +35,7 @@ import {
   getVisibleFarmViews,
   getNextGatheringJobUnlock,
 } from '../systems/careerChoice.js';
+import { whyCannotCraft, makeCraftContext } from '../systems/crafting.js';
 
 function formatNumber(n) {
   const x = Number(n) || 0;
@@ -114,8 +115,34 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
       ${spriteHtml}
       ${active ? `<div class="slot-progress-overlay"><div class="slot-progress-fill" style="width:${progressPct}%"></div><span class="slot-progress-label">${statusLabel}</span></div>` : ''}
     </div>
-    ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
+    <div class="slot-tool-row"></div>
   `;
+
+  const toolRow = card.querySelector('.slot-tool-row');
+  if (toolBlock && toolRow) {
+    const status = getHarvestLineToolStatus(
+      game.state,
+      jobId,
+      resource,
+      game.recipes,
+      game.equipment,
+      game.resources
+    );
+    if (status?.kind === 'broken') {
+      const controls = buildToolStatusControls(game, jobId, resource, () => {
+        const viewEl = document.getElementById('view-container');
+        if (viewEl) renderJobProduction(game, viewEl, jobId);
+      });
+      if (controls) toolRow.appendChild(controls);
+    } else {
+      const hint = document.createElement('p');
+      hint.className = 'slot-tool-hint';
+      hint.textContent = toolBlock;
+      toolRow.appendChild(hint);
+    }
+  } else if (toolRow) {
+    toolRow.remove();
+  }
 
   const onTap = () => {
     if (canHarvest) game.startLineHarvest(jobId, resourceId, unitIndex);
@@ -132,24 +159,6 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
   return card;
 }
 
-function getLineToolDurability(game, jobId, resource) {
-  const check = getHarvestToolCheck(
-    game.state,
-    jobId,
-    resource,
-    game.recipes,
-    game.equipment,
-    game.resources
-  );
-  if (!check.ok || !check.recipe) return null;
-  const recipeId = getJobEquippedTool(game.state, jobId);
-  if (!recipeId || !isDurabilityTool(check.recipe)) return null;
-  const remaining = getToolUsesRemaining(game.state, recipeId);
-  const max = check.recipe.maxUses;
-  if (remaining == null || !max) return null;
-  return `${remaining}/${max}`;
-}
-
 function getFarmToolDurabilityLabel(game, building) {
   const check = getFarmToolCheck(game.state, game.recipes, game.equipment, building);
   if (!check.ok || !check.recipe) return null;
@@ -157,10 +166,55 @@ function getFarmToolDurabilityLabel(game, building) {
   const recipeId = getJobEquippedTool(game.state, 'breeder', toolKind);
   if (!recipeId || !isDurabilityTool(check.recipe)) return null;
   const remaining = getToolUsesRemaining(game.state, recipeId);
-  const max = check.recipe.maxUses;
+  const max = getEffectiveMaxUses(game.state, check.recipe) || check.recipe.maxUses;
   if (remaining == null || !max) return null;
   const emoji = check.recipe.emoji || '🛠️';
   return `${emoji} ${remaining}/${max}`;
+}
+
+function buildToolStatusControls(game, jobId, resource, onRecrafted) {
+  const status = getHarvestLineToolStatus(
+    game.state,
+    jobId,
+    resource,
+    game.recipes,
+    game.equipment,
+    game.resources
+  );
+  if (!status) return null;
+
+  const wrap = document.createElement('span');
+  wrap.className = `production-tool-status production-tool-${status.kind}`;
+  const emoji = status.recipe?.emoji || '🛠️';
+  const name = status.recipe?.name || 'Outil';
+
+  if (status.kind === 'broken') {
+    const ctx = makeCraftContext(game);
+    const block = whyCannotCraft(status.recipeId, ctx);
+    const canMake = !block;
+    wrap.innerHTML = `
+      <span class="production-tool-dur production-tool-broken-label" title="${name} usé">🛠️ ${name} · ${status.label} usé</span>
+      <button type="button" class="btn btn-small btn-recraft-tool${canMake ? ' affordable' : ''}" ${canMake ? '' : 'disabled'} title="${block || `Refabriquer ${name}`}">
+        Refaire
+      </button>
+    `;
+    const btn = wrap.querySelector('.btn-recraft-tool');
+    btn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const result = game.craftItem(status.recipeId);
+      if (!result.ok) {
+        emit('craftBlocked', { recipeId: status.recipeId, message: result.error });
+        return;
+      }
+      game.doEquip(status.recipeId);
+      onRecrafted?.();
+    });
+    return wrap;
+  }
+
+  wrap.innerHTML = `<span class="production-tool-dur" title="${name}">${emoji} ${status.label}</span>`;
+  return wrap;
 }
 
 function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
@@ -170,7 +224,6 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   const maxUnits = game.balance.productionLines?.maxUnitsPerResource ?? 5;
   const xpPerHarvest = getHarvestXp(resource, game.state, game.balance, game.resources);
   const harvestMs = Math.round(getHarvestTime(resource, game.state, game.jobs, game.balance, game.resources) / 1000);
-  const toolDurability = getLineToolDurability(game, jobId, resource);
   const xpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
   const xpBonusTag = xpBonusPct > 0
     ? `<span class="bonus-tag" title="Bonus XP métiers">+${xpBonusPct}%</span>`
@@ -186,7 +239,7 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
         <strong>${resource.name}</strong>
         <span class="production-stock">Stock : ${qty}</span>
         <span class="production-xp">+${formatNumber(xpPerHarvest)} XP${xpBonusTag}</span>
-        ${toolDurability ? `<span class="production-tool-dur">🛠️ ${toolDurability}</span>` : ''}
+        <span class="production-tool-slot"></span>
       </div>
       <div class="production-line-meta">
         <span class="production-units">${line.units}/${maxUnits}</span>
@@ -195,6 +248,16 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
     </div>
     <div class="slots-grid production-units-grid"></div>
   `;
+
+  const toolSlot = section.querySelector('.production-tool-slot');
+  const refreshLine = () => {
+    const viewEl = document.getElementById('view-container');
+    if (viewEl) renderJobProduction(game, viewEl, jobId);
+  };
+  const toolControls = buildToolStatusControls(game, jobId, resource, refreshLine);
+  if (toolControls && toolSlot) toolSlot.replaceWith(toolControls);
+  else toolSlot?.remove();
+
   const grid = section.querySelector('.production-units-grid');
   for (let i = 0; i < line.units; i++) {
     grid.appendChild(buildLineUnitCard(game, jobId, resourceId, i, resource));
