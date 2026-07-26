@@ -17,8 +17,8 @@
 
 ## 3. Paliers déblocage ressource (niveau métier requis)
 
-- Config : `balance.resourceUnlock` → starter **1**, puis **16 + (tier-1)×16**
-  - Tier 1 ressource → Nv.16 · Tier 2 → Nv.32 · Tier 3 → Nv.48…
+- Config : `balance.resourceUnlock` → starter **1**, puis **12 + (tier-1)×6**
+  - Tier 1 ressource → Nv.12 · Tier 2 → Nv.18 · Tier 3 → Nv.24…
 - Code : `getResourceUnlockJobLevel()` — utilisé pour le bouton Déblocage production
 - **≠ XP récolte** (10/14/18)
 
@@ -32,9 +32,7 @@
 
 ## 5. Lignes de production
 
-- 1 ressource starter gratuite · max 5 unités
-- Coûts d’unités **par ressource** (reset à chaque nouvelle ressource) — plus de cumul inter-tiers
-- Ex. 5ᵉ plant ≈ 160 💰 + 40 de la ressource en cours
+- 1 ressource starter gratuite · max 5 unités · coûts cumulatifs (pas de reset à 10💰)
 - Code : `js/systems/productionLines.js`
 
 ## 6. Succès (ex-Missions)

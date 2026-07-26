@@ -318,7 +318,7 @@ function buildUnlockPanel(game, jobId) {
     </div>
     <button type="button" class="btn btn-upgrade btn-production-unlock"${canBuy ? '' : ' disabled'}>${label}</button>
     <p class="production-unlock-desc">${preview.kind === 'unit'
-    ? 'Ajoute une unité de production sur la ressource en cours (max 5). Les coûts repartent à zéro à chaque nouvelle ressource.'
+    ? 'Ajoute une unité de production sur la ressource en cours (max 5 par type). Les coûts augmentent sans reset entre les ressources.'
     : `Ouvre la ressource ${preview.resourceName} avec 1 unité (après 5× ${preview.prevResourceName}).`}</p>
   `;
 
