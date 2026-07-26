@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260726-1705",
+      "date": "2026-07-26",
+      "title": "Succès : un par série",
+      "highlights": [
+        "Chaque série (Apprenti → Disciple → Maître) n’affiche plus qu’un succès à la fois",
+        "Après déblocage, appuie sur la carte pour passer au suivant",
+        "Liste Succès bien plus courte et lisible"
+      ]
+    },
+    {
       "buildId": "20260726-1645",
       "date": "2026-07-26",
       "title": "Admin : tout donner / tout prendre",

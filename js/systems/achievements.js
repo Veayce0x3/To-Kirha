@@ -227,6 +227,121 @@ export function getAchievementsByCategory(achievements, state, recipes) {
   return categories;
 }
 
+/**
+ * Regroupe les succès en chaînes linéaires via requires.achievementId
+ * (ex. Apprenti → Disciple → Maître).
+ * @returns {Array<{ rootId: string, category: string, items: object[] }>}
+ */
+export function getAchievementChains(achievements) {
+  const list = Object.values(achievements || {}).filter((a) => a && !a.hidden);
+  const byId = Object.fromEntries(list.map((a) => [a.id, a]));
+  const childrenOf = {};
+  for (const a of list) {
+    const req = a.requires?.achievementId || a.requires?.questId;
+    if (req && byId[req]) {
+      (childrenOf[req] ||= []).push(a);
+    }
+  }
+  for (const kids of Object.values(childrenOf)) {
+    kids.sort((a, b) => (a.order || 0) - (b.order || 0));
+  }
+
+  const used = new Set();
+  const chains = [];
+
+  const walkFrom = (start) => {
+    if (!start || used.has(start.id)) return;
+    const items = [];
+    let cur = start;
+    while (cur && !used.has(cur.id)) {
+      items.push(cur);
+      used.add(cur.id);
+      const kids = childrenOf[cur.id] || [];
+      const next = kids.find((k) => !used.has(k.id));
+      if (kids.length === 1 && next) {
+        cur = next;
+      } else {
+        // Branche multiple : on s’arrête ; les autres enfants seront des racines de chaînes
+        break;
+      }
+    }
+    if (items.length) {
+      chains.push({
+        rootId: items[0].id,
+        category: items[0].category || items[0].chapter || 'other',
+        items,
+      });
+    }
+    // Enfants non pris (branchements)
+    const last = items[items.length - 1];
+    if (last) {
+      for (const kid of childrenOf[last.id] || []) {
+        if (!used.has(kid.id)) walkFrom(kid);
+      }
+    }
+  };
+
+  const roots = list
+    .filter((a) => {
+      const req = a.requires?.achievementId || a.requires?.questId;
+      return !req || !byId[req];
+    })
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  for (const root of roots) walkFrom(root);
+  // Orphelins (au cas où)
+  for (const a of list) {
+    if (!used.has(a.id)) walkFrom(a);
+  }
+
+  return chains;
+}
+
+export function findAchievementChain(achievements, achievementId) {
+  return getAchievementChains(achievements).find((c) => c.items.some((a) => a.id === achievementId)) || null;
+}
+
+/** Focus UI : rootId → achievementId affiché (clic « suite » / après déblocage). */
+const achievementChainFocus = new Map();
+
+export function focusAchievementInChain(achievements, achievementId) {
+  const chain = findAchievementChain(achievements, achievementId);
+  if (!chain) return false;
+  achievementChainFocus.set(chain.rootId, achievementId);
+  return true;
+}
+
+export function advanceAchievementChainFocus(chain, fromAchievementId) {
+  if (!chain?.items?.length) return false;
+  const currentId = fromAchievementId || achievementChainFocus.get(chain.rootId);
+  const idx = chain.items.findIndex((a) => a.id === currentId);
+  const from = idx >= 0 ? idx : 0;
+  if (from >= chain.items.length - 1) return false;
+  achievementChainFocus.set(chain.rootId, chain.items[from + 1].id);
+  return true;
+}
+
+/**
+ * Succès à afficher pour une chaîne : focus manuel, sinon premier non terminé, sinon le dernier.
+ */
+export function getDisplayedAchievementForChain(chain, state) {
+  if (!chain?.items?.length) return null;
+  const focusedId = achievementChainFocus.get(chain.rootId);
+  if (focusedId) {
+    const focused = chain.items.find((a) => a.id === focusedId);
+    if (focused) return focused;
+  }
+  const next = chain.items.find((a) => !isAchievementCompleted(state, a.id));
+  return next || chain.items[chain.items.length - 1];
+}
+
+export function getAchievementChainStepLabel(chain, achievement) {
+  if (!chain || chain.items.length <= 1 || !achievement) return '';
+  const idx = chain.items.findIndex((a) => a.id === achievement.id);
+  if (idx < 0) return '';
+  return `${idx + 1}/${chain.items.length}`;
+}
+
 export function getQuestsByChapter(achievements, state, recipes) {
   return getAchievementsByCategory(achievements, state, recipes);
 }

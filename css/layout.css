@@ -6585,6 +6585,41 @@ button.dq-enemy-card.dq-targetable,
   opacity: 0.55;
 }
 
+.quest-row.quest-done {
+  border-color: rgba(45, 90, 39, 0.35);
+  background: rgba(45, 90, 39, 0.06);
+}
+
+.quest-row.quest-advanceable {
+  cursor: pointer;
+  min-height: 44px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.quest-row.quest-advanceable:active {
+  border-color: var(--vert-foret, #2D5A27);
+  box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.18);
+}
+
+.quest-chain-step {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+  background: rgba(45, 90, 39, 0.12);
+  color: var(--vert-foret, #2D5A27);
+}
+
+.quest-advance-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--vert-foret, #2D5A27);
+}
+
 .mission-teaser {
   margin-bottom: 0.75rem;
 }

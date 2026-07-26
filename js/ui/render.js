@@ -1,5 +1,6 @@
 import { getSeasonBonusPercents, hasSeasonBonus, isSeasonBoostActive, getSeasonBoostRemainingMs } from '../systems/prestige.js';
 import { on } from '../core/events.js';
+import { focusAchievementInChain } from '../systems/achievements.js';
 import { cleanupPullRefreshArtifacts } from './pullRefresh.js';
 import { RARITY_LABELS } from '../systems/equipmentRarity.js';
 import { getNavIcon, getCategoryIcon, getJobIcon, iconHtml, UI, renderResourceIcon } from '../core/assets.js';
@@ -853,6 +854,7 @@ export function initUI(game, audio) {
 
   on('achievementComplete', ({ achievement }) => {
     if (game.balance?.achievementsEnabled !== true && game.balance?.questsEnabled !== true) return;
+    if (achievement?.id) focusAchievementInChain(game.achievements, achievement.id);
     showToast(els, `🏆 Succès : ${achievement.title}`, 'upgrade');
   });
   on('offlineProgress', (r) => showOfflineModal(game, els, r));

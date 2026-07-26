@@ -16,9 +16,11 @@ import {
   getAchievementStatusText,
   isQuestCompleted,
   isAchievementCompleted,
-  isQuestReady,
   isAchievementReady,
-  getAchievementsByCategory,
+  getAchievementChains,
+  getDisplayedAchievementForChain,
+  getAchievementChainStepLabel,
+  advanceAchievementChainFocus,
   ACHIEVEMENT_CATEGORY_LABELS,
   getAchievementBonuses,
   isAchievementAvailable,
@@ -1536,7 +1538,7 @@ function formatAchievementBonusText(bonus) {
 }
 
 function renderAchievements(game, el) {
-  const byCat = getAchievementsByCategory(game.achievements, game.state, game.recipes);
+  const chains = getAchievementChains(game.achievements);
   const bonuses = getAchievementBonuses(game.state);
   const activeBits = [];
   if (bonuses.kirha) activeBits.push(`+${(bonuses.kirha * 100).toFixed(0)} % Kirha`);
@@ -1553,7 +1555,7 @@ function renderAchievements(game, el) {
   el.innerHTML = `
     <div class="view-header">
       <h2>🏆 Succès</h2>
-      <p class="view-desc">Objectifs permanents — petits bonus cumulatifs. Récolte & ferme : Apprenti → Disciple → Maître.</p>
+      <p class="view-desc">Un succès à la fois par série (Apprenti → Disciple → Maître). Une fois débloqué, appuie dessus pour voir la suite.</p>
       ${bonusLine}
     </div>
     <div id="achievements-list" class="panel-inner"></div>
@@ -1561,15 +1563,14 @@ function renderAchievements(game, el) {
 
   const list = el.querySelector('#achievements-list');
   const order = ['season_1', 'season_meta', 'harvest', 'farm', 'craft', 'combat'];
+  const byCat = {};
+  for (const chain of chains) {
+    (byCat[chain.category] ||= []).push(chain);
+  }
 
   for (const catId of order) {
-    const cat = byCat[catId];
-    if (!cat) continue;
-    const showLocked = catId === 'harvest' || catId === 'farm';
-    const all = [...cat.available, ...(showLocked ? cat.locked : []), ...cat.completed]
-      .filter((a) => !a.hidden)
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
-    if (!all.length) continue;
+    const catChains = byCat[catId];
+    if (!catChains?.length) continue;
 
     const section = document.createElement('section');
     section.className = 'achievement-category';
@@ -1577,30 +1578,74 @@ function renderAchievements(game, el) {
     const grid = document.createElement('div');
     grid.className = 'quest-list';
 
-    for (const ach of all) {
+    for (const chain of catChains) {
+      const ach = getDisplayedAchievementForChain(chain, game.state);
+      if (!ach) continue;
+
       const done = isAchievementCompleted(game.state, ach.id);
       const ready = !done && isAchievementReady(ach, game.state, game.recipes);
       const locked = !done && !isAchievementAvailable(ach, game.state, game.recipes);
+      const stepLabel = getAchievementChainStepLabel(chain, ach);
+      const hasNext = chain.items.length > 1
+        && chain.items.findIndex((a) => a.id === ach.id) < chain.items.length - 1;
+      const canAdvance = done && hasNext;
+
       const row = document.createElement('div');
-      row.className = `quest-row${ready ? ' quest-ready' : ''}${done ? ' quest-done' : ''}${locked ? ' quest-locked' : ''}`;
+      row.className = `quest-row${ready ? ' quest-ready' : ''}${done ? ' quest-done' : ''}${locked ? ' quest-locked' : ''}${canAdvance ? ' quest-advanceable' : ''}`;
+      if (canAdvance) {
+        row.setAttribute('role', 'button');
+        row.tabIndex = 0;
+        row.title = 'Appuyer pour voir le succès suivant';
+      }
+
       const bonus = ach.rewardBonus || ach.permanentBonus;
       const bonusTxt = formatAchievementBonusText(bonus);
       const tierLabel = ach.tier === 'apprentice' ? '🌱 Apprenti'
         : ach.tier === 'disciple' ? '📘 Disciple'
           : ach.tier === 'master' ? '🏆 Maître' : '';
+      const stepHtml = stepLabel
+        ? `<span class="quest-chain-step">${stepLabel}</span>`
+        : '';
+      const advanceHint = canAdvance
+        ? '<p class="quest-advance-hint">Appuie pour le suivant →</p>'
+        : '';
+
       row.innerHTML = `
         <div class="quest-row-head">
-          <strong>${tierLabel ? `${tierLabel} · ` : ''}${ach.title}</strong>
+          <strong>${tierLabel ? `${tierLabel} · ` : ''}${ach.title}${stepHtml ? ` ${stepHtml}` : ''}</strong>
           <span class="quest-status">${locked ? 'Verrouillé' : getAchievementStatusText(ach, game.state, game.recipes)}</span>
         </div>
         <p class="quest-desc">${ach.description}${bonusTxt}</p>
+        ${advanceHint}
       `;
+
+      if (canAdvance) {
+        const goNext = () => {
+          if (advanceAchievementChainFocus(chain, ach.id)) {
+            renderAchievements(game, el);
+          }
+        };
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('button')) return;
+          goNext();
+        });
+        row.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            goNext();
+          }
+        });
+      }
+
       if (ach.hintView && !done && !locked) {
         const go = document.createElement('button');
         go.type = 'button';
         go.className = 'btn btn-small btn-muted quest-go';
         go.textContent = 'Y aller';
-        go.addEventListener('click', () => navigate(ach.hintView === 'workshop' ? 'workshop' : ach.hintView));
+        go.addEventListener('click', (e) => {
+          e.stopPropagation();
+          navigate(ach.hintView === 'workshop' ? 'workshop' : ach.hintView);
+        });
         row.appendChild(go);
       }
       grid.appendChild(row);
