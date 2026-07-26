@@ -714,7 +714,8 @@ body.admin-sheet-open {
 
   .admin-player-sheet {
     border-radius: 18px;
-    max-height: min(88vh, 860px);
+    max-height: min(88vh, 920px);
+    width: min(100%, 720px);
   }
 
   .admin-player-sheet-header {
@@ -840,6 +841,139 @@ body.admin-sheet-open {
 
 .admin-kirha-input {
   max-width: 140px;
+  min-height: 44px;
+}
+
+.admin-level-input {
+  max-width: 88px;
+  min-height: 44px;
+}
+
+.admin-adjust-block {
+  border: 1px solid rgba(45, 90, 39, 0.18);
+  border-radius: 14px;
+  padding: 0.75rem;
+  background: rgba(255, 253, 249, 0.7);
+}
+
+.admin-mode-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 0.55rem;
+  padding: 0.2rem;
+  border-radius: 999px;
+  background: rgba(74, 55, 40, 0.08);
+}
+
+.admin-mode-btn {
+  min-height: 40px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--brun-bois, #4A3728);
+}
+
+.admin-mode-btn.active {
+  background: var(--vert-foret, #2D5A27);
+  color: #fff;
+}
+
+.admin-mode-take .admin-mode-btn.active {
+  background: #c0392b;
+}
+
+.admin-adjust-section {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(74, 55, 40, 0.1);
+}
+
+.admin-adjust-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.admin-subsection-title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--brun-bois, #4A3728);
+}
+
+.admin-select-tools {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.admin-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-height: 180px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.35rem;
+  margin-bottom: 0.45rem;
+  border-radius: 10px;
+  background: rgba(248, 232, 238, 0.45);
+  border: 1px solid rgba(74, 55, 40, 0.08);
+}
+
+.admin-pick-list-tall {
+  max-height: 240px;
+}
+
+.admin-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.25rem 0.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.84rem;
+}
+
+.admin-pick-row:hover,
+.admin-pick-row:has(input:checked) {
+  background: rgba(45, 90, 39, 0.1);
+}
+
+.admin-pick-row input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--vert-foret, #2D5A27);
+}
+
+.admin-pick-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-pick-meta {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+  font-size: 0.78rem;
+}
+
+.admin-filter-input {
+  width: 100%;
+  margin-bottom: 0.4rem;
+  min-height: 44px;
+}
+
+.admin-catalog-row {
+  margin-top: 0.4rem;
+}
+
+.admin-catalog-select {
+  flex: 1;
+  min-width: 140px;
   min-height: 44px;
 }
 

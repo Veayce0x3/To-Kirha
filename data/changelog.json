@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260726-1645",
+      "date": "2026-07-26",
+      "title": "Admin : tout donner / tout prendre",
+      "highlights": [
+        "Fiche joueur Admin : mode Donner / Prendre avec sélection (métiers, ferme, inventaire, Kirha, perso)",
+        "Ajouter une ressource absente via le catalogue, vider une sélection ou tout l’inventaire",
+        "Noms lisibles (métiers, bâtiments, ressources) + filtre inventaire"
+      ]
+    },
+    {
       "buildId": "20260726-1625",
       "date": "2026-07-26",
       "title": "Boutons vert bambou",

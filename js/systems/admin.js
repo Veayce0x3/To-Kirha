@@ -122,8 +122,14 @@ async function buildPlayerDetailFallback(userId) {
   const inventory_summary = Object.entries(inventory)
     .filter(([, qty]) => Number(qty) > 0)
     .sort((a, b) => Number(b[1]) - Number(a[1]))
-    .slice(0, 30)
+    .slice(0, 250)
     .map(([id, qty]) => ({ id, qty: Number(qty) || 0 }));
+
+  const farmMeta = save?.farmBuildingMeta && typeof save.farmBuildingMeta === 'object' ? save.farmBuildingMeta : {};
+  const farm_summary = {};
+  for (const [id, data] of Object.entries(farmMeta)) {
+    farm_summary[id] = Number(data?.level) || 1;
+  }
 
   const owned = Array.isArray(save?.ownedCombatItems) ? save.ownedCombatItems : [];
   const instances = Array.isArray(save?.combatItemInstances) ? save.combatItemInstances : [];
@@ -174,6 +180,7 @@ async function buildPlayerDetailFallback(userId) {
       } : null,
       inventory_summary,
       jobs_summary,
+      farm_summary,
       combat_items,
       market_sells_active: 0,
       market_buys_active: 0,
@@ -244,6 +251,17 @@ export async function grantKirha(userId, amount) {
   const n = Number(amount);
   if (!Number.isFinite(n) || n === 0) return { ok: false, reason: 'Montant invalide.' };
   return rpc('admin_grant_kirha', { p_user_id: userId, p_amount: n });
+}
+
+/**
+ * Ajuste la save cloud (Kirha / inventaire / métiers / perso / ferme).
+ * Payload ex. : { kirha_delta, inventory_deltas, inventory_clear, inventory_clear_ids,
+ *   job_level_deltas, job_level_sets, char_level_delta, char_level_set, farm_level_deltas }
+ */
+export async function adjustPlayerSave(userId, payload) {
+  if (!isAdmin()) return { ok: false, reason: 'Admin requis.' };
+  if (!payload || typeof payload !== 'object') return { ok: false, reason: 'Payload invalide.' };
+  return rpc('admin_adjust_player_save', { p_user_id: userId, p_payload: payload });
 }
 
 export async function fetchModerationLogs(limit = 50, action = null) {
@@ -377,6 +395,7 @@ export const LOG_ACTION_LABELS = {
   delete_buy_offer: 'Offre HDV suppr.',
   grant_all_jobs_level: '+1 métiers / ferme',
   grant_kirha: 'Don Kirha',
+  adjust_player_save: 'Ajustement save',
   wipe_all_leaderboard: 'Wipe classement',
 };
 

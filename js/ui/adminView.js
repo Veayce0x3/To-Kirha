@@ -29,7 +29,7 @@ import {
   unbanUser,
   setUserRole,
   grantAllJobsLevel,
-  grantKirha,
+  adjustPlayerSave,
   flagCheat,
   deleteLeaderboardEntry,
   wipeAllLeaderboard,
@@ -174,6 +174,44 @@ async function promptBanReason() {
 
 function fmtNum(n) {
   return Number(n || 0).toLocaleString('fr-FR');
+}
+
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function resourceLabel(id) {
+  const r = gameRef?.resources?.[id];
+  if (!r) return id;
+  return `${r.emoji || ''} ${r.name || id}`.trim();
+}
+
+function jobLabel(id) {
+  const j = gameRef?.jobs?.[id];
+  if (!j) return id;
+  return `${j.emoji || ''} ${j.name || id}`.trim();
+}
+
+function farmLabel(id) {
+  const b = gameRef?.farmData?.buildings?.[id];
+  if (!b) return id;
+  return `${b.emoji || ''} ${b.name || id}`.trim();
+}
+
+function allJobIds(jobsSummary = {}) {
+  const fromGame = gameRef?.jobs ? Object.keys(gameRef.jobs) : [];
+  const fromSave = Object.keys(jobsSummary || {});
+  return [...new Set([...fromGame, ...fromSave])].sort((a, b) => jobLabel(a).localeCompare(jobLabel(b), 'fr'));
+}
+
+function allFarmIds(farmSummary = {}) {
+  const fromGame = gameRef?.farmData?.buildings ? Object.keys(gameRef.farmData.buildings) : [];
+  const fromSave = Object.keys(farmSummary || {});
+  return [...new Set([...fromGame, ...fromSave])].sort((a, b) => farmLabel(a).localeCompare(farmLabel(b), 'fr'));
 }
 
 /** Dates ISO, epoch ms (number / string numérique), ou Date. */
@@ -444,27 +482,67 @@ async function loadPlayerDetail(userId) {
 }
 
 function paintPlayerDetail(userId, data, detailEl, titleEl) {
-  const { profile, leaderboard, save_summary, reports_against, reports_by, name_history, inventory_summary, jobs_summary, combat_items } = data || {};
+  const {
+    profile, leaderboard, save_summary, reports_against, reports_by, name_history,
+    inventory_summary, jobs_summary, farm_summary, combat_items,
+  } = data || {};
   if (!profile) {
     detailEl.innerHTML = '<p class="admin-error">Profil manquant dans la réponse serveur.</p>';
     return;
   }
   const canSetRole = isSuperAdmin();
   const canResetSave = isAdmin();
-  const canGrantJobs = isAdmin();
+  const canAdjust = isAdmin();
 
   if (titleEl) titleEl.textContent = profile.display_name || 'Fiche joueur';
 
-  const jobsHtml = jobs_summary && typeof jobs_summary === 'object' && Object.keys(jobs_summary).length
-    ? Object.entries(jobs_summary).map(([id, lv]) => `<span class="admin-tag">${id} Nv.${lv}</span>`).join(' ')
-    : '—';
+  const invList = Array.isArray(inventory_summary) ? inventory_summary : [];
+  const jobsMap = jobs_summary && typeof jobs_summary === 'object' ? jobs_summary : {};
+  const farmMap = farm_summary && typeof farm_summary === 'object' ? farm_summary : {};
 
-  const invHtml = Array.isArray(inventory_summary) && inventory_summary.length
-    ? inventory_summary.map((r) => `<span class="admin-tag">${r?.id || '?'} ×${r?.qty ?? 0}</span>`).join(' ')
-    : '—';
+  const jobsPickHtml = allJobIds(jobsMap).map((id) => {
+    const lv = Number(jobsMap[id]) || 1;
+    return `
+      <label class="admin-pick-row">
+        <input type="checkbox" class="admin-pick-job" data-id="${escHtml(id)}" />
+        <span class="admin-pick-name">${escHtml(jobLabel(id))}</span>
+        <span class="admin-pick-meta">Nv.${lv}</span>
+      </label>`;
+  }).join('') || '<p class="view-desc">Aucun métier.</p>';
+
+  const farmPickHtml = allFarmIds(farmMap).map((id) => {
+    const lv = Number(farmMap[id]) || 1;
+    return `
+      <label class="admin-pick-row">
+        <input type="checkbox" class="admin-pick-farm" data-id="${escHtml(id)}" />
+        <span class="admin-pick-name">${escHtml(farmLabel(id))}</span>
+        <span class="admin-pick-meta">Nv.${lv}</span>
+      </label>`;
+  }).join('') || '<p class="view-desc">Aucun bâtiment.</p>';
+
+  const invPickHtml = invList.length
+    ? invList.map((r) => {
+      const id = r?.id || '?';
+      const qty = Number(r?.qty) || 0;
+      return `
+        <label class="admin-pick-row">
+          <input type="checkbox" class="admin-pick-inv" data-id="${escHtml(id)}" data-qty="${qty}" />
+          <span class="admin-pick-name">${escHtml(resourceLabel(id))}</span>
+          <span class="admin-pick-meta">×${fmtNum(qty)}</span>
+        </label>`;
+    }).join('')
+    : '<p class="view-desc">Inventaire vide.</p>';
+
+  const catalogOptions = gameRef?.resources
+    ? Object.values(gameRef.resources)
+      .filter((r) => r?.id)
+      .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id, 'fr'))
+      .map((r) => `<option value="${escHtml(r.id)}">${escHtml(`${r.emoji || ''} ${r.name || r.id}`.trim())}</option>`)
+      .join('')
+    : '';
 
   const combatHtml = Array.isArray(combat_items) && combat_items.length
-    ? combat_items.map((c) => `<span class="admin-tag">${c?.item_id || c?.ref || '?'} ${c?.rarity || ''}</span>`).join(' ')
+    ? combat_items.map((c) => `<span class="admin-tag">${escHtml(c?.item_id || c?.ref || '?')} ${escHtml(c?.rarity || '')}</span>`).join(' ')
     : '—';
 
   const careerLabel = (() => {
@@ -477,8 +555,8 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
 
   const history = Array.isArray(save_summary?.season_history) ? save_summary.season_history : [];
   const historyHtml = history.length
-    ? `<details class="admin-fold" open>
-        <summary>Saisons précédentes (${history.length}) — progression avant renaissance</summary>
+    ? `<details class="admin-fold">
+        <summary>Saisons précédentes (${history.length})</summary>
         <div class="admin-table-wrap">
           <table class="admin-table admin-table-compact">
             <thead><tr><th>Saison</th><th>Perso</th><th>Métier max</th><th>Kirha saison</th><th>Vie</th><th>Fin</th></tr></thead>
@@ -494,32 +572,31 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
             `).join('')}</tbody>
           </table>
         </div>
-        <p class="view-desc">Le compte n’est jamais effacé : seule la progression de saison recommence pour les bonus.</p>
       </details>`
-    : `<p class="view-desc admin-meta-line">Pas encore d’historique de saison archivé (disponible après la prochaine renaissance).</p>`;
+    : '';
 
   detailEl.innerHTML = `
     <div class="admin-detail-head">
       <div>
-        <h4 class="admin-detail-title">${profile.display_name} ${roleBadge(profile.role)}</h4>
+        <h4 class="admin-detail-title">${escHtml(profile.display_name)} ${roleBadge(profile.role)}</h4>
         <p class="admin-detail-id">
-          <code id="admin-copy-uuid">${profile.user_id}</code>
+          <code id="admin-copy-uuid">${escHtml(profile.user_id)}</code>
           <button type="button" class="btn btn-muted btn-sm" id="admin-copy-btn">Copier</button>
         </p>
       </div>
-      <div class="admin-last-seen-card" title="${fmtDate(save_summary?.last_online || save_summary?.save_updated_at)}">
+      <div class="admin-last-seen-card" title="${escHtml(fmtDate(save_summary?.last_online || save_summary?.save_updated_at))}">
         <span class="admin-last-seen-lbl">Dernière connexion</span>
-        <span class="admin-last-seen-val">${save_summary ? fmtLastSeen(save_summary) : 'Jamais (pas de save)'}</span>
-        <span class="admin-td-muted">${save_summary?.last_online ? fmtDate(save_summary.last_online) : (save_summary ? 'via save cloud' : '—')}</span>
+        <span class="admin-last-seen-val">${save_summary ? escHtml(fmtLastSeen(save_summary)) : 'Jamais (pas de save)'}</span>
+        <span class="admin-td-muted">${save_summary?.last_online ? escHtml(fmtDate(save_summary.last_online)) : (save_summary ? 'via save cloud' : '—')}</span>
       </div>
     </div>
-    <p class="admin-meta-line">Inscrit le ${fmtDate(profile.created_at)}${profile.email ? ` · ${profile.email}` : ''}</p>
-    ${profile.is_banned ? `<p class="guest-banner warn">Banni · ${profile.banned_reason || '—'} · ${fmtDate(profile.banned_at)}</p>` : ''}
-    ${profile.cheat_flagged ? `<p class="guest-banner warn">Flag triche · ${profile.cheat_notes || '—'}</p>` : ''}
+    <p class="admin-meta-line">Inscrit le ${escHtml(fmtDate(profile.created_at))}${profile.email ? ` · ${escHtml(profile.email)}` : ''}</p>
+    ${profile.is_banned ? `<p class="guest-banner warn">Banni · ${escHtml(profile.banned_reason || '—')} · ${escHtml(fmtDate(profile.banned_at))}</p>` : ''}
+    ${profile.cheat_flagged ? `<p class="guest-banner warn">Flag triche · ${escHtml(profile.cheat_notes || '—')}</p>` : ''}
     <div class="admin-detail-grid">
       <div class="admin-info-card"><span class="admin-info-lbl">Classement</span><span class="admin-info-val">${leaderboard ? `Nv.${leaderboard.char_level} · S${leaderboard.season}` : '—'}</span><span class="admin-td-muted">${leaderboard ? `${fmtNum(leaderboard.total_earned)} 💰 gagnés · ${fmtNum(leaderboard.kirha_current || 0)} en poche` : ''}</span></div>
-      <div class="admin-info-card"><span class="admin-info-lbl">Save cloud</span><span class="admin-info-val">${save_summary ? `${save_summary.nickname || '?'} · Nv.${save_summary.char_level}` : 'Aucune'}</span><span class="admin-td-muted">${save_summary ? `S${save_summary.season} · ${fmtNum(save_summary.kirha)} 💰${save_summary.lifetime_earned != null ? ` · vie ${fmtNum(save_summary.lifetime_earned)}` : ''}` : ''}</span></div>
-      <div class="admin-info-card"><span class="admin-info-lbl">Carrière</span><span class="admin-info-val">${careerLabel}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Save cloud</span><span class="admin-info-val">${save_summary ? `${escHtml(save_summary.nickname || '?')} · Nv.${save_summary.char_level}` : 'Aucune'}</span><span class="admin-td-muted">${save_summary ? `S${save_summary.season} · ${fmtNum(save_summary.kirha)} 💰${save_summary.lifetime_earned != null ? ` · vie ${fmtNum(save_summary.lifetime_earned)}` : ''}` : ''}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Carrière</span><span class="admin-info-val">${escHtml(careerLabel)}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Signalements</span><span class="admin-info-val">${reports_against ?? 0} reçus · ${reports_by || 0} envoyés</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Renommage</span><span class="admin-info-val">${profile.free_rename_used ? 'Utilisé' : 'Disponible'}</span></div>
       <div class="admin-info-card admin-info-card-wide">
@@ -528,8 +605,7 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
           const fg = Number(save_summary?.playtime_foreground_ms) || 0;
           const bg = Number(save_summary?.playtime_background_ms) || 0;
           if (!save_summary || (fg <= 0 && bg <= 0)) return 'Pas encore mesuré';
-          const total = fg + bg;
-          return `${formatPlayDuration(total)} au total`;
+          return `${formatPlayDuration(fg + bg)} au total`;
         })()}</span>
         <span class="admin-td-muted">${(() => {
           const fg = Number(save_summary?.playtime_foreground_ms) || 0;
@@ -540,13 +616,85 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
       </div>
     </div>
     ${historyHtml}
-    <details class="admin-fold" open>
-      <summary>Métiers & inventaire</summary>
-      <h5 class="admin-section-title">Métiers</h5>
-      <div class="admin-inventory-wrap">${jobsHtml}</div>
-      <h5 class="admin-section-title">Ressources (top 30)</h5>
-      <div class="admin-inventory-wrap">${invHtml}</div>
-      <h5 class="admin-section-title">Équipement combat (${Array.isArray(combat_items) ? combat_items.length : 0})</h5>
+
+    ${canAdjust ? `
+    <div class="admin-actions-block admin-adjust-block">
+      <h5 class="admin-section-title">Donner / Prendre</h5>
+      <div class="admin-mode-toggle" role="group" aria-label="Mode">
+        <button type="button" class="btn btn-sm admin-mode-btn active" data-mode="give">Donner</button>
+        <button type="button" class="btn btn-sm admin-mode-btn" data-mode="take">Prendre</button>
+      </div>
+      <p class="view-desc admin-grant-hint">Coche ce que tu veux, choisis le montant, puis applique. Le joueur doit <strong>recharger</strong> après (ne pas jouer en parallèle).</p>
+
+      <div class="admin-adjust-section">
+        <h6 class="admin-subsection-title">Kirha & personnage</h6>
+        <div class="admin-grant-kirha-row">
+          <input type="number" class="auth-input admin-kirha-input" id="admin-kirha-amount" min="1" step="1" value="1000" />
+          <button type="button" class="btn btn-craft" id="admin-apply-kirha">Kirha</button>
+          <input type="number" class="auth-input admin-level-input" id="admin-char-levels" min="1" step="1" value="1" title="Niveaux perso" />
+          <button type="button" class="btn btn-muted" id="admin-apply-char">Perso Nv.</button>
+        </div>
+      </div>
+
+      <div class="admin-adjust-section">
+        <div class="admin-adjust-section-head">
+          <h6 class="admin-subsection-title">Métiers</h6>
+          <div class="admin-select-tools">
+            <button type="button" class="btn btn-muted btn-sm" data-select="jobs" data-all="1">Tout</button>
+            <button type="button" class="btn btn-muted btn-sm" data-select="jobs" data-all="0">Rien</button>
+          </div>
+        </div>
+        <div class="admin-pick-list" id="admin-jobs-list">${jobsPickHtml}</div>
+        <div class="admin-grant-kirha-row">
+          <input type="number" class="auth-input admin-level-input" id="admin-job-levels" min="1" step="1" value="1" />
+          <button type="button" class="btn btn-craft" id="admin-apply-jobs">Niveaux métiers</button>
+          <button type="button" class="btn btn-muted btn-sm" id="admin-grant-jobs">Tout +1</button>
+          <button type="button" class="btn btn-muted btn-sm" id="admin-grant-jobs-5">Tout +5</button>
+        </div>
+      </div>
+
+      <div class="admin-adjust-section">
+        <div class="admin-adjust-section-head">
+          <h6 class="admin-subsection-title">Ferme</h6>
+          <div class="admin-select-tools">
+            <button type="button" class="btn btn-muted btn-sm" data-select="farm" data-all="1">Tout</button>
+            <button type="button" class="btn btn-muted btn-sm" data-select="farm" data-all="0">Rien</button>
+          </div>
+        </div>
+        <div class="admin-pick-list" id="admin-farm-list">${farmPickHtml}</div>
+        <div class="admin-grant-kirha-row">
+          <input type="number" class="auth-input admin-level-input" id="admin-farm-levels" min="1" step="1" value="1" />
+          <button type="button" class="btn btn-craft" id="admin-apply-farm">Niveaux ferme</button>
+        </div>
+      </div>
+
+      <div class="admin-adjust-section">
+        <div class="admin-adjust-section-head">
+          <h6 class="admin-subsection-title">Inventaire (${invList.length})</h6>
+          <div class="admin-select-tools">
+            <button type="button" class="btn btn-muted btn-sm" data-select="inv" data-all="1">Tout</button>
+            <button type="button" class="btn btn-muted btn-sm" data-select="inv" data-all="0">Rien</button>
+          </div>
+        </div>
+        <input type="search" class="auth-input admin-filter-input" id="admin-inv-filter" placeholder="Filtrer ressources…" autocomplete="off" />
+        <div class="admin-pick-list admin-pick-list-tall" id="admin-inv-list">${invPickHtml}</div>
+        <div class="admin-grant-kirha-row">
+          <input type="number" class="auth-input admin-kirha-input" id="admin-inv-amount" min="1" step="1" value="100" />
+          <button type="button" class="btn btn-craft" id="admin-apply-inv">Qté sélection</button>
+          <button type="button" class="btn btn-danger btn-sm" id="admin-clear-inv-sel">Vider sélection</button>
+          <button type="button" class="btn btn-danger btn-sm" id="admin-clear-inv-all">Vider tout</button>
+        </div>
+        <div class="admin-grant-kirha-row admin-catalog-row">
+          <select class="auth-input admin-catalog-select" id="admin-catalog-res">${catalogOptions || '<option value="">—</option>'}</select>
+          <input type="number" class="auth-input admin-kirha-input" id="admin-catalog-qty" min="1" step="1" value="50" />
+          <button type="button" class="btn btn-muted" id="admin-catalog-add">Ajouter (donner)</button>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
+    <details class="admin-fold">
+      <summary>Équipement combat (${Array.isArray(combat_items) ? combat_items.length : 0})</summary>
       <div class="admin-inventory-wrap">${combatHtml}</div>
     </details>
     ${Array.isArray(name_history) && name_history.length ? `
@@ -557,10 +705,10 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
             <thead><tr><th>Date</th><th>Ancien</th><th>Nouveau</th><th>Type</th></tr></thead>
             <tbody>${name_history.map((h) => `
               <tr>
-                <td>${fmtDate(h.created_at)}</td>
-                <td>${h.old_name}</td>
-                <td>${h.new_name}</td>
-                <td>${h.change_type}</td>
+                <td>${escHtml(fmtDate(h.created_at))}</td>
+                <td>${escHtml(h.old_name)}</td>
+                <td>${escHtml(h.new_name)}</td>
+                <td>${escHtml(h.change_type)}</td>
               </tr>
             `).join('')}</tbody>
           </table>
@@ -574,22 +722,8 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
           ? `<button type="button" class="btn btn-craft" id="admin-unban">Débannir</button>`
           : `<button type="button" class="btn btn-danger" id="admin-ban">Bannir</button>`}
         <button type="button" class="btn btn-muted" id="admin-flag">${profile.cheat_flagged ? 'Retirer flag' : 'Flag triche'}</button>
-      </div>
-    </div>
-    <div class="admin-actions-block">
-      <h5 class="admin-section-title">Données</h5>
-      <div class="admin-actions">
         <button type="button" class="btn btn-muted" id="admin-del-lb">Retirer classement</button>
         ${canResetSave ? '<button type="button" class="btn btn-muted" id="admin-reset-save">Reset save cloud</button>' : ''}
-        ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs">+1 métiers + ferme + perso</button>' : ''}
-        ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs-5">+5 métiers + ferme + perso</button>' : ''}
-        ${canGrantJobs ? `
-          <div class="admin-grant-kirha-row">
-            <input type="number" class="auth-input admin-kirha-input" id="admin-kirha-amount" min="1" step="1" placeholder="Montant 💰" value="1000" />
-            <button type="button" class="btn btn-craft" id="admin-grant-kirha">Donner Kirha</button>
-          </div>
-        ` : ''}
-        ${canGrantJobs ? '<p class="view-desc admin-grant-hint">Le joueur doit <strong>recharger le jeu</strong> (ou se reconnecter) pour voir les niveaux / Kirha. Ne pas jouer en parallèle sinon sa save locale écrase le gift.</p>' : ''}
       </div>
     </div>
     ${canSetRole ? `
@@ -611,6 +745,59 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
 }
 
 function bindPlayerDetailActions(userId, profile, detailEl) {
+  let mode = 'give'; // give | take
+
+  const getModeSign = () => (mode === 'take' ? -1 : 1);
+
+  const setMode = (next) => {
+    mode = next;
+    detailEl.querySelectorAll('.admin-mode-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+    detailEl.classList.toggle('admin-mode-take', mode === 'take');
+  };
+
+  detailEl.querySelectorAll('.admin-mode-btn').forEach((btn) => {
+    btn.addEventListener('click', () => setMode(btn.dataset.mode || 'give'));
+  });
+
+  detailEl.querySelectorAll('[data-select]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const kind = btn.dataset.select;
+      const all = btn.dataset.all === '1';
+      const sel = kind === 'jobs'
+        ? '.admin-pick-job'
+        : kind === 'farm'
+          ? '.admin-pick-farm'
+          : '.admin-pick-inv';
+      detailEl.querySelectorAll(sel).forEach((cb) => {
+        if (kind === 'inv') {
+          const row = cb.closest('.admin-pick-row');
+          if (row?.style.display === 'none') return;
+        }
+        cb.checked = all;
+      });
+    });
+  });
+
+  detailEl.querySelector('#admin-inv-filter')?.addEventListener('input', (e) => {
+    const q = String(e.target.value || '').trim().toLowerCase();
+    detailEl.querySelectorAll('#admin-inv-list .admin-pick-row').forEach((row) => {
+      const name = row.querySelector('.admin-pick-name')?.textContent?.toLowerCase() || '';
+      const id = row.querySelector('.admin-pick-inv')?.dataset?.id?.toLowerCase() || '';
+      row.style.display = !q || name.includes(q) || id.includes(q) ? '' : 'none';
+    });
+  });
+
+  const selectedIds = (sel) => [...detailEl.querySelectorAll(`${sel}:checked`)].map((el) => el.dataset.id).filter(Boolean);
+
+  const runAdjust = async (payload, okMsg) => {
+    const r = await adjustPlayerSave(userId, payload);
+    setStatus(r.ok ? okMsg : r.reason, !r.ok);
+    if (r.ok) loadPlayerDetail(userId);
+    return r;
+  };
+
   detailEl.querySelector('#admin-copy-btn')?.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(profile.user_id);
@@ -656,6 +843,126 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     if (r.ok) loadPlayerDetail(userId);
   });
 
+  detailEl.querySelector('#admin-apply-kirha')?.addEventListener('click', async () => {
+    const amount = Math.abs(Number(detailEl.querySelector('#admin-kirha-amount')?.value));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setStatus('Montant Kirha invalide.', true);
+      return;
+    }
+    const delta = amount * getModeSign();
+    const verb = delta > 0 ? 'Donner' : 'Prendre';
+    if (!confirm(`${verb} ${amount.toLocaleString('fr-FR')} 💰 ?`)) return;
+    await runAdjust(
+      { kirha_delta: delta },
+      `${verb} ${amount.toLocaleString('fr-FR')} 💰 — demande au joueur de recharger.`
+    );
+  });
+
+  detailEl.querySelector('#admin-apply-char')?.addEventListener('click', async () => {
+    const n = Math.abs(Math.trunc(Number(detailEl.querySelector('#admin-char-levels')?.value)));
+    if (!Number.isFinite(n) || n <= 0) {
+      setStatus('Nombre de niveaux invalide.', true);
+      return;
+    }
+    const delta = n * getModeSign();
+    const verb = delta > 0 ? 'Ajouter' : 'Retirer';
+    if (!confirm(`${verb} ${n} niveau(x) perso ?`)) return;
+    await runAdjust(
+      { char_level_delta: delta },
+      `${verb} ${n} Nv. perso — recharger.`
+    );
+  });
+
+  detailEl.querySelector('#admin-apply-jobs')?.addEventListener('click', async () => {
+    const ids = selectedIds('.admin-pick-job');
+    if (!ids.length) {
+      setStatus('Sélectionne au moins un métier.', true);
+      return;
+    }
+    const n = Math.abs(Math.trunc(Number(detailEl.querySelector('#admin-job-levels')?.value)));
+    if (!Number.isFinite(n) || n <= 0) {
+      setStatus('Nombre de niveaux invalide.', true);
+      return;
+    }
+    const delta = n * getModeSign();
+    const verb = delta > 0 ? 'Ajouter' : 'Retirer';
+    if (!confirm(`${verb} ${n} Nv. sur ${ids.length} métier(s) ?`)) return;
+    const job_level_deltas = {};
+    ids.forEach((id) => { job_level_deltas[id] = delta; });
+    await runAdjust({ job_level_deltas }, `${verb} ${n} Nv. métiers — recharger.`);
+  });
+
+  detailEl.querySelector('#admin-apply-farm')?.addEventListener('click', async () => {
+    const ids = selectedIds('.admin-pick-farm');
+    if (!ids.length) {
+      setStatus('Sélectionne au moins un bâtiment.', true);
+      return;
+    }
+    const n = Math.abs(Math.trunc(Number(detailEl.querySelector('#admin-farm-levels')?.value)));
+    if (!Number.isFinite(n) || n <= 0) {
+      setStatus('Nombre de niveaux invalide.', true);
+      return;
+    }
+    const delta = n * getModeSign();
+    const verb = delta > 0 ? 'Ajouter' : 'Retirer';
+    if (!confirm(`${verb} ${n} Nv. sur ${ids.length} bâtiment(s) ?`)) return;
+    const farm_level_deltas = {};
+    ids.forEach((id) => { farm_level_deltas[id] = delta; });
+    await runAdjust({ farm_level_deltas }, `${verb} ${n} Nv. ferme — recharger.`);
+  });
+
+  detailEl.querySelector('#admin-apply-inv')?.addEventListener('click', async () => {
+    const ids = selectedIds('.admin-pick-inv');
+    if (!ids.length) {
+      setStatus('Sélectionne au moins une ressource.', true);
+      return;
+    }
+    const amount = Math.abs(Number(detailEl.querySelector('#admin-inv-amount')?.value));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setStatus('Quantité invalide.', true);
+      return;
+    }
+    const delta = amount * getModeSign();
+    const verb = delta > 0 ? 'Donner' : 'Prendre';
+    if (!confirm(`${verb} ${fmtNum(amount)} sur ${ids.length} ressource(s) ?`)) return;
+    const inventory_deltas = {};
+    ids.forEach((id) => { inventory_deltas[id] = delta; });
+    await runAdjust({ inventory_deltas }, `${verb} ressources — recharger.`);
+  });
+
+  detailEl.querySelector('#admin-clear-inv-sel')?.addEventListener('click', async () => {
+    const ids = selectedIds('.admin-pick-inv');
+    if (!ids.length) {
+      setStatus('Sélectionne des ressources à vider.', true);
+      return;
+    }
+    if (!confirm(`Retirer entièrement ${ids.length} ressource(s) de l’inventaire ?`)) return;
+    await runAdjust({ inventory_clear_ids: ids }, 'Ressources vidées — recharger.');
+  });
+
+  detailEl.querySelector('#admin-clear-inv-all')?.addEventListener('click', async () => {
+    if (!confirm('Vider TOUT l’inventaire cloud de ce joueur ?')) return;
+    await runAdjust({ inventory_clear: true }, 'Inventaire vidé — recharger.');
+  });
+
+  detailEl.querySelector('#admin-catalog-add')?.addEventListener('click', async () => {
+    const id = detailEl.querySelector('#admin-catalog-res')?.value;
+    const qty = Math.abs(Number(detailEl.querySelector('#admin-catalog-qty')?.value));
+    if (!id) {
+      setStatus('Choisis une ressource.', true);
+      return;
+    }
+    if (!Number.isFinite(qty) || qty <= 0) {
+      setStatus('Quantité invalide.', true);
+      return;
+    }
+    if (!confirm(`Donner ${fmtNum(qty)} × ${resourceLabel(id)} ?`)) return;
+    await runAdjust(
+      { inventory_deltas: { [id]: qty } },
+      `+${fmtNum(qty)} ${resourceLabel(id)} — recharger.`
+    );
+  });
+
   detailEl.querySelector('#admin-grant-jobs')?.addEventListener('click', async () => {
     if (!confirm('Ajouter +1 niveau (métiers + bâtiments ferme + perso) sur la save cloud ?\nLe joueur doit recharger après.')) return;
     const r = await grantAllJobsLevel(userId);
@@ -677,20 +984,6 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     }
     setStatus(ok ? 'Niveaux +5 appliqués (cloud). Demande au joueur de recharger.' : lastReason, !ok);
     if (ok) loadPlayerDetail(userId);
-  });
-
-  detailEl.querySelector('#admin-grant-kirha')?.addEventListener('click', async () => {
-    const raw = detailEl.querySelector('#admin-kirha-amount')?.value;
-    const amount = Number(raw);
-    if (!Number.isFinite(amount) || amount === 0) {
-      setStatus('Montant Kirha invalide.', true);
-      return;
-    }
-    const label = `${amount > 0 ? '+' : ''}${amount.toLocaleString('fr-FR')} 💰`;
-    if (!confirm(`Donner ${label} à ce joueur (save cloud) ?\nIl devra recharger le jeu.`)) return;
-    const r = await grantKirha(userId, amount);
-    setStatus(r.ok ? `${label} ajoutés (cloud). Demande au joueur de recharger.` : r.reason, !r.ok);
-    if (r.ok) loadPlayerDetail(userId);
   });
 
   detailEl.querySelector('#admin-set-role')?.addEventListener('click', async () => {
