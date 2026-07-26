@@ -1489,10 +1489,10 @@
     "sellPrice": 18,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 1–9)",
+    "description": "Repas — soin % PV max (niv. perso 1–19)",
     "mealTier": 1,
     "requiredCharLevelMin": 1,
-    "requiredCharLevelMax": 9
+    "requiredCharLevelMax": 19
   },
   "meal_poisson": {
     "id": "meal_poisson",
@@ -1501,10 +1501,10 @@
     "sellPrice": 23,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 10–19)",
+    "description": "Repas — soin % PV max (niv. perso 10–29)",
     "mealTier": 10,
     "requiredCharLevelMin": 10,
-    "requiredCharLevelMax": 19
+    "requiredCharLevelMax": 29
   },
   "meal_gateau": {
     "id": "meal_gateau",
@@ -1513,10 +1513,10 @@
     "sellPrice": 34,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 20–29)",
+    "description": "Repas — soin % PV max (niv. perso 20–39)",
     "mealTier": 20,
     "requiredCharLevelMin": 20,
-    "requiredCharLevelMax": 29
+    "requiredCharLevelMax": 39
   },
   "meal_festin": {
     "id": "meal_festin",

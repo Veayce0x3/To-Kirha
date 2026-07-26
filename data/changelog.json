@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260726-2155",
+      "date": "2026-07-26",
+      "title": "Archiviste + cuisine assouplie",
+      "highlights": [
+        "Place marchande : l’Archiviste vend à nouveau les Parchemins anciens",
+        "Onigiri utilisable jusqu’au niv. perso 19 · Poisson grillé craftable dès Cuisine Nv.2 (blé + œuf)",
+        "Cuisine plus rapide à monter (moins d’XP par niveau, recettes early plus simples)"
+      ]
+    },
+    {
       "buildId": "20260726-1945",
       "date": "2026-07-26",
       "title": "Polish UI, admin & fin HDV test",

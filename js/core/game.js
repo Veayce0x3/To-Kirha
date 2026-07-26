@@ -1465,7 +1465,7 @@ export class Game {
   }
 
   getMerchantVendors() {
-    return this.merchant;
+    return this.merchant?.vendors || {};
   }
 
   canBuyMerchant(vendorId, offerId, quantity) {

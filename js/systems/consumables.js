@@ -11,8 +11,20 @@ export function getMealLevelRange(mealTier) {
   return { min: tier === 1 ? 1 : tier, max: tier === 1 ? 9 : tier + 9 };
 }
 
-export function canCharUseMeal(charLevel, mealTier) {
-  const { min, max } = getMealLevelRange(mealTier);
+export function getMealLevelRangeForResource(resource) {
+  if (resource?.requiredCharLevelMin != null && resource?.requiredCharLevelMax != null) {
+    return {
+      min: Number(resource.requiredCharLevelMin) || 1,
+      max: Number(resource.requiredCharLevelMax) || 1,
+    };
+  }
+  return getMealLevelRange(resource?.mealTier ?? 1);
+}
+
+export function canCharUseMeal(charLevel, mealTier, resource = null) {
+  const { min, max } = resource
+    ? getMealLevelRangeForResource(resource)
+    : getMealLevelRange(mealTier);
   return charLevel >= min && charLevel <= max;
 }
 
@@ -32,7 +44,7 @@ export function buildMealEffects(resources, balance) {
     if (!id.startsWith('meal_')) continue;
     const tier = getMealTier(id, resources);
     const pct = getMealHealPct(tier, balance);
-    const { min, max } = getMealLevelRange(tier);
+    const { min, max } = getMealLevelRangeForResource(res);
     effects[id] = {
       mealTier: tier,
       healPct: pct,
@@ -73,7 +85,8 @@ export function peekMealHeal(mealId, state, resources, balance, charLevel) {
   const effect = getMealEffect(mealId, resources, balance);
   if (!effect) return { ok: false, reason: 'Repas inconnu' };
   if ((state.inventory[mealId] || 0) < 1) return { ok: false, reason: 'Plus de ce repas' };
-  if (!canCharUseMeal(charLevel, effect.mealTier)) {
+  const res = resources?.[mealId];
+  if (!canCharUseMeal(charLevel, effect.mealTier, res)) {
     return { ok: false, reason: `Réservé aux persos niv. ${effect.levelMin}–${effect.levelMax}` };
   }
   return { ok: true, healPct: effect.healPct, label: effect.label, mealTier: effect.mealTier };

@@ -245,74 +245,70 @@
     "id": "recipe_onigiri",
     "name": "Onigiri",
     "emoji": "🍙",
-    "description": "Repas niv. 1–9 : soin % PV max — Blé + Œuf du Poulailler",
-    "kirhaCost": 10,
+    "description": "Repas niv. 1–19 : soin % PV max — Blé + Œuf du Poulailler",
+    "kirhaCost": 8,
     "ingredients": {
-      "ble": 6,
-      "oeuf": 2
+      "ble": 4,
+      "oeuf": 1
     },
     "output": "meal_onigiri",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
     "requiredJobLevel": 1,
-    "jobXp": 18
+    "jobXp": 22
   },
   "recipe_poisson": {
     "id": "recipe_poisson",
     "name": "Poisson grillé",
     "emoji": "🐟",
-    "description": "Repas niv. 10–19 : soin % PV max en donjon",
-    "kirhaCost": 40,
+    "description": "Repas niv. 10–29 : soin % PV max — Blé + Œuf (ferme)",
+    "kirhaCost": 20,
     "ingredients": {
-      "fugu": 6,
-      "ble": 4,
-      "meal_onigiri": 1
+      "ble": 5,
+      "oeuf": 2
     },
     "output": "meal_poisson",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 8,
-    "jobXp": 21
+    "requiredJobLevel": 2,
+    "jobXp": 26
   },
   "recipe_gateau": {
     "id": "recipe_gateau",
     "name": "Gâteau au miel",
     "emoji": "🍰",
-    "description": "Repas niv. 20–29 : soin % PV max en donjon",
-    "kirhaCost": 135,
+    "description": "Repas niv. 20–39 : soin % PV max — Blé + Œuf + Onigiri",
+    "kirhaCost": 55,
     "ingredients": {
-      "miel": 4,
-      "riz_sakura": 4,
+      "ble": 6,
       "oeuf": 3,
-      "meal_poisson": 1
+      "meal_onigiri": 1
     },
     "output": "meal_gateau",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 14,
-    "jobXp": 29
+    "requiredJobLevel": 5,
+    "jobXp": 32
   },
   "recipe_festin": {
     "id": "recipe_festin",
     "name": "Festin du Temple",
     "emoji": "🍱",
     "description": "Repas niv. 30–39 : soin % PV max en donjon",
-    "kirhaCost": 190,
+    "kirhaCost": 120,
     "ingredients": {
-      "jambon": 4,
-      "lait": 4,
-      "bouleau": 3,
-      "pissenlit": 4,
-      "meal_gateau": 1
+      "ble": 8,
+      "oeuf": 3,
+      "meal_poisson": 1
     },
     "output": "meal_festin",
     "outputAmount": 1,
     "repeatable": true,
     "craftJob": "cook",
-    "requiredJobLevel": 18,
+    "requiredJobLevel": 8,
     "jobXp": 38
   },
   "recipe_bento": {

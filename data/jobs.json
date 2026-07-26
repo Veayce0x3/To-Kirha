@@ -96,8 +96,8 @@
     "name": "Cuisinier",
     "emoji": "👨‍🍳",
     "maxLevel": 200,
-    "xpPerLevel": 70,
-    "xpScaling": 1.06,
+    "xpPerLevel": 55,
+    "xpScaling": 1.045,
     "bonusesPerLevel": {
       "craftValueBonus": 0.01
     },
