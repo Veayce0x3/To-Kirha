@@ -1,9 +1,11 @@
 import { resolveItemId, getInstanceEffectiveStats } from './combat.js';
 import { getActiveSetBonus } from './setBonus.js';
 import { getSeasonLevelCap } from './prestige.js';
+import { getScaledXpForLevel } from './progression.js';
 
-export function getXpForCharLevel(config, level) {
-  return Math.floor(config.xpPerLevel * Math.pow(config.xpScaling, level - 1));
+export function getXpForCharLevel(config, level, balance = null) {
+  const curve = config?.xpScalingCurve || balance?.characterXpScalingCurve || null;
+  return getScaledXpForLevel(config.xpPerLevel, level, curve, config.xpScaling);
 }
 
 export function getBaseStats(config, level) {
@@ -66,7 +68,7 @@ export function addCharacterXp(state, xp, characterConfig, balance) {
   state.character.xp += xp;
 
   while (state.character.level < Math.min(characterConfig.maxLevel, cap)) {
-    const needed = getXpForCharLevel(characterConfig, state.character.level);
+    const needed = getXpForCharLevel(characterConfig, state.character.level, balance);
     if (state.character.xp < needed) break;
     state.character.xp -= needed;
     state.character.level++;
@@ -82,7 +84,7 @@ export function addCharacterXp(state, xp, characterConfig, balance) {
 export function getCharacterProgress(state, characterConfig, balance) {
   const c = state.character || { level: 1, xp: 0 };
   const cap = balance ? getSeasonLevelCap('character', state, balance) : characterConfig.maxLevel;
-  const needed = getXpForCharLevel(characterConfig, c.level);
+  const needed = getXpForCharLevel(characterConfig, c.level, balance);
   return {
     ...c,
     needed,

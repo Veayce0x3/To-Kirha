@@ -1,6 +1,6 @@
 import { getCraftBonus } from './craft.js';
 import { getPrestigeBonuses, getSeasonLevelCap, applyMultiplierBonus, getSeasonBoostMult, isSeasonBoostActive } from './prestige.js';
-import { getHarvestXpForResource, getRegrowthTier } from './progression.js';
+import { getHarvestXpForResource, getRegrowthTier, getScaledXpForLevel } from './progression.js';
 
 const ZONE_REGROWTH_BONUS = {
   village_sakura: 0,
@@ -56,8 +56,15 @@ export function getHarvestYield(resource, state, jobs, balance) {
   const jobData = state.jobs[resource.job] || { level: 1 };
   const craftBonus = balance ? getCraftBonus(state, balance._recipes || {}, resource.job, resource.id, 'yield') : 0;
   const jobYieldBonus = job ? (jobData.level - 1) * job.bonusesPerLevel.yieldBonus : 0;
-
   return Math.max(1, Math.floor(resource.baseYield + craftBonus + jobYieldBonus));
+}
+
+/** Applique le bonus rendement succès (chance +1) — à appeler seulement à la récolte réelle. */
+export function applyHarvestYieldBonus(amount, state) {
+  let next = Math.max(1, Number(amount) || 1);
+  const achYield = state.achievements?.bonuses?.yield || state.quests?.bonuses?.yield || 0;
+  if (achYield > 0 && Math.random() < achYield) next += 1;
+  return next;
 }
 
 export function getHarvestXp(resource, state, balance, resources = null) {
@@ -69,8 +76,9 @@ export function getHarvestXp(resource, state, balance, resources = null) {
   return withPrestige * getSeasonBoostMult(state);
 }
 
-export function getXpForLevel(job, level) {
-  return Math.floor(job.xpPerLevel * Math.pow(job.xpScaling, level - 1));
+export function getXpForLevel(job, level, balance = null) {
+  const curve = job?.xpScalingCurve || balance?.xpScalingCurve || null;
+  return getScaledXpForLevel(job.xpPerLevel, level, curve, job.xpScaling);
 }
 
 export function addJobXp(state, jobId, xp, jobs, balance) {
@@ -88,7 +96,7 @@ export function addJobXp(state, jobId, xp, jobs, balance) {
   jobData.xp += xp;
 
   while (jobData.level < Math.min(job.maxLevel, cap)) {
-    const needed = getXpForLevel(job, jobData.level);
+    const needed = getXpForLevel(job, jobData.level, balance);
     if (jobData.xp < needed) break;
     jobData.xp -= needed;
     jobData.level++;

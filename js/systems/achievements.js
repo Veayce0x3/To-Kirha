@@ -5,7 +5,7 @@
 import { canPrestige as canPrestigeBase } from './prestige.js';
 
 export function buildDefaultAchievementState() {
-  return { completed: [], progress: {}, bonuses: { kirha: 0, xp: 0, harvestSpeed: 0 } };
+  return { completed: [], progress: {}, bonuses: { kirha: 0, xp: 0, harvestSpeed: 0, yield: 0 } };
 }
 
 export function areAchievementsEnabled(balance) {
@@ -26,6 +26,7 @@ export function migrateAchievements(saved) {
       kirha: saved.bonuses?.kirha || 0,
       xp: saved.bonuses?.xp || 0,
       harvestSpeed: saved.bonuses?.harvestSpeed || 0,
+      yield: saved.bonuses?.yield || 0,
     },
   };
 }
@@ -256,6 +257,7 @@ export function getAchievementBonuses(state) {
     kirha: b.kirha || 0,
     xp: b.xp || 0,
     harvestSpeed: b.harvestSpeed || 0,
+    yield: b.yield || 0,
   };
 }
 
@@ -276,10 +278,13 @@ export function applyAchievementRewards(state, achievement, balance) {
   }
   const bonus = achievement.rewardBonus || achievement.permanentBonus;
   if (bonus) {
-    if (!state.achievements.bonuses) state.achievements.bonuses = { kirha: 0, xp: 0, harvestSpeed: 0 };
+    if (!state.achievements.bonuses) {
+      state.achievements.bonuses = { kirha: 0, xp: 0, harvestSpeed: 0, yield: 0 };
+    }
     state.achievements.bonuses.kirha += bonus.kirha || 0;
     state.achievements.bonuses.xp += bonus.xp || 0;
     state.achievements.bonuses.harvestSpeed += bonus.harvestSpeed || 0;
+    state.achievements.bonuses.yield += bonus.yield || 0;
   }
 }
 
@@ -295,6 +300,7 @@ export function getCombinedBonuses(state) {
     xp: 1 + (prestige.xpBonus || 0) + ach.xp,
     jobXp: 1 + (prestige.jobXpBonus || 0) + ach.xp,
     harvestSpeed: ach.harvestSpeed,
+    yield: ach.yield,
     regrowthSpeed: (prestige.regrowthSpeedBonus || 0) + (ach.harvestSpeed || 0),
   };
 }

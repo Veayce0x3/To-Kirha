@@ -1,8 +1,8 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 40,
-  "appBuildId": "20260721-2200",
+  "saveVersion": 41,
+  "appBuildId": "20260726-1530",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -70,19 +70,31 @@
   },
   "offlineCapMs": 21600000,
   "harvest": {
-    "baseHarvestTimeMs": 3000,
+    "baseHarvestTimeMs": 2000,
     "harvestPerTierMs": 500,
-    "minHarvestTimeMs": 1500,
-    "regrowthBaseMs": 25000,
-    "regrowthPerTierMs": 25000,
-    "minRegrowthTimeMs": 8000,
-    "comment": "Repousse : Frêne ~25s, Séquoia ~50s, Chêne ~75s (tier×25s)"
+    "minHarvestTimeMs": 1000,
+    "regrowthBaseMs": 14000,
+    "regrowthPerTierMs": 28000,
+    "minRegrowthTimeMs": 5000,
+    "comment": "Early soft : Frêne ~14s, Séquoia ~42s, Chêne ~70s"
   },
   "harvestXpByTier": {
-    "base": 10,
+    "base": 12,
     "step": 4,
-    "comment": "Blé=10, Orge=14, tier+1=+4 XP fixe par récolte (≠ niveau requis)"
+    "comment": "Tier 1=12 XP, puis +4/palier — early un peu plus généreux"
   },
+  "xpScalingCurve": [
+    { "untilLevel": 20, "scaling": 1.06 },
+    { "untilLevel": 40, "scaling": 1.10 },
+    { "untilLevel": 60, "scaling": 1.15 },
+    { "untilLevel": 999, "scaling": 1.18 }
+  ],
+  "characterXpScalingCurve": [
+    { "untilLevel": 20, "scaling": 1.05 },
+    { "untilLevel": 40, "scaling": 1.09 },
+    { "untilLevel": 60, "scaling": 1.14 },
+    { "untilLevel": 999, "scaling": 1.18 }
+  ],
   "resourceUnlock": {
     "starterLevel": 1,
     "baseLevel": 20,
@@ -352,7 +364,11 @@
   },
   "toolSeasonUpgrade": {
     "minSeason": 2,
-    "bonusUses": 10
+    "bonusUses": 10,
+    "kirhaMult": 8,
+    "ingredientMult": 2.5,
+    "minKirha": 10,
+    "comment": "Coût = max(minKirha, kirhaCost×8) + ingredients×2.5 ; refill au max amélioré"
   },
   "seasonCombatScalePerSeason": 0.12,
   "upgrades": {},

@@ -12,6 +12,7 @@ import {
   getHarvestYield,
   getHarvestXp,
   addJobXp,
+  applyHarvestYieldBonus,
 } from './harvest.js';
 import { wearToolsForHarvest } from './toolDurability.js';
 import {
@@ -554,7 +555,7 @@ export function completeHarvestUnit(state, resources, jobs, balance, jobId, reso
     if (!state.dailyHarvest || state.dailyHarvest.date !== today) {
       state.dailyHarvest = { date: today, bonusUsed: false };
     }
-    let yield_ = getHarvestYield(resource, state, jobs, balance);
+    let yield_ = applyHarvestYieldBonus(getHarvestYield(resource, state, jobs, balance), state);
     let dailyBonus = false;
     if (!state.dailyHarvest.bonusUsed) {
       state.dailyHarvest.bonusUsed = true;

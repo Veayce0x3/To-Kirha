@@ -2054,7 +2054,7 @@ export class Game {
     const job = this.jobs[jobId];
     if (!job) return null;
     const jobData = this.state.jobs[jobId] || { level: 1, xp: 0 };
-    const needed = getXpForLevel(job, jobData.level);
+    const needed = getXpForLevel(job, jobData.level, this.balance);
     const seasonCap = getSeasonLevelCap('jobs', this.state, this.balance);
     return {
       ...jobData,

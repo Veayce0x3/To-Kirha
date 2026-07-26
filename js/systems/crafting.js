@@ -4,7 +4,7 @@
 import { grantCombatItem } from './combat.js';
 import { hasWorkingCombatItem } from './combatDurability.js';
 import { equip, getJobEquippedTool, recipeBelongsToWorkshopTab } from './equipment.js';
-import { initToolDurability, isDurabilityTool, isToolEffectActive } from './toolDurability.js';
+import { initToolDurability, isDurabilityTool, isToolEffectActive, getEffectiveMaxUses } from './toolDurability.js';
 import { addJobXp } from './harvest.js';
 import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBoostMult } from './prestige.js';
 import { GATHERING_JOB_IDS, isGatheringJobUnlocked } from './careerChoice.js';
@@ -121,7 +121,7 @@ function applyCraftResult(recipeId, recipe, state) {
 
   if (isDurabilityTool(recipe)) {
     if (!state.crafted.includes(recipeId)) state.crafted.push(recipeId);
-    initToolDurability(state, recipeId, recipe.maxUses);
+    initToolDurability(state, recipeId, getEffectiveMaxUses(state, recipe) || recipe.maxUses);
     return;
   }
 
@@ -306,7 +306,7 @@ export function repairCraftSave(state, recipes) {
     if (!recipe || !isDurabilityTool(recipe)) continue;
     const uses = state.toolDurability[recipeId];
     if (uses === undefined || !Number.isFinite(Number(uses))) {
-      state.toolDurability[recipeId] = recipe.maxUses;
+      state.toolDurability[recipeId] = getEffectiveMaxUses(state, recipe) || recipe.maxUses;
     }
   }
 }

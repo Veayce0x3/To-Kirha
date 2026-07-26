@@ -5,7 +5,7 @@ import { listWorkshopRecipes, inspectRecipe } from '../systems/crafting.js';
 import { renderResourceIcon } from '../systems/resourceVisual.js';
 import { getCombatItemPreview, renderCraftDurabilityInfo } from '../systems/equipmentDisplay.js';
 import { isRecipeEquipped } from '../systems/equipment.js';
-import { isDurabilityTool, canUpgradeTool, isToolUpgraded } from '../systems/toolDurability.js';
+import { isDurabilityTool, canUpgradeTool, isToolUpgraded, formatToolUpgradeCost } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { navigate } from './router.js';
 
@@ -74,10 +74,15 @@ function renderRecipeCard(game, info) {
   let upgradeBtn = '';
   if (owned && isDurabilityTool(recipe)) {
     const up = canUpgradeTool(game.state, recipeId, recipe, game.balance);
+    const bonus = game.balance.toolSeasonUpgrade?.bonusUses ?? 10;
     if (up.ok) {
-      upgradeBtn = `<button type="button" class="btn btn-small btn-prestige" data-upgrade-recipe="${recipeId}">Améliorer (+${game.balance.toolSeasonUpgrade?.bonusUses ?? 10})</button>`;
+      const costTxt = formatToolUpgradeCost(up.cost, game.resources);
+      upgradeBtn = `<button type="button" class="btn btn-small btn-prestige" data-upgrade-recipe="${recipeId}">Améliorer (+${bonus}) · ${costTxt}</button>`;
     } else if (isToolUpgraded(game.state, recipeId)) {
       upgradeBtn = '<span class="craft-upgrade-done">✓ Amélioré cette saison</span>';
+    } else if (up.cost && (game.state.season || 1) >= (game.balance.toolSeasonUpgrade?.minSeason ?? 2)) {
+      const costTxt = formatToolUpgradeCost(up.cost, game.resources);
+      upgradeBtn = `<button type="button" class="btn btn-small btn-prestige" data-upgrade-recipe="${recipeId}" aria-disabled="true" title="${up.reason || ''}">Améliorer (+${bonus}) · ${costTxt}</button>`;
     }
   }
 

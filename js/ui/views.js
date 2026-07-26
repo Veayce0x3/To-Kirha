@@ -21,9 +21,10 @@ import {
   getAchievementsByCategory,
   ACHIEVEMENT_CATEGORY_LABELS,
   getAchievementBonuses,
+  isAchievementAvailable,
 } from '../systems/achievements.js';
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
-import { isDurabilityTool, canUpgradeTool, isToolUpgraded } from '../systems/toolDurability.js';
+import { isDurabilityTool, canUpgradeTool, isToolUpgraded, getToolUpgradeCost, formatToolUpgradeCost } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, getPrimaryFeedId, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
 import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consumables.js';
@@ -1208,7 +1209,7 @@ function appendOwnedCombatItemsToGrid(game, container, filter) {
 function renderCharToolsTab(game, panel) {
   const season = game.state.season || 1;
   const upgradeHint = season >= (game.balance.toolSeasonUpgrade?.minSeason ?? 2)
-    ? `<p class="view-desc char-tools-upgrade-hint">Saison ${season}+ : tu peux améliorer chaque outil <strong>1 fois</strong> (+${game.balance.toolSeasonUpgrade?.bonusUses ?? 10} utilisations).</p>`
+    ? `<p class="view-desc char-tools-upgrade-hint">Saison ${season}+ : améliore chaque outil <strong>1 fois</strong> (+${game.balance.toolSeasonUpgrade?.bonusUses ?? 10} utilisations) contre Kirha + ressources. Une refabrication remplit au max amélioré.</p>`
     : '';
   panel.innerHTML = `
     <p class="view-desc char-tools-desc">Outils de récolte équipés ou en réserve. Pour l’élevage : tu peux équiper le <strong>seau</strong> et le <strong>panier</strong> en même temps (eau + productions animales).</p>
@@ -1221,7 +1222,7 @@ function renderCharToolsTab(game, panel) {
   const reserve = tools.filter((t) => !t.equipped);
   if (!equipped.length && !reserve.length) {
     gatherEl.innerHTML = season >= (game.balance.toolSeasonUpgrade?.minSeason ?? 2)
-      ? `<p class="empty-text">Aucun outil pour l’instant.<br/>1) Fabrique une hache / canne / pioche à l’<strong>Atelier Outilleur</strong>.<br/>2) Reviens ici (Perso → Outils) pour le bouton <strong>Améliorer (+${game.balance.toolSeasonUpgrade?.bonusUses ?? 10})</strong>.</p>`
+      ? `<p class="empty-text">Aucun outil pour l’instant.<br/>1) Fabrique une hache / canne / pioche à l’<strong>Atelier Outilleur</strong>.<br/>2) Reviens ici (Perso → Outils) pour <strong>Améliorer</strong> (Kirha + ressources).</p>`
       : '<p class="empty-text">Aucun outil — fabrique-les à l\'Atelier Outilleur.</p>';
     return;
   }
@@ -1294,11 +1295,14 @@ function appendGatheringToolRow(game, container, entry, { showUnequip = false, s
   }
 
   const upgradeCheck = canUpgradeTool(s, recipeId, recipe, game.balance);
+  const bonusUses = game.balance.toolSeasonUpgrade?.bonusUses ?? 10;
+  const minSeason = game.balance.toolSeasonUpgrade?.minSeason ?? 2;
   if (isDurabilityTool(recipe) && upgradeCheck.ok) {
     const up = document.createElement('button');
     up.type = 'button';
     up.className = 'btn btn-small btn-prestige';
-    up.textContent = `Améliorer (+${game.balance.toolSeasonUpgrade?.bonusUses ?? 10})`;
+    const costTxt = formatToolUpgradeCost(upgradeCheck.cost, game.resources);
+    up.textContent = `Améliorer (+${bonusUses}) · ${costTxt}`;
     up.addEventListener('click', () => game.doUpgradeTool(recipeId));
     actions.appendChild(up);
   } else if (isDurabilityTool(recipe) && isToolUpgraded(s, recipeId)) {
@@ -1306,6 +1310,15 @@ function appendGatheringToolRow(game, container, entry, { showUnequip = false, s
     badge.className = 'char-tool-hint';
     badge.textContent = 'Amélioré';
     actions.appendChild(badge);
+  } else if (isDurabilityTool(recipe) && (s.season || 1) >= minSeason && !isToolUpgraded(s, recipeId)) {
+    const cost = upgradeCheck.cost || getToolUpgradeCost(recipe, game.balance);
+    const up = document.createElement('button');
+    up.type = 'button';
+    up.className = 'btn btn-small btn-prestige';
+    up.textContent = `Améliorer (+${bonusUses}) · ${formatToolUpgradeCost(cost, game.resources)}`;
+    up.title = upgradeCheck.reason || '';
+    up.addEventListener('click', () => game.doUpgradeTool(recipeId));
+    actions.appendChild(up);
   }
 
   if (actions.children.length) row.appendChild(actions);
@@ -1509,17 +1522,32 @@ function renderCharTeamTab(game, panel) {
   }
 }
 
+function formatAchievementBonusText(bonus) {
+  if (!bonus) return '';
+  const bits = [];
+  if (bonus.kirha) bits.push(`+${(bonus.kirha * 100).toFixed(0)}% 💰`);
+  if (bonus.xp) bits.push(`+${(bonus.xp * 100).toFixed(0)}% XP`);
+  if (bonus.harvestSpeed) bits.push(`−${(bonus.harvestSpeed * 100).toFixed(0)}% repousse`);
+  if (bonus.yield) bits.push(`+${(bonus.yield * 100).toFixed(0)}% rendement`);
+  return bits.length ? ` · Bonus : ${bits.join(' ')}` : '';
+}
+
 function renderAchievements(game, el) {
   const byCat = getAchievementsByCategory(game.achievements, game.state, game.recipes);
   const bonuses = getAchievementBonuses(game.state);
-  const bonusLine = (bonuses.kirha || bonuses.xp || bonuses.harvestSpeed)
-    ? `<p class="view-desc">Bonus actifs : ${bonuses.kirha ? `+${(bonuses.kirha * 100).toFixed(0)} % Kirha ` : ''}${bonuses.xp ? `+${(bonuses.xp * 100).toFixed(0)} % XP ` : ''}${bonuses.harvestSpeed ? `+${(bonuses.harvestSpeed * 100).toFixed(0)} % vitesse récolte` : ''}</p>`
+  const activeBits = [];
+  if (bonuses.kirha) activeBits.push(`+${(bonuses.kirha * 100).toFixed(0)} % Kirha`);
+  if (bonuses.xp) activeBits.push(`+${(bonuses.xp * 100).toFixed(0)} % XP`);
+  if (bonuses.harvestSpeed) activeBits.push(`−${(bonuses.harvestSpeed * 100).toFixed(0)} % repousse`);
+  if (bonuses.yield) activeBits.push(`+${(bonuses.yield * 100).toFixed(0)} % rendement`);
+  const bonusLine = activeBits.length
+    ? `<p class="view-desc">Bonus actifs : ${activeBits.join(' · ')}</p>`
     : '';
 
   el.innerHTML = `
     <div class="view-header">
       <h2>🏆 Succès</h2>
-      <p class="view-desc">Objectifs permanents — petits bonus cumulatifs. Certains succès Saison 1 sont requis pour passer à la Saison 2.</p>
+      <p class="view-desc">Objectifs permanents — petits bonus cumulatifs. Récolte : Apprenti → Disciple → Maître par métier.</p>
       ${bonusLine}
     </div>
     <div id="achievements-list" class="panel-inner"></div>
@@ -1531,7 +1559,10 @@ function renderAchievements(game, el) {
   for (const catId of order) {
     const cat = byCat[catId];
     if (!cat) continue;
-    const all = [...cat.available, ...cat.completed].filter((a) => !a.hidden);
+    const showLocked = catId === 'harvest';
+    const all = [...cat.available, ...(showLocked ? cat.locked : []), ...cat.completed]
+      .filter((a) => !a.hidden)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
     if (!all.length) continue;
 
     const section = document.createElement('section');
@@ -1543,20 +1574,22 @@ function renderAchievements(game, el) {
     for (const ach of all) {
       const done = isAchievementCompleted(game.state, ach.id);
       const ready = !done && isAchievementReady(ach, game.state, game.recipes);
+      const locked = !done && !isAchievementAvailable(ach, game.state, game.recipes);
       const row = document.createElement('div');
-      row.className = `quest-row${ready ? ' quest-ready' : ''}${done ? ' quest-done' : ''}`;
+      row.className = `quest-row${ready ? ' quest-ready' : ''}${done ? ' quest-done' : ''}${locked ? ' quest-locked' : ''}`;
       const bonus = ach.rewardBonus || ach.permanentBonus;
-      const bonusTxt = bonus
-        ? ` · Bonus : ${bonus.kirha ? `+${(bonus.kirha * 100).toFixed(0)}% 💰 ` : ''}${bonus.xp ? `+${(bonus.xp * 100).toFixed(0)}% XP ` : ''}${bonus.harvestSpeed ? `+${(bonus.harvestSpeed * 100).toFixed(0)}% vitesse` : ''}`
-        : '';
+      const bonusTxt = formatAchievementBonusText(bonus);
+      const tierLabel = ach.tier === 'apprentice' ? '🌱 Apprenti'
+        : ach.tier === 'disciple' ? '📘 Disciple'
+          : ach.tier === 'master' ? '🏆 Maître' : '';
       row.innerHTML = `
         <div class="quest-row-head">
-          <strong>${ach.title}</strong>
-          <span class="quest-status">${getAchievementStatusText(ach, game.state, game.recipes)}</span>
+          <strong>${tierLabel ? `${tierLabel} · ` : ''}${ach.title}</strong>
+          <span class="quest-status">${locked ? 'Verrouillé' : getAchievementStatusText(ach, game.state, game.recipes)}</span>
         </div>
         <p class="quest-desc">${ach.description}${bonusTxt}</p>
       `;
-      if (ach.hintView && ready) {
+      if (ach.hintView && !done && !locked) {
         const go = document.createElement('button');
         go.type = 'button';
         go.className = 'btn btn-small btn-muted quest-go';

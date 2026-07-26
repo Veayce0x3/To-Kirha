@@ -300,10 +300,18 @@ const MIGRATIONS = {
       state.seasonBoost = null;
     }
   },
+  41(state) {
+    if (!state.achievements) return;
+    if (!state.achievements.bonuses) {
+      state.achievements.bonuses = { kirha: 0, xp: 0, harvestSpeed: 0, yield: 0 };
+    } else if (state.achievements.bonuses.yield == null) {
+      state.achievements.bonuses.yield = 0;
+    }
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 40;
+  const target = ctx.balance?.saveVersion ?? 41;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

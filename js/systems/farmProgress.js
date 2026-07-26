@@ -51,7 +51,7 @@ export function getFarmBuildingProgress(state, buildingId, jobs, balance) {
     return {
       level: 1,
       xp: 0,
-      needed: getXpForLevel(job, 1),
+      needed: getXpForLevel(job, 1, balance),
       seasonCap: null,
       atSeasonCap: false,
       grantsXp: false,
@@ -60,7 +60,7 @@ export function getFarmBuildingProgress(state, buildingId, jobs, balance) {
 
   const meta = getFarmBuildingMetaProgress(state, buildingId);
   const cap = balance ? getSeasonLevelCap('jobs', state, balance) : job.maxLevel;
-  const needed = getXpForLevel(job, meta.level);
+  const needed = getXpForLevel(job, meta.level, balance);
   return {
     level: meta.level,
     xp: meta.xp,
@@ -108,7 +108,7 @@ export function addFarmBuildingXp(state, buildingId, xp, jobs, balance) {
   meta.xp += xp;
   let leveled = null;
   while (meta.level < Math.min(job.maxLevel, cap)) {
-    const needed = getXpForLevel(job, meta.level);
+    const needed = getXpForLevel(job, meta.level, balance);
     if (meta.xp < needed) break;
     meta.xp -= needed;
     meta.level += 1;

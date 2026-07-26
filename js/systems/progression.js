@@ -2,6 +2,31 @@
 
 const tierCache = new Map();
 
+/**
+ * Courbe XP par paliers (soft → hard).
+ * `curve` : [{ untilLevel: 20, scaling: 1.06 }, …]
+ * Pour le coût du niveau L → L+1 : base × produit des scalings pour les étapes 1…L-1.
+ */
+export function getScaledXpForLevel(xpPerLevel, level, curve, flatScaling = 1.12) {
+  const base = Number(xpPerLevel) || 100;
+  const lv = Math.max(1, Number(level) || 1);
+  if (!Array.isArray(curve) || curve.length === 0) {
+    return Math.floor(base * Math.pow(Number(flatScaling) || 1.12, lv - 1));
+  }
+  let mult = 1;
+  for (let step = 1; step < lv; step++) {
+    let scaling = curve[curve.length - 1].scaling;
+    for (const seg of curve) {
+      if (step < (seg.untilLevel ?? Infinity)) {
+        scaling = seg.scaling;
+        break;
+      }
+    }
+    mult *= Number(scaling) || 1.12;
+  }
+  return Math.floor(base * mult);
+}
+
 function harvestableResourcesForJob(resources, jobId) {
   return Object.values(resources)
     .filter((r) =>
