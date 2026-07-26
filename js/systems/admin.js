@@ -239,6 +239,13 @@ export async function grantAllJobsLevel(userId) {
   return rpc('admin_grant_all_jobs_level', { p_user_id: userId });
 }
 
+export async function grantKirha(userId, amount) {
+  if (!isAdmin()) return { ok: false, reason: 'Admin requis.' };
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n === 0) return { ok: false, reason: 'Montant invalide.' };
+  return rpc('admin_grant_kirha', { p_user_id: userId, p_amount: n });
+}
+
 export async function fetchModerationLogs(limit = 50, action = null) {
   const deny = denyIfNotStaff();
   if (deny) return deny;
@@ -369,6 +376,7 @@ export const LOG_ACTION_LABELS = {
   delete_listing: 'Annonce HDV suppr.',
   delete_buy_offer: 'Offre HDV suppr.',
   grant_all_jobs_level: '+1 métiers / ferme',
+  grant_kirha: 'Don Kirha',
   wipe_all_leaderboard: 'Wipe classement',
 };
 

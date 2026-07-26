@@ -685,6 +685,17 @@ export class Game {
     this.processAchievements();
   }
 
+  onFarmForAchievements(buildingId, cycles = 1) {
+    if (!areAchievementsEnabled(this.balance) || !buildingId) return;
+    for (const ach of Object.values(this.achievements)) {
+      if (ach.type !== 'farm_building') continue;
+      if (isAchievementCompleted(this.state, ach.id)) continue;
+      if (ach.buildingId !== buildingId) continue;
+      incrementAchievementProgress(this.state, ach.id, cycles || 1);
+    }
+    this.processAchievements();
+  }
+
   onCombatVictoryHooks(result) {
     const zoneId = result?.zoneId;
     void zoneId;
@@ -902,6 +913,7 @@ export class Game {
     for (const [resId, qty] of Object.entries(outcome.products || {})) {
       this.onHarvestForQuests(resId, qty);
     }
+    this.onFarmForAchievements(buildingId, 1);
 
     emit('farmComplete', outcome);
     emit('stateChange', this.state);

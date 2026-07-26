@@ -29,6 +29,7 @@ import {
   unbanUser,
   setUserRole,
   grantAllJobsLevel,
+  grantKirha,
   flagCheat,
   deleteLeaderboardEntry,
   wipeAllLeaderboard,
@@ -582,7 +583,13 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
         ${canResetSave ? '<button type="button" class="btn btn-muted" id="admin-reset-save">Reset save cloud</button>' : ''}
         ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs">+1 métiers + ferme + perso</button>' : ''}
         ${canGrantJobs ? '<button type="button" class="btn btn-muted" id="admin-grant-jobs-5">+5 métiers + ferme + perso</button>' : ''}
-        ${canGrantJobs ? '<p class="view-desc admin-grant-hint">Le joueur doit <strong>recharger le jeu</strong> (ou se reconnecter) pour voir les niveaux. Ne pas jouer en parallèle sinon sa save locale écrase le gift.</p>' : ''}
+        ${canGrantJobs ? `
+          <div class="admin-grant-kirha-row">
+            <input type="number" class="auth-input admin-kirha-input" id="admin-kirha-amount" min="1" step="1" placeholder="Montant 💰" value="1000" />
+            <button type="button" class="btn btn-craft" id="admin-grant-kirha">Donner Kirha</button>
+          </div>
+        ` : ''}
+        ${canGrantJobs ? '<p class="view-desc admin-grant-hint">Le joueur doit <strong>recharger le jeu</strong> (ou se reconnecter) pour voir les niveaux / Kirha. Ne pas jouer en parallèle sinon sa save locale écrase le gift.</p>' : ''}
       </div>
     </div>
     ${canSetRole ? `
@@ -670,6 +677,20 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     }
     setStatus(ok ? 'Niveaux +5 appliqués (cloud). Demande au joueur de recharger.' : lastReason, !ok);
     if (ok) loadPlayerDetail(userId);
+  });
+
+  detailEl.querySelector('#admin-grant-kirha')?.addEventListener('click', async () => {
+    const raw = detailEl.querySelector('#admin-kirha-amount')?.value;
+    const amount = Number(raw);
+    if (!Number.isFinite(amount) || amount === 0) {
+      setStatus('Montant Kirha invalide.', true);
+      return;
+    }
+    const label = `${amount > 0 ? '+' : ''}${amount.toLocaleString('fr-FR')} 💰`;
+    if (!confirm(`Donner ${label} à ce joueur (save cloud) ?\nIl devra recharger le jeu.`)) return;
+    const r = await grantKirha(userId, amount);
+    setStatus(r.ok ? `${label} ajoutés (cloud). Demande au joueur de recharger.` : r.reason, !r.ok);
+    if (r.ok) loadPlayerDetail(userId);
   });
 
   detailEl.querySelector('#admin-set-role')?.addEventListener('click', async () => {

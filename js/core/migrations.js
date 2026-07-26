@@ -303,9 +303,20 @@ const MIGRATIONS = {
   41(state) {
     if (!state.achievements) return;
     if (!state.achievements.bonuses) {
-      state.achievements.bonuses = { kirha: 0, xp: 0, harvestSpeed: 0, yield: 0 };
-    } else if (state.achievements.bonuses.yield == null) {
-      state.achievements.bonuses.yield = 0;
+      state.achievements.bonuses = {
+        kirha: 0,
+        xp: 0,
+        harvestSpeed: 0,
+        yield: 0,
+        farmExtraYield: 0,
+        farmFeedDiscount: 0,
+        farmAnimalLife: 0,
+      };
+    } else {
+      if (state.achievements.bonuses.yield == null) state.achievements.bonuses.yield = 0;
+      if (state.achievements.bonuses.farmExtraYield == null) state.achievements.bonuses.farmExtraYield = 0;
+      if (state.achievements.bonuses.farmFeedDiscount == null) state.achievements.bonuses.farmFeedDiscount = 0;
+      if (state.achievements.bonuses.farmAnimalLife == null) state.achievements.bonuses.farmAnimalLife = 0;
     }
   },
 };

@@ -35,7 +35,7 @@ export function getWeaponRolePreview(item, weaponRoles) {
 export function renderDurabilityBar(state, recipeId, recipe) {
   if (!isDurabilityTool(recipe)) return '';
   const remaining = state.toolDurability?.[recipeId];
-  const max = getEffectiveMaxUses(state, recipe) || recipe.maxUses;
+  const max = getEffectiveMaxUses(state, recipe, recipeId) || recipe.maxUses;
   const pct = remaining === undefined ? 100 : Math.max(0, (remaining / max) * 100);
   const broken = remaining !== undefined && remaining <= 0;
   const warnClass = !broken && pct <= 25 ? ' durability-low' : '';

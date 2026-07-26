@@ -36,7 +36,7 @@ export function migrateToolDurability(state, recipes) {
     const recipe = recipes[recipeId];
     if (!isDurabilityTool(recipe)) continue;
     if (state.toolDurability[recipeId] === undefined) {
-      state.toolDurability[recipeId] = getEffectiveMaxUses(state, recipe) || recipe.maxUses;
+      state.toolDurability[recipeId] = getEffectiveMaxUses(state, recipe, recipeId) || recipe.maxUses;
     }
   }
 }
@@ -130,10 +130,11 @@ export function isToolUpgraded(state, recipeId) {
   return !!(state?.toolUpgrades?.[recipeId]);
 }
 
-export function getEffectiveMaxUses(state, recipe) {
+export function getEffectiveMaxUses(state, recipe, recipeId = null) {
   const base = recipe?.maxUses || 0;
   if (!base) return 0;
-  const bonus = Number(state?.toolUpgrades?.[recipe?.id]);
+  const id = recipeId || recipe?.id;
+  const bonus = Number(state?.toolUpgrades?.[id]);
   return base + (Number.isFinite(bonus) && bonus > 0 ? bonus : 0);
 }
 
@@ -205,7 +206,7 @@ export function upgradeTool(state, recipeId, recipe, balance) {
   deductToolUpgradeCost(state, cost);
   if (!state.toolUpgrades) state.toolUpgrades = {};
   state.toolUpgrades[recipeId] = bonus;
-  const maxUses = getEffectiveMaxUses(state, recipe);
+  const maxUses = getEffectiveMaxUses(state, recipe, recipeId);
   initToolDurability(state, recipeId, maxUses);
   return { ok: true, bonusUses: bonus, maxUses, remaining: maxUses, cost };
 }

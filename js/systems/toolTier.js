@@ -172,7 +172,7 @@ export function getHarvestLineToolStatus(state, jobId, resource, recipes, equipm
 
   if (check.ok && check.recipe && equippedId && isDurabilityTool(check.recipe)) {
     const remaining = getToolUsesRemaining(state, equippedId);
-    const max = getEffectiveMaxUses(state, check.recipe) || check.recipe.maxUses;
+    const max = getEffectiveMaxUses(state, check.recipe, equippedId) || check.recipe.maxUses;
     if (remaining != null && max) {
       return {
         kind: remaining <= 3 ? 'low' : 'ok',
@@ -187,7 +187,7 @@ export function getHarvestLineToolStatus(state, jobId, resource, recipes, equipm
 
   const broken = findBrokenToolForResource(state, jobId, resource, recipes, resources);
   if (broken) {
-    const max = getEffectiveMaxUses(state, broken.recipe) || broken.recipe.maxUses || 0;
+    const max = getEffectiveMaxUses(state, broken.recipe, broken.recipeId) || broken.recipe.maxUses || 0;
     return {
       kind: 'broken',
       recipeId: broken.recipeId,

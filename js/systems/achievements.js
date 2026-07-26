@@ -5,7 +5,19 @@
 import { canPrestige as canPrestigeBase } from './prestige.js';
 
 export function buildDefaultAchievementState() {
-  return { completed: [], progress: {}, bonuses: { kirha: 0, xp: 0, harvestSpeed: 0, yield: 0 } };
+  return {
+    completed: [],
+    progress: {},
+    bonuses: {
+      kirha: 0,
+      xp: 0,
+      harvestSpeed: 0,
+      yield: 0,
+      farmExtraYield: 0,
+      farmFeedDiscount: 0,
+      farmAnimalLife: 0,
+    },
+  };
 }
 
 export function areAchievementsEnabled(balance) {
@@ -27,6 +39,9 @@ export function migrateAchievements(saved) {
       xp: saved.bonuses?.xp || 0,
       harvestSpeed: saved.bonuses?.harvestSpeed || 0,
       yield: saved.bonuses?.yield || 0,
+      farmExtraYield: saved.bonuses?.farmExtraYield || 0,
+      farmFeedDiscount: saved.bonuses?.farmFeedDiscount || 0,
+      farmAnimalLife: saved.bonuses?.farmAnimalLife || 0,
     },
   };
 }
@@ -87,6 +102,8 @@ function meetsRequirement(state, req, recipes) {
 export function evaluateAchievementProgress(achievement, state, recipes) {
   switch (achievement.type) {
     case 'harvest_resource':
+      return getAchievementProgress(state, achievement.id);
+    case 'farm_building':
       return getAchievementProgress(state, achievement.id);
     case 'harvest_total':
       return state.stats?.totalHarvests || state.lifetimeStats?.totalHarvests || 0;
@@ -224,6 +241,7 @@ export const ACHIEVEMENT_CATEGORY_LABELS = {
   season_1: '🌸 Saison 1',
   season_meta: '🔄 Passage de saison',
   harvest: '🌾 Récolte',
+  farm: '🐄 Ferme',
   craft: '🔨 Artisanat',
   combat: '⚔️ Combat',
   village_sakura: '🌸 Village Sakura',
@@ -240,7 +258,7 @@ export function getAchievementStatusText(achievement, state, recipes) {
   const target = achievement.target ?? 1;
   if (isAchievementCompleted(state, achievement.id)) return '✓ Terminé';
   if (isAchievementReady(achievement, state, recipes)) return 'Prêt';
-  if (['harvest_resource', 'combat_kills', 'boss_kill', 'harvest_total', 'combat_total'].includes(achievement.type)) {
+  if (['harvest_resource', 'farm_building', 'combat_kills', 'boss_kill', 'harvest_total', 'combat_total'].includes(achievement.type)) {
     return `${current}/${target}`;
   }
   if (achievement.type === 'job_level') return `Nv.${current}/${target}`;
@@ -258,6 +276,9 @@ export function getAchievementBonuses(state) {
     xp: b.xp || 0,
     harvestSpeed: b.harvestSpeed || 0,
     yield: b.yield || 0,
+    farmExtraYield: b.farmExtraYield || 0,
+    farmFeedDiscount: b.farmFeedDiscount || 0,
+    farmAnimalLife: b.farmAnimalLife || 0,
   };
 }
 
@@ -279,12 +300,23 @@ export function applyAchievementRewards(state, achievement, balance) {
   const bonus = achievement.rewardBonus || achievement.permanentBonus;
   if (bonus) {
     if (!state.achievements.bonuses) {
-      state.achievements.bonuses = { kirha: 0, xp: 0, harvestSpeed: 0, yield: 0 };
+      state.achievements.bonuses = {
+        kirha: 0,
+        xp: 0,
+        harvestSpeed: 0,
+        yield: 0,
+        farmExtraYield: 0,
+        farmFeedDiscount: 0,
+        farmAnimalLife: 0,
+      };
     }
     state.achievements.bonuses.kirha += bonus.kirha || 0;
     state.achievements.bonuses.xp += bonus.xp || 0;
     state.achievements.bonuses.harvestSpeed += bonus.harvestSpeed || 0;
     state.achievements.bonuses.yield += bonus.yield || 0;
+    state.achievements.bonuses.farmExtraYield += bonus.farmExtraYield || 0;
+    state.achievements.bonuses.farmFeedDiscount += bonus.farmFeedDiscount || 0;
+    state.achievements.bonuses.farmAnimalLife += bonus.farmAnimalLife || 0;
   }
 }
 

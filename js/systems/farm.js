@@ -176,6 +176,15 @@ export function getFarmProductionXp(building) {
   return Math.floor(8 + (building?.cycleMs || 10000) / 2000);
 }
 
+export function getEffectiveAnimalMaxCycles(building, state = null) {
+  const base = Math.max(1, building?.animalMaxCycles || 12);
+  const life = state?.achievements?.bonuses?.farmAnimalLife
+    || state?.quests?.bonuses?.farmAnimalLife
+    || 0;
+  if (!(life > 0)) return base;
+  return Math.max(1, Math.ceil(base * (1 + life)));
+}
+
 /** Libellé ration avec stock actuel (texte). */
 export function formatFeedCostLabel(building, feedId, resources = {}, state = null) {
   const cost = getFeedCost(building, feedId);
@@ -213,10 +222,20 @@ export function formatFeedStockHtml(building, feedId, resources = {}, state = nu
 
 export function consumeFeed(building, feedId, state) {
   const cost = getFeedCost(building, feedId);
-  if (!cost) return Object.keys(building.feed || {}).length === 0;
-  if (!canAffordFeed(building, feedId, state)) return false;
-  for (const [resId, amt] of Object.entries(cost)) {
-    state.inventory[resId] -= amt;
+  if (!cost) return false;
+  for (const [resId, amount] of Object.entries(cost)) {
+    if ((state.inventory[resId] || 0) < amount) return false;
+  }
+  const feedDiscount = state.achievements?.bonuses?.farmFeedDiscount
+    || state.quests?.bonuses?.farmFeedDiscount
+    || 0;
+  for (const [resId, amount] of Object.entries(cost)) {
+    let take = amount;
+    if (feedDiscount > 0 && Math.random() < feedDiscount) {
+      take = Math.max(0, take - 1);
+    }
+    state.inventory[resId] -= take;
+    if (state.inventory[resId] <= 0) delete state.inventory[resId];
   }
   return true;
 }
@@ -298,9 +317,12 @@ export function completeFarmProduction(state, farmData, buildingId, slotIndex, j
   const products = { ...(building.products || {}) };
   const buildingLv = state?.farmBuildingMeta?.[buildingId]?.level || 1;
   const yieldBonus = Math.floor((buildingLv - 1) * 0.02);
+  const achExtra = state.achievements?.bonuses?.farmExtraYield || state.quests?.bonuses?.farmExtraYield || 0;
 
   for (const [resId, qty] of Object.entries(products)) {
-    const amount = qty + (yieldBonus > 0 && Math.random() < yieldBonus ? 1 : 0);
+    let amount = qty;
+    if (yieldBonus > 0 && Math.random() < yieldBonus) amount += 1;
+    if (achExtra > 0 && Math.random() < achExtra) amount += 1;
     state.inventory[resId] = (state.inventory[resId] || 0) + amount;
   }
 

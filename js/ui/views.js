@@ -1529,6 +1529,9 @@ function formatAchievementBonusText(bonus) {
   if (bonus.xp) bits.push(`+${(bonus.xp * 100).toFixed(0)}% XP`);
   if (bonus.harvestSpeed) bits.push(`−${(bonus.harvestSpeed * 100).toFixed(0)}% repousse`);
   if (bonus.yield) bits.push(`+${(bonus.yield * 100).toFixed(0)}% rendement`);
+  if (bonus.farmExtraYield) bits.push(`+${(bonus.farmExtraYield * 100).toFixed(0)}% prod. ferme`);
+  if (bonus.farmFeedDiscount) bits.push(`−${(bonus.farmFeedDiscount * 100).toFixed(0)}% nourriture`);
+  if (bonus.farmAnimalLife) bits.push(`+${(bonus.farmAnimalLife * 100).toFixed(0)}% vie animal`);
   return bits.length ? ` · Bonus : ${bits.join(' ')}` : '';
 }
 
@@ -1540,6 +1543,9 @@ function renderAchievements(game, el) {
   if (bonuses.xp) activeBits.push(`+${(bonuses.xp * 100).toFixed(0)} % XP`);
   if (bonuses.harvestSpeed) activeBits.push(`−${(bonuses.harvestSpeed * 100).toFixed(0)} % repousse`);
   if (bonuses.yield) activeBits.push(`+${(bonuses.yield * 100).toFixed(0)} % rendement`);
+  if (bonuses.farmExtraYield) activeBits.push(`+${(bonuses.farmExtraYield * 100).toFixed(0)} % prod. ferme`);
+  if (bonuses.farmFeedDiscount) activeBits.push(`−${(bonuses.farmFeedDiscount * 100).toFixed(0)} % nourriture`);
+  if (bonuses.farmAnimalLife) activeBits.push(`+${(bonuses.farmAnimalLife * 100).toFixed(0)} % vie animal`);
   const bonusLine = activeBits.length
     ? `<p class="view-desc">Bonus actifs : ${activeBits.join(' · ')}</p>`
     : '';
@@ -1547,19 +1553,19 @@ function renderAchievements(game, el) {
   el.innerHTML = `
     <div class="view-header">
       <h2>🏆 Succès</h2>
-      <p class="view-desc">Objectifs permanents — petits bonus cumulatifs. Récolte : Apprenti → Disciple → Maître par métier.</p>
+      <p class="view-desc">Objectifs permanents — petits bonus cumulatifs. Récolte & ferme : Apprenti → Disciple → Maître.</p>
       ${bonusLine}
     </div>
     <div id="achievements-list" class="panel-inner"></div>
   `;
 
   const list = el.querySelector('#achievements-list');
-  const order = ['season_1', 'season_meta', 'harvest', 'craft', 'combat'];
+  const order = ['season_1', 'season_meta', 'harvest', 'farm', 'craft', 'combat'];
 
   for (const catId of order) {
     const cat = byCat[catId];
     if (!cat) continue;
-    const showLocked = catId === 'harvest';
+    const showLocked = catId === 'harvest' || catId === 'farm';
     const all = [...cat.available, ...(showLocked ? cat.locked : []), ...cat.completed]
       .filter((a) => !a.hidden)
       .sort((a, b) => (a.order || 0) - (b.order || 0));

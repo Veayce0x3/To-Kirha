@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260726-1610",
+      "date": "2026-07-26",
+      "title": "Outils améliorés, admin Kirha, succès ferme",
+      "highlights": [
+        "Refabrication d’un outil amélioré : remplit bien au max (ex. 35/35, plus 25)",
+        "Admin : donner des Kirha à un joueur depuis sa fiche",
+        "Succès ferme Apprenti / Disciple / Maître (prod. +, −nourriture, +vie animal)"
+      ]
+    },
+    {
       "buildId": "20260726-1555",
       "date": "2026-07-26",
       "title": "Refaire l’outil sur place + contraste bambou",

@@ -8,6 +8,7 @@ import {
   getFarmProductionXp,
   getPrimaryFeedId,
   getFeedCost,
+  getEffectiveAnimalMaxCycles,
 } from '../systems/farm.js';
 import { getFarmBuildingProgress } from '../systems/farmProgress.js';
 import { getFarmBuildingIcon, getJobIcon, iconHtml } from '../core/assets.js';
@@ -166,7 +167,7 @@ function getFarmToolDurabilityLabel(game, building) {
   const recipeId = getJobEquippedTool(game.state, 'breeder', toolKind);
   if (!recipeId || !isDurabilityTool(check.recipe)) return null;
   const remaining = getToolUsesRemaining(game.state, recipeId);
-  const max = getEffectiveMaxUses(game.state, check.recipe) || check.recipe.maxUses;
+  const max = getEffectiveMaxUses(game.state, check.recipe, recipeId) || check.recipe.maxUses;
   if (remaining == null || !max) return null;
   const emoji = check.recipe.emoji || '🛠️';
   return `${emoji} ${remaining}/${max}`;
@@ -427,7 +428,7 @@ function renderFarmSlotAnimalBlock(game, building, meta, unitIndex, feedId) {
   if (!building.requiresAnimal) return '';
   const animalName = building.animalName || 'Animal';
   const emoji = building.animalEmoji || building.emoji || '🐾';
-  const maxCycles = building.animalMaxCycles || 12;
+  const maxCycles = getEffectiveAnimalMaxCycles(building, game.state);
   const animal = meta.animals?.[unitIndex];
   const feedCostHtml = formatSlotFeedCostHtml(building, feedId, game.resources, renderResourceIcon);
 

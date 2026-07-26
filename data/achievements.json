@@ -8,7 +8,9 @@
     "type": "harvest_total",
     "target": 30,
     "rewardKirha": 50,
-    "rewardBonus": { "xp": 0.01 },
+    "rewardBonus": {
+      "xp": 0.01
+    },
     "hintView": "job_farmer"
   },
   "ach_s1_farmer_12": {
@@ -20,7 +22,9 @@
     "type": "job_level",
     "jobId": "farmer",
     "target": 12,
-    "rewardBonus": { "harvestSpeed": 0.01 },
+    "rewardBonus": {
+      "harvestSpeed": 0.01
+    },
     "hintView": "job_farmer"
   },
   "ach_s1_first_tool": {
@@ -32,9 +36,13 @@
     "type": "craft_job",
     "jobId": "toolmaker",
     "target": 1,
-    "requires": { "achievementId": "ach_s1_harvest_30" },
+    "requires": {
+      "achievementId": "ach_s1_harvest_30"
+    },
     "rewardScrolls": 1,
-    "rewardBonus": { "kirha": 0.01 },
+    "rewardBonus": {
+      "kirha": 0.01
+    },
     "hintView": "workshop"
   },
   "ach_s1_chicken_coop": {
@@ -57,8 +65,12 @@
     "description": "Craft un repas à la Cuisine.",
     "type": "craft_meal",
     "target": 1,
-    "requires": { "achievementId": "ach_s1_chicken_coop" },
-    "rewardBonus": { "xp": 0.02 },
+    "requires": {
+      "achievementId": "ach_s1_chicken_coop"
+    },
+    "rewardBonus": {
+      "xp": 0.02
+    },
     "hintView": "cuisine"
   },
   "ach_s1_combat_5": {
@@ -69,9 +81,13 @@
     "description": "Gagne 5 combats rapides.",
     "type": "combat_total",
     "target": 5,
-    "requires": { "achievementId": "ach_s1_first_tool" },
+    "requires": {
+      "achievementId": "ach_s1_first_tool"
+    },
     "rewardKirha": 100,
-    "rewardBonus": { "kirha": 0.01 },
+    "rewardBonus": {
+      "kirha": 0.01
+    },
     "hintView": "combat"
   },
   "ach_s2_lotus_boss": {
@@ -83,10 +99,11 @@
     "type": "boss_kill",
     "combatZoneId": "lotus_sanctuary",
     "target": 1,
-    "rewardBonus": { "xp": 0.05 },
+    "rewardBonus": {
+      "xp": 0.05
+    },
     "hintView": "combat"
   },
-
   "ach_harvest_lumberjack_apprentice": {
     "id": "ach_harvest_lumberjack_apprentice",
     "order": 100,
@@ -97,7 +114,9 @@
     "type": "harvest_resource",
     "resourceId": "frene",
     "target": 1000,
-    "rewardBonus": { "harvestSpeed": 0.02 },
+    "rewardBonus": {
+      "harvestSpeed": 0.02
+    },
     "hintView": "job_lumberjack"
   },
   "ach_harvest_lumberjack_disciple": {
@@ -110,8 +129,12 @@
     "type": "harvest_resource",
     "resourceId": "frene",
     "target": 10000,
-    "requires": { "achievementId": "ach_harvest_lumberjack_apprentice" },
-    "rewardBonus": { "yield": 0.02 },
+    "requires": {
+      "achievementId": "ach_harvest_lumberjack_apprentice"
+    },
+    "rewardBonus": {
+      "yield": 0.02
+    },
     "hintView": "job_lumberjack"
   },
   "ach_harvest_lumberjack_master": {
@@ -124,11 +147,14 @@
     "type": "harvest_resource",
     "resourceId": "frene",
     "target": 50000,
-    "requires": { "achievementId": "ach_harvest_lumberjack_disciple" },
-    "rewardBonus": { "xp": 0.02 },
+    "requires": {
+      "achievementId": "ach_harvest_lumberjack_disciple"
+    },
+    "rewardBonus": {
+      "xp": 0.02
+    },
     "hintView": "job_lumberjack"
   },
-
   "ach_harvest_fisher_apprentice": {
     "id": "ach_harvest_fisher_apprentice",
     "order": 110,
@@ -139,7 +165,9 @@
     "type": "harvest_resource",
     "resourceId": "dorade",
     "target": 1000,
-    "rewardBonus": { "harvestSpeed": 0.02 },
+    "rewardBonus": {
+      "harvestSpeed": 0.02
+    },
     "hintView": "job_fisher"
   },
   "ach_harvest_fisher_disciple": {
@@ -152,8 +180,12 @@
     "type": "harvest_resource",
     "resourceId": "dorade",
     "target": 10000,
-    "requires": { "achievementId": "ach_harvest_fisher_apprentice" },
-    "rewardBonus": { "yield": 0.02 },
+    "requires": {
+      "achievementId": "ach_harvest_fisher_apprentice"
+    },
+    "rewardBonus": {
+      "yield": 0.02
+    },
     "hintView": "job_fisher"
   },
   "ach_harvest_fisher_master": {
@@ -166,11 +198,14 @@
     "type": "harvest_resource",
     "resourceId": "dorade",
     "target": 50000,
-    "requires": { "achievementId": "ach_harvest_fisher_disciple" },
-    "rewardBonus": { "xp": 0.02 },
+    "requires": {
+      "achievementId": "ach_harvest_fisher_disciple"
+    },
+    "rewardBonus": {
+      "xp": 0.02
+    },
     "hintView": "job_fisher"
   },
-
   "ach_harvest_miner_apprentice": {
     "id": "ach_harvest_miner_apprentice",
     "order": 120,
@@ -181,7 +216,9 @@
     "type": "harvest_resource",
     "resourceId": "pierre",
     "target": 1000,
-    "rewardBonus": { "harvestSpeed": 0.02 },
+    "rewardBonus": {
+      "harvestSpeed": 0.02
+    },
     "hintView": "job_miner"
   },
   "ach_harvest_miner_disciple": {
@@ -194,8 +231,12 @@
     "type": "harvest_resource",
     "resourceId": "pierre",
     "target": 10000,
-    "requires": { "achievementId": "ach_harvest_miner_apprentice" },
-    "rewardBonus": { "yield": 0.02 },
+    "requires": {
+      "achievementId": "ach_harvest_miner_apprentice"
+    },
+    "rewardBonus": {
+      "yield": 0.02
+    },
     "hintView": "job_miner"
   },
   "ach_harvest_miner_master": {
@@ -208,11 +249,14 @@
     "type": "harvest_resource",
     "resourceId": "pierre",
     "target": 50000,
-    "requires": { "achievementId": "ach_harvest_miner_disciple" },
-    "rewardBonus": { "xp": 0.02 },
+    "requires": {
+      "achievementId": "ach_harvest_miner_disciple"
+    },
+    "rewardBonus": {
+      "xp": 0.02
+    },
     "hintView": "job_miner"
   },
-
   "ach_harvest_farmer_apprentice": {
     "id": "ach_harvest_farmer_apprentice",
     "order": 130,
@@ -223,7 +267,9 @@
     "type": "harvest_resource",
     "resourceId": "ble",
     "target": 1000,
-    "rewardBonus": { "harvestSpeed": 0.02 },
+    "rewardBonus": {
+      "harvestSpeed": 0.02
+    },
     "hintView": "job_farmer"
   },
   "ach_harvest_farmer_disciple": {
@@ -236,8 +282,12 @@
     "type": "harvest_resource",
     "resourceId": "ble",
     "target": 10000,
-    "requires": { "achievementId": "ach_harvest_farmer_apprentice" },
-    "rewardBonus": { "yield": 0.02 },
+    "requires": {
+      "achievementId": "ach_harvest_farmer_apprentice"
+    },
+    "rewardBonus": {
+      "yield": 0.02
+    },
     "hintView": "job_farmer"
   },
   "ach_harvest_farmer_master": {
@@ -250,11 +300,14 @@
     "type": "harvest_resource",
     "resourceId": "ble",
     "target": 50000,
-    "requires": { "achievementId": "ach_harvest_farmer_disciple" },
-    "rewardBonus": { "xp": 0.02 },
+    "requires": {
+      "achievementId": "ach_harvest_farmer_disciple"
+    },
+    "rewardBonus": {
+      "xp": 0.02
+    },
     "hintView": "job_farmer"
   },
-
   "ach_harvest_alchemist_apprentice": {
     "id": "ach_harvest_alchemist_apprentice",
     "order": 140,
@@ -265,7 +318,9 @@
     "type": "harvest_resource",
     "resourceId": "pissenlit",
     "target": 1000,
-    "rewardBonus": { "harvestSpeed": 0.02 },
+    "rewardBonus": {
+      "harvestSpeed": 0.02
+    },
     "hintView": "job_alchemist"
   },
   "ach_harvest_alchemist_disciple": {
@@ -278,8 +333,12 @@
     "type": "harvest_resource",
     "resourceId": "pissenlit",
     "target": 10000,
-    "requires": { "achievementId": "ach_harvest_alchemist_apprentice" },
-    "rewardBonus": { "yield": 0.02 },
+    "requires": {
+      "achievementId": "ach_harvest_alchemist_apprentice"
+    },
+    "rewardBonus": {
+      "yield": 0.02
+    },
     "hintView": "job_alchemist"
   },
   "ach_harvest_alchemist_master": {
@@ -292,8 +351,267 @@
     "type": "harvest_resource",
     "resourceId": "pissenlit",
     "target": 50000,
-    "requires": { "achievementId": "ach_harvest_alchemist_disciple" },
-    "rewardBonus": { "xp": 0.02 },
+    "requires": {
+      "achievementId": "ach_harvest_alchemist_disciple"
+    },
+    "rewardBonus": {
+      "xp": 0.02
+    },
     "hintView": "job_alchemist"
+  },
+  "ach_farm_chicken_coop_apprentice": {
+    "id": "ach_farm_chicken_coop_apprentice",
+    "order": 200,
+    "category": "farm",
+    "tier": "apprentice",
+    "title": "Apprenti poulailler",
+    "description": "Collecte 500 productions au Poulailler.",
+    "type": "farm_building",
+    "buildingId": "chicken_coop",
+    "target": 500,
+    "rewardBonus": {
+      "farmExtraYield": 0.02
+    },
+    "hintView": "farm_chicken_coop"
+  },
+  "ach_farm_chicken_coop_disciple": {
+    "id": "ach_farm_chicken_coop_disciple",
+    "order": 201,
+    "category": "farm",
+    "tier": "disciple",
+    "title": "Disciple poulailler",
+    "description": "Collecte 2 500 productions au Poulailler.",
+    "type": "farm_building",
+    "buildingId": "chicken_coop",
+    "target": 2500,
+    "requires": {
+      "achievementId": "ach_farm_chicken_coop_apprentice"
+    },
+    "rewardBonus": {
+      "farmFeedDiscount": 0.02
+    },
+    "hintView": "farm_chicken_coop"
+  },
+  "ach_farm_chicken_coop_master": {
+    "id": "ach_farm_chicken_coop_master",
+    "order": 202,
+    "category": "farm",
+    "tier": "master",
+    "title": "Maître poulailler",
+    "description": "Collecte 8 000 productions au Poulailler.",
+    "type": "farm_building",
+    "buildingId": "chicken_coop",
+    "target": 8000,
+    "requires": {
+      "achievementId": "ach_farm_chicken_coop_disciple"
+    },
+    "rewardBonus": {
+      "farmAnimalLife": 0.02
+    },
+    "hintView": "farm_chicken_coop"
+  },
+  "ach_farm_barn_apprentice": {
+    "id": "ach_farm_barn_apprentice",
+    "order": 203,
+    "category": "farm",
+    "tier": "apprentice",
+    "title": "Apprenti étable",
+    "description": "Collecte 500 productions au Étable.",
+    "type": "farm_building",
+    "buildingId": "barn",
+    "target": 500,
+    "rewardBonus": {
+      "farmExtraYield": 0.02
+    },
+    "hintView": "farm_barn"
+  },
+  "ach_farm_barn_disciple": {
+    "id": "ach_farm_barn_disciple",
+    "order": 204,
+    "category": "farm",
+    "tier": "disciple",
+    "title": "Disciple étable",
+    "description": "Collecte 2 500 productions au Étable.",
+    "type": "farm_building",
+    "buildingId": "barn",
+    "target": 2500,
+    "requires": {
+      "achievementId": "ach_farm_barn_apprentice"
+    },
+    "rewardBonus": {
+      "farmFeedDiscount": 0.02
+    },
+    "hintView": "farm_barn"
+  },
+  "ach_farm_barn_master": {
+    "id": "ach_farm_barn_master",
+    "order": 205,
+    "category": "farm",
+    "tier": "master",
+    "title": "Maître étable",
+    "description": "Collecte 8 000 productions au Étable.",
+    "type": "farm_building",
+    "buildingId": "barn",
+    "target": 8000,
+    "requires": {
+      "achievementId": "ach_farm_barn_disciple"
+    },
+    "rewardBonus": {
+      "farmAnimalLife": 0.02
+    },
+    "hintView": "farm_barn"
+  },
+  "ach_farm_sheepfold_apprentice": {
+    "id": "ach_farm_sheepfold_apprentice",
+    "order": 206,
+    "category": "farm",
+    "tier": "apprentice",
+    "title": "Apprenti bergerie",
+    "description": "Collecte 500 productions au Bergerie.",
+    "type": "farm_building",
+    "buildingId": "sheepfold",
+    "target": 500,
+    "rewardBonus": {
+      "farmExtraYield": 0.02
+    },
+    "hintView": "farm_sheepfold"
+  },
+  "ach_farm_sheepfold_disciple": {
+    "id": "ach_farm_sheepfold_disciple",
+    "order": 207,
+    "category": "farm",
+    "tier": "disciple",
+    "title": "Disciple bergerie",
+    "description": "Collecte 2 500 productions au Bergerie.",
+    "type": "farm_building",
+    "buildingId": "sheepfold",
+    "target": 2500,
+    "requires": {
+      "achievementId": "ach_farm_sheepfold_apprentice"
+    },
+    "rewardBonus": {
+      "farmFeedDiscount": 0.02
+    },
+    "hintView": "farm_sheepfold"
+  },
+  "ach_farm_sheepfold_master": {
+    "id": "ach_farm_sheepfold_master",
+    "order": 208,
+    "category": "farm",
+    "tier": "master",
+    "title": "Maître bergerie",
+    "description": "Collecte 8 000 productions au Bergerie.",
+    "type": "farm_building",
+    "buildingId": "sheepfold",
+    "target": 8000,
+    "requires": {
+      "achievementId": "ach_farm_sheepfold_disciple"
+    },
+    "rewardBonus": {
+      "farmAnimalLife": 0.02
+    },
+    "hintView": "farm_sheepfold"
+  },
+  "ach_farm_pigsty_apprentice": {
+    "id": "ach_farm_pigsty_apprentice",
+    "order": 209,
+    "category": "farm",
+    "tier": "apprentice",
+    "title": "Apprenti porcherie",
+    "description": "Collecte 500 productions au Porcherie.",
+    "type": "farm_building",
+    "buildingId": "pigsty",
+    "target": 500,
+    "rewardBonus": {
+      "farmExtraYield": 0.02
+    },
+    "hintView": "farm_pigsty"
+  },
+  "ach_farm_pigsty_disciple": {
+    "id": "ach_farm_pigsty_disciple",
+    "order": 210,
+    "category": "farm",
+    "tier": "disciple",
+    "title": "Disciple porcherie",
+    "description": "Collecte 2 500 productions au Porcherie.",
+    "type": "farm_building",
+    "buildingId": "pigsty",
+    "target": 2500,
+    "requires": {
+      "achievementId": "ach_farm_pigsty_apprentice"
+    },
+    "rewardBonus": {
+      "farmFeedDiscount": 0.02
+    },
+    "hintView": "farm_pigsty"
+  },
+  "ach_farm_pigsty_master": {
+    "id": "ach_farm_pigsty_master",
+    "order": 211,
+    "category": "farm",
+    "tier": "master",
+    "title": "Maître porcherie",
+    "description": "Collecte 8 000 productions au Porcherie.",
+    "type": "farm_building",
+    "buildingId": "pigsty",
+    "target": 8000,
+    "requires": {
+      "achievementId": "ach_farm_pigsty_disciple"
+    },
+    "rewardBonus": {
+      "farmAnimalLife": 0.02
+    },
+    "hintView": "farm_pigsty"
+  },
+  "ach_farm_beehive_apprentice": {
+    "id": "ach_farm_beehive_apprentice",
+    "order": 212,
+    "category": "farm",
+    "tier": "apprentice",
+    "title": "Apprenti ruches",
+    "description": "Collecte 500 productions au Ruches.",
+    "type": "farm_building",
+    "buildingId": "beehive",
+    "target": 500,
+    "rewardBonus": {
+      "farmExtraYield": 0.02
+    },
+    "hintView": "farm_beehive"
+  },
+  "ach_farm_beehive_disciple": {
+    "id": "ach_farm_beehive_disciple",
+    "order": 213,
+    "category": "farm",
+    "tier": "disciple",
+    "title": "Disciple ruches",
+    "description": "Collecte 2 500 productions au Ruches.",
+    "type": "farm_building",
+    "buildingId": "beehive",
+    "target": 2500,
+    "requires": {
+      "achievementId": "ach_farm_beehive_apprentice"
+    },
+    "rewardBonus": {
+      "farmFeedDiscount": 0.02
+    },
+    "hintView": "farm_beehive"
+  },
+  "ach_farm_beehive_master": {
+    "id": "ach_farm_beehive_master",
+    "order": 214,
+    "category": "farm",
+    "tier": "master",
+    "title": "Maître ruches",
+    "description": "Collecte 8 000 productions au Ruches.",
+    "type": "farm_building",
+    "buildingId": "beehive",
+    "target": 8000,
+    "requires": {
+      "achievementId": "ach_farm_beehive_disciple"
+    },
+    "rewardBonus": {
+      "farmAnimalLife": 0.02
+    },
+    "hintView": "farm_beehive"
   }
 }

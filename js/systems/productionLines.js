@@ -27,6 +27,7 @@ import {
   rollFarmProductDrops,
   getFarmProductionXp,
   getPrimaryFeedId,
+  getEffectiveAnimalMaxCycles,
 } from './farm.js';
 import { addFarmBuildingXp, getFarmBuildingLevel } from './farmProgress.js';
 import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBoostMult } from './prestige.js';
@@ -612,7 +613,7 @@ export function buyFarmAnimal(state, farmData, buildingId, balance = null) {
   const paid = payAnimalCost(state, cost);
   if (!paid.ok) return paid;
 
-  meta.animals[emptyIdx] = { cyclesLeft: Math.max(1, building.animalMaxCycles || 12) };
+  meta.animals[emptyIdx] = { cyclesLeft: getEffectiveAnimalMaxCycles(building, state) };
   normalizeAnimalSlots(meta);
   ensureFarmUnitsForAnimalSlots(state, farmData, buildingId, balance);
   return {
@@ -734,17 +735,22 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
 
   const buildingLv = getFarmBuildingLevel(state, buildingId);
   const yieldBonus = Math.floor((buildingLv - 1) * 0.02);
+  const achExtra = state.achievements?.bonuses?.farmExtraYield || state.quests?.bonuses?.farmExtraYield || 0;
 
   let products;
   if (isUnifiedFarmBuilding(building)) {
     products = rollFarmProductDrops(building);
     for (const [resId, qty] of Object.entries(products)) {
-      const bonus = yieldBonus > 0 && Math.random() < yieldBonus ? 1 : 0;
-      products[resId] = qty + bonus;
+      let amount = qty;
+      if (yieldBonus > 0 && Math.random() < yieldBonus) amount += 1;
+      if (achExtra > 0 && Math.random() < achExtra) amount += 1;
+      products[resId] = amount;
     }
   } else {
     const qty = building?.products?.[productId] || 1;
-    const amount = qty + (yieldBonus > 0 && Math.random() < yieldBonus ? 1 : 0);
+    let amount = qty;
+    if (yieldBonus > 0 && Math.random() < yieldBonus) amount += 1;
+    if (achExtra > 0 && Math.random() < achExtra) amount += 1;
     products = { [productId]: amount };
   }
 

@@ -121,7 +121,7 @@ function applyCraftResult(recipeId, recipe, state) {
 
   if (isDurabilityTool(recipe)) {
     if (!state.crafted.includes(recipeId)) state.crafted.push(recipeId);
-    initToolDurability(state, recipeId, getEffectiveMaxUses(state, recipe) || recipe.maxUses);
+    initToolDurability(state, recipeId, getEffectiveMaxUses(state, recipe, recipeId) || recipe.maxUses);
     return;
   }
 
@@ -306,7 +306,7 @@ export function repairCraftSave(state, recipes) {
     if (!recipe || !isDurabilityTool(recipe)) continue;
     const uses = state.toolDurability[recipeId];
     if (uses === undefined || !Number.isFinite(Number(uses))) {
-      state.toolDurability[recipeId] = getEffectiveMaxUses(state, recipe) || recipe.maxUses;
+      state.toolDurability[recipeId] = getEffectiveMaxUses(state, recipe, recipeId) || recipe.maxUses;
     }
   }
 }

@@ -830,6 +830,19 @@ body.admin-sheet-open {
   align-items: center;
 }
 
+.admin-grant-kirha-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  width: 100%;
+}
+
+.admin-kirha-input {
+  max-width: 140px;
+  min-height: 44px;
+}
+
 .admin-actions .btn-sm,
 .btn-sm {
   min-height: 36px;
