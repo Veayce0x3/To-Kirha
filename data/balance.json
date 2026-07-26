@@ -2,25 +2,12 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 41,
-  "appBuildId": "20260726-1705",
+  "appBuildId": "20260726-1945",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
   "questsEnabled": true,
   "betaModeNote": "false en prod : équipiers à débloquer en jeu.",
-  "testHdv": {
-    "enabled": true,
-    "flatUnitPrice": 10,
-    "priceMultiplier": 1.2,
-    "flatMaxPrice": 12,
-    "bulkQuantities": [
-      1,
-      5,
-      10,
-      25
-    ],
-    "banner": "Marché test — toutes les ressources métiers/ferme à 10 💰/u (beta). HDV joueurs dans l’onglet Joueurs."
-  },
   "goldNuggetExchange": {
     "scrollCost": 5,
     "kirhaPerNugget": 40
@@ -84,16 +71,40 @@
     "comment": "Tier 1=12 XP, puis +4/palier — early un peu plus généreux"
   },
   "xpScalingCurve": [
-    { "untilLevel": 20, "scaling": 1.06 },
-    { "untilLevel": 40, "scaling": 1.10 },
-    { "untilLevel": 60, "scaling": 1.15 },
-    { "untilLevel": 999, "scaling": 1.18 }
+    {
+      "untilLevel": 20,
+      "scaling": 1.06
+    },
+    {
+      "untilLevel": 40,
+      "scaling": 1.1
+    },
+    {
+      "untilLevel": 60,
+      "scaling": 1.15
+    },
+    {
+      "untilLevel": 999,
+      "scaling": 1.18
+    }
   ],
   "characterXpScalingCurve": [
-    { "untilLevel": 20, "scaling": 1.05 },
-    { "untilLevel": 40, "scaling": 1.09 },
-    { "untilLevel": 60, "scaling": 1.14 },
-    { "untilLevel": 999, "scaling": 1.18 }
+    {
+      "untilLevel": 20,
+      "scaling": 1.05
+    },
+    {
+      "untilLevel": 40,
+      "scaling": 1.09
+    },
+    {
+      "untilLevel": 60,
+      "scaling": 1.14
+    },
+    {
+      "untilLevel": 999,
+      "scaling": 1.18
+    }
   ],
   "resourceUnlock": {
     "starterLevel": 1,

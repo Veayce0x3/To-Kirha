@@ -191,6 +191,10 @@ export function initUI(game, audio) {
       if (pending.type === 'totalHarvests') {
         return `${pending.currentLevel}/${pending.requiredLevel} récoltes`;
       }
+      if (pending.type === 'buildingLevel') {
+        const name = pending.buildingName || pending.jobName || 'Bâtiment';
+        return `${name} Nv.${pending.currentLevel}/${pending.requiredLevel}`;
+      }
       if (pending.type === 'building') {
         if (pending.requiredLevel != null) {
           return `${pending.buildingName} Nv.${pending.currentLevel}/${pending.requiredLevel}`;
@@ -199,6 +203,9 @@ export function initUI(game, audio) {
       }
     }
     const gateName = game.jobs[entry.gateJob]?.name || entry.gateJob;
+    if (entry.currentLevel == null || entry.requiredLevel == null) {
+      return entry.hint || 'Se débloque plus tard';
+    }
     return entry.gateJob
       ? `${gateName} Nv.${entry.currentLevel}/${entry.requiredLevel}`
       : `Nv.${entry.currentLevel}/${entry.requiredLevel}`;

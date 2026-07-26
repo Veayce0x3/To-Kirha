@@ -4,7 +4,6 @@ let cachedConfig = {
   maintenance_mode: false,
   leaderboard_enabled: true,
   market_p2p_enabled: true,
-  test_hdv_enabled: true,
   reporting_enabled: true,
 };
 
@@ -26,10 +25,6 @@ export function isMarketP2pEnabled() {
 
 export function isReportingEnabled() {
   return cachedConfig.reporting_enabled !== false;
-}
-
-export function isTestHdvLiveEnabled() {
-  return cachedConfig.test_hdv_enabled !== false;
 }
 
 function parseConfigValue(val) {

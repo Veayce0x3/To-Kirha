@@ -1,6 +1,6 @@
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, FARM_BUILDING_LABELS } from '../systems/farm.js';
-import { getRecolteNavItems, getVisibleFarmViews } from '../systems/careerChoice.js';
+import { getRecolteNavItems, getFermeNavItems } from '../systems/careerChoice.js';
 
 let currentView = 'character';
 let navigateGuard = null;
@@ -211,7 +211,9 @@ export function getNavCategories(state = null, balance = null, jobs = null) {
   const harvestItems = jobs
     ? getRecolteNavItems(state, balance, jobs)
     : getRecolteNavItems(state, balance);
-  const farmItems = getVisibleFarmViews(state, balance);
+  const farmItems = jobs
+    ? getFermeNavItems(state, balance, jobs)
+    : getFermeNavItems(state, balance);
   const achievementsOn = balance?.achievementsEnabled === true || balance?.questsEnabled === true;
 
   return NAV_CATEGORIES.map((cat) => {

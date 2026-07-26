@@ -53,7 +53,7 @@ import { getSupabaseClient, isSupabaseConfigured } from '../core/supabaseClient.
 import { formatPlayDuration } from '../systems/playtime.js';
 
 let gameRef = null;
-let activeTab = 'dashboard';
+let activeTab = 'players';
 let selectedPlayerId = null;
 let statusMsg = '';
 let panelBodyEl = null;
@@ -110,7 +110,19 @@ function bindRefresh(container, fn) {
 
 function bindPlayerTable(container) {
   container.querySelectorAll('.admin-view-player').forEach((btn) => {
-    btn.addEventListener('click', () => loadPlayerDetail(btn.dataset.uid));
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      loadPlayerDetail(btn.dataset.uid);
+    });
+  });
+  container.querySelectorAll('.admin-player-row[data-uid]').forEach((row) => {
+    row.addEventListener('click', () => loadPlayerDetail(row.dataset.uid));
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        loadPlayerDetail(row.dataset.uid);
+      }
+    });
   });
 }
 
@@ -200,6 +212,36 @@ function farmLabel(id) {
   const b = gameRef?.farmData?.buildings?.[id];
   if (!b) return id;
   return `${b.emoji || ''} ${b.name || id}`.trim();
+}
+
+function careerLabelFromSave(save_summary) {
+  if (!save_summary?.career_confirmed) return 'Non choisie';
+  const WEAPON_LABELS = {
+    sword_shield: 'Guerrier',
+    bow: 'Archer',
+    staff: 'Mage',
+  };
+  const weaponRaw = save_summary.career_weapon || save_summary.career_harvest;
+  const teamRaw = save_summary.career_team || save_summary.career_farm;
+  const weapon = WEAPON_LABELS[weaponRaw] || (typeof weaponRaw === 'string' ? weaponRaw : null);
+  let team = null;
+  if (Array.isArray(teamRaw)) {
+    team = teamRaw.map((t) => WEAPON_LABELS[t] || t).filter(Boolean).join(', ');
+  } else if (typeof teamRaw === 'string') {
+    team = WEAPON_LABELS[teamRaw] || teamRaw;
+  }
+  if (weapon && team) return `${weapon} · équipe ${team}`;
+  if (weapon) return weapon;
+  if (team) return `Équipe ${team}`;
+  return 'Confirmée';
+}
+
+function combatItemLabel(c) {
+  const id = c?.item_id || c?.ref || '?';
+  const def = gameRef?.combatEquipment?.items?.[id];
+  const name = def?.name || id;
+  const rarity = c?.rarity ? ` (${c.rarity})` : '';
+  return `${def?.emoji || '⚔️'} ${name}${rarity}`.trim();
 }
 
 function allJobIds(jobsSummary = {}) {
@@ -295,18 +337,16 @@ function playerTableHtml(rows) {
             <th>Rôle</th>
             <th>Nv.</th>
             <th>Dernière connexion</th>
-            <th>Statut</th>
             <th></th>
           </tr>
         </thead>
         <tbody>${rows.map((r) => `
-          <tr class="${r.is_banned ? 'row-banned' : ''}${r.cheat_flagged ? ' row-flagged' : ''}">
-            <td class="admin-td-name">${r.display_name || '?'}</td>
+          <tr class="admin-player-row${r.is_banned ? ' row-banned' : ''}${r.cheat_flagged ? ' row-flagged' : ''}" data-uid="${r.user_id}" tabindex="0">
+            <td class="admin-td-name">${escHtml(r.display_name || '?')}${r.is_banned ? ' ⛔' : ''}${r.cheat_flagged ? ' ⚠️' : ''}</td>
             <td>${roleBadge(r.role)}</td>
             <td>${r.char_level || 1}</td>
-            <td class="admin-td-muted" title="${fmtDate(r.last_online || r.save_updated_at)}">${fmtLastSeen(r)}</td>
-            <td>${playerStatusChip(r)}</td>
-            <td><button type="button" class="btn btn-muted btn-sm admin-view-player" data-uid="${r.user_id}">Fiche</button></td>
+            <td class="admin-td-muted" title="${escHtml(fmtDate(r.last_online || r.save_updated_at))}">${escHtml(fmtLastSeen(r))}</td>
+            <td><button type="button" class="btn btn-craft btn-sm admin-view-player" data-uid="${r.user_id}">Fiche</button></td>
           </tr>
         `).join('')}</tbody>
       </table>
@@ -325,65 +365,53 @@ async function renderDashboard(container) {
   const cfg = d.config || {};
   const maintenance = cfg.maintenance_mode === true || cfg.maintenance_mode === 'true';
   const pending = d.pending_reports || [];
-  const recentLogs = d.recent_logs || [];
   const recentPlayers = d.recent_players || [];
 
   container.innerHTML = `
-    ${toolbarHtml()}
+    ${toolbarHtml(`
+      <button type="button" class="btn btn-craft admin-goto-tab" data-tab="players">👥 Joueurs</button>
+      ${d.reports_pending > 0 ? `<button type="button" class="btn btn-muted admin-goto-tab" data-tab="reports">🚩 ${d.reports_pending}</button>` : ''}
+    `)}
     ${maintenance ? '<div class="admin-alert warn">Mode maintenance actif — online limité pour les joueurs.</div>' : ''}
-    ${d.reports_pending > 0 ? `<div class="admin-alert info">${d.reports_pending} signalement(s) en attente — <button type="button" class="btn-link admin-goto-tab" data-tab="reports">Traiter</button></div>` : ''}
     <div class="admin-stat-grid admin-stat-grid-primary">
-      <div class="admin-stat"><span class="admin-stat-val">${fmtNum(d.players_total)}</span><span class="admin-stat-lbl">Joueurs</span></div>
+      <button type="button" class="admin-stat admin-stat-btn admin-goto-tab" data-tab="players">
+        <span class="admin-stat-val">${fmtNum(d.players_total)}</span>
+        <span class="admin-stat-lbl">Joueurs</span>
+      </button>
       <div class="admin-stat accent"><span class="admin-stat-val">+${fmtNum(d.players_new_24h)}</span><span class="admin-stat-lbl">Nouveaux 24 h</span></div>
-      <div class="admin-stat"><span class="admin-stat-val">${fmtNum(d.reports_pending)}</span><span class="admin-stat-lbl">Signalements</span></div>
+      <button type="button" class="admin-stat admin-stat-btn admin-goto-tab" data-tab="reports">
+        <span class="admin-stat-val">${fmtNum(d.reports_pending)}</span>
+        <span class="admin-stat-lbl">Signalements</span>
+      </button>
       <div class="admin-stat warn"><span class="admin-stat-val">${fmtNum(d.players_banned)}</span><span class="admin-stat-lbl">Bannis</span></div>
-      <div class="admin-stat warn"><span class="admin-stat-val">${fmtNum(d.players_flagged)}</span><span class="admin-stat-lbl">Flags</span></div>
     </div>
-    <p class="admin-meta-line">Classement ${fmtNum(d.leaderboard_entries)} · Saves ${fmtNum(d.saves_total)} · Staff ${fmtNum(d.staff_count)} · Annonces ${fmtNum(d.announcements_active)}</p>
-    <div class="admin-dash-cols">
+    <section class="admin-dash-section">
+      <h4 class="admin-section-title">Accès rapide — joueurs récents</h4>
+      ${recentPlayers.length ? `
+        <div class="admin-quick-players">
+          ${recentPlayers.slice(0, 12).map((p) => `
+            <button type="button" class="admin-quick-player admin-goto-player" data-uid="${p.user_id}">
+              <strong>${escHtml(p.display_name || '?')}</strong>
+              <span>${ROLE_LABELS[p.role] || p.role} · ${escHtml(fmtLastSeen(p))}</span>
+            </button>
+          `).join('')}
+        </div>
+      ` : '<p class="view-desc">Aucun joueur.</p>'}
+    </section>
+    ${pending.length ? `
       <section class="admin-dash-section">
-        <h4 class="admin-section-title">Signalements</h4>
-        ${pending.length ? pending.map((r) => `
+        <h4 class="admin-section-title">Signalements en attente</h4>
+        ${pending.map((r) => `
           <div class="admin-mini-row">
             <div class="admin-mini-text">
-              <strong>${r.reported_name || '?'}</strong>
-              <span class="admin-td-muted">${(r.reason || '').slice(0, 70) || '—'}</span>
+              <strong>${escHtml(r.reported_name || '?')}</strong>
+              <span class="admin-td-muted">${escHtml((r.reason || '').slice(0, 70) || '—')}</span>
             </div>
             <button type="button" class="btn btn-muted btn-sm admin-goto-player" data-uid="${r.reported_user_id}">Fiche</button>
           </div>
-        `).join('') : '<p class="view-desc">Rien en attente.</p>'}
+        `).join('')}
       </section>
-      <section class="admin-dash-section">
-        <h4 class="admin-section-title">Inscriptions récentes</h4>
-        ${recentPlayers.length ? recentPlayers.map((p) => `
-          <div class="admin-mini-row">
-            <div class="admin-mini-text">
-              <strong>${p.display_name}</strong>
-              <span class="admin-td-muted">${fmtDate(p.created_at)} · ${ROLE_LABELS[p.role] || p.role}</span>
-            </div>
-            <button type="button" class="btn btn-muted btn-sm admin-goto-player" data-uid="${p.user_id}">Fiche</button>
-          </div>
-        `).join('') : '<p class="view-desc">Aucun joueur.</p>'}
-      </section>
-      <section class="admin-dash-section admin-dash-wide">
-        <h4 class="admin-section-title">Dernières actions staff</h4>
-        ${recentLogs.length ? `
-          <div class="admin-table-wrap">
-            <table class="admin-table admin-table-compact">
-              <thead><tr><th>Quand</th><th>Qui</th><th>Action</th><th>Cible</th></tr></thead>
-              <tbody>${recentLogs.map((l) => `
-                <tr>
-                  <td class="admin-td-muted">${fmtLastSeen(l.created_at)}</td>
-                  <td>${l.actor_name || '—'}</td>
-                  <td>${LOG_ACTION_LABELS[l.action] || l.action}</td>
-                  <td>${l.target_name || '—'}</td>
-                </tr>
-              `).join('')}</tbody>
-            </table>
-          </div>
-        ` : '<p class="view-desc">Aucune action récente.</p>'}
-      </section>
-    </div>
+    ` : ''}
   `;
 
   bindRefresh(container, () => renderDashboard(container));
@@ -542,16 +570,10 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
     : '';
 
   const combatHtml = Array.isArray(combat_items) && combat_items.length
-    ? combat_items.map((c) => `<span class="admin-tag">${escHtml(c?.item_id || c?.ref || '?')} ${escHtml(c?.rarity || '')}</span>`).join(' ')
+    ? combat_items.map((c) => `<span class="admin-tag">${escHtml(combatItemLabel(c))}</span>`).join(' ')
     : '—';
 
-  const careerLabel = (() => {
-    if (!save_summary?.career_confirmed) return 'Non choisie';
-    const weapon = save_summary.career_weapon || save_summary.career_harvest;
-    const team = save_summary.career_team || save_summary.career_farm;
-    if (weapon || team) return `${weapon || '?'} / ${team || '?'}`;
-    return 'Confirmée';
-  })();
+  const careerLabel = careerLabelFromSave(save_summary);
 
   const history = Array.isArray(save_summary?.season_history) ? save_summary.season_history : [];
   const historyHtml = history.length
@@ -1231,7 +1253,6 @@ async function renderConfig(container) {
     { key: 'maintenance_mode', label: 'Mode maintenance', desc: 'Bloque les fonctionnalités online' },
     { key: 'leaderboard_enabled', label: 'Classement actif', desc: 'Autorise les mises à jour classement' },
     { key: 'market_p2p_enabled', label: 'HDV joueurs actif', desc: 'Autorise le marché P2P' },
-    { key: 'test_hdv_enabled', label: 'HDV test actif', desc: 'Marché test à prix fixe' },
     { key: 'reporting_enabled', label: 'Signalements actifs', desc: 'Les joueurs peuvent signaler' },
   ];
 

@@ -33,8 +33,7 @@ import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consu
 import { RARITY_LABELS, RARITY_EMOJI, getInstanceRarity, getNextRarity } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId } from '../systems/dungeonKeys.js';
-import { getVisibleHarvestViews, getVisibleFarmViews, isGatheringJobUnlocked, getGatheringJobUnlockProgress, getFeatureUnlockProgress, getJobSwitcherItems } from '../systems/careerChoice.js';
-import { getTestHdvBanner, isTestHdvEnabled } from '../systems/testHdv.js';
+import { getVisibleHarvestViews, getVisibleFarmViews, isGatheringJobUnlocked, getGatheringJobUnlockProgress, getFeatureUnlockProgress, getJobSwitcherItems, getFarmBuildingUnlockProgress, isFarmBuildingUnlocked } from '../systems/careerChoice.js';
 import { showCareerChoiceIfNeeded } from './careerChoiceUi.js';
 import { reconcileAuthAfterLocalReset } from '../core/resetAuth.js';
 import { renderGuestBanner, renderAccountPanel, showAccountRequiredModal } from './authUi.js';
@@ -87,6 +86,33 @@ function renderSeasonBonusPills(state) {
   `;
 }
 
+function renderAllBonusesPanel(state) {
+  const season = getSeasonBonusPercents(state);
+  const ach = getAchievementBonuses(state);
+  const pct = (v) => `${Math.round((Number(v) || 0) * 1000) / 10}`.replace(/\.0$/, '');
+  const rows = [
+    { label: 'Kirha (saison)', value: season.kirhaPct > 0 ? `+${season.kirhaPct}%` : '—' },
+    { label: 'XP perso (saison)', value: season.xpPct > 0 ? `+${season.xpPct}%` : '—' },
+    { label: 'XP métiers (saison)', value: season.jobXpPct > 0 ? `+${season.jobXpPct}%` : '—' },
+    { label: 'Repousse (saison)', value: season.regrowthPct > 0 ? `+${season.regrowthPct}%` : '—' },
+    { label: 'Kirha (succès)', value: ach.kirha > 0 ? `+${pct(ach.kirha)}%` : '—' },
+    { label: 'XP (succès)', value: ach.xp > 0 ? `+${pct(ach.xp)}%` : '—' },
+    { label: 'Repousse (succès)', value: ach.harvestSpeed > 0 ? `−${pct(ach.harvestSpeed)}%` : '—' },
+    { label: 'Rendement récolte', value: ach.yield > 0 ? `+${pct(ach.yield)}%` : '—' },
+    { label: 'Prod. ferme', value: ach.farmExtraYield > 0 ? `+${pct(ach.farmExtraYield)}%` : '—' },
+    { label: 'Nourriture ferme', value: ach.farmFeedDiscount > 0 ? `−${pct(ach.farmFeedDiscount)}%` : '—' },
+    { label: 'Vie animal', value: ach.farmAnimalLife > 0 ? `+${pct(ach.farmAnimalLife)}%` : '—' },
+  ];
+  return `
+    <details class="char-bonuses-panel">
+      <summary>Bonus actifs (saison & succès)</summary>
+      <ul class="char-bonuses-list">
+        ${rows.map((r) => `<li><span>${r.label}</span><strong>${r.value}</strong></li>`).join('')}
+      </ul>
+    </details>
+  `;
+}
+
 function renderLockedUnlockPanel(game, el, entry) {
   const pct = Math.floor((entry.progress || 0) * 100);
   const icon = entry.featureId
@@ -100,8 +126,8 @@ function renderLockedUnlockPanel(game, el, entry) {
   if (entry.gates?.length) {
     gatesHtml = entry.gates.map((gate) => {
       const gatePct = Math.floor((gate.progress || 0) * 100);
-      const label = gate.type === 'building'
-        ? gate.buildingName
+      const label = gate.type === 'building' || gate.type === 'buildingLevel'
+        ? (gate.buildingName || gate.jobName)
         : gate.jobName;
       const meta = gate.ready
         ? '✓ Atteint'
@@ -609,10 +635,11 @@ function renderCharacter(game, el) {
             <p class="char-hero-sub">Saison ${s.season || 1} · ${zone?.emoji || ''} ${zone?.name || ''} · Nv.${charProg.level}${charProg.seasonCap ? ` / ${charProg.seasonCap}` : ''}</p>
             <div class="char-xp-row">
               <div class="xp-bar-container"><div class="xp-bar" style="width:${charPct}%"></div></div>
-              <span class="xp-text">${charProg.atSeasonCap ? `Plafond Saison ${s.season || 1}` : `${charProg.xp} / ${charProg.needed} XP`}</span>
+              <span class="xp-text">${charProg.atSeasonCap ? `Plafond Saison ${s.season || 1}` : `${formatNumber(charProg.xp)} / ${formatNumber(charProg.needed)} XP`}</span>
             </div>
             ${renderCharStatPills(statsBreakdown.total)}
             ${renderSeasonBonusPills(s)}
+            ${renderAllBonusesPanel(s)}
             <button class="btn btn-muted btn-small char-combat-link" id="goto-combat" type="button">⚔️ Zones de combat</button>
           </div>
           <div class="char-equip-wrap">
@@ -2260,7 +2287,7 @@ export function refreshJobViewLight(game, jobId) {
   if (text) {
     text.textContent = prog.atSeasonCap
       ? `Plafond Saison ${game.state.season || 1} — passe à la suivante`
-      : `${prog.xp} / ${prog.needed} XP`;
+      : `${formatNumber(prog.xp)} / ${formatNumber(prog.needed)} XP`;
   }
   if (meta) {
     meta.textContent = `Niveau ${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}`;
@@ -2334,7 +2361,7 @@ function renderJobLegacyUnused(game, el, jobId) {
         <button type="button" class="btn btn-muted btn-job-nav" id="job-next" aria-label="Métier suivant" ${nextView ? '' : 'disabled'}>›</button>
       </div>
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
-      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${prog.xp} / ${prog.needed} XP`}</p>
+      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${formatNumber(prog.xp)} / ${formatNumber(prog.needed)} XP`}</p>
     </div>
     <div class="panel-inner job-harvest-panel">
       <div class="panel-head-row">
@@ -2640,7 +2667,7 @@ export function refreshFarmViewLight(game, buildingId) {
     if (text) {
       text.textContent = prog.atSeasonCap
         ? `Plafond Saison ${game.state.season || 1} — passe à la suivante`
-        : `${prog.xp} / ${prog.needed} XP`;
+        : `${formatNumber(prog.xp)} / ${formatNumber(prog.needed)} XP`;
     }
     if (meta) {
       meta.textContent = `Nv.${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}`;
@@ -2671,6 +2698,15 @@ export function updateFarmSlotProgresses(game) {
 }
 
 function renderFarmBuilding(game, el, buildingId) {
+  if (!isFarmBuildingUnlocked(buildingId, game.state, game.balance)) {
+    const entry = getFarmBuildingUnlockProgress(buildingId, game.state, game.balance, game.jobs);
+    if (entry) {
+      const emoji = game.farmData?.buildings?.[buildingId]?.emoji;
+      if (emoji) entry.emoji = emoji;
+      renderLockedUnlockPanel(game, el, entry);
+      return;
+    }
+  }
   renderFarmProduction(game, el, buildingId);
 }
 
@@ -2706,7 +2742,7 @@ function renderFarmBuildingLegacyUnused(game, el, buildingId) {
         <button type="button" class="btn btn-muted btn-job-nav" id="farm-next" aria-label="Bâtiment suivant" ${nextView ? '' : 'disabled'}>›</button>
       </div>
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
-      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${prog.xp} / ${prog.needed} XP Éleveur`}</p>
+      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${formatNumber(prog.xp)} / ${formatNumber(prog.needed)} XP Éleveur`}</p>
       ${toolBlock ? `<p class="slot-tool-hint farm-tool-banner">⚠️ ${toolBlock}</p>` : ''}
     </div>
     ${buildBreederToolStrip(game)}
@@ -2818,8 +2854,8 @@ const AUCTION_GROUP_LABELS = {
 };
 
 function getVendorGroupId(vendorId, vendor) {
-  if (vendor?.testHdv && vendorId.includes('_job_')) return 'gathering';
-  if (vendor?.testHdv && vendorId.includes('_farm_')) return 'farm';
+  if (vendorId.includes('_job_')) return 'gathering';
+  if (vendorId.includes('_farm_')) return 'farm';
   return 'services';
 }
 
@@ -2854,13 +2890,10 @@ function pickDefaultAuctionCategory(vendorEntries, groupId = auctionGroup) {
 
 function getVendorsForHdvMode(game, mode = hdvMainMode) {
   const all = game.getMerchantVendors();
-  if (mode === 'test') {
-    return Object.fromEntries(Object.entries(all).filter(([, v]) => v.testHdv));
-  }
   if (mode === 'npc') {
     return Object.fromEntries(Object.entries(all).filter(([, v]) => !v.testHdv));
   }
-  return all;
+  return Object.fromEntries(Object.entries(all).filter(([, v]) => !v.testHdv));
 }
 
 function buildAuctionCatalog(game, mode = hdvMainMode) {
@@ -3028,7 +3061,7 @@ function renderAuctionOfferList(game, root) {
     const canSellOne = offer.sellable && ownedQty >= 1;
 
     const row = document.createElement('article');
-    row.className = `hdv-row${vendor.testHdv ? ' test' : ''}`;
+    row.className = 'hdv-row';
     row.innerHTML = `
       <div class="hdv-row-body">
         <span class="hdv-row-icon">${renderResourceIcon(resource, 'hdv-row-icon')}</span>
@@ -3088,7 +3121,7 @@ function mountAuctionNavigation(game, root) {
   const chipsEl = root.querySelector('#hdv-vendor-chips');
   if (chipsEl) {
     chipsEl.innerHTML = (activeGroup?.entries || []).map(([vendorId, vendor]) => `
-      <button type="button" class="hdv-chip${auctionCategory === vendorId ? ' active' : ''}${vendor.testHdv ? ' test' : ''}" data-auction-cat="${vendorId}">
+      <button type="button" class="hdv-chip${auctionCategory === vendorId ? ' active' : ''}" data-auction-cat="${vendorId}">
         ${vendor.emoji} ${vendor.name}
       </button>
     `).join('');
@@ -3183,18 +3216,14 @@ export function renderAuctionHouse(game, el) {
   const scrollRes = game.resources.ancient_scroll;
   const nuggetRes = game.resources.gold_nugget;
   const nuggetInfo = game.getGoldNuggetExchangeInfo?.() || null;
-  const testBanner = getTestHdvBanner(game.balance);
-  const careerPending = isTestHdvEnabled(game.balance) && !game.state.careerChoice?.confirmed;
-  const showTest = online && isTestHdvEnabled(game.balance);
   const maintenance = isMaintenanceMode();
   const modes = online
     ? [
       { id: 'npc', label: '📜 Archiviste' },
       { id: 'sell', label: '💰 Vendre' },
-      ...(showTest ? [{ id: 'test', label: '🧪 HDV Test' }] : []),
     ]
     : [{ id: 'sell', label: '💰 Vendre' }];
-  if (hdvMainMode === 'players') hdvMainMode = 'npc';
+  if (hdvMainMode === 'players' || hdvMainMode === 'test') hdvMainMode = 'npc';
   if (!modes.some((m) => m.id === hdvMainMode)) hdvMainMode = modes[0].id;
 
   el.innerHTML = `
@@ -3203,8 +3232,6 @@ export function renderAuctionHouse(game, el) {
     </div>
     <div class="hdv-view hdv-mode-${hdvMainMode}">
       ${maintenance ? '<p class="hdv-banner warn">Maintenance — HDV joueurs et classement limités.</p>' : ''}
-      ${testBanner && hdvMainMode === 'test' ? `<p class="hdv-banner">${testBanner}</p>` : ''}
-      ${careerPending && hdvMainMode === 'test' ? '<p class="hdv-banner warn">Termine l\'introduction pour accéder à toutes les ressources test.</p>' : ''}
       <nav class="hdv-main-tabs" id="hdv-main-tabs" aria-label="Type d\'HDV">
         ${modes.map((m) => `<button type="button" class="hdv-main-tab hdv-main-tab--${m.id}${hdvMainMode === m.id ? ' active' : ''}" data-hdv-mode="${m.id}">${m.label}</button>`).join('')}
       </nav>

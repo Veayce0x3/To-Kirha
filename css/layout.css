@@ -184,6 +184,48 @@
   margin: 0.45rem 0 0.3rem;
 }
 
+.char-bonuses-panel {
+  margin-top: 0.55rem;
+  border-radius: 12px;
+  border: 1px solid rgba(74, 55, 40, 0.1);
+  background: rgba(255, 253, 249, 0.7);
+  padding: 0.35rem 0.65rem;
+}
+
+.char-bonuses-panel summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.88rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+
+.char-bonuses-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.char-bonuses-list {
+  list-style: none;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0;
+}
+
+.char-bonuses-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.3rem 0;
+  border-top: 1px solid rgba(74, 55, 40, 0.06);
+  font-size: 0.82rem;
+}
+
+.char-bonuses-list strong {
+  color: var(--vert-foret);
+  font-variant-numeric: tabular-nums;
+}
+
 .char-bonus-pill {
   display: inline-flex;
   align-items: center;

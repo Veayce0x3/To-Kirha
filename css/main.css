@@ -36,7 +36,7 @@ html {
 
 body {
   font-family: 'Zen Maru Gothic', sans-serif;
-  background: linear-gradient(160deg, var(--rose-pale) 0%, #E8F0E4 42%, var(--vert-bambou-mist) 100%);
+  background: var(--rose-pale);
   color: var(--bois);
   min-height: 100%;
   height: 100%;
@@ -54,9 +54,8 @@ body {
   inset: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(circle at 15% 20%, rgba(232, 180, 203, 0.3) 0%, transparent 40%),
-    radial-gradient(circle at 85% 70%, rgba(195, 155, 211, 0.2) 0%, transparent 35%),
-    radial-gradient(circle at 50% 90%, rgba(74, 140, 63, 0.1) 0%, transparent 30%);
+    radial-gradient(circle at 18% 22%, rgba(232, 180, 203, 0.35) 0%, transparent 42%),
+    radial-gradient(circle at 82% 78%, rgba(248, 232, 238, 0.9) 0%, transparent 38%);
   z-index: 0;
 }
 

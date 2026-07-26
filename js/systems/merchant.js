@@ -13,7 +13,7 @@ export function canBuyOffer(offer, quantity, state, resources) {
   if (!offer || quantity <= 0) return false;
   const resource = resources[offer.resourceId];
   if (!resource) return false;
-  if (!offer.testHdv && !resource.merchantOnly) return false;
+  if (!resource.merchantOnly) return false;
   const price = getBuyPrice(offer, quantity);
   return price !== null && state.kirha >= price;
 }

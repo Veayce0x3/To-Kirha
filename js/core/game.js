@@ -29,7 +29,6 @@ import {
 } from '../systems/zones.js';
 import { migrateToolDurability, wearToolsForHarvest, canUpgradeTool, upgradeTool } from '../systems/toolDurability.js';
 import { getVendorOffer, canBuyOffer, buyOffer, canSellOffer, sellOffer } from '../systems/merchant.js';
-import { buildTestHdvVendors, mergeMerchantVendors } from '../systems/testHdv.js';
 import { getAideCost } from '../systems/passive.js';
 import { applyOfflineProgress } from '../systems/offline.js';
 import {
@@ -1466,14 +1465,7 @@ export class Game {
   }
 
   getMerchantVendors() {
-    const testVendors = buildTestHdvVendors(
-      this.state,
-      this.resources,
-      this.farmData,
-      this.balance,
-      this.jobs
-    );
-    return mergeMerchantVendors(this.merchant, testVendors);
+    return this.merchant;
   }
 
   canBuyMerchant(vendorId, offerId, quantity) {

@@ -9,6 +9,15 @@ import { isDurabilityTool, canUpgradeTool, isToolUpgraded, formatToolUpgradeCost
 import { emit } from '../core/events.js';
 import { navigate } from './router.js';
 
+function formatXp(n) {
+  const x = Number(n) || 0;
+  const rounded = Math.round(x * 100) / 100;
+  if (Math.abs(rounded - Math.round(rounded)) > 1e-9) {
+    return rounded.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+  }
+  return Math.round(rounded).toLocaleString('fr-FR');
+}
+
 function renderIngredientLine(ingredients, kirhaCost, kirhaHave) {
   const parts = ingredients.map(({ res, need, have, ok }) => {
     const icon = res ? renderResourceIcon(res, 'ing-icon') : '?';
@@ -235,7 +244,7 @@ function paintCraftHeader(game, craftJobId, headerEl) {
       <div class="skill-header-title">${job?.emoji || '🔨'} ${job?.name || 'Atelier'}</div>
       <div class="skill-header-meta">Niveau ${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}${prog.atSeasonCap ? ' · plafond saison' : ''}</div>
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
-      <p class="xp-text">${prog.xp} / ${prog.needed} XP</p>
+      <p class="xp-text">${formatXp(prog.xp)} / ${formatXp(prog.needed)} XP</p>
     </div>
   `;
 }

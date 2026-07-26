@@ -110,7 +110,7 @@ function renderAuthBody(mode) {
       </div>
       <div class="auth-account-box">
         <h3>Compte</h3>
-        <p>Save cloud, HDV test + joueurs, classement.${supabaseOk ? '' : ' <em>(Configure js/config.js pour activer Supabase.)</em>'}</p>
+        <p>Save cloud, place marchande, classement.${supabaseOk ? '' : ' <em>(Configure js/config.js pour activer Supabase.)</em>'}</p>
         <button type="button" class="btn btn-craft" id="auth-show-signup" ${supabaseOk ? '' : 'disabled'}>Créer un compte</button>
         <button type="button" class="btn btn-muted" id="auth-show-login" ${supabaseOk ? '' : 'disabled'}>Se connecter</button>
       </div>

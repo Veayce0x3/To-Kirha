@@ -39,21 +39,22 @@ export async function renderLeaderboard(game, el) {
   const mySnap = buildLeaderboardSnapshot(game.state);
   const rows = result.rows || [];
   const showSyncWarn = !sync.ok && rows.length === 0;
+  const tabLabel = tabDef.label;
 
   el.innerHTML = `
     <div class="view-header">
       <h2>🏆 Classement</h2>
-      <p class="view-desc">Compte : ${game.getCharacterDisplayName()}</p>
+      <p class="view-desc">${game.getCharacterDisplayName()} · tri par ${tabLabel.toLowerCase()}</p>
     </div>
-    <nav class="leaderboard-tabs" role="tablist">
+    <nav class="leaderboard-tabs" role="tablist" aria-label="Critères">
       ${LEADERBOARD_TABS.map((t) => `
-        <button type="button" class="leaderboard-tab${t.id === activeLeaderboardTab ? ' active' : ''}" data-lb-tab="${t.id}">${t.label}</button>
+        <button type="button" class="leaderboard-tab${t.id === activeLeaderboardTab ? ' active' : ''}" data-lb-tab="${t.id}" role="tab" aria-selected="${t.id === activeLeaderboardTab}">${t.label}</button>
       `).join('')}
     </nav>
-    <div class="panel-inner">
-      ${showSyncWarn ? `<p class="auth-error">Sync classement : ${sync.reason || 'échec'}</p>` : ''}
+    <div class="panel-inner leaderboard-panel">
+      ${showSyncWarn ? `<p class="auth-error">Sync : ${sync.reason || 'échec'}</p>` : ''}
       ${!result.ok ? `<p class="auth-error">${result.reason || 'Impossible de charger le classement.'}</p>` : ''}
-      ${result.devLocal ? '<p class="view-desc">Mode dev local — classement solo (Supabase non configuré).</p>' : ''}
+      ${result.devLocal ? '<p class="view-desc">Mode local — classement solo.</p>' : ''}
       <ol class="leaderboard-list">
         ${rows.map((row, i) => `
           <li class="leaderboard-row${row.user_id === auth.userId ? ' me' : ''}">
@@ -61,9 +62,9 @@ export async function renderLeaderboard(game, el) {
             <span class="lb-name">${row.display_name || 'Voyageur'}</span>
             <span class="lb-value">${formatLeaderboardValue(activeLeaderboardTab, row)}</span>
           </li>
-        `).join('') || '<li class="leaderboard-empty">Aucun joueur classé pour l\u2019instant. Joue un peu puis reviens ici.</li>'}
+        `).join('') || '<li class="leaderboard-empty">Aucun joueur classé pour l’instant.</li>'}
       </ol>
-      ${mySnap ? `<p class="view-desc lb-you">Toi : ${formatLeaderboardValue(activeLeaderboardTab, { ...mySnap, display_name: game.getCharacterDisplayName() })}</p>` : ''}
+      ${mySnap ? `<p class="view-desc lb-you">Toi · ${tabLabel} : ${formatLeaderboardValue(activeLeaderboardTab, { ...mySnap, display_name: game.getCharacterDisplayName() })}</p>` : ''}
     </div>
   `;
 

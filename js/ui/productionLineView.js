@@ -378,7 +378,7 @@ export function renderJobProduction(game, el, jobId) {
         <button type="button" class="btn btn-muted btn-job-nav" id="job-next" ${nextView ? '' : 'disabled'}>›</button>
       </div>
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
-      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${prog.xp} / ${prog.needed} XP`}</p>
+      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${formatNumber(prog.xp)} / ${formatNumber(prog.needed)} XP`}</p>
     </div>
     <div class="panel-inner">
       <h3>Lignes de production</h3>
@@ -407,7 +407,7 @@ export function renderJobProduction(game, el, jobId) {
 }
 
 function getFarmBtnLabel(progress = 0, remainingMs = null) {
-  if (progress >= 1) return 'Prêt !';
+  if (progress >= 1) return 'Collecter';
   if (remainingMs != null && remainingMs > 0) return formatTimerMs(remainingMs);
   return 'Production…';
 }
@@ -516,7 +516,7 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
   if (useOverlay) {
     card.innerHTML = `
       <div class="slot-visual slot-visual-tap" role="button" tabindex="0" aria-label="${building.name}${statusLabel ? ` — ${statusLabel}` : ''}">
-        ${canStart ? '<span class="slot-ready-badge">Prêt</span>' : ''}
+        ${canStart ? '<span class="slot-ready-badge">Produire</span>' : ''}
         ${spriteHtml}
         ${active ? `<div class="slot-progress-overlay"><div class="slot-progress-fill" style="width:${progressPct}%"></div><span class="slot-progress-label">${statusLabel}</span></div>` : ''}
       </div>
@@ -716,7 +716,7 @@ export function renderFarmProduction(game, el, buildingId) {
       }</div>
       ${prog.grantsXp
         ? `<div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
-      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${prog.xp} / ${prog.needed} XP`}</p>`
+      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${formatNumber(prog.xp)} / ${formatNumber(prog.needed)} XP`}</p>`
         : ''}
     </div>
     <div class="panel-inner">
@@ -832,7 +832,7 @@ export function updateFarmLineProgresses(game, buildingId) {
         if (progress >= 1) {
           card?.classList.add('slot-can-harvest');
           const tap = card?.querySelector('.slot-visual-tap');
-          if (tap) tap.setAttribute('aria-label', `${building.name} — Prêt !`);
+          if (tap) tap.setAttribute('aria-label', `${building.name} — Collecter`);
           // Puits etc. : auto-collecte ; animaux unifiés : attendre le tap
           if (!isUnifiedFarmBuilding(building)) {
             game.completeFarmLine(buildingId, lineKey, unitIndex);

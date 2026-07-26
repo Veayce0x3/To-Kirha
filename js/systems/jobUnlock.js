@@ -130,10 +130,12 @@ function buildBuildingLevelGates(when, state) {
   if (!when?.buildingLevel) return [];
   return Object.entries(when.buildingLevel).map(([buildingId, requiredLevel]) => {
     const currentLevel = state.farmBuildingMeta?.[buildingId]?.level || 1;
+    const buildingName = FARM_BUILDING_LABELS[buildingId] || buildingId;
     return {
       type: 'buildingLevel',
       buildingId,
-      jobName: FARM_BUILDING_LABELS[buildingId] || buildingId,
+      buildingName,
+      jobName: buildingName,
       requiredLevel,
       currentLevel,
       progress: Math.min(1, currentLevel / requiredLevel),
@@ -270,11 +272,11 @@ export function getNextGatheringJobUnlock(state, balance, jobs) {
   return getUpcomingGatheringJobUnlocks(state, balance, jobs, 1)[0] || null;
 }
 
-/** Dock horizontal récolte + ferme (prochain métier verrouillé après Paysan). */
+/** Dock horizontal récolte + ferme (prochain métier / bâtiment verrouillé). */
 export function getJobSwitcherItems(state, balance, jobs = {}) {
   return [
     ...getRecolteNavItems(state, balance, jobs),
-    ...getVisibleFarmViews(state, balance).map((viewId) => ({ kind: 'view', viewId })),
+    ...getFermeNavItems(state, balance, jobs),
   ];
 }
 
@@ -291,6 +293,55 @@ export function getRecolteNavItems(state, balance, jobs = {}) {
     }
   }
 
+  return items;
+}
+
+/** Progression vers le déblocage d'un bâtiment de ferme. */
+export function getFarmBuildingUnlockProgress(buildingId, state, balance, jobs = {}) {
+  if (!FARM_BUILDING_IDS.includes(buildingId)) return null;
+  if (isFarmBuildingUnlocked(buildingId, state, balance)) return null;
+
+  const rule = getJobUnlockRules(balance).farm?.[buildingId]
+    || getJobUnlockRules(balance)[`farm_${buildingId}`];
+  if (!rule || rule.always) return null;
+
+  const gates = buildUnlockGates(rule, state, balance, jobs);
+  const { ready, progress } = summarizeUnlockGates(gates);
+  const farmDataEmoji = null;
+
+  return {
+    buildingId,
+    featureId: null,
+    viewId: `farm_${buildingId}`,
+    label: FARM_BUILDING_LABELS[buildingId] || buildingId,
+    emoji: farmDataEmoji || '🏠',
+    hint: rule.hint || null,
+    gates,
+    ready,
+    progress,
+    ...legacyGateFields(gates),
+  };
+}
+
+export function getNextFarmBuildingUnlock(state, balance, jobs = {}) {
+  const candidates = FARM_BUILDING_IDS
+    .map((id) => getFarmBuildingUnlockProgress(id, state, balance, jobs))
+    .filter(Boolean)
+    .sort((a, b) => {
+      const readyDiff = Number(!!b.ready) - Number(!!a.ready);
+      if (readyDiff) return readyDiff;
+      const progDiff = (b.progress || 0) - (a.progress || 0);
+      if (progDiff) return progDiff;
+      return (a.label || '').localeCompare(b.label || '', 'fr');
+    });
+  return candidates[0] || null;
+}
+
+/** Entrées nav Ferme : bâtiments débloqués + prochain bâtiment verrouillé. */
+export function getFermeNavItems(state, balance, jobs = {}) {
+  const items = getVisibleFarmViews(state, balance).map((viewId) => ({ kind: 'view', viewId }));
+  const next = getNextFarmBuildingUnlock(state, balance, jobs);
+  if (next) items.push({ kind: 'lockedJob', entry: next });
   return items;
 }
 

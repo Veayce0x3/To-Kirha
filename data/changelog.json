@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260726-1945",
+      "date": "2026-07-26",
+      "title": "Polish UI, admin & fin HDV test",
+      "highlights": [
+        "Poulailler : Produire puis Collecter (plus de double « Prêt ») · XP limitée à 2 décimales",
+        "Fond rose sakura (sans dégradé vert) · bonus saison & succès sur la page Perso",
+        "Ferme : prochain bâtiment verrouillé visible · Cuisine sans « Nv.undefined »",
+        "Admin : fiche en avant, noms lisibles, dashboard utile · HDV test retiré · classement nettoyé"
+      ]
+    },
+    {
       "buildId": "20260726-1705",
       "date": "2026-07-26",
       "title": "Succès : un par série",
