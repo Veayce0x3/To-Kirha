@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260726-1530",
+      "date": "2026-07-26",
+      "title": "Progression, outils & succès récolte",
+      "highlights": [
+        "Courbe XP plus douce au début, plus dure en haut niveaux (motivation nouvelle saison)",
+        "Début de partie plus rapide : récolte / repousse / XP des 1ʳᵉˢ ressources",
+        "Amélioration d’outil (S2+) : payante en Kirha + ressources, refill au max amélioré",
+        "Succès récolte Apprenti / Disciple / Maître (−2 % repousse, +2 % rendement, +2 % XP) par métier"
+      ]
+    },
+    {
       "buildId": "20260721-2200",
       "date": "2026-07-21",
       "title": "Nouvelle saison ≠ perte de compte",
