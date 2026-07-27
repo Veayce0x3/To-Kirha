@@ -69,8 +69,8 @@
     "name": "Outilleur",
     "emoji": "🛠️",
     "maxLevel": 200,
-    "xpPerLevel": 70,
-    "xpScaling": 1.06,
+    "xpPerLevel": 45,
+    "xpScaling": 1.04,
     "bonusesPerLevel": {
       "craftValueBonus": 0.008
     },
