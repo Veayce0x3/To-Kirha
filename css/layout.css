@@ -5771,6 +5771,67 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   animation: dq-shake 0.45s ease;
 }
 
+/* Traits d’attaque combat : joueur → monstre (vert/or) · monstre → joueur (violet/rouge) */
+.dq-attack-trail {
+  position: absolute;
+  left: var(--dq-trail-x, 0);
+  top: var(--dq-trail-y, 0);
+  width: var(--dq-trail-len, 0);
+  height: 5px;
+  margin-top: -2.5px;
+  transform: rotate(var(--dq-trail-angle, 0deg)) scaleX(0.08);
+  transform-origin: left center;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 24;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.dq-attack-trail-player {
+  background: linear-gradient(90deg, rgba(104, 214, 111, 0.15), #68d66f 28%, #e8c547 100%);
+  box-shadow:
+    0 0 10px rgba(104, 214, 111, 0.55),
+    0 0 2px rgba(232, 197, 71, 0.8);
+}
+
+.dq-attack-trail-enemy {
+  background: linear-gradient(90deg, rgba(155, 89, 182, 0.15), #9b59b6 28%, #e87461 100%);
+  box-shadow:
+    0 0 10px rgba(155, 89, 182, 0.55),
+    0 0 2px rgba(232, 116, 97, 0.8);
+}
+
+.dq-attack-trail-run {
+  animation: dq-trail-fly 0.42s ease-out forwards;
+}
+
+@keyframes dq-trail-fly {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--dq-trail-angle, 0deg)) scaleX(0.08);
+  }
+  18% {
+    opacity: 1;
+  }
+  58% {
+    opacity: 1;
+    transform: rotate(var(--dq-trail-angle, 0deg)) scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--dq-trail-angle, 0deg)) scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dq-attack-trail,
+  .dq-attack-trail-run {
+    animation: none !important;
+    display: none !important;
+  }
+}
+
 .dq-mini-hp {
   width: 3.6rem;
   height: 7px;

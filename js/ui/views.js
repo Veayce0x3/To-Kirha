@@ -3948,20 +3948,118 @@ function getCombatDialogue(combat) {
 
 function detectTurnAnim(logBefore, logAfter) {
   const newEntries = logAfter.slice(logBefore);
-  const enemyHit = newEntries.find((e) => e.type === 'player' && e.enemyId);
-  const playerHit = newEntries.find((e) => e.type === 'enemy');
+  const playerHits = newEntries.filter((e) => e.type === 'player' && e.enemyId && (e.dmg == null || e.dmg > 0));
+  const enemyHits = newEntries.filter((e) => e.type === 'enemy' && e.memberId);
+  const enemyHit = playerHits[0] || null;
+  const playerHit = enemyHits[0] || null;
   return {
-    flashEnemy: newEntries.some((e) => e.type === 'player'),
-    flashPlayer: newEntries.some((e) => e.type === 'enemy'),
+    flashEnemy: playerHits.length > 0,
+    flashPlayer: enemyHits.length > 0,
     hitMemberId: playerHit?.memberId || null,
     hitEnemyId: enemyHit?.enemyId || null,
-    activeEnemyId: playerHit?.enemyId || playerHit?.enemyId || null,
+    attackMemberId: enemyHit?.memberId || null,
+    attackEnemyId: playerHit?.enemyId || null,
+    playerHits,
+    enemyHits,
   };
+}
+
+function getCombatSpriteCenter(field, el) {
+  if (!field || !el) return null;
+  const fieldRect = field.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  if (!fieldRect.width || !r.width) return null;
+  return {
+    x: r.left + r.width / 2 - fieldRect.left,
+    y: r.top + r.height / 2 - fieldRect.top,
+  };
+}
+
+/** Trait coloré attaquant → cible (joueur = vert/or, monstre = violet/rouge). */
+function playCombatAttackTrail(body, fromEl, toEl, kind) {
+  if (!body || !fromEl || !toEl) return;
+  if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const field = body.querySelector('.dq-battlefield');
+  if (!field) return;
+
+  const from = getCombatSpriteCenter(field, fromEl);
+  const to = getCombatSpriteCenter(field, toEl);
+  if (!from || !to) return;
+
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 8) return;
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+
+  const trail = document.createElement('div');
+  trail.className = `dq-attack-trail dq-attack-trail-${kind}`;
+  trail.style.setProperty('--dq-trail-x', `${from.x}px`);
+  trail.style.setProperty('--dq-trail-y', `${from.y}px`);
+  trail.style.setProperty('--dq-trail-len', `${len}px`);
+  trail.style.setProperty('--dq-trail-angle', `${angle}deg`);
+  trail.setAttribute('aria-hidden', 'true');
+  field.appendChild(trail);
+
+  requestAnimationFrame(() => {
+    trail.classList.add('dq-attack-trail-run');
+  });
+  setTimeout(() => trail.remove(), 520);
 }
 
 function playCombatHitAnim(body, anim) {
   if (!anim.flashEnemy && !anim.flashPlayer) return;
   requestAnimationFrame(() => {
+    const trails = [];
+
+    for (const hit of anim.playerHits || []) {
+      const fromId = hit.memberId || 'hero';
+      const fromEl = body.querySelector(`.dq-sprite-party[data-member-id="${fromId}"]`)
+        || body.querySelector('.dq-sprite-party[data-member-id="hero"]')
+        || body.querySelector('.dq-sprite-party');
+      const toEl = hit.enemyId
+        ? body.querySelector(`.dq-enemy-card[data-enemy-id="${hit.enemyId}"] .dq-sprite-enemy`)
+        : body.querySelector('.dq-sprite-enemy');
+      if (fromEl && toEl) trails.push([fromEl, toEl, 'player']);
+    }
+
+    for (const hit of anim.enemyHits || []) {
+      const fromEl = hit.enemyId
+        ? body.querySelector(`.dq-enemy-card[data-enemy-id="${hit.enemyId}"] .dq-sprite-enemy`)
+        : body.querySelector('.dq-active-enemy .dq-sprite-enemy')
+          || body.querySelector('.dq-sprite-enemy');
+      const toId = hit.memberId || 'hero';
+      const toEl = body.querySelector(`.dq-sprite-party[data-member-id="${toId}"]`)
+        || body.querySelector('.dq-sprite-party[data-member-id="hero"]');
+      if (fromEl && toEl) trails.push([fromEl, toEl, 'enemy']);
+    }
+
+    // Fallback si le log n’a pas d’IDs (ancien format)
+    if (!trails.length) {
+      if (anim.flashEnemy) {
+        const fromId = anim.attackMemberId || 'hero';
+        const fromEl = body.querySelector(`.dq-sprite-party[data-member-id="${fromId}"]`)
+          || body.querySelector('.dq-sprite-party');
+        const toEl = anim.hitEnemyId
+          ? body.querySelector(`.dq-enemy-card[data-enemy-id="${anim.hitEnemyId}"] .dq-sprite-enemy`)
+          : body.querySelector('.dq-sprite-enemy');
+        if (fromEl && toEl) trails.push([fromEl, toEl, 'player']);
+      }
+      if (anim.flashPlayer) {
+        const fromEl = anim.attackEnemyId
+          ? body.querySelector(`.dq-enemy-card[data-enemy-id="${anim.attackEnemyId}"] .dq-sprite-enemy`)
+          : body.querySelector('.dq-sprite-enemy');
+        const toId = anim.hitMemberId || 'hero';
+        const toEl = body.querySelector(`.dq-sprite-party[data-member-id="${toId}"]`);
+        if (fromEl && toEl) trails.push([fromEl, toEl, 'enemy']);
+      }
+    }
+
+    trails.forEach(([fromEl, toEl, kind], i) => {
+      setTimeout(() => playCombatAttackTrail(body, fromEl, toEl, kind), i * 40);
+    });
+
     if (anim.flashEnemy) {
       const sel = anim.hitEnemyId
         ? `.dq-enemy-card[data-enemy-id="${anim.hitEnemyId}"] .dq-sprite-enemy`
