@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 41,
-  "appBuildId": "20260727-1605",
+  "appBuildId": "20260727-1725",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -506,21 +506,23 @@
     "healPctMax": 60
   },
   "productionLines": {
-    "maxUnitsPerResource": 5,
-    "maxUnits": 5,
+    "maxUnitsPerResource": 6,
+    "maxUnits": 6,
     "unitUnlockCosts": [
       0,
       10,
       30,
       80,
-      200
+      200,
+      450
     ],
     "unitUnlockSameResource": [
       0,
       10,
       20,
       35,
-      50
+      50,
+      75
     ],
     "newTierKirhaBase": 50,
     "newTierKirhaStep": 40,

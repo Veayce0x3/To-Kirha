@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1725",
+      "date": "2026-07-27",
+      "title": "6ᵉ slot de récolte",
+      "highlights": [
+        "Max 6 unités par ressource (au lieu de 5) — achetable via Déblocage",
+        "Retrait de l’unité auto et de la case + dans la grille",
+        "Onglets ressources conservés pour limiter le scroll"
+      ]
+    },
+    {
       "buildId": "20260727-1605",
       "date": "2026-07-27",
       "title": "Récolte : onglets ressources + 1 unité offerte",

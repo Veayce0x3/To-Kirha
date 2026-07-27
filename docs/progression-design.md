@@ -32,8 +32,7 @@
 
 ## 5. Lignes de production
 
-- 1 unité **offerte** dès qu’une ressource est débloquée par niveau métier
-- Max 5 unités par ressource · achat via la case « + » (coûts croissants)
+- 1 ressource starter gratuite · **max 6 unités** par ressource · coûts croissants
 - UI : onglets ressources (une ressource affichée à la fois)
 - Code : `js/systems/productionLines.js` · `js/ui/productionLineView.js`
 

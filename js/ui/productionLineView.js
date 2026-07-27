@@ -18,7 +18,6 @@ import {
   getNextAnimalSlotUnlock,
   formatAnimalCostParts,
   ensureFarmUnitsForAnimalSlots,
-  getResourceUnitUnlockPreview,
   getUnitProgress,
   ensureProductionLines,
 } from '../systems/productionLines.js';
@@ -273,38 +272,11 @@ function buildHarvestResourceTabs(game, jobId, resources, selectedId, onSelect) 
   return wrap;
 }
 
-function buildUnitUnlockCard(game, jobId, resourceId, onBought) {
-  const preview = game.getResourceUnitUnlockPreview(jobId, resourceId);
-  if (!preview) return null;
-  const canAfford = game.canBuyHarvestSlot(jobId, resourceId);
-
-  const card = document.createElement('div');
-  card.className = 'harvest-slot production-unit production-unit-unlock';
-  card.innerHTML = `
-    <div class="slot-visual slot-visual-unlock">
-      <span class="slot-unlock-plus">+</span>
-      <span class="slot-unlock-label">Unité ${preview.nextUnits}/${preview.maxUnits}</span>
-    </div>
-    <div class="slot-tool-row">
-      <p class="slot-tool-hint">${formatUnlockCost(game, preview) || `${formatNumber(preview.kirha || 0)} 💰`}</p>
-      <button type="button" class="btn btn-small btn-upgrade btn-buy-unit"${canAfford ? '' : ' disabled'}>
-        Débloquer
-      </button>
-    </div>
-  `;
-  card.querySelector('.btn-buy-unit')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (game.buyHarvestSlot(jobId, resourceId)) onBought?.();
-  });
-  return card;
-}
-
 function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   const line = game.state.productionLines?.harvest?.[jobId]?.[resourceId];
   if (!line) return;
   const qty = game.state.inventory[resourceId] || 0;
-  const maxUnits = game.balance.productionLines?.maxUnitsPerResource ?? 5;
+  const maxUnits = game.balance.productionLines?.maxUnitsPerResource ?? 6;
   const xpPerHarvest = getHarvestXp(resource, game.state, game.balance, game.resources);
   const harvestMs = Math.round(getHarvestTime(resource, game.state, game.jobs, game.balance, game.resources) / 1000);
   const xpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
@@ -345,8 +317,6 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   for (let i = 0; i < line.units; i++) {
     grid.appendChild(buildLineUnitCard(game, jobId, resourceId, i, resource));
   }
-  const unlockCard = buildUnitUnlockCard(game, jobId, resourceId, refreshLine);
-  if (unlockCard) grid.appendChild(unlockCard);
 
   container.appendChild(section);
 }
@@ -445,39 +415,42 @@ function buildUnlockPanel(game, jobId) {
   panel.className = 'production-unlock-panel';
 
   if (!preview || preview.kind === 'maxed') {
-    panel.innerHTML = '<p class="empty-text">Toutes les unités de ce métier sont au maximum.</p>';
+    panel.innerHTML = '<p class="empty-text">Toutes les lignes de ce métier sont débloquées.</p>';
     return panel;
   }
 
   if (preview.kind === 'level_blocked') {
     panel.innerHTML = `
       <p class="production-unlock-hint">Prochaine ressource : <strong>${preview.resourceName}</strong></p>
-      <p class="empty-text">🔒 ${preview.jobName} Nv.${preview.requiredLevel} requis — 1 unité offerte dès le déblocage.</p>
-    `;
-    return panel;
-  }
-
-  // Les unités s'achètent via la carte « + » dans la grille de la ressource sélectionnée.
-  if (preview.kind === 'unit') {
-    panel.innerHTML = `
-      <p class="production-unlock-hint">Ajoute des unités avec la case <strong>+</strong> sur la ressource sélectionnée (max ${preview.maxUnits}).</p>
+      <button type="button" class="btn btn-upgrade btn-production-unlock" disabled>Débloquer ${preview.resourceName}</button>
+      <p class="empty-text">🔒 ${preview.jobName} Nv.${preview.requiredLevel} requis pour continuer.</p>
     `;
     return panel;
   }
 
   const canBuy = game.canBuyNextProductionUnlock(jobId);
   const costHtml = formatUnlockCost(game, preview);
+  let label = '';
+  if (preview.kind === 'unit') {
+    label = `Débloquer ${preview.resourceName} (${preview.nextUnits}/${preview.maxUnits})`;
+  } else {
+    label = `Débloquer ${preview.resourceName}`;
+  }
+
   panel.innerHTML = `
     <div class="production-unlock-head">
       <strong>Déblocage</strong>
-      <span class="production-unlock-cost">${costHtml || 'Gratuit'}</span>
+      <span class="production-unlock-cost">${costHtml}</span>
     </div>
-    <button type="button" class="btn btn-upgrade btn-production-unlock"${canBuy ? '' : ' disabled'}>Débloquer ${preview.resourceName}</button>
+    <button type="button" class="btn btn-upgrade btn-production-unlock"${canBuy ? '' : ' disabled'}>${label}</button>
+    <p class="production-unlock-desc">${preview.kind === 'unit'
+    ? `Ajoute une unité de production (max ${preview.maxUnits} par ressource).`
+    : `Ouvre la ressource ${preview.resourceName} avec 1 unité (après ${preview.maxUnits || 6}× ${preview.prevResourceName}).`}</p>
   `;
 
   panel.querySelector('.btn-production-unlock')?.addEventListener('click', () => {
     if (game.buyNextProductionUnlock(jobId)) {
-      selectedHarvestResourceByJob[jobId] = preview.resourceId;
+      if (preview.resourceId) selectedHarvestResourceByJob[jobId] = preview.resourceId;
       const container = document.getElementById('view-container');
       if (container) renderJobProduction(game, container, jobId);
     }

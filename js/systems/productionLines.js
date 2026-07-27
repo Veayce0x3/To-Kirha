@@ -123,72 +123,58 @@ export function getNextProductionUnlock(state, balance, resources, jobId, jobs) 
   const maxPer = getMaxUnitsPerResource(balance);
   const jobName = jobs?.[jobId]?.name || jobId;
 
-  // Priorité : ajouter une unité sur la ressource la plus avancée non maxée.
+  let currentTierIndex = -1;
   for (let i = tiers.length - 1; i >= 0; i--) {
-    const resource = tiers[i];
-    const line = lines[resource.id];
-    if (!line || line.units >= maxPer) continue;
-    const req = getUnitUnlockRequirements(jobId, resource.id, state, balance, resources);
-    if (req.kirha == null) continue;
+    if (lines[tiers[i].id]) {
+      currentTierIndex = i;
+      break;
+    }
+  }
+
+  if (currentTierIndex < 0) return { kind: 'maxed' };
+
+  const currentResource = tiers[currentTierIndex];
+  const currentLine = lines[currentResource.id];
+
+  if (currentLine.units < maxPer) {
+    const req = getUnitUnlockRequirements(jobId, currentResource.id, state, balance, resources);
+    if (req.kirha == null) return { kind: 'maxed' };
     return {
       kind: 'unit',
       jobId,
-      resourceId: resource.id,
-      resourceName: resource.name,
-      nextUnits: line.units + 1,
+      resourceId: currentResource.id,
+      resourceName: currentResource.name,
+      nextUnits: currentLine.units + 1,
       maxUnits: maxPer,
       jobName,
       ...req,
     };
   }
 
-  // Prochaine ressource encore verrouillée par niveau.
-  for (let i = 0; i < tiers.length; i++) {
-    const resource = tiers[i];
-    if (lines[resource.id]) continue;
-    if (!isResourceUnlockedByJob(resource, state, resources, balance)) {
-      return {
-        kind: 'level_blocked',
-        jobId,
-        resourceName: resource.name,
-        requiredLevel: getResourceUnlockJobLevel(resource, resources, balance),
-        jobName,
-      };
-    }
-    // Niveau OK mais ligne absente (sync) — déblocage gratuit 1 unité.
+  const nextTierIndex = currentTierIndex + 1;
+  if (nextTierIndex >= tiers.length) return { kind: 'maxed' };
+
+  const nextResource = tiers[nextTierIndex];
+  if (!isResourceUnlockedByJob(nextResource, state, resources, balance)) {
     return {
-      kind: 'tier',
+      kind: 'level_blocked',
       jobId,
-      resourceId: resource.id,
-      resourceName: resource.name,
-      prevResourceId: tiers[i - 1]?.id || null,
-      prevResourceName: tiers[i - 1]?.name || null,
+      resourceName: nextResource.name,
+      requiredLevel: getResourceUnlockJobLevel(nextResource, resources, balance),
       jobName,
-      kirha: 0,
-      resources: null,
     };
   }
 
-  return { kind: 'maxed' };
-}
-
-/** Aperçu d’achat d’unité pour une ressource précise (UI grille). */
-export function getResourceUnitUnlockPreview(state, balance, resources, jobId, resourceId, jobs) {
-  const line = state.productionLines?.harvest?.[jobId]?.[resourceId];
-  const maxPer = getMaxUnitsPerResource(balance);
-  if (!line || line.units >= maxPer) return null;
-  const resource = resources[resourceId];
-  if (!resource) return null;
-  const req = getUnitUnlockRequirements(jobId, resourceId, state, balance, resources);
-  if (req.kirha == null) return null;
+  const prevResource = tiers[currentTierIndex];
+  const req = getNewTierUnlockRequirements(jobId, nextResource.id, prevResource.id, nextTierIndex, balance);
   return {
-    kind: 'unit',
+    kind: 'tier',
     jobId,
-    resourceId,
-    resourceName: resource.name,
-    nextUnits: line.units + 1,
-    maxUnits: maxPer,
-    jobName: jobs?.[jobId]?.name || jobId,
+    resourceId: nextResource.id,
+    resourceName: nextResource.name,
+    prevResourceId: prevResource.id,
+    prevResourceName: prevResource.name,
+    jobName,
     ...req,
   };
 }
@@ -442,14 +428,6 @@ export function ensureProductionLines(state, resources, farmData, balance) {
 
     const lines = state.productionLines.harvest[jobId];
     const maxPer = getMaxUnitsPerResource(balance);
-
-    // 1 unité gratuite dès qu'une ressource est débloquée par niveau métier.
-    for (const res of jobResources) {
-      if (!isResourceUnlockedByJob(res, state, resources, balance)) continue;
-      if (!lines[res.id]) {
-        lines[res.id] = normalizeLine({ units: 1 }, 1);
-      }
-    }
 
     if (jobResources.length && Object.keys(lines).length === 0) {
       const starter = jobResources[0];

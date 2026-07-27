@@ -61,7 +61,6 @@ import {
   canBuyFarmUnit,
   getUnitUnlockRequirements,
   getNextProductionUnlock,
-  getResourceUnitUnlockPreview as peekResourceUnitUnlock,
   canBuyNextProductionUnlock as checkCanBuyNextProductionUnlock,
   buyNextProductionUnlock as applyNextProductionUnlock,
   getUnitProgress,
@@ -750,10 +749,6 @@ export class Game {
 
   getNextProductionUnlockPreview(jobId) {
     return getNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs);
-  }
-
-  getResourceUnitUnlockPreview(jobId, resourceId) {
-    return peekResourceUnitUnlock(this.state, this.balance, this.resources, jobId, resourceId, this.jobs);
   }
 
   canBuyNextProductionUnlock(jobId) {
