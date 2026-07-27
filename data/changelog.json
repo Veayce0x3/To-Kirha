@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1515",
+      "date": "2026-07-27",
+      "title": "Outilleur : outils débloqués plus tôt",
+      "highlights": [
+        "Plus de mur Nv.20 pour le 2ᵉ outil : paliers Outilleur 1 → 6 → 11 → 16…",
+        "À Outilleur Nv.14 tu peux craft jusqu’au palier 3 (métiers ~40)",
+        "Courbe XP Outilleur assouplie + plus d’XP par craft"
+      ]
+    },
+    {
       "buildId": "20260727-1505",
       "date": "2026-07-27",
       "title": "Combat mis en avant + progression donjon",
