@@ -5777,9 +5777,9 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   left: var(--dq-trail-x, 0);
   top: var(--dq-trail-y, 0);
   width: var(--dq-trail-len, 0);
-  height: 5px;
-  margin-top: -2.5px;
-  transform: rotate(var(--dq-trail-angle, 0deg)) scaleX(0.08);
+  height: 7px;
+  margin-top: -3.5px;
+  transform: rotate(var(--dq-trail-angle, 0deg)) scaleX(0.06);
   transform-origin: left center;
   border-radius: 999px;
   pointer-events: none;
@@ -5789,32 +5789,44 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .dq-attack-trail-player {
-  background: linear-gradient(90deg, rgba(104, 214, 111, 0.15), #68d66f 28%, #e8c547 100%);
+  background: linear-gradient(90deg, rgba(104, 214, 111, 0.2), #68d66f 22%, #e8c547 100%);
   box-shadow:
-    0 0 10px rgba(104, 214, 111, 0.55),
-    0 0 2px rgba(232, 197, 71, 0.8);
+    0 0 14px rgba(104, 214, 111, 0.65),
+    0 0 3px rgba(232, 197, 71, 0.9);
 }
 
 .dq-attack-trail-enemy {
-  background: linear-gradient(90deg, rgba(155, 89, 182, 0.15), #9b59b6 28%, #e87461 100%);
+  background: linear-gradient(90deg, rgba(155, 89, 182, 0.2), #9b59b6 22%, #e87461 100%);
   box-shadow:
-    0 0 10px rgba(155, 89, 182, 0.55),
-    0 0 2px rgba(232, 116, 97, 0.8);
+    0 0 14px rgba(155, 89, 182, 0.65),
+    0 0 3px rgba(232, 116, 97, 0.9);
 }
 
 .dq-attack-trail-run {
-  animation: dq-trail-fly 0.42s ease-out forwards;
+  animation: dq-trail-fly 0.95s ease-in-out forwards;
+}
+
+.dq-sprite-party.dq-attacking-ally,
+.dq-sprite-enemy.dq-attacking-foe {
+  z-index: 6;
+  filter: drop-shadow(0 0 12px rgba(245, 230, 66, 0.85));
+  transform: scale(1.08);
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.dq-sprite-enemy.dq-attacking-foe {
+  filter: drop-shadow(0 0 12px rgba(155, 89, 182, 0.9));
 }
 
 @keyframes dq-trail-fly {
   0% {
     opacity: 0;
-    transform: rotate(var(--dq-trail-angle, 0deg)) scaleX(0.08);
+    transform: rotate(var(--dq-trail-angle, 0deg)) scaleX(0.06);
   }
-  18% {
+  12% {
     opacity: 1;
   }
-  58% {
+  70% {
     opacity: 1;
     transform: rotate(var(--dq-trail-angle, 0deg)) scaleX(1);
   }
@@ -5830,6 +5842,20 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
     animation: none !important;
     display: none !important;
   }
+
+  .dq-sprite-party.dq-attacking-ally,
+  .dq-sprite-enemy.dq-attacking-foe {
+    transform: none;
+    filter: none;
+  }
+}
+
+.dq-party-hp {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #f5e642;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  line-height: 1.1;
 }
 
 .dq-mini-hp {
@@ -5912,11 +5938,12 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.28rem 0.5rem;
+  padding: 0.35rem 0.55rem;
   background: rgba(255, 253, 249, 0.95);
   border: 1px solid rgba(74, 55, 40, 0.28);
   border-radius: 999px;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
+  min-height: 32px;
   box-shadow: 0 3px 12px rgba(74, 55, 40, 0.12);
 }
 
@@ -5935,8 +5962,8 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .dq-status-hp {
-  width: 2.5rem;
-  height: 6px;
+  width: 3.2rem;
+  height: 8px;
   background: rgba(74, 55, 40, 0.2);
   border-radius: 2px;
   overflow: hidden;
@@ -5948,8 +5975,11 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .dq-status-num {
-  opacity: 0.75;
-  font-weight: 600;
+  opacity: 1;
+  font-weight: 800;
+  font-size: 0.72rem;
+  color: #2d5a27;
+  white-space: nowrap;
 }
 
 .dq-console {

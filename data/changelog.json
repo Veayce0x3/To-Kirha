@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1850",
+      "date": "2026-07-27",
+      "title": "Combat plus lisible",
+      "highlights": [
+        "Traits d’attaque plus lents et espacés — on voit clairement qui attaque",
+        "PV du personnage affichés en chiffres sous le sprite (ex. 42/50) + barre en bas renforcée"
+      ]
+    },
+    {
       "buildId": "20260727-1820",
       "date": "2026-07-27",
       "title": "Combat : traits d’attaque",

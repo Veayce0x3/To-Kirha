@@ -3976,6 +3976,10 @@ function getCombatSpriteCenter(field, el) {
 }
 
 /** Trait coloré attaquant → cible (joueur = vert/or, monstre = violet/rouge). */
+const COMBAT_TRAIL_MS = 950;
+const COMBAT_TRAIL_STAGGER_MS = 320;
+const COMBAT_HIT_DELAY_MS = 520;
+
 function playCombatAttackTrail(body, fromEl, toEl, kind) {
   if (!body || !fromEl || !toEl) return;
   if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -3993,6 +3997,11 @@ function playCombatAttackTrail(body, fromEl, toEl, kind) {
   if (len < 8) return;
   const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
 
+  fromEl.classList.add(kind === 'player' ? 'dq-attacking-ally' : 'dq-attacking-foe');
+  setTimeout(() => {
+    fromEl.classList.remove('dq-attacking-ally', 'dq-attacking-foe');
+  }, COMBAT_TRAIL_MS);
+
   const trail = document.createElement('div');
   trail.className = `dq-attack-trail dq-attack-trail-${kind}`;
   trail.style.setProperty('--dq-trail-x', `${from.x}px`);
@@ -4005,7 +4014,7 @@ function playCombatAttackTrail(body, fromEl, toEl, kind) {
   requestAnimationFrame(() => {
     trail.classList.add('dq-attack-trail-run');
   });
-  setTimeout(() => trail.remove(), 520);
+  setTimeout(() => trail.remove(), COMBAT_TRAIL_MS + 80);
 }
 
 function playCombatHitAnim(body, anim) {
@@ -4035,7 +4044,6 @@ function playCombatHitAnim(body, anim) {
       if (fromEl && toEl) trails.push([fromEl, toEl, 'enemy']);
     }
 
-    // Fallback si le log n’a pas d’IDs (ancien format)
     if (!trails.length) {
       if (anim.flashEnemy) {
         const fromId = anim.attackMemberId || 'hero';
@@ -4056,24 +4064,28 @@ function playCombatHitAnim(body, anim) {
       }
     }
 
+    // Un trait à la fois, bien espacé, pour lire qui attaque
     trails.forEach(([fromEl, toEl, kind], i) => {
-      setTimeout(() => playCombatAttackTrail(body, fromEl, toEl, kind), i * 40);
+      setTimeout(() => playCombatAttackTrail(body, fromEl, toEl, kind), i * COMBAT_TRAIL_STAGGER_MS);
     });
 
-    if (anim.flashEnemy) {
-      const sel = anim.hitEnemyId
-        ? `.dq-enemy-card[data-enemy-id="${anim.hitEnemyId}"] .dq-sprite-enemy`
-        : '.dq-sprite-enemy';
-      body.querySelector(sel)?.classList.add('dq-hit');
-    }
-    if (anim.flashPlayer) {
-      const targetId = anim.hitMemberId || 'hero';
-      body.querySelector(`.dq-sprite-party[data-member-id="${targetId}"]`)?.classList.add('dq-hit');
-    }
+    const hitAt = COMBAT_HIT_DELAY_MS + Math.max(0, trails.length - 1) * COMBAT_TRAIL_STAGGER_MS;
     setTimeout(() => {
-      body.querySelectorAll('.dq-sprite-enemy.dq-hit').forEach((el) => el.classList.remove('dq-hit'));
-      body.querySelectorAll('.dq-sprite-party.dq-hit').forEach((el) => el.classList.remove('dq-hit'));
-    }, 480);
+      if (anim.flashEnemy) {
+        const sel = anim.hitEnemyId
+          ? `.dq-enemy-card[data-enemy-id="${anim.hitEnemyId}"] .dq-sprite-enemy`
+          : '.dq-sprite-enemy';
+        body.querySelector(sel)?.classList.add('dq-hit');
+      }
+      if (anim.flashPlayer) {
+        const targetId = anim.hitMemberId || 'hero';
+        body.querySelector(`.dq-sprite-party[data-member-id="${targetId}"]`)?.classList.add('dq-hit');
+      }
+      setTimeout(() => {
+        body.querySelectorAll('.dq-sprite-enemy.dq-hit').forEach((el) => el.classList.remove('dq-hit'));
+        body.querySelectorAll('.dq-sprite-party.dq-hit').forEach((el) => el.classList.remove('dq-hit'));
+      }, 520);
+    }, hitAt);
   });
 }
 
@@ -4084,7 +4096,8 @@ function continueAfterCombatAction(game, body, logBefore) {
   renderDungeonCombatBody(game);
   playCombatHitAnim(body, anim);
   if (after.encounter.combat?.phase === 'enemy') {
-    setTimeout(() => processEnemyTurnSequence(game, body), 520);
+    const wait = COMBAT_TRAIL_MS + 280;
+    setTimeout(() => processEnemyTurnSequence(game, body), wait);
   }
 }
 
@@ -4116,9 +4129,9 @@ function processEnemyTurnSequence(game, body) {
     playCombatHitAnim(body, anim);
 
     if (after.encounter.combat?.phase === 'enemy') {
-      setTimeout(() => processEnemyTurnSequence(game, body), 520);
+      setTimeout(() => processEnemyTurnSequence(game, body), COMBAT_TRAIL_MS + 320);
     }
-  }, 420);
+  }, 650);
 }
 
 function executeCombatTurn(game, body, actionFn) {
@@ -4177,6 +4190,7 @@ function renderDungeonCombatBody(game) {
         <div class="dq-sprite dq-sprite-party" data-member-id="${member.id}" aria-hidden="true">${member.emoji}</div>
         <div class="dq-fighter-name">${member.name}</div>
         <div class="dq-mini-hp${hpStateClass(hpPct)}" aria-hidden="true"><div class="dq-mini-hp-fill" style="width:${hpPct}%"></div></div>
+        <div class="dq-party-hp" aria-label="Points de vie">${member.hp}/${member.maxHp}</div>
         ${isActive ? '<span class="dq-active-cursor" aria-hidden="true">▶</span>' : ''}
       </${tag}>
     `;
@@ -4209,7 +4223,7 @@ function renderDungeonCombatBody(game) {
       <div class="dq-status-chip${member.hp <= 0 ? ' dq-ko' : ''}${isActive ? ' dq-status-active' : ''}">
         <span class="dq-status-name">${member.emoji} ${member.name}</span>
         <div class="dq-status-hp${hpStateClass(hpPct)}"><div class="dq-status-hp-fill" style="width:${hpPct}%"></div></div>
-        <span class="dq-status-num">${member.hp}/${member.maxHp}</span>
+        <span class="dq-status-num">❤️ ${member.hp}/${member.maxHp}</span>
       </div>
     `;
   }).join('');
