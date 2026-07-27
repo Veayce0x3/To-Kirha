@@ -51,6 +51,7 @@ export const CATEGORY_ICONS = {
   outillage: asset(V, 'ferme_transparent.png'),
   artisanat: asset(V, 'craft.jpg'),
   cuisine: asset(D, 'cuisine_transparent.png'),
+  combat: asset(V, 'temple_transparent.png'),
 };
 
 export const JOB_ICONS = {

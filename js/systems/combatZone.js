@@ -103,6 +103,11 @@ export function getTrainingUnlockCheck(combatZone, state, balance, isBoss = fals
   const thresholds = getTrainingUnlockThresholds(balance);
   const monsters = combatZone.monsters || [];
 
+  // Après une victoire donjon (boss vaincu), tout l'entraînement de la zone est ouvert.
+  if ((state.bossKills?.[combatZone.id] || 0) >= 1) {
+    return { ok: true, required: 0, current: 0, unlockedByDungeon: true };
+  }
+
   if (isBoss) {
     if (!monsters.length) return { ok: true };
     const last = monsters[monsters.length - 1];

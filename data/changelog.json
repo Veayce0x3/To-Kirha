@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1505",
+      "date": "2026-07-27",
+      "title": "Combat mis en avant + progression donjon",
+      "highlights": [
+        "Après le 1er donjon : tout l’entraînement de la zone est débloqué",
+        "Onglet Combat au même niveau que Récolte / Ferme · affichage refondu (hero donjon, tuiles ennemis)",
+        "Zones suivantes : déblocage possible directement depuis Combat"
+      ]
+    },
+    {
       "buildId": "20260726-2215",
       "date": "2026-07-26",
       "title": "Retour coûts plants",

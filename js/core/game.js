@@ -576,7 +576,7 @@ export class Game {
   }
 
   getZoneUnlockRequirementsList(zoneId) {
-    return formatZoneUnlockRequirements(zoneId, this.balance, this.resources, this.jobs);
+    return formatZoneUnlockRequirements(zoneId, this.balance, this.resources, this.jobs, this.state);
   }
 
   getZoneUnlockHint(zoneId) {

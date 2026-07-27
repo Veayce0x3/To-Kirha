@@ -3685,27 +3685,34 @@ function renderCombat(game, el) {
   }
   const stats = game.getCharacterStats();
   const charProg = game.getCharacterProgress();
+  const charPct = Math.min(100, (charProg.xp / charProg.needed) * 100);
   const weaponRef = game.state.combatEquipment?.weapon;
   const weapon = weaponRef ? resolveItem(game.state, weaponRef, game.combatEquipment.items) : null;
   const weaponLabel = weapon
     ? `${weapon.emoji} ${weapon.name}${weapon.className ? ` (${weapon.className})` : ''}`
     : 'Sans arme';
-  const ownedMeals = game.getOwnedMeals();
   const healPanelHtml = renderOutOfCombatHealPanel(game);
+  const partySize = 1 + game.getActiveCompanionCount();
+  const soloHp = game.state.combatWear?.solo?.hero;
 
   el.innerHTML = `
-    <div class="view-header">
-      <h2>${iconHtml(getNavIcon('combat'), 'view-header-icon', 'Combat')} Combat</h2>
-      <p class="view-desc">${game.getCharacterDisplayName()} · Nv.${charProg.level} · ❤️ ${stats.hp} · ⚔️ ${stats.atk} · 🛡️ ${stats.def}</p>
-      <p class="view-desc">Arme : ${weaponLabel} · Équipe : ${1 + game.getActiveCompanionCount()}/3</p>
-      ${game.state.combatWear?.solo?.hero != null ? `<p class="view-desc">HP entraînement conservés : ❤️ ${game.state.combatWear.solo.hero}</p>` : ''}
-      <p class="view-desc">🗝️ Farm les <strong>clés</strong> en combat rapide (faible %) · 🍱 <strong>Repas</strong> indispensables en donjon.</p>
-      ${ownedMeals.length > 0 ? `
-        <p class="view-desc meal-combat-hint">🍱 ${ownedMeals.length} type(s) de repas — menu <strong>Objets</strong> (% PV max).</p>
-      ` : ''}
+    <div class="skill-header combat-skill-header">
+      <div class="skill-header-top">
+        <div>
+          <div class="skill-header-title">${iconHtml(getNavIcon('combat'), 'job-icon', 'Combat')} Combat</div>
+          <div class="skill-header-meta">${game.getCharacterDisplayName()} · Nv.${charProg.level}${charProg.seasonCap ? ` / ${charProg.seasonCap}` : ''} · Équipe ${partySize}/3</div>
+        </div>
+        <div class="combat-header-stats">
+          ${renderCharStatPills(stats)}
+          <p class="combat-header-weapon">${weaponLabel}</p>
+        </div>
+      </div>
+      <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${charPct}%"></div></div>
+      <p class="xp-text">${charProg.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${formatNumber(charProg.xp)} / ${formatNumber(charProg.needed)} XP combat`}</p>
+      ${soloHp != null && soloHp < stats.hp ? `<p class="skill-header-meta combat-solo-hp-hint">HP entraînement : ❤️ ${soloHp}/${stats.hp}</p>` : ''}
     </div>
     ${healPanelHtml}
-    <div id="combat-zone-list"></div>
+    <div id="combat-zone-list" class="combat-zone-list"></div>
   `;
 
   el.querySelectorAll('[data-inventory-meal]').forEach((btn) => {
@@ -3720,37 +3727,96 @@ function renderCombat(game, el) {
   });
 
   const list = el.querySelector('#combat-zone-list');
+  const zones = Object.values(game.combatZones);
+  let featuredUnlocked = false;
 
-  for (const combatZone of Object.values(game.combatZones)) {
+  for (const combatZone of zones) {
     const zone = game.balance.zones[combatZone.zone];
     const zoneUnlocked = game.isZoneUnlocked(combatZone.zone);
     const bossKills = game.state.bossKills?.[combatZone.id] || 0;
+    const keyCount = game.getDungeonKeyCount(combatZone.id);
     const dungeonCheck = game.canEnterDungeonZone(combatZone.id);
     const roomCount = (combatZone.monsters?.length || 0) + (combatZone.boss ? 1 : 0);
-
     const rec = game.getCombatZoneRecommendation(combatZone.id);
     const recLine = rec?.recommendedAtk
-      ? `Recommandé : Perso Nv.${rec.charLevel} · ⚔️ ~${rec.recommendedAtk}`
-      : `Recommandé : Perso Nv.${combatZone.requiredCharLevel}`;
+      ? `Perso Nv.${rec.charLevel} · ⚔️ ~${rec.recommendedAtk}`
+      : `Perso Nv.${combatZone.requiredCharLevel}`;
+    const isFeatured = zoneUnlocked && !featuredUnlocked;
+    if (isFeatured) featuredUnlocked = true;
 
-    const card = document.createElement('div');
-    card.className = `dungeon-card combat-zone-card${!zoneUnlocked ? ' locked' : ''}`;
+    const card = document.createElement('section');
+    card.className = [
+      'combat-zone-section',
+      zoneUnlocked ? 'combat-zone-unlocked' : 'combat-zone-locked',
+      isFeatured ? 'combat-zone-featured' : '',
+      bossKills > 0 ? 'combat-zone-cleared' : '',
+    ].filter(Boolean).join(' ');
+
+    if (!zoneUnlocked) {
+      const check = game.canUnlockZone(combatZone.zone);
+      const hint = game.getZoneUnlockHint(combatZone.zone);
+      const reqLines = game.getZoneUnlockRequirementsList(combatZone.zone);
+      const kirhaCost = zone?.unlockRequirements?.kirha ?? zone?.unlockCost ?? 0;
+      const reqHtml = reqLines.length
+        ? `<ul class="combat-unlock-list">${reqLines.map((l) => `<li>${l}</li>`).join('')}</ul>`
+        : '';
+      card.innerHTML = `
+        <div class="combat-zone-head">
+          <div class="combat-zone-emoji" aria-hidden="true">${combatZone.emoji}</div>
+          <div class="combat-zone-titles">
+            <strong class="combat-zone-name">${combatZone.name}</strong>
+            <p class="combat-zone-sub">${zone?.emoji || ''} ${zone?.name || ''} · ${recLine}</p>
+            <p class="tile-lock">🔒 Zone verrouillée</p>
+          </div>
+        </div>
+        <div class="combat-zone-unlock-panel">
+          <p class="combat-zone-unlock-lead">Débloque cette zone pour accéder au prochain donjon et à l’entraînement.</p>
+          ${reqHtml}
+          ${hint ? `<p class="world-unlock-hint">${hint}</p>` : ''}
+          ${!check.ok && check.reason && check.reason !== hint ? `<p class="world-unlock-hint">${check.reason}</p>` : ''}
+          <button type="button" class="btn btn-unlock btn-zone-unlock" ${check.ok ? '' : 'disabled'}>
+            Débloquer · ${formatNumber(kirhaCost)} 💰
+          </button>
+        </div>
+      `;
+      card.querySelector('.btn-zone-unlock')?.addEventListener('click', () => {
+        if (game.unlockZone(combatZone.zone)) renderCombat(game, el);
+      });
+      list.appendChild(card);
+      continue;
+    }
+
+    const dungeonReady = dungeonCheck.ok;
+    const trainingOpen = isFeatured || bossKills === 0;
+
     card.innerHTML = `
       <div class="combat-zone-head">
-        <span class="world-name">${combatZone.emoji} ${combatZone.name}</span>
-        <p class="world-desc">${zone?.emoji || ''} ${zone?.name || ''} · ${recLine} · Victoires donjon : ${bossKills}</p>
-        ${!zoneUnlocked ? '<p class="tile-lock">🔒 Zone verrouillée</p>' : ''}
+        <div class="combat-zone-emoji" aria-hidden="true">${combatZone.emoji}</div>
+        <div class="combat-zone-titles">
+          <strong class="combat-zone-name">${combatZone.name}</strong>
+          <p class="combat-zone-sub">${zone?.emoji || ''} ${zone?.name || ''} · ${recLine}</p>
+        </div>
+        <div class="combat-zone-badges">
+          <span class="combat-zone-badge${keyCount > 0 ? ' ready' : ''}">🗝️ ×${keyCount}</span>
+          <span class="combat-zone-badge">🏆 ×${bossKills}</span>
+        </div>
       </div>
-      <div class="combat-dungeon-entry">
-        <p class="view-desc">Donjon multi-salles — <strong>1 clé</strong> consommée à l'entrée. Équipement droppé ici uniquement.</p>
-        <p class="view-desc">🗝️ Clés en stock : <strong>${game.getDungeonKeyCount(combatZone.id)}</strong></p>
-        <button type="button" class="btn btn-prestige btn-dungeon-run" ${zoneUnlocked && dungeonCheck.ok ? '' : 'disabled'} title="${dungeonCheck.reason || ''}">
-          🚪 Entrer dans le donjon
+
+      <div class="combat-dungeon-hero">
+        <div class="combat-dungeon-hero-copy">
+          <h3>🚪 Donjon · ${roomCount} salles</h3>
+          <p>1 clé à l’entrée · équipement droppé ici · repas recommandés</p>
+          ${!dungeonReady && dungeonCheck.reason ? `<p class="combat-dungeon-block">${dungeonCheck.reason}</p>` : ''}
+          ${bossKills > 0 ? '<p class="combat-dungeon-cleared">Donjon vaincu — entraînement complet débloqué</p>' : ''}
+        </div>
+        <button type="button" class="btn btn-prestige btn-dungeon-run" ${dungeonReady ? '' : 'disabled'} title="${dungeonCheck.reason || ''}">
+          ${dungeonReady ? 'Entrer dans le donjon' : 'Donjon indisponible'}
         </button>
       </div>
-      <details class="combat-training-details" open>
-        <summary>Entraînement rapide (1 combat · héros seul)</summary>
-        <div class="combat-monster-list" data-zone="${combatZone.id}"></div>
+
+      <details class="combat-training-details"${trainingOpen ? ' open' : ''}>
+        <summary>Entraînement rapide · héros seul · farm de clés</summary>
+        <div class="combat-foe-grid" data-zone="${combatZone.id}"></div>
       </details>
     `;
 
@@ -3759,65 +3825,72 @@ function renderCombat(game, el) {
       if (!result?.ok && result?.reason) showCombatResult(game, result);
     });
 
-    const monsterList = card.querySelector('.combat-monster-list');
+    const foeGrid = card.querySelector('.combat-foe-grid');
 
     combatZone.monsters.forEach((monster, index) => {
       const kills = game.state.combatKillStats?.[monster.enemyId] || 0;
-      const fightCheck = zoneUnlocked
-        ? game.canStartFight(combatZone.id, false, index)
-        : { ok: false, reason: 'Zone verrouillée' };
+      const fightCheck = game.canStartFight(combatZone.id, false, index);
       const unlockProg = game.getTrainingUnlock(combatZone.id, false, index);
-      const row = document.createElement('div');
-      row.className = `combat-monster-row${!unlockProg.ok ? ' combat-monster-locked' : ''}`;
+      const tile = document.createElement('button');
+      tile.type = 'button';
+      tile.className = `combat-foe-tile${!unlockProg.ok ? ' locked' : ''}${fightCheck.ok ? ' ready' : ''}`;
+      tile.disabled = !fightCheck.ok;
+      tile.title = fightCheck.reason || unlockProg.reason || `Combattre ${monster.name}`;
+
       let progressLine;
-      if (index === 0) {
+      if (unlockProg.unlockedByDungeon || (index === 0 && unlockProg.ok)) {
         progressLine = `Victoires : ${kills}`;
       } else if (unlockProg.ok) {
-        progressLine = `Débloqué · Victoires : ${kills}`;
+        progressLine = `Débloqué · ${kills} victoires`;
       } else {
-        const cur = unlockProg.current || 0;
-        const req = unlockProg.required || 0;
-        progressLine = `Déblocage : ${cur}/${req} vs ${unlockProg.prevName || 'précédent'}`;
+        progressLine = `${unlockProg.current || 0}/${unlockProg.required || 0} vs ${unlockProg.prevName || 'précédent'}`;
       }
-      row.innerHTML = `
-        <div class="combat-monster-info">
-          <span>${!unlockProg.ok ? '🔒 ' : ''}${monster.emoji} ${monster.name}</span>
-          <small class="combat-drops">${formatDropList(monster.drops, game.resources)}</small>
-          <small class="combat-kill-progress${unlockProg.ok ? ' combat-kill-ok' : ''}">${progressLine}</small>
-        </div>
-        <button type="button" class="btn btn-craft btn-fight" ${fightCheck.ok ? '' : 'disabled'} title="${fightCheck.reason || unlockProg.reason || ''}">Combattre</button>
+      const unlockPct = unlockProg.ok
+        ? 100
+        : Math.min(100, Math.floor(((unlockProg.current || 0) / Math.max(1, unlockProg.required || 1)) * 100));
+
+      tile.innerHTML = `
+        <span class="combat-foe-emoji">${!unlockProg.ok ? '🔒' : monster.emoji}</span>
+        <span class="combat-foe-name">${monster.name}</span>
+        <span class="combat-foe-progress">${progressLine}</span>
+        ${!unlockProg.ok ? `<span class="combat-foe-bar"><span style="width:${unlockPct}%"></span></span>` : ''}
+        <span class="combat-foe-action">${fightCheck.ok ? 'Combattre' : 'Verrouillé'}</span>
       `;
-      row.querySelector('.btn-fight')?.addEventListener('click', () => {
+      tile.addEventListener('click', () => {
         const result = game.startCombatFight(combatZone.id, index, false);
         if (!result?.ok && result?.reason) showCombatResult(game, result);
       });
-      monsterList.appendChild(row);
+      foeGrid.appendChild(tile);
     });
 
     const boss = combatZone.boss;
-    const bossFight = zoneUnlocked
-      ? game.canStartFight(combatZone.id, true, 0)
-      : { ok: false, reason: 'Zone verrouillée' };
+    const bossFight = game.canStartFight(combatZone.id, true, 0);
     const bossProg = game.getTrainingUnlock(combatZone.id, true, 0);
     const bossSoloKills = game.state.combatKillStats?.[`boss_${boss.enemyId}`] || 0;
-    const bossRow = document.createElement('div');
-    bossRow.className = `combat-monster-row combat-boss-row${!bossProg.ok ? ' combat-monster-locked' : ''}`;
-    const bossProgress = bossProg.ok
-      ? `Boss débloqué · Victoires : ${bossSoloKills}`
-      : `Déblocage : ${bossProg.current || 0}/${bossProg.required || 15} vs ${bossProg.prevName || 'dernier monstre'}`;
-    bossRow.innerHTML = `
-      <div class="combat-monster-info">
-        <span>${!bossProg.ok ? '🔒 ' : ''}${boss.emoji} ${boss.name} <strong>(Boss)</strong></span>
-        <small class="combat-drops">${formatDropList(boss.drops, game.resources)}</small>
-        <small class="combat-kill-progress${bossProg.ok ? ' combat-kill-ok' : ''}">${bossProgress}</small>
-      </div>
-      <button type="button" class="btn btn-prestige btn-fight-boss" ${bossFight.ok ? '' : 'disabled'} title="${bossFight.reason || bossProg.reason || ''}">Boss</button>
+    const bossTile = document.createElement('button');
+    bossTile.type = 'button';
+    bossTile.className = `combat-foe-tile combat-foe-boss${!bossProg.ok ? ' locked' : ''}${bossFight.ok ? ' ready' : ''}`;
+    bossTile.disabled = !bossFight.ok;
+    bossTile.title = bossFight.reason || bossProg.reason || `Boss ${boss.name}`;
+    const bossProgress = bossProg.ok || bossProg.unlockedByDungeon
+      ? `Boss · ${bossSoloKills} victoires`
+      : `${bossProg.current || 0}/${bossProg.required || 15} vs ${bossProg.prevName || 'dernier monstre'}`;
+    const bossPct = bossProg.ok
+      ? 100
+      : Math.min(100, Math.floor(((bossProg.current || 0) / Math.max(1, bossProg.required || 1)) * 100));
+    bossTile.innerHTML = `
+      <span class="combat-foe-emoji">${!bossProg.ok ? '🔒' : boss.emoji}</span>
+      <span class="combat-foe-name">${boss.name}</span>
+      <span class="combat-foe-tag">Boss solo</span>
+      <span class="combat-foe-progress">${bossProgress}</span>
+      ${!bossProg.ok ? `<span class="combat-foe-bar"><span style="width:${bossPct}%"></span></span>` : ''}
+      <span class="combat-foe-action">${bossFight.ok ? 'Affronter' : 'Verrouillé'}</span>
     `;
-    bossRow.querySelector('.btn-fight-boss')?.addEventListener('click', () => {
+    bossTile.addEventListener('click', () => {
       const result = game.startCombatFight(combatZone.id, 0, true);
       if (!result?.ok && result?.reason) showCombatResult(game, result);
     });
-    monsterList.appendChild(bossRow);
+    foeGrid.appendChild(bossTile);
 
     list.appendChild(card);
   }

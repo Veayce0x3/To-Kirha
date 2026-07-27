@@ -112,11 +112,17 @@ export const NAV_CATEGORIES = [
     items: ['cuisine'],
   },
   {
+    id: 'combat',
+    label: 'Combat',
+    collapsible: false,
+    items: ['combat'],
+  },
+  {
     id: 'gestion',
     label: 'Gestion',
     collapsible: true,
     defaultOpen: true,
-    items: ['inventory', 'auction_house', 'leaderboard', 'combat'],
+    items: ['inventory', 'auction_house', 'leaderboard'],
   },
 ];
 
