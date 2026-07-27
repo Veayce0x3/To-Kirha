@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1935",
+      "date": "2026-07-27",
+      "title": "Combat tour par tour & ordre des donjons",
+      "highlights": [
+        "Attaques une par une : d’abord le personnage, puis le monstre seulement quand le trait l’a touché",
+        "Donjons affichés dans l’ordre de progression (Brume avant Jade)"
+      ]
+    },
+    {
       "buildId": "20260727-1900",
       "date": "2026-07-27",
       "title": "Boss solo & entrée donjon",

@@ -79,43 +79,6 @@
       "charXpReward": 180
     }
   },
-  "jade_mountains": {
-    "id": "jade_mountains",
-    "name": "Grotte de Jade",
-    "emoji": "⛩️",
-    "zone": "jade_mountains",
-    "requiredCharLevel": 25,
-    "monsters": [
-      {
-        "enemyId": "cave_bat",
-        "name": "Chauve-souris des Cavernes",
-        "emoji": "🦇",
-        "drops": {},
-        "charXpReward": 25
-      },
-      {
-        "enemyId": "crystal_sprite",
-        "name": "Sprite de Cristal",
-        "emoji": "💎",
-        "drops": {},
-        "charXpReward": 29
-      },
-      {
-        "enemyId": "stone_warden",
-        "name": "Gardien de Pierre",
-        "emoji": "🗿",
-        "drops": {},
-        "charXpReward": 35
-      }
-    ],
-    "boss": {
-      "enemyId": "jade_boss",
-      "name": "Golem de Jade",
-      "emoji": "🌙",
-      "drops": {},
-      "charXpReward": 400
-    }
-  },
   "mist_river": {
     "id": "mist_river",
     "name": "Sanctuaire de Brume",
@@ -151,6 +114,43 @@
       "emoji": "🌫️",
       "drops": {},
       "charXpReward": 300
+    }
+  },
+  "jade_mountains": {
+    "id": "jade_mountains",
+    "name": "Grotte de Jade",
+    "emoji": "⛩️",
+    "zone": "jade_mountains",
+    "requiredCharLevel": 25,
+    "monsters": [
+      {
+        "enemyId": "cave_bat",
+        "name": "Chauve-souris des Cavernes",
+        "emoji": "🦇",
+        "drops": {},
+        "charXpReward": 25
+      },
+      {
+        "enemyId": "crystal_sprite",
+        "name": "Sprite de Cristal",
+        "emoji": "💎",
+        "drops": {},
+        "charXpReward": 29
+      },
+      {
+        "enemyId": "stone_warden",
+        "name": "Gardien de Pierre",
+        "emoji": "🗿",
+        "drops": {},
+        "charXpReward": 35
+      }
+    ],
+    "boss": {
+      "enemyId": "jade_boss",
+      "name": "Golem de Jade",
+      "emoji": "🌙",
+      "drops": {},
+      "charXpReward": 400
     }
   },
   "lotus_sanctuary": {

@@ -522,7 +522,14 @@ export function useCombatSkill(skillId, state, skills, characterConfig, enemies,
   }
 
   if (!result.nextMember) {
-    return resolveEnemyPhaseStep(state, characterConfig, enemies, balance, combatItems);
+    // UI : jouer le trait joueur, puis enchaîner les tours ennemis un par un.
+    return {
+      continuing: true,
+      nextMember: false,
+      phase: 'enemy',
+      party: run.party,
+      activeMemberIndex: run.combat.activeMemberIndex,
+    };
   }
 
   return {
@@ -547,7 +554,13 @@ export function useCombatDefend(state, characterConfig, enemies, balance, combat
   }
 
   if (!result.nextMember) {
-    return resolveEnemyPhaseStep(state, characterConfig, enemies, balance, combatItems);
+    return {
+      continuing: true,
+      nextMember: false,
+      phase: 'enemy',
+      party: run.party,
+      activeMemberIndex: run.combat.activeMemberIndex,
+    };
   }
 
   return {
@@ -584,7 +597,14 @@ export function useCombatMeal(mealId, state, characterConfig, resources, balance
   }
 
   if (!result.nextMember) {
-    return resolveEnemyPhaseStep(state, characterConfig, enemies, balance, combatItems);
+    return {
+      continuing: true,
+      nextMember: false,
+      phase: 'enemy',
+      party: run.party,
+      activeMemberIndex: run.combat.activeMemberIndex,
+      healed: gain,
+    };
   }
 
   return {

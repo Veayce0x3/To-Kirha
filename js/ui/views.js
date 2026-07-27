@@ -57,9 +57,11 @@ let auctionGroup = 'services';
 let hdvMainMode = 'npc';
 let auctionRootEl = null;
 let combatUi = { step: 'action', menu: 'main', pendingSkill: null, targetMode: null };
+let combatAnimBusy = false;
 
 export function resetCombatUi() {
   combatUi = { step: 'action', menu: 'main', pendingSkill: null, targetMode: null };
+  combatAnimBusy = false;
 }
 
 function resetCombatUiTurn() {
@@ -3727,7 +3729,10 @@ function renderCombat(game, el) {
   });
 
   const list = el.querySelector('#combat-zone-list');
-  const zones = Object.values(game.combatZones);
+  const zones = Object.values(game.combatZones).sort((a, b) =>
+    (Number(a.requiredCharLevel) || 1) - (Number(b.requiredCharLevel) || 1)
+    || String(a.name || '').localeCompare(String(b.name || ''), 'fr')
+  );
   let featuredUnlocked = false;
 
   for (const combatZone of zones) {
@@ -3981,51 +3986,76 @@ function getCombatSpriteCenter(field, el) {
 
 /** Trait coloré attaquant → cible (joueur = vert/or, monstre = violet/rouge). */
 const COMBAT_TRAIL_MS = 950;
-const COMBAT_TRAIL_STAGGER_MS = 320;
 const COMBAT_HIT_DELAY_MS = 520;
+const COMBAT_AFTER_HIT_MS = 280;
 
-function playCombatAttackTrail(body, fromEl, toEl, kind) {
-  if (!body || !fromEl || !toEl) return;
-  if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  const field = body.querySelector('.dq-battlefield');
-  if (!field) return;
-
-  const from = getCombatSpriteCenter(field, fromEl);
-  const to = getCombatSpriteCenter(field, toEl);
-  if (!from || !to) return;
-
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  const len = Math.hypot(dx, dy);
-  if (len < 8) return;
-  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-
-  fromEl.classList.add(kind === 'player' ? 'dq-attacking-ally' : 'dq-attacking-foe');
-  setTimeout(() => {
-    fromEl.classList.remove('dq-attacking-ally', 'dq-attacking-foe');
-  }, COMBAT_TRAIL_MS);
-
-  const trail = document.createElement('div');
-  trail.className = `dq-attack-trail dq-attack-trail-${kind}`;
-  trail.style.setProperty('--dq-trail-x', `${from.x}px`);
-  trail.style.setProperty('--dq-trail-y', `${from.y}px`);
-  trail.style.setProperty('--dq-trail-len', `${len}px`);
-  trail.style.setProperty('--dq-trail-angle', `${angle}deg`);
-  trail.setAttribute('aria-hidden', 'true');
-  field.appendChild(trail);
-
-  requestAnimationFrame(() => {
-    trail.classList.add('dq-attack-trail-run');
-  });
-  setTimeout(() => trail.remove(), COMBAT_TRAIL_MS + 80);
+function combatDelay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function playCombatHitAnim(body, anim) {
-  if (!anim.flashEnemy && !anim.flashPlayer) return;
-  requestAnimationFrame(() => {
-    const trails = [];
+function playCombatAttackTrail(body, fromEl, toEl, kind) {
+  return new Promise((resolve) => {
+    if (!body || !fromEl || !toEl) {
+      resolve();
+      return;
+    }
+    if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      resolve();
+      return;
+    }
 
+    const field = body.querySelector('.dq-battlefield');
+    if (!field) {
+      resolve();
+      return;
+    }
+
+    const from = getCombatSpriteCenter(field, fromEl);
+    const to = getCombatSpriteCenter(field, toEl);
+    if (!from || !to) {
+      resolve();
+      return;
+    }
+
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 8) {
+      resolve();
+      return;
+    }
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+
+    fromEl.classList.add(kind === 'player' ? 'dq-attacking-ally' : 'dq-attacking-foe');
+    setTimeout(() => {
+      fromEl.classList.remove('dq-attacking-ally', 'dq-attacking-foe');
+    }, COMBAT_TRAIL_MS);
+
+    const trail = document.createElement('div');
+    trail.className = `dq-attack-trail dq-attack-trail-${kind}`;
+    trail.style.setProperty('--dq-trail-x', `${from.x}px`);
+    trail.style.setProperty('--dq-trail-y', `${from.y}px`);
+    trail.style.setProperty('--dq-trail-len', `${len}px`);
+    trail.style.setProperty('--dq-trail-angle', `${angle}deg`);
+    trail.setAttribute('aria-hidden', 'true');
+    field.appendChild(trail);
+
+    requestAnimationFrame(() => {
+      trail.classList.add('dq-attack-trail-run');
+    });
+    setTimeout(() => {
+      trail.remove();
+      resolve();
+    }, COMBAT_TRAIL_MS + 80);
+  });
+}
+
+function collectCombatTrails(body, anim, kindFilter) {
+  const trails = [];
+  const wantPlayer = !kindFilter || kindFilter === 'player';
+  const wantEnemy = !kindFilter || kindFilter === 'enemy';
+
+  if (wantPlayer) {
     for (const hit of anim.playerHits || []) {
       const fromId = hit.memberId || 'hero';
       const fromEl = body.querySelector(`.dq-sprite-party[data-member-id="${fromId}"]`)
@@ -4034,9 +4064,11 @@ function playCombatHitAnim(body, anim) {
       const toEl = hit.enemyId
         ? body.querySelector(`.dq-enemy-card[data-enemy-id="${hit.enemyId}"] .dq-sprite-enemy`)
         : body.querySelector('.dq-sprite-enemy');
-      if (fromEl && toEl) trails.push([fromEl, toEl, 'player']);
+      if (fromEl && toEl) trails.push({ fromEl, toEl, kind: 'player', hitEnemyId: hit.enemyId });
     }
+  }
 
+  if (wantEnemy) {
     for (const hit of anim.enemyHits || []) {
       const fromEl = hit.enemyId
         ? body.querySelector(`.dq-enemy-card[data-enemy-id="${hit.enemyId}"] .dq-sprite-enemy`)
@@ -4045,100 +4077,122 @@ function playCombatHitAnim(body, anim) {
       const toId = hit.memberId || 'hero';
       const toEl = body.querySelector(`.dq-sprite-party[data-member-id="${toId}"]`)
         || body.querySelector('.dq-sprite-party[data-member-id="hero"]');
-      if (fromEl && toEl) trails.push([fromEl, toEl, 'enemy']);
+      if (fromEl && toEl) trails.push({ fromEl, toEl, kind: 'enemy', hitMemberId: hit.memberId });
     }
+  }
 
-    if (!trails.length) {
-      if (anim.flashEnemy) {
-        const fromId = anim.attackMemberId || 'hero';
-        const fromEl = body.querySelector(`.dq-sprite-party[data-member-id="${fromId}"]`)
-          || body.querySelector('.dq-sprite-party');
-        const toEl = anim.hitEnemyId
-          ? body.querySelector(`.dq-enemy-card[data-enemy-id="${anim.hitEnemyId}"] .dq-sprite-enemy`)
-          : body.querySelector('.dq-sprite-enemy');
-        if (fromEl && toEl) trails.push([fromEl, toEl, 'player']);
-      }
-      if (anim.flashPlayer) {
-        const fromEl = anim.attackEnemyId
-          ? body.querySelector(`.dq-enemy-card[data-enemy-id="${anim.attackEnemyId}"] .dq-sprite-enemy`)
-          : body.querySelector('.dq-sprite-enemy');
-        const toId = anim.hitMemberId || 'hero';
-        const toEl = body.querySelector(`.dq-sprite-party[data-member-id="${toId}"]`);
-        if (fromEl && toEl) trails.push([fromEl, toEl, 'enemy']);
-      }
+  if (!trails.length) {
+    if (wantPlayer && anim.flashEnemy) {
+      const fromId = anim.attackMemberId || 'hero';
+      const fromEl = body.querySelector(`.dq-sprite-party[data-member-id="${fromId}"]`)
+        || body.querySelector('.dq-sprite-party');
+      const toEl = anim.hitEnemyId
+        ? body.querySelector(`.dq-enemy-card[data-enemy-id="${anim.hitEnemyId}"] .dq-sprite-enemy`)
+        : body.querySelector('.dq-sprite-enemy');
+      if (fromEl && toEl) trails.push({ fromEl, toEl, kind: 'player', hitEnemyId: anim.hitEnemyId });
     }
+    if (wantEnemy && anim.flashPlayer) {
+      const fromEl = anim.attackEnemyId
+        ? body.querySelector(`.dq-enemy-card[data-enemy-id="${anim.attackEnemyId}"] .dq-sprite-enemy`)
+        : body.querySelector('.dq-sprite-enemy');
+      const toId = anim.hitMemberId || 'hero';
+      const toEl = body.querySelector(`.dq-sprite-party[data-member-id="${toId}"]`);
+      if (fromEl && toEl) trails.push({ fromEl, toEl, kind: 'enemy', hitMemberId: anim.hitMemberId });
+    }
+  }
 
-    // Un trait à la fois, bien espacé, pour lire qui attaque
-    trails.forEach(([fromEl, toEl, kind], i) => {
-      setTimeout(() => playCombatAttackTrail(body, fromEl, toEl, kind), i * COMBAT_TRAIL_STAGGER_MS);
-    });
-
-    const hitAt = COMBAT_HIT_DELAY_MS + Math.max(0, trails.length - 1) * COMBAT_TRAIL_STAGGER_MS;
-    setTimeout(() => {
-      if (anim.flashEnemy) {
-        const sel = anim.hitEnemyId
-          ? `.dq-enemy-card[data-enemy-id="${anim.hitEnemyId}"] .dq-sprite-enemy`
-          : '.dq-sprite-enemy';
-        body.querySelector(sel)?.classList.add('dq-hit');
-      }
-      if (anim.flashPlayer) {
-        const targetId = anim.hitMemberId || 'hero';
-        body.querySelector(`.dq-sprite-party[data-member-id="${targetId}"]`)?.classList.add('dq-hit');
-      }
-      setTimeout(() => {
-        body.querySelectorAll('.dq-sprite-enemy.dq-hit').forEach((el) => el.classList.remove('dq-hit'));
-        body.querySelectorAll('.dq-sprite-party.dq-hit').forEach((el) => el.classList.remove('dq-hit'));
-      }, 520);
-    }, hitAt);
-  });
+  return trails;
 }
 
-function continueAfterCombatAction(game, body, logBefore) {
-  const after = game.getActiveCombat();
-  if (!after) return;
-  const anim = detectTurnAnim(logBefore, after.encounter.combat?.log || []);
-  renderDungeonCombatBody(game);
-  playCombatHitAnim(body, anim);
-  if (after.encounter.combat?.phase === 'enemy') {
-    const wait = COMBAT_TRAIL_MS + 280;
-    setTimeout(() => processEnemyTurnSequence(game, body), wait);
+function flashCombatHit(body, kind, trail) {
+  if (kind === 'player') {
+    const sel = trail.hitEnemyId
+      ? `.dq-enemy-card[data-enemy-id="${trail.hitEnemyId}"] .dq-sprite-enemy`
+      : '.dq-sprite-enemy';
+    body.querySelector(sel)?.classList.add('dq-hit');
+  } else {
+    const targetId = trail.hitMemberId || 'hero';
+    body.querySelector(`.dq-sprite-party[data-member-id="${targetId}"]`)?.classList.add('dq-hit');
+  }
+  setTimeout(() => {
+    body.querySelectorAll('.dq-sprite-enemy.dq-hit').forEach((el) => el.classList.remove('dq-hit'));
+    body.querySelectorAll('.dq-sprite-party.dq-hit').forEach((el) => el.classList.remove('dq-hit'));
+  }, 520);
+}
+
+/** Joue les traits un par un ; le shake arrive quand le trait touche. */
+async function playCombatHitAnim(body, anim, kindFilter = null) {
+  if (!anim?.flashEnemy && !anim?.flashPlayer) return;
+  if (kindFilter === 'player' && !anim.flashEnemy) return;
+  if (kindFilter === 'enemy' && !anim.flashPlayer) return;
+
+  const trails = collectCombatTrails(body, anim, kindFilter);
+  if (!trails.length) return;
+
+  for (const trail of trails) {
+    const trailPromise = playCombatAttackTrail(body, trail.fromEl, trail.toEl, trail.kind);
+    await combatDelay(COMBAT_HIT_DELAY_MS);
+    flashCombatHit(body, trail.kind, trail);
+    await trailPromise;
+    await combatDelay(COMBAT_AFTER_HIT_MS);
   }
 }
 
-function processEnemyTurnSequence(game, body) {
+async function continueAfterCombatAction(game, body, logBefore) {
+  const after = game.getActiveCombat();
+  if (!after) {
+    combatAnimBusy = false;
+    return;
+  }
+  const anim = detectTurnAnim(logBefore, after.encounter.combat?.log || []);
+  renderDungeonCombatBody(game);
+  // D’abord uniquement l’attaque joueur / allié
+  await playCombatHitAnim(body, anim, 'player');
+  if (after.encounter.combat?.phase === 'enemy') {
+    await processEnemyTurnSequence(game, body);
+  }
+  combatAnimBusy = false;
+}
+
+async function processEnemyTurnSequence(game, body) {
   const active = game.getActiveCombat();
   if (!active || active.encounter.combat?.phase !== 'enemy') return;
 
   renderDungeonCombatBody(game);
+  await combatDelay(450);
 
-  setTimeout(() => {
-    const current = game.getActiveCombat();
-    if (!current || current.encounter.combat?.phase !== 'enemy') return;
+  const current = game.getActiveCombat();
+  if (!current || current.encounter.combat?.phase !== 'enemy') return;
 
-    const logBefore = current.encounter.combat.log.length;
-    const result = game.stepCombatEnemyTurn();
-    resetCombatUiTurn();
+  const logBefore = current.encounter.combat.log.length;
+  const result = game.stepCombatEnemyTurn();
+  resetCombatUiTurn();
 
-    if (result?.cleared || result?.victory === false) {
-      closeDungeonCombatModal();
-      showCombatResult(game, result);
-      return;
-    }
+  if (result?.cleared || result?.victory === false) {
+    closeDungeonCombatModal();
+    showCombatResult(game, result);
+    combatAnimBusy = false;
+    return;
+  }
 
-    const after = game.getActiveCombat();
-    if (!after) return;
+  const after = game.getActiveCombat();
+  if (!after) {
+    combatAnimBusy = false;
+    return;
+  }
 
-    const anim = detectTurnAnim(logBefore, after.encounter.combat?.log || []);
-    renderDungeonCombatBody(game);
-    playCombatHitAnim(body, anim);
+  const anim = detectTurnAnim(logBefore, after.encounter.combat?.log || []);
+  renderDungeonCombatBody(game);
+  // Puis l’attaque monstre, une fois le trait joueur terminé
+  await playCombatHitAnim(body, anim, 'enemy');
 
-    if (after.encounter.combat?.phase === 'enemy') {
-      setTimeout(() => processEnemyTurnSequence(game, body), COMBAT_TRAIL_MS + 320);
-    }
-  }, 650);
+  if (after.encounter.combat?.phase === 'enemy') {
+    await processEnemyTurnSequence(game, body);
+  }
 }
 
 function executeCombatTurn(game, body, actionFn) {
+  if (combatAnimBusy) return;
   const active = game.getActiveCombat();
   if (!active) return;
   const logBefore = active.encounter.combat?.log?.length || 0;
@@ -4150,6 +4204,7 @@ function executeCombatTurn(game, body, actionFn) {
     showCombatResult(game, result);
     return;
   }
+  combatAnimBusy = true;
   continueAfterCombatAction(game, body, logBefore);
 }
 
