@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1745",
+      "date": "2026-07-27",
+      "title": "Mode vitesse admin",
+      "highlights": [
+        "Admin : activer ×5 / ×10 / ×20 sur un joueur (récolte & ferme accélérées)",
+        "Le joueur reçoit une popup explicative au chargement + pastille ×N en haut",
+        "Les gains restent normaux — seuls les timers sont accélérés"
+      ]
+    },
+    {
       "buildId": "20260727-1735",
       "date": "2026-07-27",
       "title": "Fix coût du 6ᵉ slot",

@@ -574,6 +574,11 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
     : '—';
 
   const careerLabel = careerLabelFromSave(save_summary);
+  const speedMult = save_summary?.speed_mode_active
+    ? ([5, 10, 20].includes(Number(save_summary.speed_mode_multiplier))
+      ? Number(save_summary.speed_mode_multiplier)
+      : 10)
+    : 10;
 
   const history = Array.isArray(save_summary?.season_history) ? save_summary.season_history : [];
   const historyHtml = history.length
@@ -710,6 +715,23 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
           <select class="auth-input admin-catalog-select" id="admin-catalog-res">${catalogOptions || '<option value="">—</option>'}</select>
           <input type="number" class="auth-input admin-kirha-input" id="admin-catalog-qty" min="1" step="1" value="50" />
           <button type="button" class="btn btn-muted" id="admin-catalog-add">Ajouter (donner)</button>
+        </div>
+      </div>
+
+      <div class="admin-adjust-section">
+        <h6 class="admin-subsection-title">Mode vitesse (test)</h6>
+        <p class="view-desc admin-grant-hint">Accélère récolte &amp; ferme (×5 / ×10 / ×20). Le joueur reçoit une popup au prochain chargement — il doit <strong>recharger</strong>.</p>
+        <p class="admin-speed-status">${save_summary?.speed_mode_active
+          ? `Actif · ×${speedMult}`
+          : 'Inactif'}</p>
+        <div class="admin-grant-kirha-row">
+          <select class="auth-input admin-role-select" id="admin-speed-mult">
+            <option value="5" ${speedMult === 5 ? 'selected' : ''}>×5</option>
+            <option value="10" ${speedMult === 10 ? 'selected' : ''}>×10</option>
+            <option value="20" ${speedMult === 20 ? 'selected' : ''}>×20</option>
+          </select>
+          <button type="button" class="btn btn-craft" id="admin-speed-on">Activer</button>
+          <button type="button" class="btn btn-muted" id="admin-speed-off" ${save_summary?.speed_mode_active ? '' : 'disabled'}>Désactiver</button>
         </div>
       </div>
     </div>
@@ -979,10 +1001,25 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
       return;
     }
     if (!confirm(`Donner ${fmtNum(qty)} × ${resourceLabel(id)} ?`)) return;
+    await runAdjust({ inventory_deltas: { [id]: qty } }, 'Ressource ajoutée — recharger.');
+  });
+
+  detailEl.querySelector('#admin-speed-on')?.addEventListener('click', async () => {
+    const mult = Number(detailEl.querySelector('#admin-speed-mult')?.value) || 10;
+    if (![5, 10, 20].includes(mult)) {
+      setStatus('Multiplicateur invalide (5, 10 ou 20).', true);
+      return;
+    }
+    if (!confirm(`Activer le mode vitesse ×${mult} pour ce joueur ? Il verra une popup au prochain chargement.`)) return;
     await runAdjust(
-      { inventory_deltas: { [id]: qty } },
-      `+${fmtNum(qty)} ${resourceLabel(id)} — recharger.`
+      { speed_mode: true, speed_multiplier: mult },
+      `Mode ×${mult} activé — le joueur doit recharger.`,
     );
+  });
+
+  detailEl.querySelector('#admin-speed-off')?.addEventListener('click', async () => {
+    if (!confirm('Désactiver le mode vitesse pour ce joueur ?')) return;
+    await runAdjust({ speed_mode: false }, 'Mode vitesse désactivé — recharger.');
   });
 
   detailEl.querySelector('#admin-grant-jobs')?.addEventListener('click', async () => {

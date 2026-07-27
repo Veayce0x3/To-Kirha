@@ -314,6 +314,7 @@ export class Game {
       season: 1,
       prestige: { kirhaBonus: 0, xpBonus: 0, jobXpBonus: 0, regrowthSpeedBonus: 0 },
       seasonBoost: null,
+      speedMode: null,
       toolUpgrades: {},
       seasonHistory: [],
       lifetimeStats: { totalEarned: 0, totalHarvests: 0, seasonsCompleted: 0 },
@@ -403,6 +404,16 @@ export class Game {
       },
       seasonBoost: saved.seasonBoost && Number(saved.seasonBoost.endsAt) > Date.now()
         ? { endsAt: Number(saved.seasonBoost.endsAt) }
+        : null,
+      speedMode: saved.speedMode && typeof saved.speedMode === 'object'
+        ? {
+          active: !!saved.speedMode.active,
+          multiplier: Number(saved.speedMode.multiplier) || 1,
+          popupPending: !!saved.speedMode.popupPending,
+          activatedAt: Number(saved.speedMode.activatedAt) || 0,
+          popupSeenAt: Number(saved.speedMode.popupSeenAt) || 0,
+          disabledAt: Number(saved.speedMode.disabledAt) || 0,
+        }
         : null,
       toolUpgrades: saved.toolUpgrades && typeof saved.toolUpgrades === 'object'
         ? { ...saved.toolUpgrades }

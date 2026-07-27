@@ -1,6 +1,7 @@
 import { getCraftBonus } from './craft.js';
 import { getPrestigeBonuses, getSeasonLevelCap, applyMultiplierBonus, getSeasonBoostMult, isSeasonBoostActive } from './prestige.js';
 import { getHarvestXpForResource, getRegrowthTier, getScaledXpForLevel } from './progression.js';
+import { applySpeedModeDuration } from './speedMode.js';
 
 const ZONE_REGROWTH_BONUS = {
   village_sakura: 0,
@@ -17,7 +18,7 @@ export function getHarvestTime(resource, state, jobs, balance, resources = null)
 
   const speedBonus = getSpeedBonus(resource, state, jobs, balance);
   const time = tierTime * (1 - Math.min(speedBonus, 0.85));
-  return Math.max(time, cfg.minHarvestTimeMs ?? 1500);
+  return applySpeedModeDuration(Math.max(time, cfg.minHarvestTimeMs ?? 1500), state);
 }
 
 function getSpeedBonus(resource, state, jobs, balance) {
@@ -44,7 +45,7 @@ export function getRegrowthTime(resource, state, jobs, balance, resources = null
   if (isSeasonBoostActive(state)) {
     time = Math.ceil(time / 2);
   }
-  return time;
+  return applySpeedModeDuration(time, state);
 }
 
 export function getHarvestCycleTime(resource, state, jobs, balance) {

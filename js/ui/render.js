@@ -1,4 +1,11 @@
 import { getSeasonBonusPercents, hasSeasonBonus, isSeasonBoostActive, getSeasonBoostRemainingMs } from '../systems/prestige.js';
+import {
+  isSpeedModeActive,
+  getSpeedModeMultiplier,
+  getSpeedModeLabel,
+  shouldShowSpeedModePopup,
+  acknowledgeSpeedModePopup,
+} from '../systems/speedMode.js';
 import { on } from '../core/events.js';
 import { focusAchievementInChain } from '../systems/achievements.js';
 import { cleanupPullRefreshArtifacts } from './pullRefresh.js';
@@ -86,6 +93,7 @@ export function initUI(game, audio) {
     seasonBadge: document.getElementById('season-badge'),
     seasonBonusChip: document.getElementById('season-bonus-chip'),
     seasonBoostChip: document.getElementById('season-boost-chip'),
+    speedModeChip: document.getElementById('speed-mode-chip'),
     viewTitle: document.getElementById('view-title'),
     zoneSubtitle: document.getElementById('zone-subtitle'),
     viewContainer: document.getElementById('view-container'),
@@ -113,6 +121,11 @@ export function initUI(game, audio) {
     whatsNewVersion: document.getElementById('whats-new-version'),
     whatsNewBody: document.getElementById('whats-new-body'),
     whatsNewConfirm: document.getElementById('whats-new-confirm'),
+    speedModeModal: document.getElementById('speed-mode-modal'),
+    speedModeTitle: document.getElementById('speed-mode-title'),
+    speedModeDesc: document.getElementById('speed-mode-desc'),
+    speedModeBody: document.getElementById('speed-mode-body'),
+    speedModeConfirm: document.getElementById('speed-mode-confirm'),
   };
 
   let lastKirha = game.state.kirha;
@@ -428,6 +441,16 @@ export function initUI(game, audio) {
         els.seasonBoostChip.textContent = '';
       }
     }
+    if (els.speedModeChip) {
+      if (isSpeedModeActive(state)) {
+        els.speedModeChip.hidden = false;
+        els.speedModeChip.textContent = getSpeedModeLabel(state);
+        els.speedModeChip.title = `Mode vitesse admin : récolte et ferme ×${getSpeedModeMultiplier(state)} plus rapides`;
+      } else {
+        els.speedModeChip.hidden = true;
+        els.speedModeChip.textContent = '';
+      }
+    }
 
     els.viewTitle.textContent = getViewTitle();
     const zone = game.getCurrentZone();
@@ -487,11 +510,15 @@ export function initUI(game, audio) {
   function showWhatsNewIfNeeded() {
     document.body.classList.remove('startup-refresh-pending');
     const modal = els.whatsNewModal;
-    if (!modal) return;
+    if (!modal) {
+      showSpeedModeIfNeeded();
+      return;
+    }
 
     if (!shouldShowWhatsNew(game.balance)) {
       modal.classList.remove('active');
       modal.setAttribute('aria-hidden', 'true');
+      showSpeedModeIfNeeded();
       return;
     }
 
@@ -500,6 +527,7 @@ export function initUI(game, audio) {
     const entries = getWhatsNewEntries(game.changelog, since, current);
     if (!entries.length) {
       markChangelogSeen(game.balance);
+      showSpeedModeIfNeeded();
       return;
     }
 
@@ -523,6 +551,30 @@ export function initUI(game, audio) {
       }).join('');
     }
 
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function showSpeedModeIfNeeded() {
+    const modal = els.speedModeModal;
+    if (!modal || !shouldShowSpeedModePopup(game.state)) {
+      modal?.classList.remove('active');
+      modal?.setAttribute('aria-hidden', 'true');
+      return;
+    }
+    const mult = getSpeedModeMultiplier(game.state);
+    if (els.speedModeTitle) els.speedModeTitle.textContent = `⚡ Mode vitesse ×${mult}`;
+    if (els.speedModeDesc) {
+      els.speedModeDesc.textContent = 'Un admin a activé un mode de test sur ton compte.';
+    }
+    if (els.speedModeBody) {
+      els.speedModeBody.innerHTML = `
+        <li>Récolte et repousse : <strong>×${mult}</strong> plus rapides</li>
+        <li>Cycles de ferme : <strong>×${mult}</strong> plus rapides</li>
+        <li>Les gains (ressources, XP, Kirha) restent normaux — seuls les timers changent</li>
+        <li>Un pastille <strong>×${mult}</strong> reste visible en haut tant que le mode est actif</li>
+      `;
+    }
     modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
   }
@@ -893,6 +945,15 @@ export function initUI(game, audio) {
     markChangelogSeen(game.balance);
     els.whatsNewModal?.classList.remove('active');
     els.whatsNewModal?.setAttribute('aria-hidden', 'true');
+    showSpeedModeIfNeeded();
+  });
+  els.speedModeConfirm?.addEventListener('click', () => {
+    if (acknowledgeSpeedModePopup(game.state)) {
+      game.scheduleSave();
+    }
+    els.speedModeModal?.classList.remove('active');
+    els.speedModeModal?.setAttribute('aria-hidden', 'true');
+    refreshHeader(game.state);
   });
   cleanupPullRefreshArtifacts();
   if (game.isHarvesting() || game.isFarmActive()) tickHarvestUI();

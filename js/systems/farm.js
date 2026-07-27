@@ -2,6 +2,7 @@ import { wearToolsForHarvest } from './toolDurability.js';
 import { isFarmBuildingUnlocked } from './jobUnlock.js';
 import { addFarmBuildingXp } from './farmProgress.js';
 import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBoostMult } from './prestige.js';
+import { applySpeedModeDuration } from './speedMode.js';
 
 export const FARM_BUILDING_IDS = [
   'well',
@@ -139,9 +140,14 @@ export function getFeedEfficiency(building, feedId, state) {
 
 export function computeFarmDuration(building, feedId, state) {
   const base = building.cycleMs || 10000;
-  if (!feedId || Object.keys(building.feed || {}).length === 0) return base;
-  const eff = getFeedEfficiency(building, feedId, state);
-  return Math.max(2000, Math.floor(base / Math.max(0.4, eff)));
+  let duration;
+  if (!feedId || Object.keys(building.feed || {}).length === 0) {
+    duration = base;
+  } else {
+    const eff = getFeedEfficiency(building, feedId, state);
+    duration = Math.max(2000, Math.floor(base / Math.max(0.4, eff)));
+  }
+  return applySpeedModeDuration(duration, state);
 }
 
 export function canAffordFeed(building, feedId, state) {

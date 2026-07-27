@@ -118,6 +118,34 @@
   display: none !important;
 }
 
+.speed-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 90, 39, 0.4);
+  background: linear-gradient(135deg, rgba(248, 232, 238, 0.98), rgba(45, 90, 39, 0.18));
+  color: #2d5a27;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: default;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.speed-mode-chip[hidden] {
+  display: none !important;
+}
+
+.modal-speed-mode .speed-mode-list {
+  margin: 0.75rem 0 0;
+  padding-left: 1.2rem;
+  text-align: left;
+  line-height: 1.45;
+}
+
 .season-boost-banner {
   margin: 0.5rem 0 0.75rem;
   padding: 0.55rem 0.75rem;
