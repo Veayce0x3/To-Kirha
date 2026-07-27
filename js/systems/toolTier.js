@@ -19,10 +19,12 @@ export function getResourceHarvestTier(resource, resources = null) {
 }
 
 export function getRecipeToolTier(recipe) {
-  if (recipe?.toolTier) return recipe.toolTier;
+  if (recipe?.toolTier != null) return Number(recipe.toolTier) || 1;
+  // Ancien fallback (requiredJobLevel = 20/40/…) — ne plus utiliser la courbe Outilleur 1/6/11.
   const lvl = recipe?.requiredJobLevel ?? 1;
   if (lvl <= 1) return 1;
-  return Math.floor(lvl / 20);
+  if (lvl >= 20) return Math.max(1, Math.floor(lvl / 20));
+  return Math.max(1, Math.floor((lvl - 1) / 5) + 1);
 }
 
 export function getGatheringToolRecipe(state, jobId, recipes, toolKind = null) {
@@ -46,7 +48,9 @@ function findOwnedWorkingToolForJob(state, jobId, recipes, minTier = 1, toolKind
     if (toolKind && (recipe.toolKind || 'bucket') !== toolKind) continue;
     const tier = getRecipeToolTier(recipe);
     if (tier < minTier) continue;
-    if (!best || tier > getRecipeToolTier(best)) best = recipe;
+    if (!best || tier > getRecipeToolTier(best.recipe)) {
+      best = { recipeId, recipe };
+    }
   }
   return best;
 }
@@ -70,8 +74,9 @@ export function getFarmToolCheck(state, recipes, equipmentData, building = null)
     return {
       ok: false,
       reason: 'not_equipped',
-      message: `Tu possèdes « ${owned.name} » — équipe-le sur Perso → Outils (seau et panier peuvent être équipés ensemble).`,
-      recipe: null,
+      message: `Tu possèdes « ${owned.recipe.name} » — équipe-le sur Perso → Outils (seau et panier peuvent être équipés ensemble).`,
+      recipe: owned.recipe,
+      recipeId: owned.recipeId,
     };
   }
   return {
@@ -98,7 +103,9 @@ export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentDa
       return {
         ok: false,
         reason: 'not_equipped',
-        message: `Tu possèdes « ${owned.name} » — équipe-la sur Perso → Outils.`,
+        recipe: owned.recipe,
+        recipeId: owned.recipeId,
+        message: `Équipe « ${owned.recipe.name} » (Perso → Outils) pour récolter ${resource.name}.`,
       };
     }
     return {
@@ -115,13 +122,12 @@ export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentDa
   }
 
   const toolTier = getRecipeToolTier(recipe);
-  if (toolTier !== resourceTier) {
+  // Un outil de palier supérieur peut récolter les ressources plus basses.
+  if (toolTier < resourceTier) {
     return {
       ok: false,
-      reason: toolTier < resourceTier ? 'tier' : 'wrong_tier',
-      message: toolTier < resourceTier
-        ? `Outil insuffisant (palier ${toolTier}) pour ${resource.name} (palier ${resourceTier}).`
-        : `Outil palier ${toolTier} inadapté pour ${resource.name} (palier ${resourceTier} requis).`,
+      reason: 'tier',
+      message: `Outil insuffisant (palier ${toolTier}) pour ${resource.name} (palier ${resourceTier}). Craft ou équipe un outil palier ${resourceTier}+.`,
     };
   }
 
@@ -138,7 +144,7 @@ export function toolMatchesResourceTier(recipe, resource, resources) {
   if (!recipe?.toolTier || !resource) return true;
   const resourceTier = getResourceHarvestTier(resource, resources);
   if (resourceTier <= 0) return false;
-  return getRecipeToolTier(recipe) === resourceTier;
+  return getRecipeToolTier(recipe) >= resourceTier;
 }
 
 /**
@@ -165,7 +171,7 @@ export function findBrokenToolForResource(state, jobId, resource, recipes, resou
   return best;
 }
 
-/** Statut outil pour l’UI ligne de récolte (ok / bas / usé + refabrication). */
+/** Statut outil pour l’UI ligne de récolte (ok / bas / usé / à équiper + refabrication). */
 export function getHarvestLineToolStatus(state, jobId, resource, recipes, equipmentData, resources = null) {
   const check = getHarvestToolCheck(state, jobId, resource, recipes, equipmentData, resources);
   const equippedId = getJobEquippedTool(state, jobId);
@@ -183,6 +189,20 @@ export function getHarvestLineToolStatus(state, jobId, resource, recipes, equipm
         label: `${remaining}/${max}`,
       };
     }
+  }
+
+  if (check.reason === 'not_equipped' && check.recipe && check.recipeId) {
+    const remaining = getToolUsesRemaining(state, check.recipeId);
+    const max = getEffectiveMaxUses(state, check.recipe, check.recipeId) || check.recipe.maxUses || 0;
+    return {
+      kind: 'unequipped',
+      recipeId: check.recipeId,
+      recipe: check.recipe,
+      remaining: remaining ?? max,
+      max,
+      label: remaining != null && max ? `${remaining}/${max}` : 'prêt',
+      message: check.message,
+    };
   }
 
   const broken = findBrokenToolForResource(state, jobId, resource, recipes, resources);

@@ -129,7 +129,7 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
       game.equipment,
       game.resources
     );
-    if (status?.kind === 'broken') {
+    if (status?.kind === 'broken' || status?.kind === 'unequipped') {
       const controls = buildToolStatusControls(game, jobId, resource, () => {
         const viewEl = document.getElementById('view-container');
         if (viewEl) renderJobProduction(game, viewEl, jobId);
@@ -208,6 +208,22 @@ function buildToolStatusControls(game, jobId, resource, onRecrafted) {
         emit('craftBlocked', { recipeId: status.recipeId, message: result.error });
         return;
       }
+      game.doEquip(status.recipeId);
+      onRecrafted?.();
+    });
+    return wrap;
+  }
+
+  if (status.kind === 'unequipped') {
+    wrap.innerHTML = `
+      <span class="production-tool-dur" title="${status.message || name}">${emoji} ${name}</span>
+      <button type="button" class="btn btn-small btn-craft btn-equip-tool" title="Équiper ${name}">
+        Équiper
+      </button>
+    `;
+    wrap.querySelector('.btn-equip-tool')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       game.doEquip(status.recipeId);
       onRecrafted?.();
     });

@@ -174,25 +174,51 @@ export function performCraft(recipeId, ctx) {
   return { ok: true, recipe, levelResult };
 }
 
+/** Équipe le craft : slot vide, outil cassé, ou meilleur palier du même métier. */
 export function autoEquipIfEmpty(recipeId, ctx) {
   const meta = ctx.equipment.equipable?.[recipeId];
   if (!meta) return false;
 
   const recipe = ctx.recipes[recipeId];
-  let slotEmpty;
+  let currentId = null;
   if (meta.job == null) {
-    slotEmpty = !ctx.state.equipment?.global;
+    currentId = ctx.state.equipment?.global || null;
   } else if (meta.slot === 'accessory') {
-    slotEmpty = !ctx.state.equipment?.accessories?.[meta.job];
+    currentId = ctx.state.equipment?.accessories?.[meta.job] || null;
   } else if (meta.job === 'breeder') {
     const kind = recipe?.toolKind || (String(recipeId).includes('basket') ? 'basket' : 'bucket');
-    slotEmpty = !getJobEquippedTool(ctx.state, 'breeder', kind);
+    currentId = getJobEquippedTool(ctx.state, 'breeder', kind);
   } else {
-    slotEmpty = !getJobEquippedTool(ctx.state, meta.job);
+    currentId = getJobEquippedTool(ctx.state, meta.job);
   }
 
-  if (!slotEmpty) return false;
-  return equip(recipeId, ctx.state, ctx.equipment, ctx.recipes);
+  if (!currentId) {
+    return equip(recipeId, ctx.state, ctx.equipment, ctx.recipes);
+  }
+
+  if (!isDurabilityTool(recipe)) return false;
+
+  const currentRecipe = ctx.recipes[currentId];
+  if (!currentRecipe) {
+    return equip(recipeId, ctx.state, ctx.equipment, ctx.recipes);
+  }
+
+  if (recipe.toolKind && currentRecipe.toolKind && recipe.toolKind !== currentRecipe.toolKind) {
+    return false;
+  }
+
+  const sameJob = (recipe.effect?.job || meta.job) === (currentRecipe.effect?.job || meta.job);
+  if (!sameJob) {
+    return equip(recipeId, ctx.state, ctx.equipment, ctx.recipes);
+  }
+
+  const currentBroken = !isToolEffectActive(ctx.state, currentId, currentRecipe);
+  const currentTier = Number(currentRecipe.toolTier) || 0;
+  const nextTier = Number(recipe.toolTier) || 0;
+  if (currentBroken || nextTier > currentTier) {
+    return equip(recipeId, ctx.state, ctx.equipment, ctx.recipes);
+  }
+  return false;
 }
 
 export function inspectRecipe(recipeId, ctx) {

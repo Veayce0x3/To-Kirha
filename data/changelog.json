@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1545",
+      "date": "2026-07-27",
+      "title": "Outils : équipement auto + paliers",
+      "highlights": [
+        "Nouveau craft d’outil : s’équipe automatiquement s’il est meilleur que l’ancien",
+        "Un outil de palier supérieur marche aussi sur les ressources plus basses",
+        "Bouton Équiper directement sur la ligne de récolte si l’outil est en réserve"
+      ]
+    },
+    {
       "buildId": "20260727-1515",
       "date": "2026-07-27",
       "title": "Outilleur : outils débloqués plus tôt",
