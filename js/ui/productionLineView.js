@@ -395,22 +395,29 @@ export function renderJobProduction(game, el, jobId) {
 function formatUnlockCost(game, preview) {
   const parts = [];
   if (preview.kirha > 0) {
-    const ok = (game.state.kirha || 0) >= preview.kirha;
-    parts.push(`<span class="${ok ? 'ing-ok' : 'ing-missing'}">${formatNumber(preview.kirha)} 💰</span>`);
+    const haveK = game.state.kirha || 0;
+    const ok = haveK >= preview.kirha;
+    parts.push(`<span class="${ok ? 'ing-ok' : 'ing-missing'}">${formatNumber(haveK)}/${formatNumber(preview.kirha)} 💰</span>`);
   }
   if (preview.resources) {
     for (const [resId, amt] of Object.entries(preview.resources)) {
+      const need = Number(amt) || 0;
+      if (need <= 0) continue;
       const res = game.resources[resId];
       const have = game.state.inventory[resId] || 0;
-      const cls = have >= amt ? 'ing-ok' : 'ing-missing';
-      parts.push(`<span class="${cls}">${renderResourceIcon(res, 'ing-icon') || ''} ${have}/${amt}</span>`);
+      const cls = have >= need ? 'ing-ok' : 'ing-missing';
+      const name = res?.name || resId;
+      parts.push(
+        `<span class="${cls}" title="${name}">${renderResourceIcon(res, 'ing-icon') || ''}${name} ${formatNumber(have)}/${formatNumber(need)}</span>`
+      );
     }
   }
   return parts.join(' ');
 }
 
 function buildUnlockPanel(game, jobId) {
-  const preview = game.getNextProductionUnlockPreview(jobId);
+  const selectedId = selectedHarvestResourceByJob[jobId] || null;
+  const preview = game.getNextProductionUnlockPreview(jobId, selectedId);
   const panel = document.createElement('div');
   panel.className = 'production-unlock-panel';
 
@@ -428,7 +435,7 @@ function buildUnlockPanel(game, jobId) {
     return panel;
   }
 
-  const canBuy = game.canBuyNextProductionUnlock(jobId);
+  const canBuy = game.canBuyNextProductionUnlock(jobId, selectedId);
   const costHtml = formatUnlockCost(game, preview);
   let label = '';
   if (preview.kind === 'unit') {
@@ -440,7 +447,7 @@ function buildUnlockPanel(game, jobId) {
   panel.innerHTML = `
     <div class="production-unlock-head">
       <strong>Déblocage</strong>
-      <span class="production-unlock-cost">${costHtml}</span>
+      <span class="production-unlock-cost">${costHtml || '—'}</span>
     </div>
     <button type="button" class="btn btn-upgrade btn-production-unlock"${canBuy ? '' : ' disabled'}>${label}</button>
     <p class="production-unlock-desc">${preview.kind === 'unit'
@@ -449,7 +456,7 @@ function buildUnlockPanel(game, jobId) {
   `;
 
   panel.querySelector('.btn-production-unlock')?.addEventListener('click', () => {
-    if (game.buyNextProductionUnlock(jobId)) {
+    if (game.buyNextProductionUnlock(jobId, selectedId)) {
       if (preview.resourceId) selectedHarvestResourceByJob[jobId] = preview.resourceId;
       const container = document.getElementById('view-container');
       if (container) renderJobProduction(game, container, jobId);

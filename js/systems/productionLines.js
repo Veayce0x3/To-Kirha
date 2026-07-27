@@ -79,12 +79,13 @@ export function getCumulativeUnitIndex(tiers, lines, resourceId) {
 }
 
 export function getUnitUnlockRequirements(jobId, resourceId, state, balance, resources) {
-  const tiers = getJobHarvestResources(resources, jobId);
   const lines = state.productionLines?.harvest?.[jobId] || {};
-  const cumulativeIndex = getCumulativeUnitIndex(tiers, lines, resourceId);
-  const kirha = getUnitUnlockCost(cumulativeIndex, balance);
+  const line = lines[resourceId];
+  // Index = nb d'unités déjà possédées sur CETTE ressource (5 → coût du 6ᵉ slot).
+  const unitIndex = Math.max(0, Number(line?.units) || 0);
+  const kirha = getUnitUnlockCost(unitIndex, balance);
   const sameRes = cfg(balance).unitUnlockSameResource || [];
-  const amount = extrapolateCost(cumulativeIndex, sameRes) ?? 0;
+  const amount = extrapolateCost(unitIndex, sameRes) ?? 0;
   const resAmount = amount > 0 ? { [resourceId]: amount } : null;
   return { kirha, resources: resAmount };
 }
@@ -110,18 +111,44 @@ function deductRequirements(state, { kirha, resources }) {
   if (kirha) state.kirha -= kirha;
   if (resources) {
     for (const [resId, amount] of Object.entries(resources)) {
-      state.inventory[resId] -= amount;
+      state.inventory[resId] = Math.max(0, (state.inventory[resId] || 0) - amount);
     }
   }
 }
 
-export function getNextProductionUnlock(state, balance, resources, jobId, jobs) {
+export function getNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId = null) {
   const tiers = getJobHarvestResources(resources, jobId);
   if (!tiers.length) return { kind: 'maxed' };
 
   const lines = state.productionLines?.harvest?.[jobId] || {};
   const maxPer = getMaxUnitsPerResource(balance);
   const jobName = jobs?.[jobId]?.name || jobId;
+
+  const buildUnitPreview = (resource) => {
+    const line = lines[resource.id];
+    if (!line || line.units >= maxPer) return null;
+    const req = getUnitUnlockRequirements(jobId, resource.id, state, balance, resources);
+    if (req.kirha == null) return null;
+    return {
+      kind: 'unit',
+      jobId,
+      resourceId: resource.id,
+      resourceName: resource.name,
+      nextUnits: line.units + 1,
+      maxUnits: maxPer,
+      jobName,
+      ...req,
+    };
+  };
+
+  // Priorité : ressource affichée dans l’onglet (ex. acheter le 6ᵉ slot de Blé).
+  if (preferredResourceId) {
+    const preferred = tiers.find((r) => r.id === preferredResourceId);
+    if (preferred) {
+      const preferredUnit = buildUnitPreview(preferred);
+      if (preferredUnit) return preferredUnit;
+    }
+  }
 
   let currentTierIndex = -1;
   for (let i = tiers.length - 1; i >= 0; i--) {
@@ -134,22 +161,8 @@ export function getNextProductionUnlock(state, balance, resources, jobId, jobs) 
   if (currentTierIndex < 0) return { kind: 'maxed' };
 
   const currentResource = tiers[currentTierIndex];
-  const currentLine = lines[currentResource.id];
-
-  if (currentLine.units < maxPer) {
-    const req = getUnitUnlockRequirements(jobId, currentResource.id, state, balance, resources);
-    if (req.kirha == null) return { kind: 'maxed' };
-    return {
-      kind: 'unit',
-      jobId,
-      resourceId: currentResource.id,
-      resourceName: currentResource.name,
-      nextUnits: currentLine.units + 1,
-      maxUnits: maxPer,
-      jobName,
-      ...req,
-    };
-  }
+  const currentUnit = buildUnitPreview(currentResource);
+  if (currentUnit) return currentUnit;
 
   const nextTierIndex = currentTierIndex + 1;
   if (nextTierIndex >= tiers.length) return { kind: 'maxed' };
@@ -174,19 +187,20 @@ export function getNextProductionUnlock(state, balance, resources, jobId, jobs) 
     resourceName: nextResource.name,
     prevResourceId: prevResource.id,
     prevResourceName: prevResource.name,
+    maxUnits: maxPer,
     jobName,
     ...req,
   };
 }
 
-export function canBuyNextProductionUnlock(state, balance, resources, jobId, jobs) {
-  const preview = getNextProductionUnlock(state, balance, resources, jobId, jobs);
+export function canBuyNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId = null) {
+  const preview = getNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId);
   if (!preview || preview.kind === 'maxed' || preview.kind === 'level_blocked') return false;
   return canAffordRequirements(state, preview);
 }
 
-export function buyNextProductionUnlock(state, balance, resources, jobId, jobs) {
-  const preview = getNextProductionUnlock(state, balance, resources, jobId, jobs);
+export function buyNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId = null) {
+  const preview = getNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId);
   if (!preview || preview.kind === 'maxed' || preview.kind === 'level_blocked') return false;
   if (!canAffordRequirements(state, preview)) return false;
 

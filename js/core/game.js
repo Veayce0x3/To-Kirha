@@ -738,21 +738,21 @@ export class Game {
     return this.balance.productionLines?.maxUnitsPerResource ?? this.balance.productionLines?.maxUnits ?? 5;
   }
 
-  buyNextProductionUnlock(jobId) {
-    if (!applyNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs)) return false;
+  buyNextProductionUnlock(jobId, resourceId = null) {
+    if (!applyNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs, resourceId)) return false;
     ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
-    emit('lineUnitUnlock', { jobId });
+    emit('lineUnitUnlock', { jobId, resourceId });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
   }
 
-  getNextProductionUnlockPreview(jobId) {
-    return getNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs);
+  getNextProductionUnlockPreview(jobId, resourceId = null) {
+    return getNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs, resourceId);
   }
 
-  canBuyNextProductionUnlock(jobId) {
-    return checkCanBuyNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs);
+  canBuyNextProductionUnlock(jobId, resourceId = null) {
+    return checkCanBuyNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs, resourceId);
   }
 
   buyHarvestSlot(jobId, resourceId) {

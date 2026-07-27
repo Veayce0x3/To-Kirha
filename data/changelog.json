@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1735",
+      "date": "2026-07-27",
+      "title": "Fix coût du 6ᵉ slot",
+      "highlights": [
+        "Le déblocage suit la ressource de l’onglet sélectionné (plus de mauvais coût à 0)",
+        "Coût du 6ᵉ slot : 450 💰 + 75 de la ressource · affichage stock/requis clair"
+      ]
+    },
+    {
       "buildId": "20260727-1725",
       "date": "2026-07-27",
       "title": "6ᵉ slot de récolte",
