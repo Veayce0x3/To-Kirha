@@ -3985,9 +3985,9 @@ function getCombatSpriteCenter(field, el) {
 }
 
 /** Trait coloré attaquant → cible (joueur = vert/or, monstre = violet/rouge). */
-const COMBAT_TRAIL_MS = 950;
-const COMBAT_HIT_DELAY_MS = 520;
-const COMBAT_AFTER_HIT_MS = 280;
+const COMBAT_TRAIL_MS = 620;
+const COMBAT_HIT_DELAY_MS = 340;
+const COMBAT_AFTER_HIT_MS = 140;
 
 function combatDelay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -4159,7 +4159,7 @@ async function processEnemyTurnSequence(game, body) {
   if (!active || active.encounter.combat?.phase !== 'enemy') return;
 
   renderDungeonCombatBody(game);
-  await combatDelay(450);
+  await combatDelay(280);
 
   const current = game.getActiveCombat();
   if (!current || current.encounter.combat?.phase !== 'enemy') return;

@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260727-2215",
+      "date": "2026-07-27",
+      "title": "Combat un peu plus rapide",
+      "highlights": [
+        "Traits d’attaque et pauses entre tours un peu plus courts — même séquence, moins d’attente"
+      ]
+    },
+    {
       "buildId": "20260727-1935",
       "date": "2026-07-27",
       "title": "Combat tour par tour & ordre des donjons",

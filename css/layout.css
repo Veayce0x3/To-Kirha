@@ -5803,7 +5803,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .dq-attack-trail-run {
-  animation: dq-trail-fly 0.95s ease-in-out forwards;
+  animation: dq-trail-fly 0.62s ease-in-out forwards;
 }
 
 .dq-sprite-party.dq-attacking-ally,
