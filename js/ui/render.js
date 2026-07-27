@@ -445,7 +445,7 @@ export function initUI(game, audio) {
       if (isSpeedModeActive(state)) {
         els.speedModeChip.hidden = false;
         els.speedModeChip.textContent = getSpeedModeLabel(state);
-        els.speedModeChip.title = `Mode vitesse admin : récolte et ferme ×${getSpeedModeMultiplier(state)} plus rapides`;
+        els.speedModeChip.title = `Mode vitesse admin : timers + XP récolte/ferme ×${getSpeedModeMultiplier(state)}`;
       } else {
         els.speedModeChip.hidden = true;
         els.speedModeChip.textContent = '';
@@ -571,7 +571,7 @@ export function initUI(game, audio) {
       els.speedModeBody.innerHTML = `
         <li>Récolte et repousse : <strong>×${mult}</strong> plus rapides</li>
         <li>Cycles de ferme : <strong>×${mult}</strong> plus rapides</li>
-        <li>Les gains (ressources, XP, Kirha) restent normaux — seuls les timers changent</li>
+        <li>XP métiers (récolte) et XP bâtiments (ferme) : <strong>×${mult}</strong></li>
         <li>Un pastille <strong>×${mult}</strong> reste visible en haut tant que le mode est actif</li>
       `;
     }

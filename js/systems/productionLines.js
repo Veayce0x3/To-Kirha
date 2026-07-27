@@ -25,12 +25,11 @@ import {
   isUnifiedFarmBuilding,
   getUnifiedFarmLineKey,
   rollFarmProductDrops,
-  getFarmProductionXp,
+  computeFarmCycleXp,
   getPrimaryFeedId,
   getEffectiveAnimalMaxCycles,
 } from './farm.js';
 import { addFarmBuildingXp, getFarmBuildingLevel } from './farmProgress.js';
-import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBoostMult } from './prestige.js';
 
 function cfg(balance) {
   return balance?.productionLines || {};
@@ -767,8 +766,7 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
     state.inventory[resId] = (state.inventory[resId] || 0) + amount;
   }
 
-  const xp = applyMultiplierBonus(getFarmProductionXp(building), getPrestigeBonuses(state).jobXp)
-    * getSeasonBoostMult(state);
+  const xp = computeFarmCycleXp(building, state);
   const levelResult = xp > 0 ? addFarmBuildingXp(state, buildingId, xp, jobs, balance) : null;
   state.stats.totalHarvests = (state.stats.totalHarvests || 0) + 1;
   slot.active = null;

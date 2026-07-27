@@ -5,7 +5,7 @@ import {
   isUnifiedFarmBuilding,
   getUnifiedFarmLineKey,
   getFarmProductionLineIds,
-  getFarmProductionXp,
+  computeFarmCycleXp,
   getPrimaryFeedId,
   getFeedCost,
   getEffectiveAnimalMaxCycles,
@@ -22,7 +22,7 @@ import {
   ensureProductionLines,
 } from '../systems/productionLines.js';
 import { getHarvestTime, getHarvestXp } from '../systems/harvest.js';
-import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, getSeasonBoostMult } from '../systems/prestige.js';
+import { getSeasonBonusPercents } from '../systems/prestige.js';
 import { getFarmToolCheck, getHarvestLineToolStatus } from '../systems/toolTier.js';
 import { getToolUsesRemaining, isDurabilityTool, getEffectiveMaxUses } from '../systems/toolDurability.js';
 import { getJobEquippedTool } from '../systems/equipment.js';
@@ -676,8 +676,7 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
     return `${renderResourceIcon(res, 'tile-resource-icon') || ''}${res?.name || id} : ${game.state.inventory[id] || 0}`;
   });
   const cycleSec = Math.round((building.cycleMs || 10000) / 1000);
-  const xpGain = applyMultiplierBonus(getFarmProductionXp(building), getPrestigeBonuses(game.state).jobXp)
-    * getSeasonBoostMult(game.state);
+  const xpGain = computeFarmCycleXp(building, game.state);
   const xpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
   const xpBonusTag = xpBonusPct > 0
     ? `<span class="bonus-tag" title="Bonus XP métiers">+${xpBonusPct}%</span>`
@@ -720,8 +719,7 @@ export function renderFarmProduction(game, el, buildingId) {
   const pct = prog.grantsXp ? (prog.xp / prog.needed) * 100 : 0;
   const meta = game.getFarmMeta(buildingId);
   const needsFeed = Object.keys(building.feed || {}).length > 0;
-  const xpGain = applyMultiplierBonus(getFarmProductionXp(building), getPrestigeBonuses(game.state).jobXp)
-    * getSeasonBoostMult(game.state);
+  const xpGain = computeFarmCycleXp(building, game.state);
   const xpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
   const xpBonusTag = xpBonusPct > 0
     ? `<span class="bonus-tag" title="Bonus XP métiers">+${xpBonusPct}%</span>`

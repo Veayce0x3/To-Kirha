@@ -720,7 +720,7 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
 
       <div class="admin-adjust-section">
         <h6 class="admin-subsection-title">Mode vitesse (test)</h6>
-        <p class="view-desc admin-grant-hint">Accélère récolte &amp; ferme (×5 / ×10 / ×20). Le joueur reçoit une popup au prochain chargement — il doit <strong>recharger</strong>.</p>
+        <p class="view-desc admin-grant-hint">Accélère récolte &amp; ferme (timers + XP) en ×5 / ×10 / ×20. Le joueur reçoit une popup au prochain chargement — il doit <strong>recharger</strong>.</p>
         <p class="admin-speed-status">${save_summary?.speed_mode_active
           ? `Actif · ×${speedMult}`
           : 'Inactif'}</p>

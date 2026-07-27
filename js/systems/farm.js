@@ -2,7 +2,7 @@ import { wearToolsForHarvest } from './toolDurability.js';
 import { isFarmBuildingUnlocked } from './jobUnlock.js';
 import { addFarmBuildingXp } from './farmProgress.js';
 import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBoostMult } from './prestige.js';
-import { applySpeedModeDuration } from './speedMode.js';
+import { applySpeedModeDuration, applySpeedModeXp } from './speedMode.js';
 
 export const FARM_BUILDING_IDS = [
   'well',
@@ -182,6 +182,13 @@ export function getFarmProductionXp(building) {
   return Math.floor(8 + (building?.cycleMs || 10000) / 2000);
 }
 
+/** XP ferme effective (prestige + boost saison + mode vitesse admin). */
+export function computeFarmCycleXp(building, state) {
+  const base = applyMultiplierBonus(getFarmProductionXp(building), getPrestigeBonuses(state).jobXp)
+    * getSeasonBoostMult(state);
+  return applySpeedModeXp(base, state);
+}
+
 export function getEffectiveAnimalMaxCycles(building, state = null) {
   const base = Math.max(1, building?.animalMaxCycles || 12);
   const life = state?.achievements?.bonuses?.farmAnimalLife
@@ -332,8 +339,7 @@ export function completeFarmProduction(state, farmData, buildingId, slotIndex, j
     state.inventory[resId] = (state.inventory[resId] || 0) + amount;
   }
 
-  const xp = applyMultiplierBonus(getFarmProductionXp(building), getPrestigeBonuses(state).jobXp)
-    * getSeasonBoostMult(state);
+  const xp = computeFarmCycleXp(building, state);
   const levelResult = xp > 0 ? addFarmBuildingXp(state, buildingId, xp, jobs, balance) : null;
   state.stats.totalHarvests = (state.stats.totalHarvests || 0) + 1;
   slot.active = null;

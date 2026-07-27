@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1750",
+      "date": "2026-07-27",
+      "title": "Mode vitesse : XP ×N",
+      "highlights": [
+        "En mode vitesse admin, l’XP récolte et ferme est aussi multipliée (×5 / ×10 / ×20)",
+        "Popup et pastille mises à jour pour le préciser"
+      ]
+    },
+    {
       "buildId": "20260727-1745",
       "date": "2026-07-27",
       "title": "Mode vitesse admin",

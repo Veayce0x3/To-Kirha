@@ -1,4 +1,4 @@
-/** Mode vitesse admin (testeurs) — accélère les timers récolte / ferme. */
+/** Mode vitesse admin (testeurs) — accélère timers + XP récolte / ferme. */
 
 export const SPEED_MODE_OPTIONS = [5, 10, 20];
 
@@ -23,6 +23,14 @@ export function applySpeedModeDuration(ms, state) {
   const mult = getSpeedModeMultiplier(state);
   if (mult <= 1) return raw;
   return Math.max(250, Math.floor(raw / mult));
+}
+
+/** Multiplie un gain d’XP (récolte / ferme) par le multiplicateur admin. */
+export function applySpeedModeXp(xp, state) {
+  const raw = Math.max(0, Number(xp) || 0);
+  const mult = getSpeedModeMultiplier(state);
+  if (mult <= 1) return raw;
+  return Math.floor(raw * mult);
 }
 
 export function getSpeedModeLabel(state) {
