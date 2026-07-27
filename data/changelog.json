@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1605",
+      "date": "2026-07-27",
+      "title": "Récolte : onglets ressources + 1 unité offerte",
+      "highlights": [
+        "Chaque ressource débloquée par niveau a automatiquement 1 unité (plus de case vide)",
+        "Onglets horizontaux pour changer de ressource sans scroller toute la page",
+        "Case « + » dans la grille pour acheter la prochaine unité"
+      ]
+    },
+    {
       "buildId": "20260727-1545",
       "date": "2026-07-27",
       "title": "Outils : équipement auto + paliers",

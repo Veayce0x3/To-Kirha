@@ -32,8 +32,10 @@
 
 ## 5. Lignes de production
 
-- 1 ressource starter gratuite · max 5 unités · coûts cumulatifs (pas de reset à 10💰)
-- Code : `js/systems/productionLines.js`
+- 1 unité **offerte** dès qu’une ressource est débloquée par niveau métier
+- Max 5 unités par ressource · achat via la case « + » (coûts croissants)
+- UI : onglets ressources (une ressource affichée à la fois)
+- Code : `js/systems/productionLines.js` · `js/ui/productionLineView.js`
 
 ## 6. Succès (ex-Missions)
 
