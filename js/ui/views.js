@@ -3736,6 +3736,7 @@ function renderCombat(game, el) {
     const bossKills = game.state.bossKills?.[combatZone.id] || 0;
     const keyCount = game.getDungeonKeyCount(combatZone.id);
     const dungeonCheck = game.canEnterDungeonZone(combatZone.id);
+    const minBossForDungeon = Math.max(1, Number(game.balance?.combat?.dungeonEntry?.minBossKills) || 2);
     const roomCount = (combatZone.monsters?.length || 0) + (combatZone.boss ? 1 : 0);
     const rec = game.getCombatZoneRecommendation(combatZone.id);
     const recLine = rec?.recommendedAtk
@@ -3805,9 +3806,12 @@ function renderCombat(game, el) {
       <div class="combat-dungeon-hero">
         <div class="combat-dungeon-hero-copy">
           <h3>🚪 Donjon · ${roomCount} salles</h3>
-          <p>1 clé à l’entrée · équipement droppé ici · repas recommandés</p>
+          <p>Boss vaincu ${minBossForDungeon}× en entraînement + 1 clé · équipement droppé ici · repas recommandés</p>
           ${!dungeonReady && dungeonCheck.reason ? `<p class="combat-dungeon-block">${dungeonCheck.reason}</p>` : ''}
-          ${bossKills > 0 ? '<p class="combat-dungeon-cleared">Donjon vaincu — entraînement complet débloqué</p>' : ''}
+          ${bossKills >= minBossForDungeon ? '<p class="combat-dungeon-cleared">Prérequis boss OK — une clé suffit pour entrer</p>' : ''}
+          ${bossKills > 0 && bossKills < minBossForDungeon
+            ? `<p class="combat-dungeon-block">Boss entraînement : ${bossKills}/${minBossForDungeon} — encore ${minBossForDungeon - bossKills} victoire(s)</p>`
+            : ''}
         </div>
         <button type="button" class="btn btn-prestige btn-dungeon-run" ${dungeonReady ? '' : 'disabled'} title="${dungeonCheck.reason || ''}">
           ${dungeonReady ? 'Entrer dans le donjon' : 'Donjon indisponible'}

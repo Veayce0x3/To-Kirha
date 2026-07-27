@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 41,
-  "appBuildId": "20260727-1850",
+  "appBuildId": "20260727-1900",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -15,7 +15,10 @@
   "combat": {
     "keyDrops": {
       "mobChance": 0.04,
-      "bossChance": 0
+      "bossChance": 0.18
+    },
+    "dungeonEntry": {
+      "minBossKills": 2
     },
     "equipmentDrops": {
       "mobChance": 0,

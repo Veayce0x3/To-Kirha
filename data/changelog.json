@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1900",
+      "date": "2026-07-27",
+      "title": "Boss solo & entrée donjon",
+      "highlights": [
+        "Le boss en entraînement solo peut dropper une clé (le donjon ne change pas)",
+        "Pour entrer dans le donjon : vaincre le boss 2× en entraînement + avoir 1 clé"
+      ]
+    },
+    {
       "buildId": "20260727-1850",
       "date": "2026-07-27",
       "title": "Combat plus lisible",

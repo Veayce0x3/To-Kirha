@@ -170,6 +170,11 @@ export function getTrainingUnlockProgress(combatZone, state, balance) {
   };
 }
 
+export function getDungeonBossKillRequirement(balance) {
+  const n = Number(balance?.combat?.dungeonEntry?.minBossKills);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 2;
+}
+
 export function canEnterDungeon(combatZone, state, balance, characterConfig) {
   if (!isZoneUnlocked(combatZone.zone, state, balance)) {
     return { ok: false, reason: 'Zone verrouillée' };
@@ -181,9 +186,22 @@ export function canEnterDungeon(combatZone, state, balance, characterConfig) {
   if (state.combatEncounter) return { ok: false, reason: 'Combat en cours' };
   const rooms = buildDungeonRooms(combatZone);
   if (rooms.length === 0) return { ok: false, reason: 'Donjon vide' };
+
+  const minBossKills = getDungeonBossKillRequirement(balance);
+  const bossKills = state.bossKills?.[combatZone.id] || 0;
+  if (bossKills < minBossKills) {
+    const bossName = combatZone.boss?.name || 'le boss';
+    return {
+      ok: false,
+      reason: `Vaincs ${bossName} ${minBossKills} fois en entraînement (${bossKills}/${minBossKills}) avant d’entrer dans le donjon.`,
+      bossKills,
+      minBossKills,
+    };
+  }
+
   if (!hasDungeonKey(state, combatZone.id)) {
     const keyId = getDungeonKeyId(combatZone.id);
-    return { ok: false, reason: `Il te faut 1 clé de donjon (${keyId || '?'}) — farm en combat rapide ou achète à la HdV.` };
+    return { ok: false, reason: `Il te faut 1 clé de donjon (${keyId || '?'}) — farm en combat rapide (mobs / boss) ou achète à la HdV.` };
   }
   const gateCheck = checkDungeonGate(combatZone, state, balance);
   if (!gateCheck.ok) return gateCheck;
@@ -309,7 +327,8 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, c
 
   const zoneMap = combatZone ? { [zoneId]: combatZone } : null;
   let keyDropped = false;
-  if (!isBoss && rollKeyDrop(isBoss, balance, zoneId, zoneMap)) {
+  // Entraînement solo uniquement (mobs + boss) — le donjon ne passe pas par ici.
+  if (rollKeyDrop(!!isBoss, balance, zoneId, zoneMap)) {
     grantDungeonKey(state, zoneId);
     keyDropped = true;
   }
