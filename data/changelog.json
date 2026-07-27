@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260727-2230",
+      "date": "2026-07-27",
+      "title": "Admin simplifié & animations légères",
+      "highlights": [
+        "Mode vitesse ×5/×10/×20 retiré de l’admin",
+        "Donner / prendre Kirha & ressources plus fiable (ne s’écrase plus si le joueur joue)",
+        "Animations de récolte douces + transition d’écran — respectent « réduire les animations » et l’onglet en arrière-plan"
+      ]
+    },
+    {
       "buildId": "20260727-2215",
       "date": "2026-07-27",
       "title": "Combat un peu plus rapide",

@@ -574,11 +574,6 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
     : '—';
 
   const careerLabel = careerLabelFromSave(save_summary);
-  const speedMult = save_summary?.speed_mode_active
-    ? ([5, 10, 20].includes(Number(save_summary.speed_mode_multiplier))
-      ? Number(save_summary.speed_mode_multiplier)
-      : 10)
-    : 10;
 
   const history = Array.isArray(save_summary?.season_history) ? save_summary.season_history : [];
   const historyHtml = history.length
@@ -651,7 +646,7 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
         <button type="button" class="btn btn-sm admin-mode-btn active" data-mode="give">Donner</button>
         <button type="button" class="btn btn-sm admin-mode-btn" data-mode="take">Prendre</button>
       </div>
-      <p class="view-desc admin-grant-hint">Coche ce que tu veux, choisis le montant, puis applique. Le joueur doit <strong>recharger</strong> après (ne pas jouer en parallèle).</p>
+      <p class="view-desc admin-grant-hint">Coche ce que tu veux, choisis le montant, puis applique. Les dons restent même si le joueur joue en parallèle (sync auto).</p>
 
       <div class="admin-adjust-section">
         <h6 class="admin-subsection-title">Kirha & personnage</h6>
@@ -715,23 +710,6 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
           <select class="auth-input admin-catalog-select" id="admin-catalog-res">${catalogOptions || '<option value="">—</option>'}</select>
           <input type="number" class="auth-input admin-kirha-input" id="admin-catalog-qty" min="1" step="1" value="50" />
           <button type="button" class="btn btn-muted" id="admin-catalog-add">Ajouter (donner)</button>
-        </div>
-      </div>
-
-      <div class="admin-adjust-section">
-        <h6 class="admin-subsection-title">Mode vitesse (test)</h6>
-        <p class="view-desc admin-grant-hint">Accélère récolte &amp; ferme (timers + XP) en ×5 / ×10 / ×20. Le joueur reçoit une popup au prochain chargement — il doit <strong>recharger</strong>.</p>
-        <p class="admin-speed-status">${save_summary?.speed_mode_active
-          ? `Actif · ×${speedMult}`
-          : 'Inactif'}</p>
-        <div class="admin-grant-kirha-row">
-          <select class="auth-input admin-role-select" id="admin-speed-mult">
-            <option value="5" ${speedMult === 5 ? 'selected' : ''}>×5</option>
-            <option value="10" ${speedMult === 10 ? 'selected' : ''}>×10</option>
-            <option value="20" ${speedMult === 20 ? 'selected' : ''}>×20</option>
-          </select>
-          <button type="button" class="btn btn-craft" id="admin-speed-on">Activer</button>
-          <button type="button" class="btn btn-muted" id="admin-speed-off" ${save_summary?.speed_mode_active ? '' : 'disabled'}>Désactiver</button>
         </div>
       </div>
     </div>
@@ -898,7 +876,7 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     if (!confirm(`${verb} ${amount.toLocaleString('fr-FR')} 💰 ?`)) return;
     await runAdjust(
       { kirha_delta: delta },
-      `${verb} ${amount.toLocaleString('fr-FR')} 💰 — demande au joueur de recharger.`
+      `${verb} ${amount.toLocaleString('fr-FR')} 💰 — sync auto côté joueur.`
     );
   });
 
@@ -913,7 +891,7 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     if (!confirm(`${verb} ${n} niveau(x) perso ?`)) return;
     await runAdjust(
       { char_level_delta: delta },
-      `${verb} ${n} Nv. perso — recharger.`
+      `${verb} ${n} Nv. perso — sync auto.`
     );
   });
 
@@ -933,7 +911,7 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     if (!confirm(`${verb} ${n} Nv. sur ${ids.length} métier(s) ?`)) return;
     const job_level_deltas = {};
     ids.forEach((id) => { job_level_deltas[id] = delta; });
-    await runAdjust({ job_level_deltas }, `${verb} ${n} Nv. métiers — recharger.`);
+    await runAdjust({ job_level_deltas }, `${verb} ${n} Nv. métiers — sync auto.`);
   });
 
   detailEl.querySelector('#admin-apply-farm')?.addEventListener('click', async () => {
@@ -952,7 +930,7 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     if (!confirm(`${verb} ${n} Nv. sur ${ids.length} bâtiment(s) ?`)) return;
     const farm_level_deltas = {};
     ids.forEach((id) => { farm_level_deltas[id] = delta; });
-    await runAdjust({ farm_level_deltas }, `${verb} ${n} Nv. ferme — recharger.`);
+    await runAdjust({ farm_level_deltas }, `${verb} ${n} Nv. ferme — sync auto.`);
   });
 
   detailEl.querySelector('#admin-apply-inv')?.addEventListener('click', async () => {
@@ -971,7 +949,7 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     if (!confirm(`${verb} ${fmtNum(amount)} sur ${ids.length} ressource(s) ?`)) return;
     const inventory_deltas = {};
     ids.forEach((id) => { inventory_deltas[id] = delta; });
-    await runAdjust({ inventory_deltas }, `${verb} ressources — recharger.`);
+    await runAdjust({ inventory_deltas }, `${verb} ressources — sync auto.`);
   });
 
   detailEl.querySelector('#admin-clear-inv-sel')?.addEventListener('click', async () => {
@@ -981,12 +959,12 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
       return;
     }
     if (!confirm(`Retirer entièrement ${ids.length} ressource(s) de l’inventaire ?`)) return;
-    await runAdjust({ inventory_clear_ids: ids }, 'Ressources vidées — recharger.');
+    await runAdjust({ inventory_clear_ids: ids }, 'Ressources vidées — sync auto.');
   });
 
   detailEl.querySelector('#admin-clear-inv-all')?.addEventListener('click', async () => {
     if (!confirm('Vider TOUT l’inventaire cloud de ce joueur ?')) return;
-    await runAdjust({ inventory_clear: true }, 'Inventaire vidé — recharger.');
+    await runAdjust({ inventory_clear: true }, 'Inventaire vidé — sync auto.');
   });
 
   detailEl.querySelector('#admin-catalog-add')?.addEventListener('click', async () => {
@@ -1001,36 +979,18 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
       return;
     }
     if (!confirm(`Donner ${fmtNum(qty)} × ${resourceLabel(id)} ?`)) return;
-    await runAdjust({ inventory_deltas: { [id]: qty } }, 'Ressource ajoutée — recharger.');
-  });
-
-  detailEl.querySelector('#admin-speed-on')?.addEventListener('click', async () => {
-    const mult = Number(detailEl.querySelector('#admin-speed-mult')?.value) || 10;
-    if (![5, 10, 20].includes(mult)) {
-      setStatus('Multiplicateur invalide (5, 10 ou 20).', true);
-      return;
-    }
-    if (!confirm(`Activer le mode vitesse ×${mult} pour ce joueur ? Il verra une popup au prochain chargement.`)) return;
-    await runAdjust(
-      { speed_mode: true, speed_multiplier: mult },
-      `Mode ×${mult} activé — le joueur doit recharger.`,
-    );
-  });
-
-  detailEl.querySelector('#admin-speed-off')?.addEventListener('click', async () => {
-    if (!confirm('Désactiver le mode vitesse pour ce joueur ?')) return;
-    await runAdjust({ speed_mode: false }, 'Mode vitesse désactivé — recharger.');
+    await runAdjust({ inventory_deltas: { [id]: qty } }, 'Ressource ajoutée — sync auto.');
   });
 
   detailEl.querySelector('#admin-grant-jobs')?.addEventListener('click', async () => {
-    if (!confirm('Ajouter +1 niveau (métiers + bâtiments ferme + perso) sur la save cloud ?\nLe joueur doit recharger après.')) return;
+    if (!confirm('Ajouter +1 niveau (métiers + bâtiments ferme + perso) sur la save cloud ?')) return;
     const r = await grantAllJobsLevel(userId);
-    setStatus(r.ok ? 'Niveaux +1 appliqués (cloud). Demande au joueur de recharger.' : r.reason, !r.ok);
+    setStatus(r.ok ? 'Niveaux +1 appliqués (cloud). Sync auto côté joueur.' : r.reason, !r.ok);
     if (r.ok) loadPlayerDetail(userId);
   });
 
   detailEl.querySelector('#admin-grant-jobs-5')?.addEventListener('click', async () => {
-    if (!confirm('Ajouter +5 niveaux (5× +1 métiers/ferme/perso) ?\nLe joueur doit recharger après.')) return;
+    if (!confirm('Ajouter +5 niveaux (5× +1 métiers/ferme/perso) ?')) return;
     let ok = true;
     let lastReason = '';
     for (let i = 0; i < 5; i++) {
@@ -1041,7 +1001,7 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
         break;
       }
     }
-    setStatus(ok ? 'Niveaux +5 appliqués (cloud). Demande au joueur de recharger.' : lastReason, !ok);
+    setStatus(ok ? 'Niveaux +5 appliqués (cloud). Sync auto côté joueur.' : lastReason, !ok);
     if (ok) loadPlayerDetail(userId);
   });
 

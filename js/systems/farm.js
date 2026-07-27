@@ -2,8 +2,6 @@ import { wearToolsForHarvest } from './toolDurability.js';
 import { isFarmBuildingUnlocked } from './jobUnlock.js';
 import { addFarmBuildingXp } from './farmProgress.js';
 import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBoostMult } from './prestige.js';
-import { applySpeedModeDuration, applySpeedModeXp } from './speedMode.js';
-
 export const FARM_BUILDING_IDS = [
   'well',
   'chicken_coop',
@@ -147,7 +145,7 @@ export function computeFarmDuration(building, feedId, state) {
     const eff = getFeedEfficiency(building, feedId, state);
     duration = Math.max(2000, Math.floor(base / Math.max(0.4, eff)));
   }
-  return applySpeedModeDuration(duration, state);
+  return duration;
 }
 
 export function canAffordFeed(building, feedId, state) {
@@ -182,11 +180,10 @@ export function getFarmProductionXp(building) {
   return Math.floor(8 + (building?.cycleMs || 10000) / 2000);
 }
 
-/** XP ferme effective (prestige + boost saison + mode vitesse admin). */
+/** XP ferme effective (prestige + boost saison). */
 export function computeFarmCycleXp(building, state) {
-  const base = applyMultiplierBonus(getFarmProductionXp(building), getPrestigeBonuses(state).jobXp)
+  return applyMultiplierBonus(getFarmProductionXp(building), getPrestigeBonuses(state).jobXp)
     * getSeasonBoostMult(state);
-  return applySpeedModeXp(base, state);
 }
 
 export function getEffectiveAnimalMaxCycles(building, state = null) {

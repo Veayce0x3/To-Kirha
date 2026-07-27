@@ -2087,15 +2087,58 @@ export function patchHarvestSlot(game, jobId, unitIndex, resourceId) {
 /** Animation ponctuelle quand une unité redevient récoltable après repousse. */
 export function flashHarvestSlotReady(jobId, unitIndex, resourceId) {
   requestAnimationFrame(() => {
-    const selector = resourceId
-      ? `.production-unit[data-job="${jobId}"][data-resource="${resourceId}"][data-unit="${unitIndex}"]`
-      : `.harvest-slot[data-job="${jobId}"][data-slot="${unitIndex}"]`;
-    const card = document.querySelector(selector);
+    const card = findHarvestSlotCard(jobId, unitIndex, resourceId);
     if (!card) return;
     card.classList.add('slot-just-ready');
     const done = () => card.classList.remove('slot-just-ready');
     card.addEventListener('animationend', done, { once: true });
     setTimeout(done, 2800);
+  });
+}
+
+function findHarvestSlotCard(jobId, unitIndex, resourceId) {
+  if (resourceId != null) {
+    return document.querySelector(
+      `.production-unit[data-job="${jobId}"][data-resource="${resourceId}"][data-unit="${unitIndex}"]`
+    );
+  }
+  return document.querySelector(`.harvest-slot[data-job="${jobId}"][data-slot="${unitIndex}"]`);
+}
+
+/** FX légers récolte (respecte reduced-motion / onglet caché). */
+export function playHarvestSlotFx(jobId, unitIndex, resourceId, kind, amount = null) {
+  if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (document.hidden || document.body.classList.contains('page-hidden')) return;
+
+  requestAnimationFrame(() => {
+    const card = findHarvestSlotCard(jobId, unitIndex, resourceId);
+    if (!card) return;
+    const visual = card.querySelector('.slot-visual') || card;
+
+    if (kind === 'start') {
+      visual.classList.remove('slot-fx-chop');
+      void visual.offsetWidth;
+      visual.classList.add('slot-fx-chop');
+      setTimeout(() => visual.classList.remove('slot-fx-chop'), 480);
+      return;
+    }
+
+    if (kind === 'complete') {
+      visual.classList.remove('slot-fx-pop');
+      void visual.offsetWidth;
+      visual.classList.add('slot-fx-pop');
+      setTimeout(() => visual.classList.remove('slot-fx-pop'), 520);
+
+      const qty = Math.max(0, Math.floor(Number(amount) || 0));
+      if (qty > 0) {
+        const float = document.createElement('span');
+        float.className = 'slot-fx-float';
+        float.textContent = `+${qty}`;
+        float.setAttribute('aria-hidden', 'true');
+        visual.appendChild(float);
+        setTimeout(() => float.remove(), 750);
+      }
+    }
   });
 }
 

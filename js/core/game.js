@@ -314,7 +314,8 @@ export class Game {
       season: 1,
       prestige: { kirhaBonus: 0, xpBonus: 0, jobXpBonus: 0, regrowthSpeedBonus: 0 },
       seasonBoost: null,
-      speedMode: null,
+      adminRevision: 0,
+      adminPatchedAt: 0,
       toolUpgrades: {},
       seasonHistory: [],
       lifetimeStats: { totalEarned: 0, totalHarvests: 0, seasonsCompleted: 0 },
@@ -405,16 +406,8 @@ export class Game {
       seasonBoost: saved.seasonBoost && Number(saved.seasonBoost.endsAt) > Date.now()
         ? { endsAt: Number(saved.seasonBoost.endsAt) }
         : null,
-      speedMode: saved.speedMode && typeof saved.speedMode === 'object'
-        ? {
-          active: !!saved.speedMode.active,
-          multiplier: Number(saved.speedMode.multiplier) || 1,
-          popupPending: !!saved.speedMode.popupPending,
-          activatedAt: Number(saved.speedMode.activatedAt) || 0,
-          popupSeenAt: Number(saved.speedMode.popupSeenAt) || 0,
-          disabledAt: Number(saved.speedMode.disabledAt) || 0,
-        }
-        : null,
+      adminRevision: Math.max(0, Math.floor(Number(saved.adminRevision) || 0)),
+      adminPatchedAt: Math.max(0, Number(saved.adminPatchedAt) || 0),
       toolUpgrades: saved.toolUpgrades && typeof saved.toolUpgrades === 'object'
         ? { ...saved.toolUpgrades }
         : {},
@@ -528,9 +521,32 @@ export class Game {
     await SaveProvider.save(this.state, this.balance);
     if (isRegisteredAccount()) {
       const auth = getAuthState();
-      await saveCloudSave(auth.userId, this.state, this.balance);
+      const result = await saveCloudSave(auth.userId, this.state, this.balance);
+      if (result?.adoptedAdmin && result.state) {
+        const { applyAdminFieldsToState } = await import('./adminPatch.js');
+        if (applyAdminFieldsToState(this.state, result.state)) {
+          await SaveProvider.save(this.state, this.balance);
+          const { emit } = await import('./events.js');
+          emit('adminPatchApplied', { revision: this.state.adminRevision });
+        }
+      }
       submitLeaderboardSnapshot(this.state, this.getCharacterDisplayName()).catch(() => {});
     }
+  }
+
+  /** Vérifie le cloud pour un patch admin (ex. onglet repris). */
+  async pullAdminPatch() {
+    if (!isRegisteredAccount()) return false;
+    const auth = getAuthState();
+    const { pullAdminPatchIfNeeded } = await import('./cloudSave.js');
+    const result = await pullAdminPatchIfNeeded(auth.userId, this.state, this.balance);
+    if (!result.changed || !result.state) return false;
+    const { applyAdminFieldsToState } = await import('./adminPatch.js');
+    if (!applyAdminFieldsToState(this.state, result.state)) return false;
+    await SaveProvider.save(this.state, this.balance);
+    const { emit } = await import('./events.js');
+    emit('adminPatchApplied', { revision: this.state.adminRevision });
+    return true;
   }
 
   canImportSave() {

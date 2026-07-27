@@ -1,6 +1,7 @@
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient.js';
 import { attachIntegrityMeta, stripIntegrityMeta, validateSaveSanity } from './saveIntegrity.js';
 import { isRegisteredAccount } from './auth.js';
+import { adoptAdminPatchedFields, getAdminRevision } from './adminPatch.js';
 
 /** Empêche d’écraser le cloud avant la fusion locale/cloud au démarrage. */
 let cloudSyncReady = true;
@@ -45,7 +46,9 @@ export async function saveCloudSave(userId, state, balance) {
   if (!cloudSyncReady) return { ok: false, reason: 'Sync cloud en cours.' };
   const { isMaintenanceMode } = await import('../systems/gameConfig.js');
   if (isMaintenanceMode()) return { ok: false, reason: 'Maintenance en cours.' };
-  const payload = JSON.parse(JSON.stringify(stripIntegrityMeta(state)));
+  let payload = JSON.parse(JSON.stringify(stripIntegrityMeta(state)));
+  if ('speedMode' in payload) delete payload.speedMode;
+
   // Ne jamais uploader une save vide/starter si une progression cloud existe déjà
   if (isEmptyOrStarterSave(payload)) {
     const existing = await loadCloudSave(userId);
@@ -54,6 +57,19 @@ export async function saveCloudSave(userId, state, balance) {
       return { ok: false, reason: 'Save locale vide — cloud conservé.' };
     }
   }
+
+  // Si un admin a patché le cloud entre-temps, adopter Kirha/inventaire/niveaux
+  // avant d’uploader — sinon l’autosave écrase le don.
+  let adoptedAdmin = false;
+  const existing = await loadCloudSave(userId);
+  if (existing?.data && getAdminRevision(existing.data) > getAdminRevision(payload)) {
+    const adopted = adoptAdminPatchedFields(payload, existing.data);
+    if (adopted.changed) {
+      payload = adopted.state;
+      adoptedAdmin = true;
+    }
+  }
+
   const sanity = validateSaveSanity(payload, balance);
   if (!sanity.ok) return { ok: false, reason: sanity.reason };
 
@@ -63,12 +79,14 @@ export async function saveCloudSave(userId, state, balance) {
     save_data: payload,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' });
-  return error ? { ok: false, reason: error.message } : { ok: true };
+  if (error) return { ok: false, reason: error.message };
+  return { ok: true, adoptedAdmin, state: payload };
 }
 
 /**
  * Fusion cloud / local.
  * Priorité : save réelle > save vide ; même compte + les deux réelles → lastOnline.
+ * Les patches admin (adminRevision) gagnent toujours sur les champs concernés.
  */
 export async function mergeCloudAndLocal(cloud, local, balance, { userId } = {}) {
   if (!cloud?.data) return local;
@@ -93,6 +111,14 @@ export async function mergeCloudAndLocal(cloud, local, balance, { userId } = {})
     chosen = cloudTime >= localTime ? cloud.data : local;
   }
 
+  // Toujours fusionner un patch admin plus récent (même si lastOnline local est plus neuf)
+  const withAdmin = adoptAdminPatchedFields(chosen, cloud.data);
+  if (withAdmin.changed) chosen = withAdmin.state;
+  if (chosen && 'speedMode' in chosen) {
+    chosen = { ...chosen };
+    delete chosen.speedMode;
+  }
+
   const sanity = validateSaveSanity(chosen, balance);
   if (sanity.ok) return chosen;
   // Fallback : l’autre save si la choisie est corrompue
@@ -104,4 +130,16 @@ export async function mergeCloudAndLocal(cloud, local, balance, { userId } = {})
 export async function prepareSavePayload(state) {
   const copy = JSON.parse(JSON.stringify(state));
   return attachIntegrityMeta(copy);
+}
+
+/** Tire le cloud et applique un patch admin si plus récent (onglet repris, etc.). */
+export async function pullAdminPatchIfNeeded(userId, state, balance) {
+  if (!userId || !state) return { changed: false };
+  const cloud = await loadCloudSave(userId);
+  if (!cloud?.data) return { changed: false };
+  const adopted = adoptAdminPatchedFields(state, cloud.data);
+  if (!adopted.changed) return { changed: false };
+  const sanity = validateSaveSanity(adopted.state, balance);
+  if (!sanity.ok) return { changed: false };
+  return { changed: true, state: adopted.state };
 }

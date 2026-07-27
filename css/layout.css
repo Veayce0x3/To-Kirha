@@ -118,34 +118,6 @@
   display: none !important;
 }
 
-.speed-mode-chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  border: 1px solid rgba(45, 90, 39, 0.4);
-  background: linear-gradient(135deg, rgba(248, 232, 238, 0.98), rgba(45, 90, 39, 0.18));
-  color: #2d5a27;
-  font-size: 0.68rem;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: default;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.speed-mode-chip[hidden] {
-  display: none !important;
-}
-
-.modal-speed-mode .speed-mode-list {
-  margin: 0.75rem 0 0;
-  padding-left: 1.2rem;
-  text-align: left;
-  line-height: 1.45;
-}
-
 .season-boost-banner {
   margin: 0.5rem 0 0.75rem;
   padding: 0.55rem 0.75rem;
@@ -5090,6 +5062,78 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   0% { transform: scale(1); border-color: var(--vert-clair); }
   45% { transform: scale(1.03); border-color: #E8A838; box-shadow: 0 0 14px rgba(232, 168, 56, 0.4); }
   100% { transform: scale(1); }
+}
+
+/* FX récolte légers (CSS only, courte durée) */
+.slot-fx-chop {
+  animation: slot-fx-chop 0.42s ease-out;
+}
+
+.slot-fx-pop {
+  animation: slot-fx-pop 0.45s ease-out;
+}
+
+.slot-fx-float {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, 0);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--vert-foret, #2D5A27);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+  z-index: 3;
+  animation: slot-fx-float 0.7s ease-out forwards;
+}
+
+.slot-progress-overlay .slot-progress-fill {
+  transition: width 0.28s linear;
+}
+
+.harvest-slot.state-harvesting .slot-progress-fill,
+.harvest-slot.active-harvest .slot-progress-fill {
+  background-image: linear-gradient(
+    90deg,
+    rgba(74, 140, 63, 0.85) 0%,
+    rgba(232, 168, 56, 0.75) 50%,
+    rgba(74, 140, 63, 0.85) 100%
+  );
+  background-size: 200% 100%;
+  animation: slot-progress-sheen 2.4s linear infinite;
+}
+
+.view-container.view-enter {
+  animation: view-enter-soft 0.28s ease-out;
+}
+
+@keyframes slot-fx-chop {
+  0% { transform: rotate(0deg) scale(1); }
+  35% { transform: rotate(-4deg) scale(1.04); }
+  70% { transform: rotate(3deg) scale(0.98); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes slot-fx-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+@keyframes slot-fx-float {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -28px); }
+}
+
+@keyframes slot-progress-sheen {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@keyframes view-enter-soft {
+  from { opacity: 0.72; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .job-icon {
