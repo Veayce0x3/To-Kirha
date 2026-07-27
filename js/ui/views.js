@@ -1241,7 +1241,7 @@ function renderCharToolsTab(game, panel) {
     ? `<p class="view-desc char-tools-upgrade-hint">Saison ${season}+ : améliore chaque outil <strong>1 fois</strong> (+${game.balance.toolSeasonUpgrade?.bonusUses ?? 10} utilisations) contre Kirha + ressources. Une refabrication remplit au max amélioré.</p>`
     : '';
   panel.innerHTML = `
-    <p class="view-desc char-tools-desc">Outils de récolte équipés ou en réserve. Pour l’élevage : tu peux équiper le <strong>seau</strong> et le <strong>panier</strong> en même temps (eau + productions animales).</p>
+    <p class="view-desc char-tools-desc">Outils de récolte équipés ou en réserve. Un outil de <strong>palier supérieur</strong> marche aussi sur les ressources plus basses — tu n’as pas besoin d’équiper chaque hache. Pour l’élevage : seau et panier peuvent être équipés ensemble.</p>
     ${upgradeHint}
     <div id="char-gather-equip" class="char-tools-list"></div>
   `;

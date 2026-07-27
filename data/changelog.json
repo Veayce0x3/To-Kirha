@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1800",
+      "date": "2026-07-27",
+      "title": "Slots & outils de récolte",
+      "highlights": [
+        "Prix des slots : plus de tarif fixe — le coût suit le palier de la ressource (×1.4 par palier)",
+        "Outils : une hache de palier supérieur suffit pour tous les arbres plus bas",
+        "Si l’outil est en réserve, il s’équipe automatiquement au lancement de la récolte"
+      ]
+    },
+    {
       "buildId": "20260727-1750",
       "date": "2026-07-27",
       "title": "Mode vitesse : XP ×N",

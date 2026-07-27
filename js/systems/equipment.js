@@ -122,8 +122,15 @@ export function canEquip(recipeId, state, equipmentData, recipes = {}) {
   if (!(state.crafted || []).includes(recipeId)) return false;
   const recipe = recipes[recipeId];
   if (recipe && (recipe.maxUses || 0) > 0) {
-    const remaining = state.toolDurability?.[recipeId];
-    if (remaining === undefined || remaining <= 0) return false;
+    let remaining = state.toolDurability?.[recipeId];
+    // Durabilité manquante après un vieux save → initialiser plutôt que bloquer l’équipement
+    if (remaining === undefined) {
+      if (!state.toolDurability) state.toolDurability = {};
+      const max = recipe.maxUses || 0;
+      state.toolDurability[recipeId] = max;
+      remaining = max;
+    }
+    if (remaining <= 0) return false;
   }
   return true;
 }

@@ -5,7 +5,7 @@
 
 import { isGatheringJobUnlocked, isFarmBuildingUnlocked } from './jobUnlock.js';
 import { isResourceUnlockedByJob } from './zones.js';
-import { getResourceUnlockJobLevel } from './progression.js';
+import { getResourceUnlockJobLevel, getResourceTierIndex } from './progression.js';
 import {
   getHarvestTime,
   getRegrowthTime,
@@ -54,6 +54,15 @@ export function getUnitUnlockCost(unitIndex, balance) {
   return extrapolateCost(unitIndex, costs);
 }
 
+/** Multiplicateur selon le palier de la ressource (Blé = 1, paliers suivants plus chers). */
+export function getUnitUnlockTierScale(resource, resources, balance) {
+  if (!resource || !resources) return 1;
+  const tier = getResourceTierIndex(resource, resources);
+  if (tier <= 0) return 1;
+  const mult = Number(cfg(balance).unitUnlockTierMult) || 1.4;
+  return Math.pow(mult, tier);
+}
+
 function extrapolateCost(index, costs) {
   if (!costs.length) return null;
   if (index < costs.length) return costs[index];
@@ -82,9 +91,13 @@ export function getUnitUnlockRequirements(jobId, resourceId, state, balance, res
   const line = lines[resourceId];
   // Index = nb d'unités déjà possédées sur CETTE ressource (5 → coût du 6ᵉ slot).
   const unitIndex = Math.max(0, Number(line?.units) || 0);
-  const kirha = getUnitUnlockCost(unitIndex, balance);
+  const resource = resources?.[resourceId];
+  const scale = getUnitUnlockTierScale(resource, resources, balance);
+  const baseKirha = getUnitUnlockCost(unitIndex, balance);
   const sameRes = cfg(balance).unitUnlockSameResource || [];
-  const amount = extrapolateCost(unitIndex, sameRes) ?? 0;
+  const baseAmount = extrapolateCost(unitIndex, sameRes) ?? 0;
+  const kirha = baseKirha == null ? null : Math.max(0, Math.floor(baseKirha * scale));
+  const amount = baseAmount > 0 ? Math.max(1, Math.floor(baseAmount * scale)) : 0;
   const resAmount = amount > 0 ? { [resourceId]: amount } : null;
   return { kirha, resources: resAmount };
 }

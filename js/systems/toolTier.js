@@ -1,4 +1,4 @@
-import { getJobEquippedTool } from './equipment.js';
+import { getJobEquippedTool, equipForced } from './equipment.js';
 import { isDurabilityTool, isToolEffectActive, getToolUsesRemaining, getEffectiveMaxUses } from './toolDurability.js';
 import { getResourceTierIndex } from './progression.js';
 import { isStarterHarvestResource } from './zones.js';
@@ -38,7 +38,8 @@ export function getGatheringToolRecipe(state, jobId, recipes, toolKind = null) {
   return recipe;
 }
 
-function findOwnedWorkingToolForJob(state, jobId, recipes, minTier = 1, toolKind = null) {
+/** Meilleur outil possédé (encore utilisable) pour un métier, palier min requis. */
+export function findOwnedWorkingToolForJob(state, jobId, recipes, minTier = 1, toolKind = null) {
   let best = null;
   for (const recipeId of state.crafted || []) {
     const recipe = recipes[recipeId];
@@ -53,6 +54,70 @@ function findOwnedWorkingToolForJob(state, jobId, recipes, minTier = 1, toolKind
     }
   }
   return best;
+}
+
+/**
+ * Outil effectif pour une ressource : équipé s’il suffit, sinon le meilleur possédé.
+ * Un outil de palier supérieur couvre toutes les ressources plus basses.
+ */
+export function resolveHarvestTool(state, jobId, resource, recipes, resources = null) {
+  const resourceTier = getResourceHarvestTier(resource, resources);
+  if (resourceTier <= 0 || (resources && isStarterHarvestResource(resource, resources))) {
+    const equipped = getGatheringToolRecipe(state, jobId, recipes);
+    return {
+      ok: true,
+      recipe: equipped || null,
+      recipeId: equipped ? getJobEquippedTool(state, jobId) : null,
+      requiredTier: 0,
+    };
+  }
+
+  const equippedId = getJobEquippedTool(state, jobId);
+  const equipped = getGatheringToolRecipe(state, jobId, recipes);
+  if (equipped && getRecipeToolTier(equipped) >= resourceTier) {
+    return { ok: true, recipe: equipped, recipeId: equippedId, requiredTier: resourceTier };
+  }
+
+  const owned = findOwnedWorkingToolForJob(state, jobId, recipes, resourceTier);
+  if (owned) {
+    return {
+      ok: true,
+      recipe: owned.recipe,
+      recipeId: owned.recipeId,
+      requiredTier: resourceTier,
+      needsEquip: !equipped || equippedId !== owned.recipeId,
+    };
+  }
+
+  if (equipped) {
+    return {
+      ok: false,
+      reason: 'tier',
+      recipe: equipped,
+      recipeId: equippedId,
+      requiredTier: resourceTier,
+      message: `Outil insuffisant (palier ${getRecipeToolTier(equipped)}) pour ${resource.name} (palier ${resourceTier}). Craft un outil palier ${resourceTier}+ à l'Outilleur.`,
+    };
+  }
+
+  return {
+    ok: false,
+    reason: 'no_tool',
+    requiredTier: resourceTier,
+    message: resourceTier <= 1
+      ? 'Équipe un outil sur Perso → Outils, ou fabrique-le à l\'Atelier Outilleur.'
+      : `Outil palier ${resourceTier} requis — fabrique-le à l'Atelier Outilleur.`,
+  };
+}
+
+/** Équipe automatiquement le bon outil si besoin (avant une récolte). */
+export function ensureHarvestToolEquipped(state, jobId, resource, recipes, equipmentData, resources = null) {
+  const resolved = resolveHarvestTool(state, jobId, resource, recipes, resources);
+  if (!resolved.ok || !resolved.recipeId) return resolved;
+  if (resolved.needsEquip && equipmentData) {
+    equipForced(resolved.recipeId, state, equipmentData, recipes);
+  }
+  return resolved;
 }
 
 export function getFarmToolKindLabel(toolKind) {
@@ -88,50 +153,31 @@ export function getFarmToolCheck(state, recipes, equipmentData, building = null)
 }
 
 export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentData, resources = null) {
-  const recipe = getGatheringToolRecipe(state, jobId, recipes);
-  const resourceTier = getResourceHarvestTier(resource, resources);
-
-  if (!recipe) {
-    if (resources && isStarterHarvestResource(resource, resources)) {
-      return { ok: true };
-    }
-    if (resourceTier <= 0) {
-      return { ok: true };
-    }
-    const owned = findOwnedWorkingToolForJob(state, jobId, recipes, resourceTier);
-    if (owned) {
-      return {
-        ok: false,
-        reason: 'not_equipped',
-        recipe: owned.recipe,
-        recipeId: owned.recipeId,
-        message: `Équipe « ${owned.recipe.name} » (Perso → Outils) pour récolter ${resource.name}.`,
-      };
-    }
+  const resolved = resolveHarvestTool(state, jobId, resource, recipes, resources);
+  if (resolved.ok) {
+    // Possédé en réserve → OK (équipement auto au lancement de la récolte)
     return {
-      ok: false,
-      reason: 'no_tool',
-      message: resourceTier <= 1
-        ? 'Équipe un outil sur Perso → Outils, ou fabrique-le à l\'Atelier Outilleur.'
-        : `Outil palier ${resourceTier} requis — fabrique-le à l'Atelier Outilleur.`,
+      ok: true,
+      recipe: resolved.recipe || undefined,
+      recipeId: resolved.recipeId || undefined,
+      autoEquip: !!resolved.needsEquip,
     };
   }
-
-  if (resourceTier <= 0 || (resources && isStarterHarvestResource(resource, resources))) {
-    return { ok: true, recipe };
-  }
-
-  const toolTier = getRecipeToolTier(recipe);
-  // Un outil de palier supérieur peut récolter les ressources plus basses.
-  if (toolTier < resourceTier) {
+  if (resolved.reason === 'tier') {
     return {
       ok: false,
       reason: 'tier',
-      message: `Outil insuffisant (palier ${toolTier}) pour ${resource.name} (palier ${resourceTier}). Craft ou équipe un outil palier ${resourceTier}+.`,
+      message: resolved.message,
+      recipe: resolved.recipe,
+      recipeId: resolved.recipeId,
     };
   }
-
-  return { ok: true, recipe };
+  return {
+    ok: false,
+    reason: resolved.reason || 'no_tool',
+    message: resolved.message,
+    recipe: null,
+  };
 }
 
 export function listToolsForJob(recipes, jobId) {
@@ -148,8 +194,7 @@ export function toolMatchesResourceTier(recipe, resource, resources) {
 }
 
 /**
- * Outil usé (0 utilisations) correspondant au palier de la ressource —
- * même s’il a été déséquipé à la casse.
+ * Outil usé (0 utilisations) de palier suffisant pour la ressource.
  */
 export function findBrokenToolForResource(state, jobId, resource, recipes, resources = null) {
   if (!resource || !jobId) return null;
@@ -163,8 +208,9 @@ export function findBrokenToolForResource(state, jobId, resource, recipes, resou
     if (!isDurabilityTool(recipe)) continue;
     const remaining = getToolUsesRemaining(state, recipeId);
     if (remaining === null || remaining > 0) continue;
-    if (getRecipeToolTier(recipe) !== needTier) continue;
-    if (!best || (recipe.name || '').localeCompare(best.recipe.name || '', 'fr') < 0) {
+    const tier = getRecipeToolTier(recipe);
+    if (tier < needTier) continue;
+    if (!best || tier < getRecipeToolTier(best.recipe)) {
       best = { recipeId, recipe };
     }
   }
@@ -174,16 +220,16 @@ export function findBrokenToolForResource(state, jobId, resource, recipes, resou
 /** Statut outil pour l’UI ligne de récolte (ok / bas / usé / à équiper + refabrication). */
 export function getHarvestLineToolStatus(state, jobId, resource, recipes, equipmentData, resources = null) {
   const check = getHarvestToolCheck(state, jobId, resource, recipes, equipmentData, resources);
-  const equippedId = getJobEquippedTool(state, jobId);
+  const resolved = resolveHarvestTool(state, jobId, resource, recipes, resources);
 
-  if (check.ok && check.recipe && equippedId && isDurabilityTool(check.recipe)) {
-    const remaining = getToolUsesRemaining(state, equippedId);
-    const max = getEffectiveMaxUses(state, check.recipe, equippedId) || check.recipe.maxUses;
+  if (check.ok && resolved.recipe && resolved.recipeId && isDurabilityTool(resolved.recipe)) {
+    const remaining = getToolUsesRemaining(state, resolved.recipeId);
+    const max = getEffectiveMaxUses(state, resolved.recipe, resolved.recipeId) || resolved.recipe.maxUses;
     if (remaining != null && max) {
       return {
         kind: remaining <= 3 ? 'low' : 'ok',
-        recipeId: equippedId,
-        recipe: check.recipe,
+        recipeId: resolved.recipeId,
+        recipe: resolved.recipe,
         remaining,
         max,
         label: `${remaining}/${max}`,

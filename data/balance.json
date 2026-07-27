@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 41,
-  "appBuildId": "20260727-1750",
+  "appBuildId": "20260727-1800",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -524,6 +524,7 @@
       50,
       75
     ],
+    "unitUnlockTierMult": 1.4,
     "newTierKirhaBase": 50,
     "newTierKirhaStep": 40,
     "newTierResourceBase": 25,

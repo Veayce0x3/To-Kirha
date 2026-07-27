@@ -202,7 +202,7 @@ import {
   getBuildingDef,
   isUnifiedFarmBuilding,
 } from '../systems/farm.js';
-import { getFarmToolCheck, getHarvestToolCheck } from '../systems/toolTier.js';
+import { getFarmToolCheck, getHarvestToolCheck, ensureHarvestToolEquipped } from '../systems/toolTier.js';
 import { migrateCombatDurability } from '../systems/combatDurability.js';
 import { clearCombatMealBuff, listOwnedMeals, peekMealHeal, consumeMealFromInventory, calcMealHealAmount } from '../systems/consumables.js';
 import {
@@ -1228,6 +1228,15 @@ export class Game {
       emit('harvestBlocked', { jobId, resourceId, unitIndex, message: toolCheck.message });
       return false;
     }
+
+    ensureHarvestToolEquipped(
+      this.state,
+      jobId,
+      resource,
+      this.recipes,
+      this.equipment,
+      this.resources
+    );
 
     const result = startHarvestUnit(
       this.state,
