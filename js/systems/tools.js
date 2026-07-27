@@ -29,7 +29,7 @@ export function canHarvestWithTool(resource, state, recipes, jobId) {
   const required = getResourceToolTier(resource);
   if (required <= 0) return true;
   const equipped = getEquippedToolTier(state, recipes, jobId);
-  return equipped >= required;
+  return equipped === required;
 }
 
 export function getHarvestToolBlockReason(resource, state, recipes, jobs, jobId) {
@@ -51,7 +51,7 @@ export function getHarvestToolBlockReason(resource, state, recipes, jobs, jobId)
     }
   }
   const tier = getRecipeToolTier(recipe);
-  if (tier < required) {
+  if (tier !== required) {
     return {
       type: 'tier',
       message: `Palier ${required} requis pour ${resource.name} (outil palier ${tier})`,

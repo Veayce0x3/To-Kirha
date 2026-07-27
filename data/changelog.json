@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260727-1810",
+      "date": "2026-07-27",
+      "title": "Outils : 1 palier = 1 ressource",
+      "highlights": [
+        "Correction : la hache de Séquoia ne récolte plus le Séquoia — seulement le Chêne",
+        "Même règle pour tous les métiers : chaque outil ne sert qu’à la ressource de son palier"
+      ]
+    },
+    {
       "buildId": "20260727-1800",
       "date": "2026-07-27",
       "title": "Slots & outils de récolte",

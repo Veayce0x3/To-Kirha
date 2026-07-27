@@ -4,10 +4,11 @@ import { getResourceTierIndex } from './progression.js';
 import { isStarterHarvestResource } from './zones.js';
 
 /**
- * Palier outil vs ressource :
- * index 0 (Blé…) → 0 = sans outil / pas d'usure
- * index 1 (Orge…) → 1 = faucille craftée avec la ressource 0
- * index 2 → 2, etc.
+ * Palier outil vs ressource (correspondance EXACTE) :
+ * index 0 (Frêne / Blé…) → pas d'outil
+ * index 1 (Séquoia…) → outil palier 1 (crafté avec la ressource 0)
+ * index 2 (Chêne…) → outil palier 2 (crafté avec Séquoia), etc.
+ * Un outil de palier N ne récolte QUE la ressource de palier N — pas les plus basses.
  */
 export function getResourceHarvestTier(resource, resources = null) {
   if (resources && resource) {
@@ -20,7 +21,6 @@ export function getResourceHarvestTier(resource, resources = null) {
 
 export function getRecipeToolTier(recipe) {
   if (recipe?.toolTier != null) return Number(recipe.toolTier) || 1;
-  // Ancien fallback (requiredJobLevel = 20/40/…) — ne plus utiliser la courbe Outilleur 1/6/11.
   const lvl = recipe?.requiredJobLevel ?? 1;
   if (lvl <= 1) return 1;
   if (lvl >= 20) return Math.max(1, Math.floor(lvl / 20));
@@ -38,8 +38,12 @@ export function getGatheringToolRecipe(state, jobId, recipes, toolKind = null) {
   return recipe;
 }
 
-/** Meilleur outil possédé (encore utilisable) pour un métier, palier min requis. */
-export function findOwnedWorkingToolForJob(state, jobId, recipes, minTier = 1, toolKind = null) {
+/**
+ * Outil possédé utilisable.
+ * - exact=false (ferme) : palier >= minTier, garde le plus haut
+ * - exact=true (récolte) : palier === minTier uniquement
+ */
+export function findOwnedWorkingToolForJob(state, jobId, recipes, minTier = 1, toolKind = null, { exact = false } = {}) {
   let best = null;
   for (const recipeId of state.crafted || []) {
     const recipe = recipes[recipeId];
@@ -48,7 +52,11 @@ export function findOwnedWorkingToolForJob(state, jobId, recipes, minTier = 1, t
     if (!isToolEffectActive(state, recipeId, recipe)) continue;
     if (toolKind && (recipe.toolKind || 'bucket') !== toolKind) continue;
     const tier = getRecipeToolTier(recipe);
-    if (tier < minTier) continue;
+    if (exact) {
+      if (tier !== minTier) continue;
+    } else if (tier < minTier) {
+      continue;
+    }
     if (!best || tier > getRecipeToolTier(best.recipe)) {
       best = { recipeId, recipe };
     }
@@ -57,8 +65,8 @@ export function findOwnedWorkingToolForJob(state, jobId, recipes, minTier = 1, t
 }
 
 /**
- * Outil effectif pour une ressource : équipé s’il suffit, sinon le meilleur possédé.
- * Un outil de palier supérieur couvre toutes les ressources plus basses.
+ * Outil effectif pour une ressource : équipé s’il a le BON palier, sinon celui en réserve au bon palier.
+ * Correspondance exacte outil.toolTier === ressource.tier.
  */
 export function resolveHarvestTool(state, jobId, resource, recipes, resources = null) {
   const resourceTier = getResourceHarvestTier(resource, resources);
@@ -74,11 +82,11 @@ export function resolveHarvestTool(state, jobId, resource, recipes, resources = 
 
   const equippedId = getJobEquippedTool(state, jobId);
   const equipped = getGatheringToolRecipe(state, jobId, recipes);
-  if (equipped && getRecipeToolTier(equipped) >= resourceTier) {
+  if (equipped && getRecipeToolTier(equipped) === resourceTier) {
     return { ok: true, recipe: equipped, recipeId: equippedId, requiredTier: resourceTier };
   }
 
-  const owned = findOwnedWorkingToolForJob(state, jobId, recipes, resourceTier);
+  const owned = findOwnedWorkingToolForJob(state, jobId, recipes, resourceTier, null, { exact: true });
   if (owned) {
     return {
       ok: true,
@@ -90,13 +98,16 @@ export function resolveHarvestTool(state, jobId, resource, recipes, resources = 
   }
 
   if (equipped) {
+    const have = getRecipeToolTier(equipped);
     return {
       ok: false,
       reason: 'tier',
       recipe: equipped,
       recipeId: equippedId,
       requiredTier: resourceTier,
-      message: `Outil insuffisant (palier ${getRecipeToolTier(equipped)}) pour ${resource.name} (palier ${resourceTier}). Craft un outil palier ${resourceTier}+ à l'Outilleur.`,
+      message: have > resourceTier
+        ? `« ${equipped.name} » (palier ${have}) sert pour une ressource plus haute — pas pour ${resource.name}. Équipe l’outil palier ${resourceTier}.`
+        : `Outil insuffisant (palier ${have}) pour ${resource.name} (palier ${resourceTier}). Craft / équipe l’outil palier ${resourceTier}.`,
     };
   }
 
@@ -106,11 +117,11 @@ export function resolveHarvestTool(state, jobId, resource, recipes, resources = 
     requiredTier: resourceTier,
     message: resourceTier <= 1
       ? 'Équipe un outil sur Perso → Outils, ou fabrique-le à l\'Atelier Outilleur.'
-      : `Outil palier ${resourceTier} requis — fabrique-le à l'Atelier Outilleur.`,
+      : `Outil palier ${resourceTier} requis pour ${resource.name} — fabrique-le à l'Atelier Outilleur.`,
   };
 }
 
-/** Équipe automatiquement le bon outil si besoin (avant une récolte). */
+/** Équipe automatiquement l’outil du bon palier si besoin (avant une récolte). */
 export function ensureHarvestToolEquipped(state, jobId, resource, recipes, equipmentData, resources = null) {
   const resolved = resolveHarvestTool(state, jobId, resource, recipes, resources);
   if (!resolved.ok || !resolved.recipeId) return resolved;
@@ -155,7 +166,6 @@ export function getFarmToolCheck(state, recipes, equipmentData, building = null)
 export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentData, resources = null) {
   const resolved = resolveHarvestTool(state, jobId, resource, recipes, resources);
   if (resolved.ok) {
-    // Possédé en réserve → OK (équipement auto au lancement de la récolte)
     return {
       ok: true,
       recipe: resolved.recipe || undefined,
@@ -164,6 +174,17 @@ export function getHarvestToolCheck(state, jobId, resource, recipes, equipmentDa
     };
   }
   if (resolved.reason === 'tier') {
+    // Si l’outil exact est en réserve, proposer de l’équiper
+    const owned = findOwnedWorkingToolForJob(state, jobId, recipes, resolved.requiredTier, null, { exact: true });
+    if (owned) {
+      return {
+        ok: false,
+        reason: 'not_equipped',
+        message: `Équipe « ${owned.recipe.name} » (Perso → Outils ou bouton) pour récolter ${resource.name}.`,
+        recipe: owned.recipe,
+        recipeId: owned.recipeId,
+      };
+    }
     return {
       ok: false,
       reason: 'tier',
@@ -186,16 +207,15 @@ export function listToolsForJob(recipes, jobId) {
     .map(([id, r]) => ({ id, recipe: r, tier: getRecipeToolTier(r) }));
 }
 
+/** Usure / validité : palier outil === palier ressource (pas de couverture des paliers bas). */
 export function toolMatchesResourceTier(recipe, resource, resources) {
   if (!recipe?.toolTier || !resource) return true;
   const resourceTier = getResourceHarvestTier(resource, resources);
   if (resourceTier <= 0) return false;
-  return getRecipeToolTier(recipe) >= resourceTier;
+  return getRecipeToolTier(recipe) === resourceTier;
 }
 
-/**
- * Outil usé (0 utilisations) de palier suffisant pour la ressource.
- */
+/** Outil usé du palier exact de la ressource. */
 export function findBrokenToolForResource(state, jobId, resource, recipes, resources = null) {
   if (!resource || !jobId) return null;
   const needTier = getResourceHarvestTier(resource, resources);
@@ -208,9 +228,8 @@ export function findBrokenToolForResource(state, jobId, resource, recipes, resou
     if (!isDurabilityTool(recipe)) continue;
     const remaining = getToolUsesRemaining(state, recipeId);
     if (remaining === null || remaining > 0) continue;
-    const tier = getRecipeToolTier(recipe);
-    if (tier < needTier) continue;
-    if (!best || tier < getRecipeToolTier(best.recipe)) {
+    if (getRecipeToolTier(recipe) !== needTier) continue;
+    if (!best || (recipe.name || '').localeCompare(best.recipe.name || '', 'fr') < 0) {
       best = { recipeId, recipe };
     }
   }
