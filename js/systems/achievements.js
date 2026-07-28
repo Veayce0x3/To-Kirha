@@ -106,7 +106,8 @@ export function evaluateAchievementProgress(achievement, state, recipes) {
     case 'farm_building':
       return getAchievementProgress(state, achievement.id);
     case 'harvest_total':
-      return state.stats?.totalHarvests || state.lifetimeStats?.totalHarvests || 0;
+      // Uniquement la partie en cours (jamais lifetime — sinon un reset revalide les succès)
+      return Math.max(0, Number(state.stats?.totalHarvests) || 0);
     case 'craft_recipe':
       return (state.crafted || []).includes(achievement.recipeId) ? 1 : 0;
     case 'craft_job':
@@ -122,7 +123,7 @@ export function evaluateAchievementProgress(achievement, state, recipes) {
     case 'combat_kills':
       return state.combatKillStats?.[achievement.enemyId] || 0;
     case 'combat_total':
-      return state.stats?.combatFights || state.lifetimeStats?.combatFights || 0;
+      return Math.max(0, Number(state.stats?.combatFights) || 0);
     case 'boss_kill':
       return state.bossKills?.[achievement.combatZoneId] || 0;
     case 'job_level':
@@ -303,6 +304,10 @@ export function findAchievementChain(achievements, achievementId) {
 
 /** Focus UI : rootId → achievementId affiché (clic « suite » / après déblocage). */
 const achievementChainFocus = new Map();
+
+export function clearAchievementChainFocus() {
+  achievementChainFocus.clear();
+}
 
 export function focusAchievementInChain(achievements, achievementId) {
   const chain = findAchievementChain(achievements, achievementId);

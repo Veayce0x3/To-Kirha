@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260728-1515",
+      "date": "2026-07-28",
+      "title": "Reset partie : succès bien remis à zéro",
+      "highlights": [
+        "Réinitialiser la partie efface aussi les succès (plus de revalidation via les stats de vie)"
+      ]
+    },
+    {
       "buildId": "20260728-1500",
       "date": "2026-07-28",
       "title": "Succès à récupérer, reset fiable, poulailler après outilleur",

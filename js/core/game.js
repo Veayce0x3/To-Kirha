@@ -152,6 +152,7 @@ import {
   applyQuestRewards,
   applyAchievementRewards,
   claimAchievement as claimAchievementState,
+  clearAchievementChainFocus,
   countClaimableAchievements,
   getActiveQuests,
   getActiveAchievements,
@@ -2119,14 +2120,15 @@ export class Game {
         backgroundMs: Math.max(0, Number(prev.playtime.backgroundMs) || 0),
       }
       : { foregroundMs: 0, backgroundMs: 0 };
+    // Stats de vie pour l’admin / classement — pas de progression de succès (remise à zéro).
     const lifetimeStats = {
-      ...(prev.lifetimeStats || {}),
       gameResets: (Number(prev.lifetimeStats?.gameResets) || 0) + 1,
       lastResetAt: Date.now(),
       lastResetSeason: Number(prev.season) || 1,
       totalEarned: Number(prev.lifetimeStats?.totalEarned) || 0,
-      totalHarvests: Number(prev.lifetimeStats?.totalHarvests) || 0,
-      seasonsCompleted: Number(prev.lifetimeStats?.seasonsCompleted) || 0,
+      totalHarvests: 0,
+      seasonsCompleted: 0,
+      combatFights: 0,
     };
 
     Object.values(this.harvestTimers).forEach(clearTimeout);
@@ -2135,6 +2137,9 @@ export class Game {
     this.state.settings = settings;
     this.state.playtime = playtime;
     this.state.lifetimeStats = lifetimeStats;
+    this.state.achievements = buildDefaultAchievementState();
+    delete this.state.quests;
+    clearAchievementChainFocus();
     if (accountMeta?.mode) {
       this.state.meta.account = accountMeta;
     }
@@ -2142,6 +2147,7 @@ export class Game {
     SaveProvider.markFreshReset();
     SaveProvider.save(this.state, this.balance);
     emit('stateChange', this.state);
+    emit('navRefresh');
     return true;
   }
 
