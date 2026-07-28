@@ -510,8 +510,9 @@ export async function completeRegisteredLogin(game, user) {
   applyServerDisplayNameToGame(game, serverName);
 
   try {
+    const { SaveProvider } = await import('./save.js');
     const cloud = await loadCloudSave(user.id);
-    if (cloud?.data) {
+    if (cloud?.data && !SaveProvider.isFreshReset()) {
       const merged = await mergeCloudAndLocal(cloud, previousLocal, game.balance, { userId: user.id });
       if (merged) {
         game.state = game.mergeState(merged);

@@ -13,7 +13,7 @@ export function getJobUnlockRules(balance) {
   return balance?.jobUnlocks || {};
 }
 
-function meetsCondition(state, condition) {
+function meetsCondition(state, condition, balance = null) {
   if (!condition) return true;
   if (condition.jobLevel) {
     for (const [jobId, minLevel] of Object.entries(condition.jobLevel)) {
@@ -33,6 +33,18 @@ function meetsCondition(state, condition) {
     const total = state.stats?.totalHarvests || state.lifetimeStats?.totalHarvests || 0;
     if (total < condition.totalHarvests) return false;
   }
+  if (condition.craftJobUnlocked) {
+    if (!balance || !isCraftJobUnlocked(condition.craftJobUnlocked, state, balance)) return false;
+  }
+  if (condition.featureUnlocked) {
+    const fid = condition.featureUnlocked;
+    if (!balance) return false;
+    if (fid === 'toolmaker' || fid === 'cook') {
+      if (!isCraftJobUnlocked(fid, state, balance)) return false;
+    } else if (fid === 'combat') {
+      if (!isCombatUnlocked(state, balance)) return false;
+    }
+  }
   return true;
 }
 
@@ -42,7 +54,7 @@ export function isJobUnlocked(jobId, state, balance) {
   const rule = rules[jobId];
   if (!rule) return false;
   if (rule.always) return true;
-  if (!meetsCondition(state, rule.when)) return false;
+  if (!meetsCondition(state, rule.when, balance)) return false;
   if (rule.when?.buildingUnlocked && !isFarmBuildingUnlocked(rule.when.buildingUnlocked, state, balance)) {
     return false;
   }
@@ -59,7 +71,7 @@ export function isFarmBuildingUnlocked(buildingId, state, balance) {
   const rule = rules[`farm_${buildingId}`] || rules.farm?.[buildingId];
   if (!rule) return false;
   if (rule.always) return true;
-  return meetsCondition(state, rule.when);
+  return meetsCondition(state, rule.when, balance);
 }
 
 export function isCraftJobUnlocked(jobId, state, balance) {

@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 41,
-  "appBuildId": "20260728-1300",
+  "appBuildId": "20260728-1500",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -618,11 +618,9 @@
     "farm": {
       "chicken_coop": {
         "when": {
-          "jobLevel": {
-            "farmer": 6
-          }
+          "craftJobUnlocked": "toolmaker"
         },
-        "hint": "Atteins Paysan Nv.6 pour débloquer le Poulailler."
+        "hint": "Débloque d’abord l’Outilleur, puis le Poulailler."
       },
       "well": {
         "when": {
@@ -684,11 +682,9 @@
     },
     "farm_chicken_coop": {
       "when": {
-        "jobLevel": {
-          "farmer": 6
-        }
+        "craftJobUnlocked": "toolmaker"
       },
-      "hint": "Atteins Paysan Nv.6 pour le Poulailler."
+      "hint": "Débloque d’abord l’Outilleur, puis le Poulailler."
     },
     "farm_well": {
       "when": {

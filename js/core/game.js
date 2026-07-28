@@ -151,6 +151,8 @@ import {
   incrementAchievementProgress,
   applyQuestRewards,
   applyAchievementRewards,
+  claimAchievement as claimAchievementState,
+  countClaimableAchievements,
   getActiveQuests,
   getActiveAchievements,
   getNextQuest,
@@ -323,7 +325,14 @@ export class Game {
       adminPatchedAt: 0,
       toolUpgrades: {},
       seasonHistory: [],
-      lifetimeStats: { totalEarned: 0, totalHarvests: 0, seasonsCompleted: 0 },
+      lifetimeStats: {
+        totalEarned: 0,
+        totalHarvests: 0,
+        seasonsCompleted: 0,
+        gameResets: 0,
+        lastResetAt: null,
+        lastResetSeason: null,
+      },
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
       playtime: { foregroundMs: 0, backgroundMs: 0 },
@@ -623,18 +632,30 @@ export class Game {
 
   processAchievements() {
     if (!areAchievementsEnabled(this.balance)) return false;
-    let changed = false;
-    for (const ach of Object.values(this.achievements)) {
-      if (ach.hidden) continue;
-      if (isAchievementCompleted(this.state, ach.id)) continue;
-      if (!isAchievementReady(ach, this.state, this.recipes)) continue;
-      if (!completeAchievement(ach.id, this.state)) continue;
-      applyAchievementRewards(this.state, ach, this.balance);
-      emit('achievementComplete', { achievementId: ach.id, achievement: ach });
-      emit('questComplete', { questId: ach.id, quest: ach });
-      changed = true;
-    }
-    return changed;
+    // Ne valide plus automatiquement : le joueur doit cliquer « Récupérer ».
+    return this.getClaimableAchievementCount() > 0;
+  }
+
+  claimAchievement(achievementId) {
+    if (!areAchievementsEnabled(this.balance)) return { ok: false, reason: 'Succès désactivés.' };
+    const result = claimAchievementState(
+      achievementId,
+      this.state,
+      this.achievements,
+      this.balance,
+      this.recipes
+    );
+    if (!result.ok) return result;
+    emit('achievementComplete', { achievementId, achievement: result.achievement });
+    emit('questComplete', { questId: achievementId, quest: result.achievement });
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return result;
+  }
+
+  getClaimableAchievementCount() {
+    if (!areAchievementsEnabled(this.balance)) return 0;
+    return countClaimableAchievements(this.achievements, this.state, this.recipes);
   }
 
   getCraftContext() {
@@ -2087,22 +2108,50 @@ export class Game {
   }
 
   resetSave() {
-    const settings = this.state.settings;
-    const accountMeta = this.state.meta?.account
-      ? JSON.parse(JSON.stringify(this.state.meta.account))
+    const prev = this.state;
+    const settings = prev.settings;
+    const accountMeta = prev.meta?.account
+      ? JSON.parse(JSON.stringify(prev.meta.account))
       : null;
+    const playtime = prev.playtime
+      ? {
+        foregroundMs: Math.max(0, Number(prev.playtime.foregroundMs) || 0),
+        backgroundMs: Math.max(0, Number(prev.playtime.backgroundMs) || 0),
+      }
+      : { foregroundMs: 0, backgroundMs: 0 };
+    const lifetimeStats = {
+      ...(prev.lifetimeStats || {}),
+      gameResets: (Number(prev.lifetimeStats?.gameResets) || 0) + 1,
+      lastResetAt: Date.now(),
+      lastResetSeason: Number(prev.season) || 1,
+      totalEarned: Number(prev.lifetimeStats?.totalEarned) || 0,
+      totalHarvests: Number(prev.lifetimeStats?.totalHarvests) || 0,
+      seasonsCompleted: Number(prev.lifetimeStats?.seasonsCompleted) || 0,
+    };
+
     Object.values(this.harvestTimers).forEach(clearTimeout);
     this.harvestTimers = {};
     this.state = this.getDefaultState();
     this.state.settings = settings;
+    this.state.playtime = playtime;
+    this.state.lifetimeStats = lifetimeStats;
     if (accountMeta?.mode) {
       this.state.meta.account = accountMeta;
     }
     if (this.balance.betaMode) applyBetaUnlocks(this.state, this.companions);
     SaveProvider.markFreshReset();
-    SaveProvider.save(this.state);
+    SaveProvider.save(this.state, this.balance);
     emit('stateChange', this.state);
     return true;
+  }
+
+  /** Après reset : écrase la save cloud pour que l’ancienne ne revienne pas. */
+  async wipeCloudAfterReset() {
+    if (!isRegisteredAccount()) return { ok: true, skipped: true };
+    const auth = getAuthState();
+    if (!auth.userId || auth.userId === 'dev_local_user') return { ok: true, skipped: true };
+    const { forceWipeCloudSave } = await import('./cloudSave.js');
+    return forceWipeCloudSave(auth.userId, this.state, this.balance);
   }
 
 

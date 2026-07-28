@@ -50,7 +50,7 @@
     "order": 4,
     "category": "season_1",
     "title": "Poulailler actif",
-    "description": "Débloque le Poulailler (Paysan Nv.6).",
+    "description": "Débloque le Poulailler (après l’Outilleur).",
     "type": "building_unlocked",
     "buildingId": "chicken_coop",
     "target": 1,

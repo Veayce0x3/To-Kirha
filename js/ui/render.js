@@ -153,7 +153,9 @@ export function initUI(game, audio) {
       ? iconHtml(navIcon, 'nav-icon', view.label)
       : (view.emoji ? `<span class="nav-emoji">${view.emoji}</span>` : '');
 
-    const statusDot = (view.job || view.building) ? '<span class="nav-status-dot" aria-hidden="true"></span>' : '';
+    const statusDot = (view.job || view.building || viewId === 'achievements')
+      ? '<span class="nav-status-dot" aria-hidden="true"></span>'
+      : '';
 
     btn.innerHTML = `
       ${iconPart}
@@ -344,16 +346,29 @@ export function initUI(game, audio) {
     'nav-harvest-harvesting',
     'nav-harvest-regrowing',
     'nav-harvest-empty',
+    'nav-achievement-ready',
   ];
 
   function updateNavActive() {
     const view = getView();
+    const claimable = game.getClaimableAchievementCount?.() || 0;
 
     document.querySelectorAll('.nav-btn[data-view]').forEach((btn) => {
       const vid = btn.dataset.view;
       btn.classList.toggle('active', vid === view);
       btn.classList.remove(...HARVEST_NAV_CLASSES);
       delete btn.dataset.harvestStatus;
+
+      if (vid === 'achievements') {
+        if (claimable > 0) {
+          btn.classList.add('nav-achievement-ready');
+          btn.dataset.harvestStatus = 'ready';
+          btn.title = `${claimable} succès à récupérer`;
+        } else {
+          btn.title = 'Succès';
+        }
+        return;
+      }
 
       const viewDef = VIEWS[vid];
       if (viewDef?.job) {
@@ -882,7 +897,13 @@ export function initUI(game, audio) {
   on('achievementComplete', ({ achievement }) => {
     if (game.balance?.achievementsEnabled !== true && game.balance?.questsEnabled !== true) return;
     if (achievement?.id) focusAchievementInChain(game.achievements, achievement.id);
-    showToast(els, `🏆 Succès : ${achievement.title}`, 'upgrade');
+    const rewardBits = [];
+    if (achievement?.rewardKirha) rewardBits.push(`+${achievement.rewardKirha} 💰`);
+    if (achievement?.rewardScrolls) rewardBits.push(`+${achievement.rewardScrolls} parchemin${achievement.rewardScrolls > 1 ? 's' : ''}`);
+    if (achievement?.rewardNuggets) rewardBits.push(`+${achievement.rewardNuggets} pépite${achievement.rewardNuggets > 1 ? 's' : ''}`);
+    const rewardTxt = rewardBits.length ? ` · ${rewardBits.join(' · ')}` : '';
+    showToast(els, `🏆 Succès : ${achievement.title}${rewardTxt}`, 'upgrade');
+    updateNavActive();
   });
   on('offlineProgress', (r) => showOfflineModal(game, els, r));
   on('prestige', ({ season }) => {

@@ -372,12 +372,50 @@ export function getAchievementStatusText(achievement, state, recipes) {
   const current = Math.min(evaluateAchievementProgress(achievement, state, recipes), achievement.target ?? 1);
   const target = achievement.target ?? 1;
   if (isAchievementCompleted(state, achievement.id)) return '✓ Terminé';
-  if (isAchievementReady(achievement, state, recipes)) return 'Prêt';
+  if (isAchievementReady(achievement, state, recipes)) return 'À récupérer';
   if (['harvest_resource', 'farm_building', 'combat_kills', 'boss_kill', 'harvest_total', 'combat_total'].includes(achievement.type)) {
     return `${current}/${target}`;
   }
   if (achievement.type === 'job_level') return `Nv.${current}/${target}`;
   return current >= target ? 'OK' : 'En cours';
+}
+
+export function formatAchievementRewardText(achievement) {
+  if (!achievement) return '';
+  const bits = [];
+  if (achievement.rewardKirha) bits.push(`+${achievement.rewardKirha} 💰`);
+  if (achievement.rewardScrolls) bits.push(`+${achievement.rewardScrolls} parchemin${achievement.rewardScrolls > 1 ? 's' : ''}`);
+  if (achievement.rewardNuggets) bits.push(`+${achievement.rewardNuggets} pépite${achievement.rewardNuggets > 1 ? 's' : ''}`);
+  const bonus = achievement.rewardBonus || achievement.permanentBonus;
+  if (bonus) {
+    if (bonus.kirha) bits.push(`+${(bonus.kirha * 100).toFixed(0)}% Kirha`);
+    if (bonus.xp) bits.push(`+${(bonus.xp * 100).toFixed(0)}% XP`);
+    if (bonus.harvestSpeed) bits.push(`−${(bonus.harvestSpeed * 100).toFixed(0)}% repousse`);
+    if (bonus.yield) bits.push(`+${(bonus.yield * 100).toFixed(0)}% rendement`);
+    if (bonus.farmExtraYield) bits.push(`+${(bonus.farmExtraYield * 100).toFixed(0)}% prod. ferme`);
+    if (bonus.farmFeedDiscount) bits.push(`−${(bonus.farmFeedDiscount * 100).toFixed(0)}% nourriture`);
+    if (bonus.farmAnimalLife) bits.push(`+${(bonus.farmAnimalLife * 100).toFixed(0)}% vie animal`);
+  }
+  return bits.length ? bits.join(' · ') : '';
+}
+
+export function countClaimableAchievements(achievements, state, recipes) {
+  return Object.values(achievements || {}).filter((a) => {
+    if (!a || a.hidden) return false;
+    return isAchievementReady(a, state, recipes);
+  }).length;
+}
+
+export function claimAchievement(id, state, achievements, balance, recipes) {
+  const achievement = achievements?.[id];
+  if (!achievement) return { ok: false, reason: 'Succès introuvable.' };
+  if (isAchievementCompleted(state, id)) return { ok: false, reason: 'Déjà récupéré.' };
+  if (!isAchievementReady(achievement, state, recipes)) {
+    return { ok: false, reason: 'Objectif pas encore atteint.' };
+  }
+  if (!completeAchievement(id, state)) return { ok: false, reason: 'Impossible de valider.' };
+  applyAchievementRewards(state, achievement, balance);
+  return { ok: true, achievement };
 }
 
 export function getQuestStatusText(achievement, state, recipes) {

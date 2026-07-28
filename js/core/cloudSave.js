@@ -13,6 +13,11 @@ export function getSeasonRank(state) {
   return seasonsDone * 1000 + season;
 }
 
+/** Compteur de resets partie : un reset local doit battre l’ancienne progression cloud. */
+export function getResetRank(state) {
+  return Math.max(0, Number(state?.lifetimeStats?.gameResets) || 0);
+}
+
 export function markCloudSyncReady(ready = true) {
   cloudSyncReady = !!ready;
 }
@@ -48,45 +53,64 @@ export async function loadCloudSave(userId) {
   return { data: data.save_data, updatedAt: data.updated_at };
 }
 
-export async function saveCloudSave(userId, state, balance) {
+export async function saveCloudSave(userId, state, balance, { force = false } = {}) {
   if (!isSupabaseConfigured() || !userId || !isRegisteredAccount()) return { ok: false };
-  if (!cloudSyncReady) return { ok: false, reason: 'Sync cloud en cours.' };
+  if (!cloudSyncReady && !force) return { ok: false, reason: 'Sync cloud en cours.' };
   const { isMaintenanceMode } = await import('../systems/gameConfig.js');
-  if (isMaintenanceMode()) return { ok: false, reason: 'Maintenance en cours.' };
+  if (isMaintenanceMode() && !force) return { ok: false, reason: 'Maintenance en cours.' };
   let payload = JSON.parse(JSON.stringify(stripIntegrityMeta(state)));
   if ('speedMode' in payload) delete payload.speedMode;
 
   // Ne jamais uploader une save vide/starter si une progression cloud existe déjà
-  if (isEmptyOrStarterSave(payload)) {
+  // (sauf wipe forcé après reset joueur, ou reset local plus récent)
+  if (!force && isEmptyOrStarterSave(payload)) {
     const existing = await loadCloudSave(userId);
     if (existing?.data && !isEmptyOrStarterSave(existing.data)) {
-      console.warn('[cloudSave] Refus d’écraser la save cloud avec une partie vide.');
-      return { ok: false, reason: 'Save locale vide — cloud conservé.' };
+      if (getResetRank(payload) <= getResetRank(existing.data)) {
+        console.warn('[cloudSave] Refus d’écraser la save cloud avec une partie vide.');
+        return { ok: false, reason: 'Save locale vide — cloud conservé.' };
+      }
     }
   }
 
-  // Si un admin a patché le cloud entre-temps, adopter Kirha/inventaire/niveaux
-  // avant d’uploader — sinon l’autosave écrase le don.
-  // Ne jamais adopter une save d’une saison plus ancienne (après prestige).
-  let adoptedAdmin = false;
-  const existing = await loadCloudSave(userId);
-  if (existing?.data) {
-    const localRank = getSeasonRank(payload);
-    const cloudRank = getSeasonRank(existing.data);
-    if (cloudRank > localRank) {
-      // Cloud plus avancé en saison → prendre la save cloud entière
-      return { ok: false, reason: 'Save cloud plus récente (saison) — recharge le jeu.' };
-    }
-    if (
-      cloudRank === localRank
-      && getAdminRevision(existing.data) > getAdminRevision(payload)
-    ) {
-      const adopted = adoptAdminPatchedFields(payload, existing.data);
-      if (adopted.changed) {
-        payload = adopted.state;
-        adoptedAdmin = true;
+  if (!force) {
+    // Si un admin a patché le cloud entre-temps, adopter Kirha/inventaire/niveaux
+    // avant d’uploader — sinon l’autosave écrase le don.
+    // Ne jamais adopter une save d’une saison plus ancienne (après prestige).
+    let adoptedAdmin = false;
+    const existing = await loadCloudSave(userId);
+    if (existing?.data) {
+      const localResets = getResetRank(payload);
+      const cloudResets = getResetRank(existing.data);
+      const localRank = getSeasonRank(payload);
+      const cloudRank = getSeasonRank(existing.data);
+      // Après reset joueur, la save locale (même « saison 1 ») doit pouvoir écraser l’ancienne.
+      if (cloudRank > localRank && localResets <= cloudResets) {
+        return { ok: false, reason: 'Save cloud plus récente (saison) — recharge le jeu.' };
+      }
+      if (
+        cloudRank === localRank
+        && getAdminRevision(existing.data) > getAdminRevision(payload)
+      ) {
+        const adopted = adoptAdminPatchedFields(payload, existing.data);
+        if (adopted.changed) {
+          payload = adopted.state;
+          adoptedAdmin = true;
+        }
       }
     }
+
+    const sanity = validateSaveSanity(payload, balance);
+    if (!sanity.ok) return { ok: false, reason: sanity.reason };
+
+    const supabase = await getSupabaseClient();
+    const { error } = await supabase.from('saves').upsert({
+      user_id: userId,
+      save_data: payload,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+    if (error) return { ok: false, reason: error.message };
+    return { ok: true, adoptedAdmin, state: payload };
   }
 
   const sanity = validateSaveSanity(payload, balance);
@@ -99,7 +123,13 @@ export async function saveCloudSave(userId, state, balance) {
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' });
   if (error) return { ok: false, reason: error.message };
-  return { ok: true, adoptedAdmin, state: payload };
+  return { ok: true, wiped: true, state: payload };
+}
+
+/** Écrase la save cloud avec l’état local (après reset partie). */
+export async function forceWipeCloudSave(userId, state, balance) {
+  markCloudSyncReady(true);
+  return saveCloudSave(userId, state, balance, { force: true });
 }
 
 /**
@@ -114,9 +144,16 @@ export async function mergeCloudAndLocal(cloud, local, balance, { userId } = {})
   const localEmpty = isEmptyOrStarterSave(local);
   const cloudEmpty = isEmptyOrStarterSave(cloud.data);
   const localIsOurs = userId ? sameRegisteredUser(local, userId) : true;
+  const localResets = getResetRank(local);
+  const cloudResets = getResetRank(cloud.data);
 
   let chosen;
-  if (localEmpty && !cloudEmpty) {
+  if (localResets > cloudResets) {
+    // Reset local plus récent que le cloud → ne jamais restaurer l’ancienne partie
+    chosen = local;
+  } else if (cloudResets > localResets) {
+    chosen = cloud.data;
+  } else if (localEmpty && !cloudEmpty) {
     chosen = cloud.data;
   } else if (!localEmpty && cloudEmpty) {
     chosen = local;

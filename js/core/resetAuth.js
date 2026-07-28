@@ -16,14 +16,13 @@ export async function reconcileAuthAfterLocalReset(game) {
   if (auth.mode === 'registered' && auth.userId) {
     await refreshProfile();
     applyServerDisplayNameToGame(game, getAuthState().displayName);
-    game.scheduleSave?.();
+    // Ne pas scheduleSave ici : wipe cloud déjà fait ; un save « vide » serait refusé
     return;
   }
   if (!auth.mode || auth.mode === 'guest') {
     await initAuth(game);
     if (getAuthState().mode === 'registered') {
       applyServerDisplayNameToGame(game, getAuthState().displayName);
-      game.scheduleSave?.();
     }
   }
 }

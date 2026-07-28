@@ -24,6 +24,7 @@ import {
   ACHIEVEMENT_CATEGORY_LABELS,
   getAchievementBonuses,
   isAchievementAvailable,
+  formatAchievementRewardText,
 } from '../systems/achievements.js';
 import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabilityBar, renderEquippedToolRow, renderDQStatsBlock } from '../systems/equipmentDisplay.js';
 import { isDurabilityTool, canUpgradeTool, isToolUpgraded, getToolUpgradeCost, formatToolUpgradeCost } from '../systems/toolDurability.js';
@@ -1580,11 +1581,13 @@ function renderAchievements(game, el) {
   const bonusLine = activeBits.length
     ? `<p class="view-desc">Bonus actifs : ${activeBits.join(' · ')}</p>`
     : '';
+  const claimable = game.getClaimableAchievementCount?.() || 0;
 
   el.innerHTML = `
     <div class="view-header">
       <h2>🏆 Succès</h2>
-      <p class="view-desc">Un succès à la fois par série (Apprenti → Disciple → Maître). Une fois débloqué, appuie dessus pour voir la suite.</p>
+      <p class="view-desc">Quand un objectif est atteint, appuie sur <strong>Récupérer</strong> pour valider et recevoir la récompense.</p>
+      ${claimable > 0 ? `<p class="view-desc quest-claimable-banner">${claimable} succès à récupérer</p>` : ''}
       ${bonusLine}
     </div>
     <div id="achievements-list" class="panel-inner"></div>
@@ -1627,8 +1630,10 @@ function renderAchievements(game, el) {
         row.title = 'Appuyer pour voir le succès suivant';
       }
 
-      const bonus = ach.rewardBonus || ach.permanentBonus;
-      const bonusTxt = formatAchievementBonusText(bonus);
+      const rewardTxt = formatAchievementRewardText(ach);
+      const rewardHtml = rewardTxt
+        ? `<p class="quest-reward">${done ? 'Récompense reçue : ' : 'Récompense : '}<strong>${rewardTxt}</strong></p>`
+        : '';
       const tierLabel = ach.tier === 'apprentice' ? '🌱 Apprenti'
         : ach.tier === 'disciple' ? '📘 Disciple'
           : ach.tier === 'master' ? '🏆 Maître' : '';
@@ -1644,9 +1649,28 @@ function renderAchievements(game, el) {
           <strong>${tierLabel ? `${tierLabel} · ` : ''}${ach.title}${stepHtml ? ` ${stepHtml}` : ''}</strong>
           <span class="quest-status">${locked ? 'Verrouillé' : getAchievementStatusText(ach, game.state, game.recipes)}</span>
         </div>
-        <p class="quest-desc">${ach.description}${bonusTxt}</p>
+        <p class="quest-desc">${ach.description}</p>
+        ${rewardHtml}
         ${advanceHint}
       `;
+
+      if (ready) {
+        const claim = document.createElement('button');
+        claim.type = 'button';
+        claim.className = 'btn btn-craft btn-small quest-claim';
+        claim.textContent = 'Récupérer';
+        claim.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const result = game.claimAchievement(ach.id);
+          if (!result?.ok) {
+            emit('farmBlocked', { message: result?.reason || 'Impossible de récupérer.' });
+            return;
+          }
+          renderAchievements(game, el);
+          emit('navRefresh');
+        });
+        row.appendChild(claim);
+      }
 
       if (canAdvance) {
         const goNext = () => {
@@ -1666,7 +1690,7 @@ function renderAchievements(game, el) {
         });
       }
 
-      if (ach.hintView && !done && !locked) {
+      if (ach.hintView && !done && !locked && !ready) {
         const go = document.createElement('button');
         go.type = 'button';
         go.className = 'btn btn-small btn-muted quest-go';
@@ -3693,10 +3717,15 @@ export function renderOptions(game, el) {
     const step1 = confirm('Réinitialiser la partie ? Toute ta progression sera effacée et tu recommenceras à zéro.');
     if (!step1) return;
     game.resetSave();
+    const wipe = await game.wipeCloudAfterReset?.();
+    if (wipe && wipe.ok === false) {
+      hint(wipe.reason || 'Reset local OK, mais le cloud n’a pas pu être écrasé — reconnecte-toi.');
+    } else {
+      hint('Partie réinitialisée (local + cloud).');
+    }
     await reconcileAuthAfterLocalReset(game);
     showCareerChoiceIfNeeded(game);
     emit('navRefresh');
-    hint('Partie réinitialisée.');
   });
 
   el.querySelector('#options-delete-account')?.addEventListener('click', async () => {

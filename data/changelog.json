@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "buildId": "20260728-1500",
+      "date": "2026-07-28",
+      "title": "Succès à récupérer, reset fiable, poulailler après outilleur",
+      "highlights": [
+        "Succès : plus de validation auto — bouton Récupérer + pastille rose sur Succès",
+        "Récompenses (Kirha, etc.) affichées sur chaque succès",
+        "Poulailler débloqué seulement après l’Outilleur",
+        "Reset partie : écrase aussi la save cloud (plus de retour en arrière au reload)",
+        "Admin : saison, nombre de resets, dernier reset, temps de jeu conservé"
+      ]
+    },
+    {
       "buildId": "20260728-1300",
       "date": "2026-07-28",
       "title": "Progression en anneau, ferme Refaire, saison corrigée",
