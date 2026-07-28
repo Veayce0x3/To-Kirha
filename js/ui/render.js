@@ -847,8 +847,19 @@ export function initUI(game, audio) {
   on('farmBlocked', ({ message }) => {
     showToast(els, message || 'Impossible de produire', 'sell');
   });
-  on('mealUsed', ({ mealName, healed, hp, maxHp }) => {
+  on('mealUsed', ({ mealName, healed, hp, maxHp, buff, label, companions }) => {
+    if (buff) {
+      showToast(els, `⚗️ ${mealName} : ${label || 'buff actif'}`, 'upgrade');
+      return;
+    }
+    if (companions) {
+      showToast(els, `🐟 ${mealName} : +${healed} PV équipiers`, 'upgrade');
+      return;
+    }
     showToast(els, `🍙 ${mealName} : +${healed} PV (${hp}/${maxHp})`, 'upgrade');
+  });
+  on('toolRepaired', ({ itemName, toolName, gained, remaining, max }) => {
+    showToast(els, `🔧 ${itemName} : ${toolName} +${gained} (${remaining}/${max})`, 'upgrade');
   });
   on('farmComplete', (outcome) => {
     const { buildingId, products, animalExpired, animalName, levelResult } = outcome || {};

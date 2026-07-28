@@ -120,7 +120,7 @@ export function evaluateAchievementProgress(achievement, state, recipes) {
       })) return 1;
       // Rétrocompat : repas déjà en inventaire avant le correctif
       return Object.keys(state.inventory || {}).some(
-        (id) => id.startsWith('meal_') && (state.inventory[id] || 0) > 0
+        (id) => (id.startsWith('meal_') || id.startsWith('elixir_')) && (state.inventory[id] || 0) > 0
       ) ? 1 : 0;
     }
     case 'combat_kills':

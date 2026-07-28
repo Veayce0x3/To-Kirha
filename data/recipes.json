@@ -1617,7 +1617,12 @@
     "craftJob": "toolmaker",
     "requiredJobLevel": 8,
     "jobXp": 40,
-    "toolKind": "cuisine_kit"
+    "toolKind": "cuisine_kit",
+    "effect": {
+      "type": "speed",
+      "job": "baker",
+      "bonus": 0.08
+    }
   },
   "recipe_couteau_poisson": {
     "id": "recipe_couteau_poisson",
@@ -1636,7 +1641,12 @@
     "craftJob": "toolmaker",
     "requiredJobLevel": 14,
     "jobXp": 48,
-    "toolKind": "cuisine_kit"
+    "toolKind": "cuisine_kit",
+    "effect": {
+      "type": "speed",
+      "job": "fishmonger",
+      "bonus": 0.08
+    }
   },
   "recipe_mortier_alambic": {
     "id": "recipe_mortier_alambic",
@@ -1655,6 +1665,11 @@
     "craftJob": "toolmaker",
     "requiredJobLevel": 18,
     "jobXp": 55,
-    "toolKind": "cuisine_kit"
+    "toolKind": "cuisine_kit",
+    "effect": {
+      "type": "speed",
+      "job": "chemist",
+      "bonus": 0.08
+    }
   }
 }

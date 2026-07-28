@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "buildId": "20260728-2315",
+      "date": "2026-07-28",
+      "title": "Cuisine complète : effets, sac, kits",
+      "highlights": [
+        "Élixirs, soins équipiers et buffs combat pleinement utilisables hors combat",
+        "Pierre à aiguiser / huile d’entretien réparent l’outil de récolte équipé",
+        "Sac & Combat : boutons adaptés (soigner / équipiers / boire / réparer) + bannière de buff",
+        "Kits cuisine équipables à l’Outilleur (rouleau, couteau, mortier)",
+        "Buff élixir consommé combat par combat (plus d’effacement brutal en victoire/échec)"
+      ]
+    },
+    {
       "buildId": "20260728-2230",
       "date": "2026-07-28",
       "title": "Cuisine : Boulanger, Poissonnier, Chimiste",

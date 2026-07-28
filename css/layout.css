@@ -5517,6 +5517,15 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
     linear-gradient(180deg, rgba(255, 253, 249, 0.96), rgba(248, 232, 238, 0.72));
 }
 
+.combat-buff-banner {
+  margin: 0.45rem 0 0.65rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+  background: rgba(155, 89, 182, 0.12);
+  color: #5b3570;
+  font-weight: 600;
+}
+
 .combat-heal-head {
   display: flex;
   align-items: flex-start;

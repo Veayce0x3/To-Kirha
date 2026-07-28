@@ -27,7 +27,14 @@ import {
   getResourcesForJob,
   getJobLevel,
 } from '../systems/zones.js';
-import { migrateToolDurability, wearToolsForHarvest, canUpgradeTool, upgradeTool } from '../systems/toolDurability.js';
+import {
+  migrateToolDurability,
+  wearToolsForHarvest,
+  canUpgradeTool,
+  upgradeTool,
+  repairToolUses,
+  isDurabilityTool,
+} from '../systems/toolDurability.js';
 import { getVendorOffer, canBuyOffer, buyOffer, canSellOffer, sellOffer } from '../systems/merchant.js';
 import { getAideCost } from '../systems/passive.js';
 import { applyOfflineProgress } from '../systems/offline.js';
@@ -191,7 +198,7 @@ import {
   applyCompanionNickname,
   getCompanionDisplayName,
 } from '../systems/companions.js';
-import { equip, unequip, unequipGathering, canEquip, migrateEquipment, getDefaultEquipment } from '../systems/equipment.js';
+import { equip, unequip, unequipGathering, canEquip, migrateEquipment, getDefaultEquipment, getJobEquippedTool } from '../systems/equipment.js';
 import {
   ensureFarmSlots,
   startFarmProduction,
@@ -210,7 +217,16 @@ import {
 } from '../systems/farm.js';
 import { getFarmToolCheck, getHarvestToolCheck, ensureHarvestToolEquipped } from '../systems/toolTier.js';
 import { migrateCombatDurability } from '../systems/combatDurability.js';
-import { clearCombatMealBuff, listOwnedMeals, peekMealHeal, consumeMealFromInventory, calcMealHealAmount, applyCombatMealBuff, getMealRole } from '../systems/consumables.js';
+import {
+  clearCombatMealBuff,
+  consumeCombatMealBuffFight,
+  listOwnedMeals,
+  peekMealHeal,
+  consumeMealFromInventory,
+  calcMealHealAmount,
+  applyCombatMealBuff,
+  getMealRole,
+} from '../systems/consumables.js';
 import {
   STARTER_WEAPON_CHOICES,
   STARTER_WEAPON_TYPES,
@@ -677,6 +693,11 @@ export class Game {
 
     autoEquipIfEmpty(recipeId, ctx);
 
+    const craftJob = result.recipe?.craftJob;
+    if (craftJob === 'baker' || craftJob === 'fishmonger' || craftJob === 'chemist' || craftJob === 'cook') {
+      wearToolsForHarvest(this.state, this.recipes, this.equipment, craftJob === 'cook' ? 'baker' : craftJob);
+    }
+
     emit('craft', {
       recipeId,
       recipe: result.recipe,
@@ -757,7 +778,7 @@ export class Game {
     void zoneId;
     if (!this.state.stats) this.state.stats = {};
     this.state.stats.combatFights = (this.state.stats.combatFights || 0) + 1;
-    clearCombatMealBuff(this.state);
+    consumeCombatMealBuffFight(this.state);
     this.processAchievements();
   }
 
@@ -1199,7 +1220,7 @@ export class Game {
       if (result.levelResult) emit('charLevelUp', result.levelResult);
       this.scheduleSave();
     } else if (result.victory === false) {
-      clearCombatMealBuff(this.state);
+      consumeCombatMealBuffFight(this.state);
       emit('combatFail', result);
       this.scheduleSave();
     } else {
@@ -1285,6 +1306,69 @@ export class Game {
     emit('stateChange', this.state);
     this.scheduleSave();
     return { ok: true, healed: newHp - currentHp, hp: newHp, maxHp };
+  }
+
+  useToolRepairItem(itemId) {
+    const res = this.resources[itemId];
+    const amount = Number(res?.toolRepair) || 0;
+    if (!amount) return { ok: false, reason: 'Objet invalide' };
+    if ((this.state.inventory[itemId] || 0) < 1) return { ok: false, reason: 'Plus de stock' };
+
+    const gatherJobs = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist', 'breeder'];
+    const ordered = [];
+    for (const jobId of gatherJobs) {
+      if (jobId === 'breeder') {
+        const bucket = getJobEquippedTool(this.state, 'breeder', 'bucket');
+        const basket = getJobEquippedTool(this.state, 'breeder', 'basket');
+        if (bucket) ordered.push(bucket);
+        if (basket) ordered.push(basket);
+      } else {
+        const toolId = getJobEquippedTool(this.state, jobId);
+        if (toolId) ordered.push(toolId);
+      }
+    }
+    for (const recipeId of this.state.crafted || []) {
+      if (!ordered.includes(recipeId)) ordered.push(recipeId);
+    }
+
+    for (const recipeId of ordered) {
+      const recipe = this.recipes[recipeId];
+      if (!isDurabilityTool(recipe)) continue;
+      const meta = this.equipment?.equipable?.[recipeId];
+      const job = meta?.job;
+      if (job && !gatherJobs.includes(job)) continue;
+      if (meta?.slot === 'accessory' && (job === 'baker' || job === 'fishmonger' || job === 'chemist' || job === 'cook')) {
+        continue;
+      }
+
+      const repaired = repairToolUses(this.state, recipeId, amount, recipe);
+      if (!repaired.ok || repaired.gained <= 0) continue;
+
+      this.state.inventory[itemId] -= 1;
+      if (this.state.inventory[itemId] <= 0) delete this.state.inventory[itemId];
+
+      const toolName = recipe.name || recipeId;
+      const itemName = res.name || itemId;
+      emit('toolRepaired', {
+        itemName,
+        toolName,
+        gained: repaired.gained,
+        remaining: repaired.after,
+        max: repaired.max,
+      });
+      emit('stateChange', this.state);
+      this.scheduleSave();
+      return {
+        ok: true,
+        recipeId,
+        gained: repaired.gained,
+        remaining: repaired.after,
+        max: repaired.max,
+        toolName,
+      };
+    }
+
+    return { ok: false, reason: 'Aucun outil de récolte à réparer (déjà au max ou aucun crafté)' };
   }
 
   getFarmBuildingNavStatus(buildingId) {
@@ -1953,7 +2037,7 @@ export class Game {
       if (result.levelResult) emit('charLevelUp', result.levelResult);
       this.scheduleSave();
     } else if (result.victory === false) {
-      clearCombatMealBuff(this.state);
+      consumeCombatMealBuffFight(this.state);
       emit('combatFail', result);
       this.scheduleSave();
     } else {
@@ -1970,7 +2054,7 @@ export class Game {
     if (!result) return null;
 
     if (result.victory === false) {
-      clearCombatMealBuff(this.state);
+      consumeCombatMealBuffFight(this.state);
       emit('combatFail', result);
       this.scheduleSave();
     } else if (result.cleared) {
@@ -1997,7 +2081,7 @@ export class Game {
       if (result.levelResult) emit('charLevelUp', result.levelResult);
       this.scheduleSave();
     } else if (result.victory === false) {
-      clearCombatMealBuff(this.state);
+      consumeCombatMealBuffFight(this.state);
       emit('combatFail', result);
       this.scheduleSave();
     } else {

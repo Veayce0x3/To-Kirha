@@ -138,6 +138,23 @@ export function getEffectiveMaxUses(state, recipe, recipeId = null) {
   return base + (Number.isFinite(bonus) && bonus > 0 ? bonus : 0);
 }
 
+/** Ajoute des usages à un outil à durabilité (plafond = maxUses effectif). */
+export function repairToolUses(state, recipeId, amount, recipe = null) {
+  const add = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!recipeId || add <= 0) return { ok: false, reason: 'Outil invalide' };
+  if (!state.toolDurability) state.toolDurability = {};
+  const max = getEffectiveMaxUses(state, recipe, recipeId) || recipe?.maxUses || 0;
+  if (!max) return { ok: false, reason: 'Cet outil n’a pas de durabilité' };
+  const current = state.toolDurability[recipeId];
+  const before = current === undefined ? max : Math.max(0, Number(current) || 0);
+  const next = Math.min(max, before + add);
+  state.toolDurability[recipeId] = next;
+  if (!(state.crafted || []).includes(recipeId)) {
+    state.crafted = [...(state.crafted || []), recipeId];
+  }
+  return { ok: true, before, after: next, gained: next - before, max, recipeId };
+}
+
 /** Coût d’amélioration saisonnière (Kirha + ressources de la recette). */
 export function getToolUpgradeCost(recipe, balance) {
   const cfg = balance?.toolSeasonUpgrade || {};

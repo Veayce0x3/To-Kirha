@@ -33,7 +33,7 @@ Onboarding (arme) → Paysan seul → déblocages progressifs
 ## Progression (3 axes)
 
 1. **Personnage** — XP combat, stats, équipement, plafond saison
-2. **Métiers** — récolte progressive + éleveur + Outilleur + Cuisinier
+2. **Métiers** — récolte progressive + éleveur + Outilleur + Cuisine (3 métiers)
 3. **Économie** — Kirha, zones, succès, Renaissance
 
 ### Saisons
@@ -50,17 +50,18 @@ Onboarding (arme) → Paysan seul → déblocages progressifs
 | Récolte (5) | Bûcheron, Pêcheur, Mineur, Paysan, Alchimiste — **2 choisis** |
 | Ferme | Éleveur — 6 bâtiments, **2 choisis** + Puits |
 | Atelier | **Outilleur** (outils) + onglet **🔮 Fusion** (équipement combat) |
-| Cuisine | **Cuisinier** — repas obligatoires pour les donjons |
+| Cuisine | **Boulanger** (soin héros), **Poissonnier** (soin équipiers), **Chimiste** (élixirs) |
 
 - Recettes `combatItem` : **non craftables** — drops combat + fusion uniquement
-- `isAllowedCraftRecipe` : `toolmaker` \| `cook` seulement
+- `isAllowedCraftRecipe` : `toolmaker` \| `baker` \| `fishmonger` \| `chemist`
 - **Retiré de l'UI** : Forgeron, Sculpteur, Armurier, Tailleur, Cordonnier, Bijoutier (données JSON conservées pour sets / drops)
 
 ## Cuisine (pilier donjon)
 
-- Repas par paliers de niveau perso — soin **% PV max** en combat
-- **Toutes les recettes** : Parchemins des Anciens + Kirha + ingrédients multi-métiers/ferme
-- Consommation : menu **Objets** en combat **ou** Sac / Banque hors combat
+- 3 métiers : Boulanger / Poissonnier / Chimiste — recettes sur le tableau de ressources existant
+- Repas par paliers de niveau perso — soin **% PV max** (héros ou équipiers) hors combat / en combat
+- Élixirs : buff ATQ/DEF pour N combats (à boire hors combat)
+- Outilleur : pierre à aiguiser / huile + kits cuisine équipables
 - Sans repas → donjon très difficile
 
 ## Combat & donjon

@@ -62,7 +62,7 @@
     "order": 5,
     "category": "season_1",
     "title": "Premier repas",
-    "description": "Craft un repas à la Cuisine.",
+    "description": "Craft un repas ou un élixir à la Cuisine.",
     "type": "craft_meal",
     "target": 1,
     "requires": {
@@ -71,6 +71,36 @@
     "rewardBonus": {
       "xp": 0.02
     },
+    "hintView": "cuisine"
+  },
+  "ach_s1_baker_5": {
+    "id": "ach_s1_baker_5",
+    "order": 5.1,
+    "category": "season_1",
+    "title": "Four chaud",
+    "description": "Atteins Boulanger Nv.5.",
+    "type": "job_level",
+    "jobId": "baker",
+    "target": 5,
+    "requires": {
+      "achievementId": "ach_s1_first_meal"
+    },
+    "rewardKirha": 60,
+    "hintView": "cuisine"
+  },
+  "ach_s1_fishmonger_1": {
+    "id": "ach_s1_fishmonger_1",
+    "order": 5.2,
+    "category": "season_1",
+    "title": "Étal du poissonnier",
+    "description": "Craft un plat du Poissonnier.",
+    "type": "craft_job",
+    "jobId": "fishmonger",
+    "target": 1,
+    "requires": {
+      "achievementId": "ach_s1_baker_5"
+    },
+    "rewardKirha": 80,
     "hintView": "cuisine"
   },
   "ach_s1_combat_5": {

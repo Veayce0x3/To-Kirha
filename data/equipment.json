@@ -271,6 +271,21 @@
       "recipeId": "wisteria_ready_gloves",
       "slot": "weapon",
       "job": "alchemist"
+    },
+    "recipe_rouleau_patisserie": {
+      "recipeId": "recipe_rouleau_patisserie",
+      "slot": "accessory",
+      "job": "baker"
+    },
+    "recipe_couteau_poisson": {
+      "recipeId": "recipe_couteau_poisson",
+      "slot": "accessory",
+      "job": "fishmonger"
+    },
+    "recipe_mortier_alambic": {
+      "recipeId": "recipe_mortier_alambic",
+      "slot": "accessory",
+      "job": "chemist"
     }
   }
 }

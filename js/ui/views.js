@@ -30,7 +30,7 @@ import { getCombatItemPreview, getItemLevel, getWeaponRolePreview, renderDurabil
 import { isDurabilityTool, canUpgradeTool, isToolUpgraded, getToolUpgradeCost, formatToolUpgradeCost } from '../systems/toolDurability.js';
 import { emit } from '../core/events.js';
 import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, getPrimaryFeedId, listFeedOptions, FARM_BUILDING_LABELS } from '../systems/farm.js';
-import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consumables.js';
+import { listOwnedMeals, countOwnedMeals, getMealEffect, getActiveCombatMealBuff } from '../systems/consumables.js';
 import { RARITY_LABELS, RARITY_EMOJI, getInstanceRarity, getNextRarity } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId } from '../systems/dungeonKeys.js';
@@ -1150,7 +1150,7 @@ function renderCharBagTab(game, panel) {
       <span class="bank-total" id="char-bag-total"></span>
     </div>
     <div class="inventory-grid" id="char-bag-grid"></div>
-    <p class="view-desc bag-hint">Repas : bouton <strong>Se soigner</strong> si PV bas. Équipement droppé : bouton <strong>Équiper</strong>.</p>
+    <p class="view-desc bag-hint">Repas / élixirs : soigner, soigner équipiers ou boire un buff. Pierre / huile : réparer un outil de récolte.</p>
   `;
   panel.querySelectorAll('.bag-filter-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -1166,23 +1166,87 @@ function renderCharBagTab(game, panel) {
 }
 
 function getInventoryMealInfo(game, resourceId) {
-  if (!resourceId.startsWith('meal_')) return null;
+  const resource = game.resources[resourceId];
+  if (!resource) return null;
+
+  const repairAmount = Number(resource.toolRepair) || 0;
+  if (repairAmount > 0) {
+    const inCombat = !!game.state.combatEncounter;
+    const canUse = !inCombat;
+    return {
+      kind: 'repair',
+      effect: { label: `+${repairAmount} usages outil`, mealRole: 'repair' },
+      maxHp: 0,
+      currentHp: 0,
+      levelOk: true,
+      inCombat,
+      canHeal: canUse,
+      actionLabel: canUse ? 'Réparer' : 'En combat',
+      disabledReason: inCombat ? 'Utilisable hors combat uniquement.' : '',
+      repairAmount,
+    };
+  }
+
+  if (!resourceId.startsWith('meal_') && !resourceId.startsWith('elixir_') && !resource.mealTier && resource.mealRole !== 'buff') {
+    return null;
+  }
   const effect = getMealEffect(resourceId, game.resources, game.balance);
   if (!effect) return null;
 
   const charLevel = game.state.character?.level || 1;
+  const role = effect.mealRole || 'hero';
   const maxHp = game.getCharacterStats().hp;
   const storedHp = game.state.combatWear?.solo?.hero;
   const currentHp = storedHp != null ? storedHp : maxHp;
   const levelOk = charLevel >= effect.levelMin && charLevel <= effect.levelMax;
   const inCombat = !!game.state.combatEncounter;
-  const canHeal = levelOk && !inCombat && currentHp < maxHp;
-  let disabledReason = '';
-  if (inCombat) disabledReason = 'En combat, utilise le menu Objets.';
-  else if (!levelOk) disabledReason = `Réservé aux persos niv. ${effect.levelMin}–${effect.levelMax}.`;
-  else if (currentHp >= maxHp) disabledReason = 'PV déjà au maximum.';
 
-  return { effect, maxHp, currentHp, levelOk, inCombat, canHeal, disabledReason };
+  let canHeal = false;
+  let disabledReason = '';
+  let actionLabel = 'Se soigner';
+
+  if (inCombat) {
+    disabledReason = 'En combat, utilise le menu Objets.';
+  } else if (!levelOk) {
+    disabledReason = `Réservé aux persos niv. ${effect.levelMin}–${effect.levelMax}.`;
+  } else if (role === 'buff') {
+    canHeal = true;
+    actionLabel = 'Boire';
+  } else if (role === 'companions') {
+    actionLabel = 'Soigner équipiers';
+    const companionIds = Object.keys(game.companions || {}).filter((id) => game.state.companions?.[id]?.unlocked);
+    if (!companionIds.length) {
+      disabledReason = 'Aucun équipier recruté.';
+    } else {
+      let needs = false;
+      for (const id of companionIds) {
+        const stats = game.getCompanionStatsFor?.(id);
+        const cMax = stats?.hp || 1;
+        const cur = game.state.combatWear?.solo?.[id] != null ? game.state.combatWear.solo[id] : cMax;
+        if (cur < cMax) {
+          needs = true;
+          break;
+        }
+      }
+      canHeal = needs;
+      if (!needs) disabledReason = 'Équipiers déjà au maximum de PV.';
+    }
+  } else {
+    canHeal = currentHp < maxHp;
+    if (currentHp >= maxHp) disabledReason = 'PV déjà au maximum.';
+  }
+
+  return {
+    kind: role === 'buff' ? 'buff' : role === 'companions' ? 'companions' : 'hero',
+    effect,
+    maxHp,
+    currentHp,
+    levelOk,
+    inCombat,
+    canHeal,
+    actionLabel,
+    disabledReason,
+  };
 }
 
 export function refreshCharacterCombatPanels(game) {
@@ -1397,23 +1461,25 @@ function renderCharJobsTab(game, panel) {
     jobsEl.appendChild(row);
   }
 
-  const cuisineJob = game.getCuisineJob?.();
+  const cuisineJobs = game.getCuisineJobs?.() || [];
   const cuisineEl = panel.querySelector('#char-cuisine-job');
-  if (cuisineJob && cuisineEl) {
-    const prog = game.getJobProgress(cuisineJob.id);
-    const pct = (prog.xp / prog.needed) * 100;
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'job-row job-row-link';
-    const jobLead = cuisineJob.icon
-      ? iconHtml(cuisineJob.icon, 'job-row-icon', cuisineJob.name)
-      : `<span class="job-row-emoji">${cuisineJob.emoji}</span>`;
-    row.innerHTML = `
-      <span>${jobLead} ${cuisineJob.name} <strong>Nv.${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}</strong></span>
-      <div class="xp-bar-container"><div class="xp-bar" style="width:${pct}%"></div></div>
-    `;
-    row.addEventListener('click', () => navigate('cuisine'));
-    cuisineEl.appendChild(row);
+  if (cuisineEl) {
+    for (const cuisineJob of cuisineJobs) {
+      const prog = game.getJobProgress(cuisineJob.id);
+      const pct = (prog.xp / prog.needed) * 100;
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'job-row job-row-link';
+      const jobLead = cuisineJob.icon
+        ? iconHtml(cuisineJob.icon, 'job-row-icon', cuisineJob.name)
+        : `<span class="job-row-emoji">${cuisineJob.emoji}</span>`;
+      row.innerHTML = `
+        <span>${jobLead} ${cuisineJob.name} <strong>Nv.${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}</strong></span>
+        <div class="xp-bar-container"><div class="xp-bar" style="width:${pct}%"></div></div>
+      `;
+      row.addEventListener('click', () => navigate('cuisine'));
+      cuisineEl.appendChild(row);
+    }
   }
 }
 
@@ -3473,14 +3539,18 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
       const healBtn = document.createElement('button');
       healBtn.type = 'button';
       healBtn.className = `inventory-meal-heal-btn${mealInfo.canHeal ? ' affordable' : ''}`;
-      healBtn.textContent = mealInfo.canHeal ? 'Se soigner' : 'PV max';
+      healBtn.textContent = mealInfo.canHeal
+        ? (mealInfo.actionLabel || 'Utiliser')
+        : (mealInfo.kind === 'hero' ? 'PV max' : mealInfo.actionLabel || 'Indispo');
       healBtn.disabled = !mealInfo.canHeal;
-      healBtn.title = mealInfo.disabledReason || `Soigne ${mealInfo.effect.label}`;
+      healBtn.title = mealInfo.disabledReason || mealInfo.effect?.label || '';
       healBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const result = game.useInventoryMeal(id);
+        const result = mealInfo.kind === 'repair'
+          ? game.useToolRepairItem(id)
+          : game.useInventoryMeal(id);
         if (!result.ok) {
-          emit('farmBlocked', { message: result.reason || 'Impossible de consommer ce repas' });
+          emit('farmBlocked', { message: result.reason || 'Impossible d’utiliser cet objet' });
           return;
         }
         refreshInventoryPanels(game);
@@ -3556,8 +3626,17 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
     const levelNote = mealInfo.levelOk
       ? ''
       : ` · Réservé aux persos niv. ${mealEffect.levelMin}–${mealEffect.levelMax}`;
-    const hpNote = mealInfo.maxHp > 0 ? ` · PV entraînement : ${mealInfo.currentHp}/${mealInfo.maxHp}` : '';
-    compareHtml = `<p class="item-stat-compare">Repas : ${mealEffect.label}${levelNote}${hpNote}</p>`;
+    const hpNote = mealInfo.kind === 'hero' && mealInfo.maxHp > 0
+      ? ` · PV entraînement : ${mealInfo.currentHp}/${mealInfo.maxHp}`
+      : '';
+    const kindLabel = mealInfo.kind === 'repair'
+      ? 'Entretien'
+      : mealInfo.kind === 'buff'
+        ? 'Élixir'
+        : mealInfo.kind === 'companions'
+          ? 'Repas équipiers'
+          : 'Repas';
+    compareHtml = `<p class="item-stat-compare">${kindLabel} : ${mealEffect.label}${levelNote}${hpNote}</p>`;
   }
 
   const sellActions = notSellable
@@ -3577,7 +3656,7 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
     ${notSellable ? '' : `<p>Prix unitaire : ${formatNumber(unitPrice)} 💰${bonusTagHtml(getSeasonBonusPercents(game.state).kirhaPct)}${isProtected ? ' · <span class="item-pinned-badge">Épinglé</span>' : ''}</p>`}
     ${compareHtml}
     <div class="modal-item-actions">
-      ${mealEffect ? `<button type="button" class="btn btn-craft" id="modal-consume-meal" ${mealInfo.canHeal ? '' : 'disabled'} title="${mealInfo.disabledReason || ''}">🍙 Se soigner</button>` : ''}
+      ${mealEffect ? `<button type="button" class="btn btn-craft" id="modal-consume-meal" ${mealInfo.canHeal ? '' : 'disabled'} title="${mealInfo.disabledReason || ''}">${mealInfo.actionLabel || 'Utiliser'}</button>` : ''}
       ${sellActions}
       ${recipe && isCrafted && !isEquipped ? '<button class="btn btn-craft" id="modal-equip">Équiper</button>' : ''}
       <button class="btn btn-muted" id="modal-close">Fermer</button>
@@ -3619,9 +3698,11 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
     modal.classList.remove('active');
   });
   body.querySelector('#modal-consume-meal')?.addEventListener('click', () => {
-    const result = game.useInventoryMeal(resourceId);
+    const result = mealInfo?.kind === 'repair'
+      ? game.useToolRepairItem(resourceId)
+      : game.useInventoryMeal(resourceId);
     if (!result.ok) {
-      emit('farmBlocked', { message: result.reason || 'Impossible de consommer ce repas' });
+      emit('farmBlocked', { message: result.reason || 'Impossible d’utiliser cet objet' });
       return;
     }
     modal.classList.remove('active');
@@ -3888,6 +3969,17 @@ function renderCombat(game, el) {
     });
   });
 
+  el.querySelectorAll('[data-tool-repair]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const result = game.useToolRepairItem(btn.dataset.toolRepair);
+      if (!result.ok) {
+        emit('farmBlocked', { message: result.reason || 'Impossible de réparer' });
+        return;
+      }
+      renderCombat(game, el);
+    });
+  });
+
   el.querySelectorAll('[data-combat-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
       combatTab = normalizeCombatTab(btn.dataset.combatTab);
@@ -4100,32 +4192,50 @@ function renderOutOfCombatHealPanel(game) {
   const currentHp = game.state.combatWear?.solo?.hero ?? maxHp;
   const hpPct = maxHp > 0 ? Math.max(0, Math.min(100, (currentHp / maxHp) * 100)) : 100;
   const meals = listOwnedMeals(game.state, game.resources, game.balance);
-  const needsHeal = currentHp < maxHp;
+  const repairItems = Object.entries(game.state.inventory || {})
+    .filter(([id, qty]) => qty > 0 && Number(game.resources[id]?.toolRepair) > 0)
+    .map(([id, qty]) => ({ id, qty, amount: Number(game.resources[id].toolRepair) }));
+  const buff = getActiveCombatMealBuff(game.state);
   const hpState = hpPct <= 25 ? ' danger' : hpPct <= 50 ? ' warn' : '';
 
   const mealButtons = meals.length
     ? meals.map((meal) => {
       const res = game.resources[meal.id];
       const preview = getInventoryMealInfo(game, meal.id);
+      const usable = !!preview?.canHeal;
       return `
-        <button type="button" class="btn btn-small combat-heal-meal${preview?.canHeal ? ' affordable' : ''}" data-inventory-meal="${meal.id}" ${preview?.canHeal ? '' : 'disabled'} title="${preview?.disabledReason || meal.effect.label}">
+        <button type="button" class="btn btn-small combat-heal-meal${usable ? ' affordable' : ''}" data-inventory-meal="${meal.id}" ${usable ? '' : 'disabled'} title="${preview?.disabledReason || meal.effect.label}">
           ${res?.emoji || '🍙'} ${res?.name || meal.id} · ×${meal.qty} · ${meal.effect.label}
         </button>
       `;
     }).join('')
-    : '<p class="empty-text">Aucun repas en stock. Prépare-en à la Cuisine pour récupérer entre deux entraînements.</p>';
+    : '<p class="empty-text">Aucun repas / élixir en stock. Prépare-en à la Cuisine.</p>';
+
+  const repairButtons = repairItems.map((item) => {
+    const res = game.resources[item.id];
+    return `
+      <button type="button" class="btn btn-small combat-heal-meal affordable" data-tool-repair="${item.id}">
+        ${res?.emoji || '🔧'} ${res?.name || item.id} · ×${item.qty} · +${item.amount} usages
+      </button>
+    `;
+  }).join('');
+
+  const buffBanner = buff
+    ? `<p class="combat-buff-banner">⚡ Buff actif : ${buff.label || 'élixir'} · ${buff.fightsLeft || 1} combat(s)</p>`
+    : '';
 
   return `
     <section class="panel-inner combat-heal-panel">
       <div class="combat-heal-head">
         <div>
-          <h3>🍱 Soin hors combat</h3>
-          <p class="view-desc">Soigne tes PV d'entraînement avant de relancer un combat rapide.</p>
+          <h3>🍱 Préparation hors combat</h3>
+          <p class="view-desc">Soigne le héros / les équipiers, bois un élixir, ou répare un outil avant le prochain combat.</p>
         </div>
         <strong class="combat-heal-value${hpState}">❤️ ${currentHp}/${maxHp}</strong>
       </div>
       <div class="combat-heal-bar${hpState}"><div class="combat-heal-fill" style="width:${hpPct}%"></div></div>
-      ${needsHeal ? `<div class="combat-heal-actions">${mealButtons}</div>` : '<p class="empty-text">PV déjà au maximum.</p>'}
+      ${buffBanner}
+      <div class="combat-heal-actions">${mealButtons}${repairButtons}</div>
     </section>
   `;
 }
