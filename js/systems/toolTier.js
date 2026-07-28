@@ -139,10 +139,35 @@ export function getFarmToolKindLabel(toolKind) {
 export function getFarmToolCheck(state, recipes, equipmentData, building = null) {
   const toolKind = building?.toolKind || 'bucket';
   const kindLabel = getFarmToolKindLabel(toolKind);
-  const recipe = getGatheringToolRecipe(state, 'breeder', recipes, toolKind);
+  const recipeId = getJobEquippedTool(state, 'breeder', toolKind);
+  const recipe = recipeId ? recipes[recipeId] : null;
 
-  if (recipe) {
-    return { ok: true, recipe };
+  if (recipeId && recipe && isDurabilityTool(recipe)) {
+    const remaining = getToolUsesRemaining(state, recipeId);
+    if (remaining != null && remaining <= 0) {
+      return {
+        ok: false,
+        reason: 'broken',
+        message: `${recipe.name || kindLabel} usé — refabrique-le`,
+        recipe,
+        recipeId,
+      };
+    }
+  }
+
+  if (recipe && isToolEffectActive(state, recipeId, recipe)) {
+    const tier = getRecipeToolTier(recipe);
+    const required = building?.toolTier || 1;
+    if (tier < required) {
+      return {
+        ok: false,
+        reason: 'tier',
+        message: `Outil palier ${required} requis pour ${building?.name || 'ce bâtiment'}`,
+        recipe,
+        recipeId,
+      };
+    }
+    return { ok: true, recipe, recipeId };
   }
 
   const owned = findOwnedWorkingToolForJob(state, 'breeder', recipes, building?.toolTier || 1, toolKind);
@@ -271,6 +296,98 @@ export function getHarvestLineToolStatus(state, jobId, resource, recipes, equipm
   }
 
   const broken = findBrokenToolForResource(state, jobId, resource, recipes, resources);
+  if (broken) {
+    const max = getEffectiveMaxUses(state, broken.recipe, broken.recipeId) || broken.recipe.maxUses || 0;
+    return {
+      kind: 'broken',
+      recipeId: broken.recipeId,
+      recipe: broken.recipe,
+      remaining: 0,
+      max,
+      label: `0/${max}`,
+    };
+  }
+
+  return null;
+}
+
+/** Outil d’élevage usé (seau / panier) du palier requis. */
+export function findBrokenFarmTool(state, recipes, toolKind = 'bucket', minTier = 1) {
+  let best = null;
+  for (const recipeId of state.crafted || []) {
+    const recipe = recipes[recipeId];
+    if (!recipe || recipe.effect?.job !== 'breeder') continue;
+    if (!isDurabilityTool(recipe)) continue;
+    if (toolKind && recipe.toolKind && recipe.toolKind !== toolKind) continue;
+    const remaining = getToolUsesRemaining(state, recipeId);
+    if (remaining === null || remaining > 0) continue;
+    if (getRecipeToolTier(recipe) < minTier) continue;
+    if (!best || (recipe.name || '').localeCompare(best.recipe.name || '', 'fr') < 0) {
+      best = { recipeId, recipe };
+    }
+  }
+  return best;
+}
+
+/** Statut outil ferme pour l’UI (ok / bas / usé / à équiper + refabrication). */
+export function getFarmLineToolStatus(state, building, recipes, equipmentData) {
+  const toolKind = building?.toolKind || 'bucket';
+  const check = getFarmToolCheck(state, recipes, equipmentData, building);
+  const recipeId = getJobEquippedTool(state, 'breeder', toolKind);
+  const recipe = recipeId ? recipes[recipeId] : null;
+
+  if (recipeId && recipe && isDurabilityTool(recipe)) {
+    const remaining = getToolUsesRemaining(state, recipeId);
+    const max = getEffectiveMaxUses(state, recipe, recipeId) || recipe.maxUses;
+    if (remaining != null && remaining <= 0) {
+      return {
+        kind: 'broken',
+        recipeId,
+        recipe,
+        remaining: 0,
+        max: max || 0,
+        label: `0/${max || 0}`,
+      };
+    }
+    if (check.ok && remaining != null && max) {
+      return {
+        kind: remaining <= 3 ? 'low' : 'ok',
+        recipeId,
+        recipe,
+        remaining,
+        max,
+        label: `${remaining}/${max}`,
+      };
+    }
+  }
+
+  if (check.reason === 'not_equipped' && check.recipe && check.recipeId) {
+    const remaining = getToolUsesRemaining(state, check.recipeId);
+    const max = getEffectiveMaxUses(state, check.recipe, check.recipeId) || check.recipe.maxUses || 0;
+    return {
+      kind: 'unequipped',
+      recipeId: check.recipeId,
+      recipe: check.recipe,
+      remaining: remaining ?? max,
+      max,
+      label: remaining != null && max ? `${remaining}/${max}` : 'prêt',
+      message: check.message,
+    };
+  }
+
+  if (check.reason === 'broken' && check.recipe && check.recipeId) {
+    const max = getEffectiveMaxUses(state, check.recipe, check.recipeId) || check.recipe.maxUses || 0;
+    return {
+      kind: 'broken',
+      recipeId: check.recipeId,
+      recipe: check.recipe,
+      remaining: 0,
+      max,
+      label: `0/${max}`,
+    };
+  }
+
+  const broken = findBrokenFarmTool(state, recipes, toolKind, building?.toolTier || 1);
   if (broken) {
     const max = getEffectiveMaxUses(state, broken.recipe, broken.recipeId) || broken.recipe.maxUses || 0;
     return {

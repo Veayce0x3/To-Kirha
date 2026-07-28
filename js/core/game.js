@@ -47,6 +47,9 @@ import {
   getSeasonBoostMult,
   isSeasonBoostActive,
   getSeasonBoostRemainingMs,
+  canActivateSeasonBoost,
+  activateSeasonBoost as activateSeasonBoostState,
+  getSeasonBoostLevelCaps,
 } from '../systems/prestige.js';
 import { runSaveMigrations } from './migrations.js';
 import {
@@ -314,6 +317,8 @@ export class Game {
       season: 1,
       prestige: { kirhaBonus: 0, xpBonus: 0, jobXpBonus: 0, regrowthSpeedBonus: 0 },
       seasonBoost: null,
+      seasonBoostPending: false,
+      seasonBoostUsed: false,
       adminRevision: 0,
       adminPatchedAt: 0,
       toolUpgrades: {},
@@ -406,6 +411,8 @@ export class Game {
       seasonBoost: saved.seasonBoost && Number(saved.seasonBoost.endsAt) > Date.now()
         ? { endsAt: Number(saved.seasonBoost.endsAt) }
         : null,
+      seasonBoostPending: !!saved.seasonBoostPending,
+      seasonBoostUsed: !!saved.seasonBoostUsed,
       adminRevision: Math.max(0, Math.floor(Number(saved.adminRevision) || 0)),
       adminPatchedAt: Math.max(0, Number(saved.adminPatchedAt) || 0),
       toolUpgrades: saved.toolUpgrades && typeof saved.toolUpgrades === 'object'
@@ -1972,14 +1979,63 @@ export class Game {
     );
     const season = newState.season;
     this.state = this.mergeState(newState);
+
+    // Ceinture + bretelles : mergeState / migrations / cloud ne doivent pas ressusciter la progression
+    this.state.inventory = this.buildDefaultInventory();
+    this.state.jobs = this.buildDefaultJobs();
+    this.state.character = {
+      ...(this.state.character || {}),
+      level: 1,
+      xp: 0,
+    };
+    this.state.crafted = [];
+    this.state.toolDurability = {};
+    this.state.farmBuildingMeta = {};
+    this.state.farmSlots = {};
+    this.state.purchasedFarmSlots = {};
+    this.state.purchasedSlots = {};
+    this.state.harvestSlots = {};
+    this.state.productionLines = { harvest: {}, farm: {} };
+    this.state.bankProtected = [];
+    this.state.aides = {};
+    this.state.bossKills = {};
+    this.state.combatKillStats = {};
+    this.state.ownedCombatItems = [];
+    this.state.combatItemInstances = [];
+    this.state.seasonBoost = null;
+    this.state.seasonBoostPending = true;
+    this.state.seasonBoostUsed = false;
+    this.state.stats = { totalHarvests: 0, totalEarned: 0, passiveHarvests: 0, activeHarvests: 0 };
+    this.state.unlockedZones = ['village_sakura'];
+    this.state.zone = 'village_sakura';
+    this.state.lastOnline = Date.now();
+
     this.passiveAccum = {};
 
     ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
 
     emit('prestige', { season, prestige: this.state.prestige });
     emit('stateChange', this.state);
-    this.scheduleSave();
+    // Sauvegarde immédiate pour gagner le merge cloud (évite de recharger l’ancienne saison)
+    this.flushSave().catch(() => {});
     return true;
+  }
+
+  canActivateSeasonBoost() {
+    return canActivateSeasonBoost(this.state, this.balance);
+  }
+
+  activateSeasonBoost() {
+    const result = activateSeasonBoostState(this.state, this.balance);
+    if (!result.ok) return result;
+    emit('seasonBoostActivated', { endsAt: result.endsAt });
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return result;
+  }
+
+  getSeasonBoostLevelCaps() {
+    return getSeasonBoostLevelCaps(this.balance);
   }
 
   getPrestigeInfo() {

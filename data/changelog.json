@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260728-1300",
+      "date": "2026-07-28",
+      "title": "Progression en anneau, ferme Refaire, saison corrigée",
+      "highlights": [
+        "Barre de récolte/ferme : progression qui fait le tour du carré",
+        "Bouton Refaire aussi sur les métiers de ferme (seau/panier usés)",
+        "Nouvelle saison : inventaire et niveaux bien remis à zéro (plus d’écrasement cloud)",
+        "Boost ×2 : à activer quand tu veux (tant que perso et métiers ≤ Nv.10)"
+      ]
+    },
+    {
       "buildId": "20260727-2230",
       "date": "2026-07-27",
       "title": "Admin simplifié & animations légères",

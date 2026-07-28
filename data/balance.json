@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 41,
-  "appBuildId": "20260727-2230",
+  "appBuildId": "20260728-1300",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -306,6 +306,8 @@
     "requireQuestsChapter": null,
     "requireAtSeasonCap": false,
     "seasonBoostMs": 3600000,
+    "seasonBoostMaxCharLevel": 10,
+    "seasonBoostMaxJobLevel": 10,
     "seasonRequirements": {
       "1": {
         "minCharacterLevel": 10,

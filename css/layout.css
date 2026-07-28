@@ -129,6 +129,21 @@
   font-size: 0.88rem;
 }
 
+.season-boost-ready {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
+.season-boost-ready p {
+  margin: 0;
+}
+
+.season-boost-locked {
+  opacity: 0.9;
+}
+
 .prestige-steps {
   list-style: none;
   margin: 0.5rem 0 0.75rem;
@@ -4428,20 +4443,36 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   position: absolute;
   inset: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
   border-radius: inherit;
   overflow: hidden;
+  z-index: 2;
+}
+
+.slot-progress-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 3px;
+  background: conic-gradient(
+    var(--vert-clair, #5a9a4a) calc(var(--slot-progress, 0) * 1%),
+    rgba(45, 90, 39, 0.12) 0
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  transition: background 0.2s linear;
 }
 
 .slot-progress-fill {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 4px;
-  background: var(--vert-clair);
-  transition: width 0.15s linear;
+  display: none;
 }
 
 .slot-progress-label {
@@ -4450,9 +4481,11 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   font-size: 0.68rem;
   font-weight: 700;
   text-align: center;
-  padding: 0.2rem 0.25rem;
-  background: rgba(255, 255, 255, 0.82);
+  padding: 0.2rem 0.4rem;
+  border-radius: 8px;
+  background: rgba(255, 253, 249, 0.88);
   color: var(--texte-principal);
+  max-width: 92%;
 }
 
 .production-line-section {
@@ -5085,22 +5118,6 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   pointer-events: none;
   z-index: 3;
   animation: slot-fx-float 0.7s ease-out forwards;
-}
-
-.slot-progress-overlay .slot-progress-fill {
-  transition: width 0.28s linear;
-}
-
-.harvest-slot.state-harvesting .slot-progress-fill,
-.harvest-slot.active-harvest .slot-progress-fill {
-  background-image: linear-gradient(
-    90deg,
-    rgba(74, 140, 63, 0.85) 0%,
-    rgba(232, 168, 56, 0.75) 50%,
-    rgba(74, 140, 63, 0.85) 100%
-  );
-  background-size: 200% 100%;
-  animation: slot-progress-sheen 2.4s linear infinite;
 }
 
 .view-container.view-enter {

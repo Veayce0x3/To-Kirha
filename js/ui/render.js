@@ -589,9 +589,9 @@ export function initUI(game, audio) {
     els.prestigeGains.innerHTML = `
       ${capLine}
       <div class="prestige-gain-row">✅ Conservé : compte, pseudo, succès, stats de vie, bonus %</div>
-      <div class="prestige-gain-row">🔄 Recommence : métiers, inventaire, ferme, équipe (pour aller plus loin)</div>
+      <div class="prestige-gain-row">🔄 Remis à zéro : métiers, inventaire, ferme, équipe</div>
       <div class="prestige-gain-row">💰 Départ saison : ${info.seasonStartKirha} 💰</div>
-      <div class="prestige-gain-row">⚡ Boost temporaire 1 h (puis fini) : XP ×2 · ventes ×2 · repousse ÷2</div>
+      <div class="prestige-gain-row">⚡ Boost ×2 (1 h) à activer quand tu veux (tant que Nv.≤10)</div>
       <div class="prestige-gain-row">💰 Kirha : +${info.nextBonuses.kirha.toFixed(0)}% total (+${info.gainBonuses.kirha.toFixed(0)}%/saison)</div>
       <div class="prestige-gain-row">🧘 XP perso : +${info.nextBonuses.xp.toFixed(0)}% total (+${info.gainBonuses.xp.toFixed(0)}%/saison)</div>
       <div class="prestige-gain-row">🛠️ XP métiers : +${info.nextBonuses.jobXp.toFixed(0)}% total (+${info.gainBonuses.jobXp.toFixed(0)}%/saison)</div>
@@ -892,9 +892,13 @@ export function initUI(game, audio) {
     if (xpPct > 0) bits.push(`+${xpPct}% perso`);
     if (jobXpPct > 0) bits.push(`+${jobXpPct}% métiers`);
     if (regrowthPct > 0) bits.push(`+${regrowthPct}% repousse`);
-    bits.push('boost ×2 pendant 1 h');
+    bits.push('boost ×2 à activer (Saison)');
     const bonusTxt = bits.length ? ` · ${bits.join(' · ')}` : '';
     showToast(els, `🌸 Saison ${season} !${bonusTxt}`, 'prestige');
+  });
+  on('seasonBoostActivated', () => {
+    showToast(els, '⚡ Boost ×2 activé pour 1 h', 'upgrade');
+    refreshHeader(game.state);
   });
   on('toolUpgrade', ({ recipeId }) => {
     const name = game.recipes[recipeId]?.name || 'Outil';

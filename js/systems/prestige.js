@@ -41,7 +41,7 @@ export function getMaxJobLevel(state) {
   return max;
 }
 
-/** Boost de relance 1 h après nouvelle saison (temporaire, non cumulable). */
+/** Boost de relance 1 h — activable manuellement en début de saison (≤ Nv.10). */
 export function isSeasonBoostActive(state, now = Date.now()) {
   const endsAt = Number(state?.seasonBoost?.endsAt) || 0;
   if (endsAt <= now) {
@@ -66,6 +66,48 @@ export function getSeasonBoostMult(state) {
 export function createSeasonBoost(balance, now = Date.now()) {
   const ms = balance?.prestige?.seasonBoostMs ?? 3600000;
   return { endsAt: now + ms };
+}
+
+export function getSeasonBoostLevelCaps(balance) {
+  return {
+    character: Math.max(1, Number(balance?.prestige?.seasonBoostMaxCharLevel) || 10),
+    jobs: Math.max(1, Number(balance?.prestige?.seasonBoostMaxJobLevel) || 10),
+  };
+}
+
+/**
+ * Boost ×2 activable une fois par saison, tant que perso ≤ 10 et métier max ≤ 10.
+ * @returns {{ ok: boolean, reason?: string }}
+ */
+export function canActivateSeasonBoost(state, balance) {
+  if (isSeasonBoostActive(state)) {
+    return { ok: false, reason: 'Boost déjà actif.' };
+  }
+  if (state?.seasonBoostUsed) {
+    return { ok: false, reason: 'Boost déjà utilisé pour cette saison.' };
+  }
+  if (!state?.seasonBoostPending) {
+    return { ok: false, reason: 'Disponible après une nouvelle saison.' };
+  }
+  const caps = getSeasonBoostLevelCaps(balance);
+  const charLv = Number(state?.character?.level) || 1;
+  const jobLv = getMaxJobLevel(state);
+  if (charLv > caps.character) {
+    return { ok: false, reason: `Perso au-dessus de Nv.${caps.character} — boost indisponible.` };
+  }
+  if (jobLv > caps.jobs) {
+    return { ok: false, reason: `Un métier dépasse Nv.${caps.jobs} — boost indisponible.` };
+  }
+  return { ok: true };
+}
+
+export function activateSeasonBoost(state, balance, now = Date.now()) {
+  const gate = canActivateSeasonBoost(state, balance);
+  if (!gate.ok) return gate;
+  state.seasonBoost = createSeasonBoost(balance, now);
+  state.seasonBoostPending = false;
+  state.seasonBoostUsed = true;
+  return { ok: true, endsAt: state.seasonBoost.endsAt };
 }
 
 /** Multiplicateur de stats ennemis selon la saison (S1 = 1, S2 = +12 %, …). */
@@ -437,7 +479,10 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     kirha: balance.prestige?.seasonStartKirha ?? balance.startingKirha ?? 0,
     season,
     prestige: newPrestige,
-    seasonBoost: createSeasonBoost(balance),
+    // Boost ×2 : disponible à activer manuellement (pas auto)
+    seasonBoost: null,
+    seasonBoostPending: true,
+    seasonBoostUsed: false,
     toolUpgrades: {},
     seasonHistory,
     lifetimeStats,
@@ -448,12 +493,37 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     meta: preservedMeta,
     character: {
       ...(fresh.character || { level: 1, xp: 0 }),
+      level: 1,
+      xp: 0,
       nickname: preservedNickname,
       nicknameUpdatedAt: state.character?.nicknameUpdatedAt || null,
       freeRenameUsed: !!state.character?.freeRenameUsed,
     },
     // Rechoix d’arme pour la nouvelle saison (parcours métier) — le compte reste
     careerChoice: null,
+    // Wipe explicite (évite fuites via mergeState / cloud)
+    inventory: typeof fresh.inventory === 'object' ? { ...fresh.inventory } : {},
+    jobs: typeof fresh.jobs === 'object' ? JSON.parse(JSON.stringify(fresh.jobs)) : {},
+    crafted: [],
+    toolDurability: {},
+    farmBuildingMeta: {},
+    farmSlots: {},
+    purchasedFarmSlots: {},
+    purchasedSlots: {},
+    productionLines: { harvest: {}, farm: {} },
+    bankProtected: [],
+    harvestSlots: {},
+    equipment: fresh.equipment || { weapon: null, accessory: null, jobs: {}, breederTools: {} },
+    ownedCombatItems: [],
+    combatItemInstances: [],
+    combatEquipment: fresh.combatEquipment || {},
+    aides: {},
+    bossKills: {},
+    combatKillStats: {},
+    companions: fresh.companions,
+    unlockedZones: ['village_sakura'],
+    zone: 'village_sakura',
+    stats: { totalHarvests: 0, totalEarned: 0, passiveHarvests: 0, activeHarvests: 0 },
   };
 }
 

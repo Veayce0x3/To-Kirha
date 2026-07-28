@@ -1,6 +1,6 @@
 import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats, getSkillUsesLeft, getSkillMaxUses } from '../systems/combat.js';
 import { getCraftSellBonus, getRecipeRequiredLevel } from '../systems/crafting.js';
-import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, hasSeasonBonus, getSeasonBoostMult, isSeasonBoostActive } from '../systems/prestige.js';
+import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, hasSeasonBonus, getSeasonBoostMult, isSeasonBoostActive, canActivateSeasonBoost, getSeasonBoostLevelCaps } from '../systems/prestige.js';
 import { mountCraftWorkshop } from './craftView.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
 import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped } from '../systems/equipment.js';
@@ -3566,9 +3566,22 @@ export function renderSeason(game, el) {
   const boostActive = isSeasonBoostActive(game.state);
   const boostMs = game.getSeasonBoostRemainingMs?.() || 0;
   const boostMin = Math.ceil(boostMs / 60000);
-  const boostBanner = boostActive
-    ? `<p class="season-boost-banner">⚡ Boost temporaire actif (~${boostMin} min) — XP ×2 · ventes ×2 · repousse ÷2. Ensuite le ×2 disparaît (les bonus % de saison restent).</p>`
-    : '';
+  const boostGate = canActivateSeasonBoost(game.state, game.balance);
+  const boostCaps = getSeasonBoostLevelCaps(game.balance);
+  let boostBanner = '';
+  if (boostActive) {
+    boostBanner = `<p class="season-boost-banner">⚡ Boost temporaire actif (~${boostMin} min) — XP ×2 · ventes ×2 · repousse ÷2. Ensuite le ×2 disparaît (les bonus % de saison restent).</p>`;
+  } else if (boostGate.ok) {
+    boostBanner = `
+      <div class="season-boost-banner season-boost-ready">
+        <p>⚡ Boost de relance ×2 (1 h) — active-le quand tu veux, tant que perso ≤ Nv.${boostCaps.character} et métiers ≤ Nv.${boostCaps.jobs}.</p>
+        <button type="button" class="btn btn-craft" id="season-boost-activate">Activer le boost ×2</button>
+      </div>`;
+  } else if (game.state.seasonBoostPending && !game.state.seasonBoostUsed) {
+    boostBanner = `<p class="season-boost-banner season-boost-locked">${boostGate.reason || 'Boost indisponible.'}</p>`;
+  } else if (game.state.seasonBoostUsed) {
+    boostBanner = `<p class="season-boost-banner">Boost ×2 déjà utilisé cette saison.</p>`;
+  }
 
   el.innerHTML = `
     <div class="view-header"><h2><span class="nav-emoji" aria-hidden="true">🌸</span> Nouvelle saison</h2></div>
@@ -3602,12 +3615,20 @@ export function renderSeason(game, el) {
         ? `<p class="prestige-req prestige-ready">Prêt pour la Saison ${info.nextSeason} !</p>`
         : ''}
 
-      <p class="view-desc season-reset-hint">À la nouvelle saison : métiers / inventaire / ferme / équipe repartent pour recommencer plus fort. Tu <strong>gardes</strong> compte, pseudo, succès, stats de vie et bonus permanents. Départ : ${formatNumber(game.balance.prestige?.seasonStartKirha ?? game.balance.startingKirha ?? 0)} 💰 + boost temporaire 1 h (XP/ventes ×2).</p>
+      <p class="view-desc season-reset-hint">À la nouvelle saison : métiers / inventaire / ferme / équipe repartent à zéro. Tu <strong>gardes</strong> compte, pseudo, succès, stats de vie et bonus permanents. Départ : ${formatNumber(game.balance.prestige?.seasonStartKirha ?? game.balance.startingKirha ?? 0)} 💰 + boost ×2 à activer quand tu veux (tant que Nv.≤${boostCaps.character}).</p>
       <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
     </div>
   `;
 
   el.querySelector('#prestige-btn')?.addEventListener('click', () => emitPrestigeModal());
+  el.querySelector('#season-boost-activate')?.addEventListener('click', () => {
+    const result = game.activateSeasonBoost();
+    if (!result?.ok) {
+      emit('farmBlocked', { message: result?.reason || 'Boost indisponible.' });
+      return;
+    }
+    renderSeason(game, el);
+  });
 }
 
 /* ── Options ── */

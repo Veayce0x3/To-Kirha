@@ -23,7 +23,7 @@ import {
 } from '../systems/productionLines.js';
 import { getHarvestTime, getHarvestXp } from '../systems/harvest.js';
 import { getSeasonBonusPercents } from '../systems/prestige.js';
-import { getFarmToolCheck, getHarvestLineToolStatus } from '../systems/toolTier.js';
+import { getFarmToolCheck, getHarvestLineToolStatus, getFarmLineToolStatus } from '../systems/toolTier.js';
 import { getToolUsesRemaining, isDurabilityTool, getEffectiveMaxUses } from '../systems/toolDurability.js';
 import { getJobEquippedTool } from '../systems/equipment.js';
 import { emit } from '../core/events.js';
@@ -116,7 +116,7 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
     <div class="slot-visual slot-visual-tap" role="button" tabindex="0" aria-label="${resource.name}${statusLabel ? ` — ${statusLabel}` : ''}">
       ${canHarvest ? '<span class="slot-ready-badge">Prêt</span>' : ''}
       ${spriteHtml}
-      ${active ? `<div class="slot-progress-overlay"><div class="slot-progress-fill" style="width:${progressPct}%"></div><span class="slot-progress-label">${statusLabel}</span></div>` : ''}
+      ${active ? slotProgressOverlayHtml(progressPct, statusLabel) : ''}
     </div>
     <div class="slot-tool-row"></div>
   `;
@@ -132,7 +132,7 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
       game.resources
     );
     if (status?.kind === 'broken' || status?.kind === 'unequipped') {
-      const controls = buildToolStatusControls(game, jobId, resource, () => {
+      const controls = buildToolStatusControlsFromStatus(game, status, () => {
         const viewEl = document.getElementById('view-container');
         if (viewEl) renderJobProduction(game, viewEl, jobId);
       });
@@ -175,15 +175,7 @@ function getFarmToolDurabilityLabel(game, building) {
   return `${emoji} ${remaining}/${max}`;
 }
 
-function buildToolStatusControls(game, jobId, resource, onRecrafted) {
-  const status = getHarvestLineToolStatus(
-    game.state,
-    jobId,
-    resource,
-    game.recipes,
-    game.equipment,
-    game.resources
-  );
+function buildToolStatusControlsFromStatus(game, status, onRecrafted) {
   if (!status) return null;
 
   const wrap = document.createElement('span');
@@ -234,6 +226,38 @@ function buildToolStatusControls(game, jobId, resource, onRecrafted) {
 
   wrap.innerHTML = `<span class="production-tool-dur" title="${name}">${emoji} ${status.label}</span>`;
   return wrap;
+}
+
+function buildToolStatusControls(game, jobId, resource, onRecrafted) {
+  const status = getHarvestLineToolStatus(
+    game.state,
+    jobId,
+    resource,
+    game.recipes,
+    game.equipment,
+    game.resources
+  );
+  return buildToolStatusControlsFromStatus(game, status, onRecrafted);
+}
+
+function buildFarmToolStatusControls(game, building, onRecrafted) {
+  const status = getFarmLineToolStatus(game.state, building, game.recipes, game.equipment);
+  return buildToolStatusControlsFromStatus(game, status, onRecrafted);
+}
+
+function slotProgressOverlayHtml(progressPct, statusLabel) {
+  const pct = Math.max(0, Math.min(100, Number(progressPct) || 0));
+  return `<div class="slot-progress-overlay" style="--slot-progress:${pct}">
+    <div class="slot-progress-ring" aria-hidden="true"></div>
+    <span class="slot-progress-label">${statusLabel}</span>
+  </div>`;
+}
+
+function setSlotProgressUi(card, pct, labelText) {
+  const overlay = card.querySelector('.slot-progress-overlay');
+  if (overlay) overlay.style.setProperty('--slot-progress', String(Math.max(0, Math.min(100, pct))));
+  const label = card.querySelector('.slot-progress-label');
+  if (label && labelText != null) label.textContent = labelText;
 }
 
 function lineHasReadyUnit(game, jobId, resourceId) {
@@ -603,13 +627,29 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
       <div class="slot-visual slot-visual-tap" role="button" tabindex="0" aria-label="${building.name}${statusLabel ? ` — ${statusLabel}` : ''}">
         ${canStart ? '<span class="slot-ready-badge">Produire</span>' : ''}
         ${spriteHtml}
-        ${active ? `<div class="slot-progress-overlay"><div class="slot-progress-fill" style="width:${progressPct}%"></div><span class="slot-progress-label">${statusLabel}</span></div>` : ''}
+        ${active ? slotProgressOverlayHtml(progressPct, statusLabel) : ''}
       </div>
       ${animalBlock}
-      ${toolBlock ? `<p class="slot-tool-hint">${toolBlock}</p>` : ''}
+      <div class="slot-tool-row"></div>
       ${feedBlocked && animalReady ? '<p class="slot-tool-hint">Pas assez de nourriture</p>' : ''}
     `;
 
+    const toolRow = card.querySelector('.slot-tool-row');
+    if (toolBlock && toolRow) {
+      const controls = buildFarmToolStatusControls(game, building, () => {
+        const viewEl = document.getElementById('view-container');
+        if (viewEl) renderFarmProduction(game, viewEl, buildingId);
+      });
+      if (controls) toolRow.appendChild(controls);
+      else {
+        const hint = document.createElement('p');
+        hint.className = 'slot-tool-hint';
+        hint.textContent = toolBlock;
+        toolRow.appendChild(hint);
+      }
+    } else if (toolRow) {
+      toolRow.remove();
+    }
     const onTap = () => {
       const liveProgress = game.getFarmLineProgress(buildingId, lineKey, unitIndex);
       const liveSlot = game.state.productionLines?.farm?.[buildingId]?.[lineKey]?.slots?.[unitIndex];
@@ -692,7 +732,7 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
         ${getFarmBuildingIcon(buildingId) ? iconHtml(getFarmBuildingIcon(buildingId), 'tile-resource-icon', building.name) : `<span>${building.emoji || '🏠'}</span>`}
         <strong>${building.name}</strong>
         <span class="production-stock">${stockParts.join(' · ')}</span>
-        ${toolDur ? `<span class="production-tool-dur">${toolDur}</span>` : ''}
+        <span class="production-tool-slot"></span>
       </div>
       <div class="production-line-meta">
         <span class="production-units">${line.units} emplacement${line.units > 1 ? 's' : ''}</span>
@@ -702,6 +742,18 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
     <div class="slots-grid production-units-grid"></div>
   `;
 
+  const refreshFarm = () => {
+    const viewEl = document.getElementById('view-container');
+    if (viewEl) renderFarmProduction(game, viewEl, buildingId);
+  };
+  const toolSlot = section.querySelector('.production-tool-slot');
+  const toolControls = buildFarmToolStatusControls(game, building, refreshFarm);
+  if (toolControls && toolSlot) toolSlot.replaceWith(toolControls);
+  else if (toolSlot && toolDur) {
+    toolSlot.outerHTML = `<span class="production-tool-dur">${toolDur}</span>`;
+  } else {
+    toolSlot?.remove();
+  }
   const grid = section.querySelector('.production-units-grid');
   for (let i = 0; i < line.units; i++) {
     grid.appendChild(buildFarmUnitCard(game, buildingId, lineKey, i, building));
@@ -865,15 +917,11 @@ export function updateProductionLineProgresses(game, jobId) {
       const card = document.querySelector(`.production-unit[data-job="${jobId}"][data-resource="${resourceId}"][data-unit="${unitIndex}"]`);
       if (!card) return;
       const pct = Math.floor(progress * 100);
-      const fill = card.querySelector('.slot-progress-fill');
-      const label = card.querySelector('.slot-progress-label');
       const phase = slot.active.phase;
-      if (fill) fill.style.width = `${pct}%`;
-      if (label) {
-        label.textContent = phase === 'regrowing' && progress >= 1
-          ? 'Prêt !'
-          : getHarvestBtnLabel(phase, progress, getSlotRemainingMs(slot));
-      }
+      const labelText = phase === 'regrowing' && progress >= 1
+        ? 'Prêt !'
+        : getHarvestBtnLabel(phase, progress, getSlotRemainingMs(slot));
+      setSlotProgressUi(card, pct, labelText);
       if (progress >= 1 && phase === 'regrowing') {
         card.classList.add('slot-can-harvest');
       }
@@ -901,17 +949,14 @@ export function updateFarmLineProgresses(game, buildingId) {
       if (!card) return;
 
       if (isUnifiedFarmBuilding(building) || building.tapProgress) {
-        let fill = card.querySelector('.slot-progress-fill');
+        let overlay = card.querySelector('.slot-progress-overlay');
         let label = card.querySelector('.slot-progress-label');
-        if (!fill || !label) {
+        if (!overlay || !label) {
           patchFarmUnitCard(game, buildingId, lineKey, unitIndex);
           card = document.querySelector(`.production-unit[data-building="${buildingId}"][data-product="${lineKey}"][data-unit="${unitIndex}"]`);
-          fill = card?.querySelector('.slot-progress-fill');
-          label = card?.querySelector('.slot-progress-label');
         }
         const statusLabel = getFarmBtnLabel(progress, getSlotRemainingMs(slot));
-        if (fill) fill.style.width = `${pct}%`;
-        if (label) label.textContent = statusLabel;
+        setSlotProgressUi(card, pct, statusLabel);
         if (progress >= 1) {
           card?.classList.add('slot-can-harvest');
           const tap = card?.querySelector('.slot-visual-tap');

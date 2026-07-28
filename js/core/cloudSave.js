@@ -6,6 +6,13 @@ import { adoptAdminPatchedFields, getAdminRevision } from './adminPatch.js';
 /** Empêche d’écraser le cloud avant la fusion locale/cloud au démarrage. */
 let cloudSyncReady = true;
 
+/** Rang de saison : une renaissance locale ne doit jamais être écrasée par une vieille save cloud. */
+export function getSeasonRank(state) {
+  const seasonsDone = Math.max(0, Number(state?.lifetimeStats?.seasonsCompleted) || 0);
+  const season = Math.max(1, Number(state?.season) || 1);
+  return seasonsDone * 1000 + season;
+}
+
 export function markCloudSyncReady(ready = true) {
   cloudSyncReady = !!ready;
 }
@@ -60,13 +67,25 @@ export async function saveCloudSave(userId, state, balance) {
 
   // Si un admin a patché le cloud entre-temps, adopter Kirha/inventaire/niveaux
   // avant d’uploader — sinon l’autosave écrase le don.
+  // Ne jamais adopter une save d’une saison plus ancienne (après prestige).
   let adoptedAdmin = false;
   const existing = await loadCloudSave(userId);
-  if (existing?.data && getAdminRevision(existing.data) > getAdminRevision(payload)) {
-    const adopted = adoptAdminPatchedFields(payload, existing.data);
-    if (adopted.changed) {
-      payload = adopted.state;
-      adoptedAdmin = true;
+  if (existing?.data) {
+    const localRank = getSeasonRank(payload);
+    const cloudRank = getSeasonRank(existing.data);
+    if (cloudRank > localRank) {
+      // Cloud plus avancé en saison → prendre la save cloud entière
+      return { ok: false, reason: 'Save cloud plus récente (saison) — recharge le jeu.' };
+    }
+    if (
+      cloudRank === localRank
+      && getAdminRevision(existing.data) > getAdminRevision(payload)
+    ) {
+      const adopted = adoptAdminPatchedFields(payload, existing.data);
+      if (adopted.changed) {
+        payload = adopted.state;
+        adoptedAdmin = true;
+      }
     }
   }
 
@@ -105,15 +124,25 @@ export async function mergeCloudAndLocal(cloud, local, balance, { userId } = {})
     // Invité / autre compte local ne doit jamais battre le cloud du compte connecté
     chosen = cloudEmpty ? local : cloud.data;
   } else {
-    const cloudTime = Number(cloud.data.lastOnline || 0);
-    const localTime = Number(local.lastOnline || 0);
-    // En cas d’égalité / doute, préférer le cloud (source de vérité multi-appareils)
-    chosen = cloudTime >= localTime ? cloud.data : local;
+    const localRank = getSeasonRank(local);
+    const cloudRank = getSeasonRank(cloud.data);
+    if (localRank > cloudRank) {
+      chosen = local;
+    } else if (cloudRank > localRank) {
+      chosen = cloud.data;
+    } else {
+      const cloudTime = Number(cloud.data.lastOnline || 0);
+      const localTime = Number(local.lastOnline || 0);
+      // En cas d’égalité / doute, préférer le cloud (source de vérité multi-appareils)
+      chosen = cloudTime >= localTime ? cloud.data : local;
+    }
   }
 
-  // Toujours fusionner un patch admin plus récent (même si lastOnline local est plus neuf)
-  const withAdmin = adoptAdminPatchedFields(chosen, cloud.data);
-  if (withAdmin.changed) chosen = withAdmin.state;
+  // Toujours fusionner un patch admin plus récent (même saison uniquement)
+  if (getSeasonRank(chosen) === getSeasonRank(cloud.data)) {
+    const withAdmin = adoptAdminPatchedFields(chosen, cloud.data);
+    if (withAdmin.changed) chosen = withAdmin.state;
+  }
   if (chosen && 'speedMode' in chosen) {
     chosen = { ...chosen };
     delete chosen.speedMode;
@@ -137,6 +166,7 @@ export async function pullAdminPatchIfNeeded(userId, state, balance) {
   if (!userId || !state) return { changed: false };
   const cloud = await loadCloudSave(userId);
   if (!cloud?.data) return { changed: false };
+  if (getSeasonRank(state) !== getSeasonRank(cloud.data)) return { changed: false };
   const adopted = adoptAdminPatchedFields(state, cloud.data);
   if (!adopted.changed) return { changed: false };
   const sanity = validateSaveSanity(adopted.state, balance);
