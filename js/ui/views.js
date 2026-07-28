@@ -48,10 +48,16 @@ import { isMaintenanceMode } from '../systems/gameConfig.js';
 
 let workshopTab = 'toolmaker';
 let charTab = 'bag';
-const CHAR_TABS = new Set(['bag', 'gear', 'tools', 'team']);
+const CHAR_TABS = new Set(['bag', 'gear', 'tools']);
+let combatTab = 'zones';
+const COMBAT_TABS = new Set(['zones', 'team']);
 
 function normalizeCharTab(tab) {
   return CHAR_TABS.has(tab) ? tab : 'bag';
+}
+
+function normalizeCombatTab(tab) {
+  return COMBAT_TABS.has(tab) ? tab : 'zones';
 }
 let auctionCategory = '';
 let auctionGroup = 'services';
@@ -643,7 +649,7 @@ function renderCharacter(game, el) {
             ${renderCharStatPills(statsBreakdown.total)}
             ${renderSeasonBonusPills(s)}
             ${renderAllBonusesPanel(s)}
-            <button class="btn btn-muted btn-small char-combat-link" id="goto-combat" type="button">⚔️ Zones de combat</button>
+            <button class="btn btn-muted btn-small char-combat-link" id="goto-combat" type="button">⚔️ Combat & équipiers</button>
           </div>
           <div class="char-equip-wrap">
             <p class="char-section-label">Équipement</p>
@@ -655,7 +661,6 @@ function renderCharacter(game, el) {
         <button type="button" class="char-tab-btn${charTab === 'bag' ? ' active' : ''}" data-tab="bag" role="tab">Sac</button>
         <button type="button" class="char-tab-btn${charTab === 'gear' ? ' active' : ''}" data-tab="gear" role="tab">Équipement</button>
         <button type="button" class="char-tab-btn${charTab === 'tools' ? ' active' : ''}" data-tab="tools" role="tab">Outils</button>
-        <button type="button" class="char-tab-btn${charTab === 'team' ? ' active' : ''}" data-tab="team" role="tab">Équipe</button>
       </nav>
       <div class="char-tab-panel panel-inner" id="char-tab-panel"></div>
     </div>
@@ -665,7 +670,10 @@ function renderCharacter(game, el) {
   renderPrestigeTeaser(game, el.querySelector('#char-prestige-teaser'));
 
   el.querySelector('#guest-upgrade-hdv')?.addEventListener('click', () => showAccountRequiredModal(getOnlineBlockReason()));
-  el.querySelector('#goto-combat')?.addEventListener('click', () => navigate('combat'));
+  el.querySelector('#goto-combat')?.addEventListener('click', () => {
+    combatTab = 'team';
+    navigate('combat');
+  });
 
   el.querySelector('#nickname-set')?.addEventListener('click', () => {
     const input = el.querySelector('#nickname-input');
@@ -713,7 +721,6 @@ function renderCharTabPanel(game, el) {
   if (charTab === 'bag') renderCharBagTab(game, panel);
   else if (charTab === 'gear') renderCharGearTab(game, panel);
   else if (charTab === 'tools') renderCharToolsTab(game, panel);
-  else if (charTab === 'team') renderCharTeamTab(game, panel);
 }
 
 function renderCharGearTab(game, panel) {
@@ -1426,7 +1433,7 @@ function renderCharHelpTab(panel) {
       </section>
       <section class="help-card">
         <h4>⚔️ Combat</h4>
-        <p>Guerrier = défense, Archer = attaque, Mage = mixte. Change ton équipement selon la zone et garde de la nourriture en réserve.</p>
+        <p>Dans l’onglet Combat, gère tes équipiers (recruter, équiper, en combat / en réserve) et les zones de donjon. Change ton équipement selon la zone et garde de la nourriture en réserve.</p>
       </section>
       <section class="help-card">
         <h4>📱 Mobile</h4>
@@ -1436,7 +1443,7 @@ function renderCharHelpTab(panel) {
   `;
 }
 
-function renderCharTeamTab(game, panel) {
+function renderCompanionsPanel(game, panel) {
   const s = game.state;
   const charProg = game.getCharacterProgress();
   const companionSlots = {
@@ -1446,8 +1453,8 @@ function renderCharTeamTab(game, panel) {
   };
 
   panel.innerHTML = `
-    <h3>👥 Équipe</h3>
-    <p class="view-desc">Touche un slot pour équiper ou retirer. « En combat » / « En réserve » choisit s'il participe aux donjons.</p>
+    <h3>👥 Équipiers</h3>
+    <p class="view-desc">Recrute, équipe et gère tes compagnons ici. « En combat » / « En réserve » choisit s’ils participent aux donjons.</p>
     <div id="companions-list"></div>
   `;
 
@@ -3789,6 +3796,7 @@ function renderCombat(game, el) {
   const healPanelHtml = renderOutOfCombatHealPanel(game);
   const partySize = 1 + game.getActiveCompanionCount();
   const soloHp = game.state.combatWear?.solo?.hero;
+  combatTab = normalizeCombatTab(combatTab);
 
   el.innerHTML = `
     <div class="skill-header combat-skill-header">
@@ -3807,7 +3815,11 @@ function renderCombat(game, el) {
       ${soloHp != null && soloHp < stats.hp ? `<p class="skill-header-meta combat-solo-hp-hint">HP entraînement : ❤️ ${soloHp}/${stats.hp}</p>` : ''}
     </div>
     ${healPanelHtml}
-    <div id="combat-zone-list" class="combat-zone-list"></div>
+    <nav class="combat-tabs char-tabs" role="tablist" aria-label="Sections combat">
+      <button type="button" class="char-tab-btn${combatTab === 'zones' ? ' active' : ''}" data-combat-tab="zones" role="tab">Zones</button>
+      <button type="button" class="char-tab-btn${combatTab === 'team' ? ' active' : ''}" data-combat-tab="team" role="tab">Équipiers</button>
+    </nav>
+    <div id="combat-tab-panel" class="combat-tab-panel"></div>
   `;
 
   el.querySelectorAll('[data-inventory-meal]').forEach((btn) => {
@@ -3821,7 +3833,35 @@ function renderCombat(game, el) {
     });
   });
 
-  const list = el.querySelector('#combat-zone-list');
+  el.querySelectorAll('[data-combat-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      combatTab = normalizeCombatTab(btn.dataset.combatTab);
+      el.querySelectorAll('[data-combat-tab]').forEach((b) => {
+        b.classList.toggle('active', b.dataset.combatTab === combatTab);
+      });
+      renderCombatTabPanel(game, el);
+    });
+  });
+
+  renderCombatTabPanel(game, el);
+}
+
+function renderCombatTabPanel(game, el) {
+  const panel = el.querySelector('#combat-tab-panel');
+  if (!panel) return;
+  panel.innerHTML = '';
+  if (combatTab === 'team') {
+    renderCompanionsPanel(game, panel);
+    return;
+  }
+  const list = document.createElement('div');
+  list.id = 'combat-zone-list';
+  list.className = 'combat-zone-list';
+  panel.appendChild(list);
+  renderCombatZoneList(game, el, list);
+}
+
+function renderCombatZoneList(game, el, list) {
   const zones = Object.values(game.combatZones).sort((a, b) =>
     (Number(a.requiredCharLevel) || 1) - (Number(b.requiredCharLevel) || 1)
     || String(a.name || '').localeCompare(String(b.name || ''), 'fr')
@@ -3997,6 +4037,7 @@ function renderCombat(game, el) {
     list.appendChild(card);
   }
 }
+
 
 function renderOutOfCombatHealPanel(game) {
   const stats = game.getCharacterStats();
