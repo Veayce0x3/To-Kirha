@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260728-2200",
+      "date": "2026-07-28",
+      "title": "Timer en bas, admin stable, suivi saison max",
+      "highlights": [
+        "Temps restant de récolte / ferme affiché sous la ressource (anneau conservé)",
+        "Admin : plus de flash / rechargement quand une récolte finit en arrière-plan",
+        "Fiche joueur : saison actuelle, saison max, resets manuels — carrière sans labels bizarres",
+        "Reset partie : conserve l’historique de saisons et le compteur de resets pour l’admin"
+      ]
+    },
+    {
       "buildId": "20260728-1515",
       "date": "2026-07-28",
       "title": "Reset partie : succès bien remis à zéro",

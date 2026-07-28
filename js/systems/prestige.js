@@ -444,6 +444,11 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     seasonsCompleted: (state.lifetimeStats?.seasonsCompleted || 0) + 1,
     totalEarned: state.lifetimeStats?.totalEarned || 0,
     totalHarvests: (state.lifetimeStats?.totalHarvests || 0) + (state.stats?.totalHarvests || 0),
+    maxSeasonReached: Math.max(
+      Number(state.lifetimeStats?.maxSeasonReached) || 1,
+      Number(state.season) || 1,
+      season
+    ),
   };
 
   const season = (state.season || 1) + 1;

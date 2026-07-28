@@ -221,19 +221,30 @@ function careerLabelFromSave(save_summary) {
     bow: 'Archer',
     staff: 'Mage',
   };
-  const weaponRaw = save_summary.career_weapon || save_summary.career_harvest;
-  const teamRaw = save_summary.career_team || save_summary.career_farm;
-  const weapon = WEAPON_LABELS[weaponRaw] || (typeof weaponRaw === 'string' ? weaponRaw : null);
+  // Ne pas retomber sur d’anciens champs harvest/farm (métiers) — affichage bizarre.
+  const weaponRaw = save_summary.career_weapon;
+  const teamRaw = save_summary.career_team;
+  const weapon = WEAPON_LABELS[weaponRaw] || null;
   let team = null;
   if (Array.isArray(teamRaw)) {
-    team = teamRaw.map((t) => WEAPON_LABELS[t] || t).filter(Boolean).join(', ');
-  } else if (typeof teamRaw === 'string') {
-    team = WEAPON_LABELS[teamRaw] || teamRaw;
+    team = teamRaw.map((t) => WEAPON_LABELS[t]).filter(Boolean).join(', ');
   }
   if (weapon && team) return `${weapon} · équipe ${team}`;
   if (weapon) return weapon;
-  if (team) return `Équipe ${team}`;
   return 'Confirmée';
+}
+
+function maxSeasonFromSave(save_summary, leaderboard = null) {
+  if (!save_summary && !leaderboard) return 1;
+  const current = Math.max(1, Number(save_summary?.season) || 1);
+  const tracked = Math.max(1, Number(save_summary?.max_season_reached) || 1);
+  const fromHistory = Array.isArray(save_summary?.season_history)
+    ? save_summary.season_history.reduce((max, row) => Math.max(max, Number(row?.season) || 1), 1)
+    : 1;
+  const fromCompleted = Math.max(1, (Number(save_summary?.seasons_completed) || 0) + 1);
+  const fromLastReset = Math.max(1, Number(save_summary?.last_reset_season) || 1);
+  const fromLb = Math.max(1, Number(leaderboard?.season) || 1);
+  return Math.max(current, tracked, fromHistory, fromCompleted, fromLastReset, fromLb);
 }
 
 function combatItemLabel(c) {
@@ -616,8 +627,9 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
     ${profile.is_banned ? `<p class="guest-banner warn">Banni · ${escHtml(profile.banned_reason || '—')} · ${escHtml(fmtDate(profile.banned_at))}</p>` : ''}
     ${profile.cheat_flagged ? `<p class="guest-banner warn">Flag triche · ${escHtml(profile.cheat_notes || '—')}</p>` : ''}
     <div class="admin-detail-grid">
-      <div class="admin-info-card"><span class="admin-info-lbl">Saison</span><span class="admin-info-val">${save_summary ? `Saison ${save_summary.season || 1}` : '—'}</span><span class="admin-td-muted">${save_summary ? `${Number(save_summary.seasons_completed) || 0} renaissance(s)` : ''}</span></div>
-      <div class="admin-info-card"><span class="admin-info-lbl">Resets</span><span class="admin-info-val">${save_summary ? `${Number(save_summary.game_resets) || 0}` : '—'}</span><span class="admin-td-muted">${save_summary?.last_reset_at ? `Dernier : S${save_summary.last_reset_season || '?'} · ${escHtml(fmtDate(save_summary.last_reset_at))}` : 'Aucun reset enregistré'}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Saison actuelle</span><span class="admin-info-val">${save_summary ? `Saison ${save_summary.season || 1}` : '—'}</span><span class="admin-td-muted">${save_summary ? `${Number(save_summary.seasons_completed) || 0} renaissance(s)` : ''}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Saison max</span><span class="admin-info-val">${save_summary || leaderboard ? `Saison ${maxSeasonFromSave(save_summary, leaderboard)}` : '—'}</span><span class="admin-td-muted">${save_summary?.last_reset_season ? `Dernier reset depuis S${save_summary.last_reset_season}` : ''}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Resets manuels</span><span class="admin-info-val">${save_summary ? `${Number(save_summary.game_resets) || 0}` : '—'}</span><span class="admin-td-muted">${save_summary?.last_reset_at ? `Dernier : ${escHtml(fmtDate(save_summary.last_reset_at))}` : 'Aucun reset enregistré'}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Classement</span><span class="admin-info-val">${leaderboard ? `Nv.${leaderboard.char_level} · S${leaderboard.season}` : '—'}</span><span class="admin-td-muted">${leaderboard ? `${fmtNum(leaderboard.total_earned)} 💰 gagnés · ${fmtNum(leaderboard.kirha_current || 0)} en poche` : ''}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Save cloud</span><span class="admin-info-val">${save_summary ? `${escHtml(save_summary.nickname || '?')} · Nv.${save_summary.char_level}` : 'Aucune'}</span><span class="admin-td-muted">${save_summary ? `${fmtNum(save_summary.kirha)} 💰${save_summary.lifetime_earned != null ? ` · vie ${fmtNum(save_summary.lifetime_earned)}` : ''}` : ''}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Carrière</span><span class="admin-info-val">${escHtml(careerLabel)}</span></div>

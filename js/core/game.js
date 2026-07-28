@@ -333,6 +333,7 @@ export class Game {
         gameResets: 0,
         lastResetAt: null,
         lastResetSeason: null,
+        maxSeasonReached: 1,
       },
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
@@ -2120,16 +2121,45 @@ export class Game {
         backgroundMs: Math.max(0, Number(prev.playtime.backgroundMs) || 0),
       }
       : { foregroundMs: 0, backgroundMs: 0 };
-    // Stats de vie pour l’admin / classement — pas de progression de succès (remise à zéro).
+    // Stats de vie pour l’admin / classement — succès remis à zéro via getDefaultState.
+    const prevSeason = Math.max(1, Number(prev.season) || 1);
+    const historySeasons = Array.isArray(prev.seasonHistory)
+      ? prev.seasonHistory.map((h) => Math.max(1, Number(h?.season) || 1))
+      : [];
+    const maxSeasonReached = Math.max(
+      1,
+      prevSeason,
+      Number(prev.lifetimeStats?.maxSeasonReached) || 1,
+      Number(prev.lifetimeStats?.lastResetSeason) || 1,
+      ...historySeasons
+    );
     const lifetimeStats = {
       gameResets: (Number(prev.lifetimeStats?.gameResets) || 0) + 1,
       lastResetAt: Date.now(),
-      lastResetSeason: Number(prev.season) || 1,
+      lastResetSeason: prevSeason,
+      maxSeasonReached,
       totalEarned: Number(prev.lifetimeStats?.totalEarned) || 0,
       totalHarvests: 0,
-      seasonsCompleted: 0,
+      seasonsCompleted: Number(prev.lifetimeStats?.seasonsCompleted) || 0,
       combatFights: 0,
     };
+    const seasonHistory = Array.isArray(prev.seasonHistory)
+      ? prev.seasonHistory.slice(-20)
+      : [];
+    // Snapshot de la saison en cours avant wipe (si pas déjà historisée)
+    if (prevSeason > 1 || (Number(prev.character?.level) || 1) > 1) {
+      seasonHistory.push({
+        season: prevSeason,
+        endedAt: Date.now(),
+        charLevel: Number(prev.character?.level) || 1,
+        maxJobLevel: Math.max(1, ...Object.values(prev.jobs || {}).map((j) => Number(j?.level) || 1), 1),
+        seasonEarned: Number(prev.stats?.totalEarned) || 0,
+        lifetimeEarned: Number(prev.lifetimeStats?.totalEarned) || 0,
+        kirha: Number(prev.kirha) || 0,
+        harvests: Number(prev.stats?.totalHarvests) || 0,
+        endedBy: 'manual_reset',
+      });
+    }
 
     Object.values(this.harvestTimers).forEach(clearTimeout);
     this.harvestTimers = {};
@@ -2137,6 +2167,7 @@ export class Game {
     this.state.settings = settings;
     this.state.playtime = playtime;
     this.state.lifetimeStats = lifetimeStats;
+    this.state.seasonHistory = seasonHistory.slice(-20);
     this.state.achievements = buildDefaultAchievementState();
     delete this.state.quests;
     clearAchievementChainFocus();

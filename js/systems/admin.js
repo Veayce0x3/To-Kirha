@@ -181,6 +181,15 @@ async function buildPlayerDetailFallback(userId) {
         game_resets: Number(save.lifetimeStats?.gameResets) || 0,
         last_reset_at: save.lifetimeStats?.lastResetAt || null,
         last_reset_season: Number(save.lifetimeStats?.lastResetSeason) || null,
+        max_season_reached: Math.max(
+          1,
+          Number(save.lifetimeStats?.maxSeasonReached) || 1,
+          Number(save.season) || 1,
+          Number(save.lifetimeStats?.lastResetSeason) || 1,
+          ...(Array.isArray(save.seasonHistory)
+            ? save.seasonHistory.map((h) => Number(h?.season) || 1)
+            : [1])
+        ),
       } : null,
       inventory_summary,
       jobs_summary,

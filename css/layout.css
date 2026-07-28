@@ -4504,6 +4504,28 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   max-width: 92%;
 }
 
+.slot-time-footer {
+  margin-top: 0.2rem;
+  width: 100%;
+  text-align: center;
+}
+
+.slot-time-footer .slot-timer {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--wood, #4A3728);
+  line-height: 1.2;
+}
+
+.slot-time-footer.phase-regrowing .slot-timer {
+  color: var(--violet-sakura, #9B59B6);
+}
+
+.slot-time-footer.phase-harvesting .slot-timer {
+  color: var(--vert-foret, #2D5A27);
+}
+
 .production-line-section {
   margin-bottom: 0.85rem;
   padding: 0.65rem 0.7rem 0.75rem;

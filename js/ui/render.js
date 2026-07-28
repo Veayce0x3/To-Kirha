@@ -661,6 +661,12 @@ export function initUI(game, audio) {
       updateNavActive();
       return;
     }
+    // Admin / Options : ne pas re-rendre toute la fiche (perte de focus / flash)
+    if (view === 'admin' || view === 'options') {
+      updateNavActive();
+      if ((game.isHarvesting() || game.isFarmActive()) && !animTimer) tickHarvestUI();
+      return;
+    }
     refreshView();
     syncJobUnlockToasts();
     if ((game.isHarvesting() || game.isFarmActive()) && !animTimer) tickHarvestUI();
@@ -690,8 +696,10 @@ export function initUI(game, audio) {
       const job = game.jobs[levelResult.jobId];
       const resource = game.resources[resourceId];
       showToast(els, `${resource?.name || ''} — ${job?.name || ''} Nv.${levelResult.level} !`, 'levelup');
-      els.levelFlash.classList.add('active');
-      setTimeout(() => els.levelFlash.classList.remove('active'), 600);
+      if (getView() !== 'admin' && getView() !== 'options') {
+        els.levelFlash.classList.add('active');
+        setTimeout(() => els.levelFlash.classList.remove('active'), 600);
+      }
       audio.playSfx('levelup');
       syncJobUnlockToasts();
       buildNav();
