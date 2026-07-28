@@ -62,7 +62,7 @@ export function isAllowedCraftRecipe(recipe) {
   if (!recipe) return false;
   if (recipe.combatItem) return false;
   const job = recipe.craftJob || 'blacksmith';
-  return job === 'toolmaker' || job === 'cook';
+  return job === 'toolmaker' || job === 'baker' || job === 'fishmonger' || job === 'chemist' || job === 'cook';
 }
 
 export function whyCannotCraft(recipeId, ctx) {
@@ -125,8 +125,10 @@ function applyCraftResult(recipeId, recipe, state) {
     return;
   }
 
-  // Repas cuisine (répétables) : enregistrer le 1er craft pour les succès
-  if (recipe.craftJob === 'cook' && String(recipe.output || '').startsWith('meal_')) {
+  // Repas / élixirs cuisine (répétables) : enregistrer le 1er craft pour les succès
+  const cuisineJobs = new Set(['cook', 'baker', 'fishmonger', 'chemist']);
+  const out = String(recipe.output || '');
+  if (cuisineJobs.has(recipe.craftJob) && (out.startsWith('meal_') || out.startsWith('elixir_'))) {
     if (!state.crafted.includes(recipeId)) state.crafted.push(recipeId);
     if (!state.stats) state.stats = {};
     state.stats.mealsCrafted = (state.stats.mealsCrafted || 0) + 1;
@@ -285,7 +287,7 @@ function isRecipeVisibleInWorkshop(recipeId, craftJobId, ctx) {
   }
 
   // Breeder/cook/global helpers stay visible because the farm path is always part of a career.
-  return meta.job === 'breeder' || meta.job === 'cook';
+  return meta.job === 'breeder' || meta.job === 'cook' || meta.job === 'baker' || meta.job === 'fishmonger' || meta.job === 'chemist';
 }
 
 /** Regroupe les recettes d'un onglet atelier. */

@@ -1055,8 +1055,13 @@
   gap: 0.85rem;
 }
 
-.combat-tabs {
-  margin: 0.65rem 0 0.75rem;
+.cuisine-tabs {
+  margin: 0.5rem 0 0.75rem;
+}
+
+.cuisine-tabs .char-tab-btn.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .combat-tab-panel {

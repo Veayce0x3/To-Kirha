@@ -319,10 +319,25 @@ const MIGRATIONS = {
       if (state.achievements.bonuses.farmAnimalLife == null) state.achievements.bonuses.farmAnimalLife = 0;
     }
   },
+  42(state) {
+    // Cuisine : cook → baker ; initialise fishmonger / chemist
+    if (!state.jobs || typeof state.jobs !== 'object') state.jobs = {};
+    if (state.jobs.cook && !state.jobs.baker) {
+      state.jobs.baker = { ...state.jobs.cook };
+    }
+    delete state.jobs.cook;
+    for (const id of ['baker', 'fishmonger', 'chemist']) {
+      if (!state.jobs[id]) state.jobs[id] = { level: 1, xp: 0 };
+    }
+    if (state.equipment?.accessories?.cook && !state.equipment.accessories.baker) {
+      state.equipment.accessories.baker = state.equipment.accessories.cook;
+    }
+    if (state.equipment?.accessories) delete state.equipment.accessories.cook;
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 41;
+  const target = ctx.balance?.saveVersion ?? 42;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

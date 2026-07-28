@@ -63,7 +63,7 @@ export const VIEWS = {
   combat: { id: 'combat', label: 'Combat', title: 'Combat' },
   leaderboard: { id: 'leaderboard', label: 'Classement', title: 'Classement', emoji: '🏆' },
   workshop: { id: 'workshop', label: 'Atelier', title: 'Atelier' },
-  cuisine: { id: 'cuisine', label: 'Cuisine', title: 'Cuisine', emoji: '👨‍🍳', job: 'cook' },
+  cuisine: { id: 'cuisine', label: 'Cuisine', title: 'Cuisine', emoji: '👨‍🍳', job: 'baker' },
   options: { id: 'options', label: 'Options', title: 'Options' },
   admin: { id: 'admin', label: 'Admin', title: 'Administration', emoji: '🛡️' },
   ...CRAFT_VIEWS,
@@ -136,6 +136,9 @@ export const JOB_VIEW_MAP = {
   alchemist: 'job_alchemist',
   toolmaker: 'workshop_toolmaker',
   cook: 'cuisine',
+  baker: 'cuisine',
+  fishmonger: 'cuisine',
+  chemist: 'cuisine',
 };
 
 export const HARVEST_JOB_VIEWS = [
@@ -178,7 +181,7 @@ export function isFarmView(viewId) {
 }
 
 export function getCraftJobFromView(viewId) {
-  if (viewId === 'cuisine') return 'cook';
+  if (viewId === 'cuisine') return 'baker';
   const view = VIEWS[viewId];
   return view?.craftJob || null;
 }

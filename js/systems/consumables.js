@@ -1,9 +1,16 @@
-/** Repas consommables — soin % PV max en combat, paliers de 10 niv. perso. */
+/** Repas / élixirs consommables — soin héros, soin équipiers, buffs combat. */
 
 export const DUNGEON_ROOM_HEAL = 30;
 
 export function getMealTier(mealId, resources = {}) {
   return resources[mealId]?.mealTier ?? 1;
+}
+
+export function getMealRole(mealId, resources = {}) {
+  const res = resources?.[mealId];
+  if (res?.mealRole) return res.mealRole;
+  if (String(mealId || '').startsWith('elixir_')) return 'buff';
+  return 'hero';
 }
 
 export function getMealLevelRange(mealTier) {
@@ -37,18 +44,47 @@ export function getMealHealPct(mealTier, balance) {
   return Math.min(max, base + tierIndex * step);
 }
 
+function buffLabel(buff) {
+  if (!buff) return 'Buff combat';
+  const bits = [];
+  if (buff.atk) bits.push(`+${Math.round(buff.atk * 100)}% ATQ`);
+  if (buff.def) bits.push(`+${Math.round(buff.def * 100)}% DEF`);
+  return bits.length ? bits.join(' · ') : 'Buff combat';
+}
+
 export function buildMealEffects(resources, balance) {
   const effects = {};
   for (const [id, res] of Object.entries(resources || {})) {
-    if (!res.mealTier && !id.startsWith('meal_')) continue;
-    if (!id.startsWith('meal_')) continue;
+    const isMeal = id.startsWith('meal_') || !!res.mealTier;
+    const isElixir = id.startsWith('elixir_') || res.mealRole === 'buff';
+    if (!isMeal && !isElixir) continue;
+    if (!id.startsWith('meal_') && !id.startsWith('elixir_')) continue;
+
+    const role = getMealRole(id, resources);
     const tier = getMealTier(id, resources);
-    const pct = getMealHealPct(tier, balance);
     const { min, max } = getMealLevelRangeForResource(res);
+
+    if (role === 'buff') {
+      const buff = res.buff || { atk: 0.05, def: 0, fights: 1 };
+      effects[id] = {
+        mealTier: tier,
+        mealRole: 'buff',
+        healPct: 0,
+        buff,
+        label: buffLabel(buff),
+        levelMin: min,
+        levelMax: max,
+      };
+      continue;
+    }
+
+    const pct = getMealHealPct(tier, balance);
+    const who = role === 'companions' ? 'équipiers' : 'héros';
     effects[id] = {
       mealTier: tier,
+      mealRole: role,
       healPct: pct,
-      label: `+${pct}% PV max`,
+      label: `+${pct}% PV ${who}`,
       levelMin: min,
       levelMax: max,
     };
@@ -70,6 +106,31 @@ export function clearCombatMealBuff(state) {
   state.activeMeal = null;
 }
 
+export function applyCombatMealBuff(state, mealId, resources) {
+  const res = resources?.[mealId];
+  const buff = res?.buff;
+  if (!buff) return false;
+  state.combatMealBuff = {
+    mealId,
+    atk: Number(buff.atk) || 0,
+    def: Number(buff.def) || 0,
+    fightsLeft: Math.max(1, Number(buff.fights) || 1),
+    label: buffLabel(buff),
+  };
+  return true;
+}
+
+export function consumeCombatMealBuffFight(state) {
+  const buff = state.combatMealBuff;
+  if (!buff) return;
+  buff.fightsLeft = (Number(buff.fightsLeft) || 1) - 1;
+  if (buff.fightsLeft <= 0) clearCombatMealBuff(state);
+}
+
+export function getActiveCombatMealBuff(state) {
+  return state.combatMealBuff || null;
+}
+
 export function listOwnedMeals(state, resources, balance) {
   const effects = buildMealEffects(resources, balance);
   return Object.keys(effects)
@@ -78,18 +139,25 @@ export function listOwnedMeals(state, resources, balance) {
 }
 
 export function countOwnedMeals(state, resources, balance) {
-  return listOwnedMeals(state, resources, balance).reduce((sum, m) => sum + m.qty, 0);
+  return listOwnedMeals(state, resources, balance).reduce((n, m) => n + m.qty, 0);
 }
 
 export function peekMealHeal(mealId, state, resources, balance, charLevel) {
   const effect = getMealEffect(mealId, resources, balance);
-  if (!effect) return { ok: false, reason: 'Repas inconnu' };
-  if ((state.inventory[mealId] || 0) < 1) return { ok: false, reason: 'Plus de ce repas' };
+  if (!effect) return { ok: false, reason: 'Consommable inconnu' };
+  if ((state.inventory[mealId] || 0) < 1) return { ok: false, reason: 'Plus de stock' };
   const res = resources?.[mealId];
   if (!canCharUseMeal(charLevel, effect.mealTier, res)) {
-    return { ok: false, reason: `Réservé aux persos niv. ${effect.levelMin}–${effect.levelMax}` };
+    return { ok: false, reason: `Niveau perso ${effect.levelMin}–${effect.levelMax} requis` };
   }
-  return { ok: true, healPct: effect.healPct, label: effect.label, mealTier: effect.mealTier };
+  return {
+    ok: true,
+    healPct: effect.healPct || 0,
+    label: effect.label,
+    mealTier: effect.mealTier,
+    mealRole: effect.mealRole || 'hero',
+    buff: effect.buff || null,
+  };
 }
 
 export function consumeMealFromInventory(state, mealId) {
@@ -100,5 +168,5 @@ export function consumeMealFromInventory(state, mealId) {
 }
 
 export function calcMealHealAmount(maxHp, healPct) {
-  return Math.max(1, Math.floor(maxHp * (healPct / 100)));
+  return Math.max(1, Math.floor((Number(maxHp) || 1) * (Number(healPct) || 0) / 100));
 }

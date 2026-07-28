@@ -38,7 +38,13 @@ export function getCombatStatsBreakdown(state, characterConfig, combatEquipment,
     def: base.def + equipment.def + setBonus.def,
   };
 
-  return { base, equipment, setBonus, sets, total };
+  const mealBuff = state.combatMealBuff;
+  if (mealBuff) {
+    total.atk = Math.max(1, Math.floor(total.atk * (1 + (Number(mealBuff.atk) || 0))));
+    total.def = Math.max(0, Math.floor(total.def * (1 + (Number(mealBuff.def) || 0))));
+  }
+
+  return { base, equipment, setBonus, sets, total, mealBuff };
 }
 
 export function getCombatStats(state, characterConfig, combatEquipment, combatItems, balance) {

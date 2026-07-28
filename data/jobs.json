@@ -91,10 +91,10 @@
     "gathering": true,
     "farmJob": true
   },
-  "cook": {
-    "id": "cook",
-    "name": "Cuisinier",
-    "emoji": "👨‍🍳",
+  "baker": {
+    "id": "baker",
+    "name": "Boulanger",
+    "emoji": "🥖",
     "maxLevel": 200,
     "xpPerLevel": 55,
     "xpScaling": 1.045,
@@ -102,6 +102,35 @@
       "craftValueBonus": 0.01
     },
     "gathering": false,
-    "craftCategory": "cuisine"
+    "craftCategory": "cuisine",
+    "cuisineJob": true
+  },
+  "fishmonger": {
+    "id": "fishmonger",
+    "name": "Poissonnier",
+    "emoji": "🐟",
+    "maxLevel": 200,
+    "xpPerLevel": 55,
+    "xpScaling": 1.045,
+    "bonusesPerLevel": {
+      "craftValueBonus": 0.01
+    },
+    "gathering": false,
+    "craftCategory": "cuisine",
+    "cuisineJob": true
+  },
+  "chemist": {
+    "id": "chemist",
+    "name": "Chimiste",
+    "emoji": "⚗️",
+    "maxLevel": 200,
+    "xpPerLevel": 58,
+    "xpScaling": 1.045,
+    "bonusesPerLevel": {
+      "craftValueBonus": 0.01
+    },
+    "gathering": false,
+    "craftCategory": "cuisine",
+    "cuisineJob": true
   }
 }

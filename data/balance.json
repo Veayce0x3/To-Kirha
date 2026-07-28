@@ -1,8 +1,8 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 41,
-  "appBuildId": "20260728-2215",
+  "saveVersion": 42,
+  "appBuildId": "20260728-2230",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -26,8 +26,9 @@
     },
     "dungeonGate": {
       "firstDungeonId": "village_sakura",
+      "requireCuisineUnlocked": true,
       "requireCookUnlocked": true,
-      "hint": "Débloque la Cuisine (Poulailler Nv.6) pour préparer des repas avant le donjon."
+      "hint": "Débloque la Cuisine — Boulanger (Poulailler Nv.6) pour préparer des repas avant le donjon."
     },
     "trainingUnlockKills": [
       0,
@@ -603,7 +604,7 @@
       },
       "hint": "Monte Bûcheron Nv.5 et Paysan Nv.6 pour l'Outilleur."
     },
-    "cook": {
+    "baker": {
       "when": {
         "jobLevel": {
           "farmer": 6
@@ -613,7 +614,25 @@
         },
         "buildingUnlocked": "chicken_coop"
       },
-      "hint": "Paysan Nv.6 et Poulailler Nv.6 pour la Cuisine."
+      "hint": "Paysan Nv.6 et Poulailler Nv.6 pour la Cuisine (Boulanger)."
+    },
+    "fishmonger": {
+      "when": {
+        "craftJobUnlocked": "baker",
+        "jobLevel": {
+          "baker": 5
+        }
+      },
+      "hint": "Boulanger Nv.5 pour le Poissonnier (soins équipiers)."
+    },
+    "chemist": {
+      "when": {
+        "craftJobUnlocked": "baker",
+        "jobLevel": {
+          "baker": 8
+        }
+      },
+      "hint": "Boulanger Nv.8 pour le Chimiste (élixirs de combat)."
     },
     "farm": {
       "chicken_coop": {

@@ -70,7 +70,7 @@
     "recipe_tablier": {
       "recipeId": "recipe_tablier",
       "slot": "accessory",
-      "job": "cook"
+      "job": "baker"
     },
     "master_toolkit": {
       "recipeId": "master_toolkit",

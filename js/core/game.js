@@ -210,7 +210,7 @@ import {
 } from '../systems/farm.js';
 import { getFarmToolCheck, getHarvestToolCheck, ensureHarvestToolEquipped } from '../systems/toolTier.js';
 import { migrateCombatDurability } from '../systems/combatDurability.js';
-import { clearCombatMealBuff, listOwnedMeals, peekMealHeal, consumeMealFromInventory, calcMealHealAmount } from '../systems/consumables.js';
+import { clearCombatMealBuff, listOwnedMeals, peekMealHeal, consumeMealFromInventory, calcMealHealAmount, applyCombatMealBuff, getMealRole } from '../systems/consumables.js';
 import {
   STARTER_WEAPON_CHOICES,
   STARTER_WEAPON_TYPES,
@@ -1219,6 +1219,51 @@ export class Game {
     const heal = peekMealHeal(mealId, this.state, this.resources, this.balance, charLevel);
     if (!heal.ok) return { ok: false, reason: heal.reason };
 
+    const mealName = this.resources[mealId]?.name || mealId;
+    const role = heal.mealRole || getMealRole(mealId, this.resources) || 'hero';
+
+    if (role === 'buff') {
+      if (!consumeMealFromInventory(this.state, mealId)) {
+        return { ok: false, reason: 'Plus de stock' };
+      }
+      applyCombatMealBuff(this.state, mealId, this.resources);
+      emit('mealUsed', { mealName, buff: true, label: heal.label });
+      emit('stateChange', this.state);
+      this.scheduleSave();
+      return { ok: true, buff: true, label: heal.label };
+    }
+
+    if (role === 'companions') {
+      const companionIds = Object.keys(this.companions || {}).filter((id) => this.state.companions?.[id]?.unlocked);
+      if (!companionIds.length) {
+        return { ok: false, reason: 'Aucun équipier recruté' };
+      }
+      if (!this.state.combatWear) this.state.combatWear = {};
+      if (!this.state.combatWear.solo) this.state.combatWear.solo = {};
+      let totalHealed = 0;
+      for (const id of companionIds) {
+        const stats = this.getCompanionStatsFor(id);
+        const maxHp = stats?.hp || 1;
+        const key = id;
+        const current = this.state.combatWear.solo[key] != null ? this.state.combatWear.solo[key] : maxHp;
+        if (current >= maxHp) continue;
+        const gain = calcMealHealAmount(maxHp, heal.healPct);
+        const next = Math.min(maxHp, current + gain);
+        this.state.combatWear.solo[key] = next;
+        totalHealed += next - current;
+      }
+      if (totalHealed <= 0) {
+        return { ok: false, reason: 'Équipiers déjà au maximum de PV' };
+      }
+      if (!consumeMealFromInventory(this.state, mealId)) {
+        return { ok: false, reason: 'Plus de stock' };
+      }
+      emit('mealUsed', { mealName, healed: totalHealed, companions: true });
+      emit('stateChange', this.state);
+      this.scheduleSave();
+      return { ok: true, healed: totalHealed, companions: true };
+    }
+
     const maxHp = this.getCharacterStats().hp;
     const stored = this.state.combatWear?.solo?.hero;
     const currentHp = stored != null ? stored : maxHp;
@@ -1236,7 +1281,6 @@ export class Game {
       return { ok: false, reason: 'Plus de ce repas' };
     }
 
-    const mealName = this.resources[mealId]?.name || mealId;
     emit('mealUsed', { mealName, healed: newHp - currentHp, hp: newHp, maxHp });
     emit('stateChange', this.state);
     this.scheduleSave();
@@ -1418,7 +1462,11 @@ export class Game {
   }
 
   isCookUnlocked() {
-    return isCraftJobUnlocked('cook', this.state, this.balance);
+    return this.isCuisineUnlocked();
+  }
+
+  isCuisineUnlocked() {
+    return isCraftJobUnlocked('baker', this.state, this.balance);
   }
 
   isCombatViewUnlocked() {
@@ -2248,11 +2296,17 @@ export class Game {
   }
 
   getCraftJobs() {
-    return Object.values(this.jobs).filter((j) => j.id === 'toolmaker');
+    return Object.values(this.jobs).filter((j) => j.id === 'toolmaker' || j.cuisineJob);
   }
 
   getCuisineJob() {
-    return this.jobs.cook || null;
+    return this.jobs.baker || this.jobs.cook || null;
+  }
+
+  getCuisineJobs() {
+    return ['baker', 'fishmonger', 'chemist']
+      .map((id) => this.jobs[id])
+      .filter(Boolean);
   }
 
   getGatheringJobs() {

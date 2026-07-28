@@ -24,6 +24,7 @@ import {
   peekMealHeal,
   consumeMealFromInventory,
   clearCombatMealBuff,
+  consumeCombatMealBuffFight,
   DUNGEON_ROOM_HEAL,
   calcMealHealAmount,
 } from './consumables.js';
@@ -48,10 +49,11 @@ function getDungeonGate(balance) {
 
 function checkDungeonGate(combatZone, state, balance) {
   const gate = getDungeonGate(balance);
-  if (!gate.requireCookUnlocked) return { ok: true };
+  const requireCuisine = gate.requireCuisineUnlocked || gate.requireCookUnlocked;
+  if (!requireCuisine) return { ok: true };
   const firstId = gate.firstDungeonId || 'village_sakura';
   if (combatZone.id !== firstId && combatZone.zone !== firstId) return { ok: true };
-  if (!isCraftJobUnlocked('cook', state, balance)) {
+  if (!isCraftJobUnlocked('baker', state, balance) && !isCraftJobUnlocked('cook', state, balance)) {
     return { ok: false, reason: gate.hint || 'Débloque la Cuisine pour préparer des repas avant le donjon.' };
   }
   return { ok: true };
@@ -370,7 +372,7 @@ function finishDungeonRun(run, state, characterConfig, balance, combatItems) {
 
   clearSoloHpWear(state);
   clearDungeonPartySnapshot(state);
-  clearCombatMealBuff(state);
+  consumeCombatMealBuffFight(state);
 
   state.combatEncounter = null;
 
@@ -581,6 +583,17 @@ export function useCombatMeal(mealId, state, characterConfig, resources, balance
   const member = run.party[memberIndex];
   const heal = peekMealHeal(mealId, state, resources, balance, charLevel);
   if (!heal.ok) return { blocked: true, reason: heal.reason };
+
+  const role = heal.mealRole || 'hero';
+  if (role === 'buff') {
+    return { blocked: true, reason: 'Boire l’élixir hors combat (préparation).' };
+  }
+  if (role === 'companions' && member?.id === 'hero') {
+    return { blocked: true, reason: 'Ce plat est pour un équipier' };
+  }
+  if (role === 'hero' && member?.id && member.id !== 'hero') {
+    return { blocked: true, reason: 'Ce plat est pour le héros' };
+  }
 
   const mealCheck = canUseMemberMeal(run, memberIndex);
   if (!mealCheck.ok) return { blocked: true, reason: mealCheck.reason };

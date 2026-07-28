@@ -34,7 +34,7 @@ import { listOwnedMeals, countOwnedMeals, getMealEffect } from '../systems/consu
 import { RARITY_LABELS, RARITY_EMOJI, getInstanceRarity, getNextRarity } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
 import { getDungeonKeyId } from '../systems/dungeonKeys.js';
-import { getVisibleHarvestViews, getVisibleFarmViews, isGatheringJobUnlocked, getGatheringJobUnlockProgress, getFeatureUnlockProgress, getJobSwitcherItems, getFarmBuildingUnlockProgress, isFarmBuildingUnlocked } from '../systems/careerChoice.js';
+import { getVisibleHarvestViews, getVisibleFarmViews, isGatheringJobUnlocked, getGatheringJobUnlockProgress, getFeatureUnlockProgress, getJobSwitcherItems, getFarmBuildingUnlockProgress, isFarmBuildingUnlocked, isCraftJobUnlocked } from '../systems/careerChoice.js';
 import { showCareerChoiceIfNeeded } from './careerChoiceUi.js';
 import { reconcileAuthAfterLocalReset } from '../core/resetAuth.js';
 import { renderGuestBanner, renderAccountPanel, showAccountRequiredModal } from './authUi.js';
@@ -51,6 +51,8 @@ let charTab = 'bag';
 const CHAR_TABS = new Set(['bag', 'gear', 'tools']);
 let combatTab = 'zones';
 const COMBAT_TABS = new Set(['zones', 'team']);
+let cuisineTab = 'baker';
+const CUISINE_TABS = new Set(['baker', 'fishmonger', 'chemist']);
 
 function normalizeCharTab(tab) {
   return CHAR_TABS.has(tab) ? tab : 'bag';
@@ -58,6 +60,10 @@ function normalizeCharTab(tab) {
 
 function normalizeCombatTab(tab) {
   return COMBAT_TABS.has(tab) ? tab : 'zones';
+}
+
+function normalizeCuisineTab(tab) {
+  return CUISINE_TABS.has(tab) ? tab : 'baker';
 }
 let auctionCategory = '';
 let auctionGroup = 'services';
@@ -2904,22 +2910,71 @@ function mountWorkshopContent(game, container) {
 }
 
 function renderCuisine(game, el) {
-  if (!game.isCookUnlocked()) {
-    const progress = getFeatureUnlockProgress('cook', game.state, game.balance, game.jobs);
+  if (!game.isCuisineUnlocked?.() && !game.isCookUnlocked()) {
+    const progress = getFeatureUnlockProgress('baker', game.state, game.balance, game.jobs)
+      || getFeatureUnlockProgress('cook', game.state, game.balance, game.jobs);
     if (progress) {
       renderLockedUnlockPanel(game, el, progress);
       return;
     }
   }
-  const job = game.jobs.cook;
+
+  cuisineTab = normalizeCuisineTab(cuisineTab);
+  // Si l’onglet n’est pas encore débloqué, retomber sur Boulanger
+  if (cuisineTab !== 'baker' && !isCraftJobUnlocked(cuisineTab, game.state, game.balance)) {
+    cuisineTab = 'baker';
+  }
+
+  const jobs = {
+    baker: game.jobs.baker,
+    fishmonger: game.jobs.fishmonger,
+    chemist: game.jobs.chemist,
+  };
+  const tabMeta = [
+    { id: 'baker', label: 'Boulanger', hint: 'Soins héros', unlock: true },
+    {
+      id: 'fishmonger',
+      label: 'Poissonnier',
+      hint: 'Soins équipiers',
+      unlock: isCraftJobUnlocked('fishmonger', game.state, game.balance),
+    },
+    {
+      id: 'chemist',
+      label: 'Chimiste',
+      hint: 'Buffs combat',
+      unlock: isCraftJobUnlocked('chemist', game.state, game.balance),
+    },
+  ];
+
   el.innerHTML = `
     <div class="view-header">
       <h2>${iconHtml(getNavIcon('cuisine'), 'view-header-icon', 'Cuisine')} Cuisine</h2>
-      <p class="view-desc">${job?.emoji || '👨‍🍳'} ${job?.name || 'Cuisinier'} — prépare des plats pour les buffs de donjon et les festins</p>
+      <p class="view-desc">Trois métiers : pains & soins héros, plats pour équipiers, élixirs de combat. Ressources ferme + récolte du tableau.</p>
     </div>
+    <nav class="cuisine-tabs char-tabs" role="tablist" aria-label="Métiers de cuisine">
+      ${tabMeta.map((t) => `
+        <button type="button" class="char-tab-btn${cuisineTab === t.id ? ' active' : ''}${t.unlock ? '' : ' locked'}"
+          data-cuisine-tab="${t.id}" role="tab" ${t.unlock ? '' : 'disabled'}
+          title="${t.unlock ? t.hint : (game.balance.jobUnlocks?.[t.id]?.hint || 'Verrouillé')}">
+          ${jobs[t.id]?.emoji || ''} ${t.label}
+        </button>
+      `).join('')}
+    </nav>
     <div id="cuisine-content"></div>
   `;
-  mountCraftWorkshop(game, el.querySelector('#cuisine-content'), 'cook');
+
+  el.querySelectorAll('[data-cuisine-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      cuisineTab = normalizeCuisineTab(btn.dataset.cuisineTab);
+      el.querySelectorAll('[data-cuisine-tab]').forEach((b) => {
+        b.classList.toggle('active', b.dataset.cuisineTab === cuisineTab);
+      });
+      mountCraftWorkshop(game, el.querySelector('#cuisine-content'), cuisineTab);
+    });
+  });
+
+  mountCraftWorkshop(game, el.querySelector('#cuisine-content'), cuisineTab);
 }
 
 /* ── Place marchande (mobile-first) ── */

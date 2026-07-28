@@ -3,10 +3,18 @@
 import { GATHERING_JOB_IDS } from './careerChoice.js';
 import { FARM_BUILDING_IDS, FARM_BUILDING_LABELS } from './farm.js';
 
-const FEATURE_UNLOCK_IDS = ['combat', 'toolmaker', 'cook'];
-const FEATURE_VIEW_IDS = { combat: 'combat', toolmaker: 'workshop', cook: 'cuisine' };
+const FEATURE_UNLOCK_IDS = ['combat', 'toolmaker', 'baker', 'fishmonger', 'chemist'];
+const FEATURE_VIEW_IDS = {
+  combat: 'combat',
+  toolmaker: 'workshop',
+  baker: 'cuisine',
+  fishmonger: 'cuisine',
+  chemist: 'cuisine',
+  cook: 'cuisine',
+};
 
-export const CRAFT_JOB_IDS = ['toolmaker', 'cook'];
+export const CRAFT_JOB_IDS = ['toolmaker', 'baker', 'fishmonger', 'chemist'];
+export const CUISINE_JOB_IDS = ['baker', 'fishmonger', 'chemist'];
 export const SPECIAL_VIEWS = ['combat', 'workshop', 'cuisine'];
 
 export function getJobUnlockRules(balance) {
@@ -39,8 +47,9 @@ function meetsCondition(state, condition, balance = null) {
   if (condition.featureUnlocked) {
     const fid = condition.featureUnlocked;
     if (!balance) return false;
-    if (fid === 'toolmaker' || fid === 'cook') {
-      if (!isCraftJobUnlocked(fid, state, balance)) return false;
+    if (fid === 'toolmaker' || fid === 'baker' || fid === 'fishmonger' || fid === 'chemist' || fid === 'cook') {
+      const jobId = fid === 'cook' ? 'baker' : fid;
+      if (!isCraftJobUnlocked(jobId, state, balance)) return false;
     } else if (fid === 'combat') {
       if (!isCombatUnlocked(state, balance)) return false;
     }
@@ -371,12 +380,18 @@ export function getFeatureUnlockProgress(featureId, state, balance, jobs = {}) {
   const labels = {
     combat: 'Combat',
     toolmaker: jobs.toolmaker?.name || 'Outilleur',
-    cook: jobs.cook?.name || 'Cuisine',
+    baker: jobs.baker?.name || 'Boulanger',
+    fishmonger: jobs.fishmonger?.name || 'Poissonnier',
+    chemist: jobs.chemist?.name || 'Chimiste',
+    cook: jobs.baker?.name || 'Cuisine',
   };
   const emojis = {
     combat: '⚔️',
     toolmaker: jobs.toolmaker?.emoji || '🛠️',
-    cook: jobs.cook?.emoji || '👨‍🍳',
+    baker: jobs.baker?.emoji || '🥖',
+    fishmonger: jobs.fishmonger?.emoji || '🐟',
+    chemist: jobs.chemist?.emoji || '⚗️',
+    cook: jobs.baker?.emoji || '👨‍🍳',
   };
 
   return {

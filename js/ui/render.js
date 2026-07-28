@@ -171,12 +171,12 @@ export function initUI(game, audio) {
   }
 
   function getLockedFeatureNavEntry(viewId) {
-    const featureByView = { combat: 'combat', workshop: 'toolmaker', cuisine: 'cook' };
+    const featureByView = { combat: 'combat', workshop: 'toolmaker', cuisine: 'baker' };
     const featureId = featureByView[viewId];
     if (!featureId) return null;
     if (featureId === 'combat' && game.isCombatViewUnlocked()) return null;
     if (featureId === 'toolmaker' && game.isCraftUnlocked()) return null;
-    if (featureId === 'cook' && game.isCookUnlocked()) return null;
+    if (featureId === 'baker' && (game.isCuisineUnlocked?.() || game.isCookUnlocked())) return null;
     return getFeatureUnlockProgress(featureId, game.state, game.balance, game.jobs);
   }
 

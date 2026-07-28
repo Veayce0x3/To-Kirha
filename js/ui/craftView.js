@@ -120,7 +120,7 @@ function renderRecipeGroup(title, items, game) {
   `;
 }
 
-const TOOL_JOB_ORDER = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist', 'breeder', 'cook', '_other'];
+const TOOL_JOB_ORDER = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist', 'breeder', 'baker', 'fishmonger', 'chemist', 'cook', '_other'];
 
 let selectedToolJob = null;
 
@@ -253,7 +253,7 @@ function paintCraftPanel(game, craftJobId, panelEl, headerEl) {
   paintCraftHeader(game, craftJobId, headerEl);
 
   const isTools = craftJobId === 'toolmaker';
-  const isCook = craftJobId === 'cook';
+  const isCook = craftJobId === 'cook' || craftJobId === 'baker' || craftJobId === 'fishmonger' || craftJobId === 'chemist';
   const groups = listWorkshopRecipes(craftJobId, game.getCraftContext());
 
   let hints = '';

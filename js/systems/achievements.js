@@ -114,7 +114,10 @@ export function evaluateAchievementProgress(achievement, state, recipes) {
       return (state.crafted || []).some((id) => recipes[id]?.craftJob === achievement.jobId) ? 1 : 0;
     case 'craft_meal': {
       if ((state.stats?.mealsCrafted || 0) > 0) return 1;
-      if ((state.crafted || []).some((id) => recipes[id]?.craftJob === 'cook')) return 1;
+      if ((state.crafted || []).some((id) => {
+        const job = recipes[id]?.craftJob;
+        return job === 'cook' || job === 'baker' || job === 'fishmonger' || job === 'chemist';
+      })) return 1;
       // Rétrocompat : repas déjà en inventaire avant le correctif
       return Object.keys(state.inventory || {}).some(
         (id) => id.startsWith('meal_') && (state.inventory[id] || 0) > 0

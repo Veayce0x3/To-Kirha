@@ -1,6 +1,6 @@
 import { isToolBroken } from './toolDurability.js';
 
-const GATHER_JOBS = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist', 'breeder', 'cook'];
+const GATHER_JOBS = ['lumberjack', 'fisher', 'miner', 'farmer', 'alchemist', 'breeder', 'baker', 'fishmonger', 'chemist', 'cook'];
 
 export function getDefaultEquipment() {
   return {

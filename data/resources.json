@@ -1489,10 +1489,11 @@
     "sellPrice": 18,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 1–19)",
+    "description": "Repas — soin héros % PV (niv. perso 1–19)",
     "mealTier": 1,
     "requiredCharLevelMin": 1,
-    "requiredCharLevelMax": 19
+    "requiredCharLevelMax": 19,
+    "mealRole": "hero"
   },
   "meal_poisson": {
     "id": "meal_poisson",
@@ -1501,10 +1502,11 @@
     "sellPrice": 23,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 10–29)",
+    "description": "Repas équipiers — soin % PV des compagnons",
     "mealTier": 10,
     "requiredCharLevelMin": 10,
-    "requiredCharLevelMax": 29
+    "requiredCharLevelMax": 29,
+    "mealRole": "companions"
   },
   "meal_gateau": {
     "id": "meal_gateau",
@@ -1513,10 +1515,11 @@
     "sellPrice": 34,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 20–39)",
+    "description": "Repas — soin héros % PV (niv. perso 20–39)",
     "mealTier": 20,
     "requiredCharLevelMin": 20,
-    "requiredCharLevelMax": 39
+    "requiredCharLevelMax": 39,
+    "mealRole": "hero"
   },
   "meal_festin": {
     "id": "meal_festin",
@@ -1525,10 +1528,11 @@
     "sellPrice": 45,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 30–39)",
+    "description": "Repas — soin héros % PV (niv. perso 30–39)",
     "mealTier": 30,
     "requiredCharLevelMin": 30,
-    "requiredCharLevelMax": 39
+    "requiredCharLevelMax": 39,
+    "mealRole": "hero"
   },
   "meal_bento": {
     "id": "meal_bento",
@@ -1537,10 +1541,11 @@
     "sellPrice": 56,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 40–49)",
+    "description": "Repas — soin héros % PV (niv. perso 40–49)",
     "mealTier": 40,
     "requiredCharLevelMin": 40,
-    "requiredCharLevelMax": 49
+    "requiredCharLevelMax": 49,
+    "mealRole": "hero"
   },
   "meal_ramen": {
     "id": "meal_ramen",
@@ -1549,10 +1554,11 @@
     "sellPrice": 67,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 50–59)",
+    "description": "Repas — soin héros % PV (niv. perso 50–59)",
     "mealTier": 50,
     "requiredCharLevelMin": 50,
-    "requiredCharLevelMax": 59
+    "requiredCharLevelMax": 59,
+    "mealRole": "hero"
   },
   "meal_sushi": {
     "id": "meal_sushi",
@@ -1561,10 +1567,11 @@
     "sellPrice": 78,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 60–69)",
+    "description": "Repas équipiers — soin % PV des compagnons",
     "mealTier": 60,
     "requiredCharLevelMin": 60,
-    "requiredCharLevelMax": 69
+    "requiredCharLevelMax": 69,
+    "mealRole": "companions"
   },
   "meal_tempura": {
     "id": "meal_tempura",
@@ -1573,10 +1580,11 @@
     "sellPrice": 89,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 70–79)",
+    "description": "Repas équipiers — soin % PV des compagnons",
     "mealTier": 70,
     "requiredCharLevelMin": 70,
-    "requiredCharLevelMax": 79
+    "requiredCharLevelMax": 79,
+    "mealRole": "companions"
   },
   "meal_udon": {
     "id": "meal_udon",
@@ -1585,10 +1593,11 @@
     "sellPrice": 100,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 80–89)",
+    "description": "Repas — soin héros % PV (niv. perso 80–89)",
     "mealTier": 80,
     "requiredCharLevelMin": 80,
-    "requiredCharLevelMax": 89
+    "requiredCharLevelMax": 89,
+    "mealRole": "hero"
   },
   "meal_yakitori": {
     "id": "meal_yakitori",
@@ -1597,10 +1606,11 @@
     "sellPrice": 111,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 90–99)",
+    "description": "Repas équipiers — soin % PV des compagnons",
     "mealTier": 90,
     "requiredCharLevelMin": 90,
-    "requiredCharLevelMax": 99
+    "requiredCharLevelMax": 99,
+    "mealRole": "companions"
   },
   "meal_kaiseki": {
     "id": "meal_kaiseki",
@@ -1609,10 +1619,11 @@
     "sellPrice": 122,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 100–109)",
+    "description": "Repas — soin héros % PV (niv. perso 100–109)",
     "mealTier": 100,
     "requiredCharLevelMin": 100,
-    "requiredCharLevelMax": 109
+    "requiredCharLevelMax": 109,
+    "mealRole": "hero"
   },
   "meal_mochi": {
     "id": "meal_mochi",
@@ -1621,10 +1632,11 @@
     "sellPrice": 133,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 110–119)",
+    "description": "Repas — soin héros % PV (niv. perso 110–119)",
     "mealTier": 110,
     "requiredCharLevelMin": 110,
-    "requiredCharLevelMax": 119
+    "requiredCharLevelMax": 119,
+    "mealRole": "hero"
   },
   "meal_dango": {
     "id": "meal_dango",
@@ -1633,10 +1645,11 @@
     "sellPrice": 144,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 120–129)",
+    "description": "Repas — soin héros % PV (niv. perso 120–129)",
     "mealTier": 120,
     "requiredCharLevelMin": 120,
-    "requiredCharLevelMax": 129
+    "requiredCharLevelMax": 129,
+    "mealRole": "hero"
   },
   "meal_miso": {
     "id": "meal_miso",
@@ -1645,10 +1658,11 @@
     "sellPrice": 155,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 130–139)",
+    "description": "Repas — soin héros % PV (niv. perso 130–139)",
     "mealTier": 130,
     "requiredCharLevelMin": 130,
-    "requiredCharLevelMax": 139
+    "requiredCharLevelMax": 139,
+    "mealRole": "hero"
   },
   "meal_teriyaki": {
     "id": "meal_teriyaki",
@@ -1657,10 +1671,11 @@
     "sellPrice": 166,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 140–149)",
+    "description": "Repas équipiers — soin % PV des compagnons",
     "mealTier": 140,
     "requiredCharLevelMin": 140,
-    "requiredCharLevelMax": 149
+    "requiredCharLevelMax": 149,
+    "mealRole": "companions"
   },
   "meal_katsu": {
     "id": "meal_katsu",
@@ -1669,10 +1684,11 @@
     "sellPrice": 177,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 150–159)",
+    "description": "Repas — soin héros % PV (niv. perso 150–159)",
     "mealTier": 150,
     "requiredCharLevelMin": 150,
-    "requiredCharLevelMax": 159
+    "requiredCharLevelMax": 159,
+    "mealRole": "hero"
   },
   "meal_sashimi": {
     "id": "meal_sashimi",
@@ -1681,10 +1697,11 @@
     "sellPrice": 188,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 160–169)",
+    "description": "Repas équipiers — soin % PV des compagnons",
     "mealTier": 160,
     "requiredCharLevelMin": 160,
-    "requiredCharLevelMax": 169
+    "requiredCharLevelMax": 169,
+    "mealRole": "companions"
   },
   "meal_sukiyaki": {
     "id": "meal_sukiyaki",
@@ -1693,10 +1710,11 @@
     "sellPrice": 199,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 170–179)",
+    "description": "Repas équipiers — soin % PV des compagnons",
     "mealTier": 170,
     "requiredCharLevelMin": 170,
-    "requiredCharLevelMax": 179
+    "requiredCharLevelMax": 179,
+    "mealRole": "companions"
   },
   "meal_tonkatsu": {
     "id": "meal_tonkatsu",
@@ -1705,10 +1723,11 @@
     "sellPrice": 210,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 180–189)",
+    "description": "Repas équipiers — soin % PV des compagnons",
     "mealTier": 180,
     "requiredCharLevelMin": 180,
-    "requiredCharLevelMax": 189
+    "requiredCharLevelMax": 189,
+    "mealRole": "companions"
   },
   "meal_okonomiyaki": {
     "id": "meal_okonomiyaki",
@@ -1717,10 +1736,11 @@
     "sellPrice": 221,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 190–199)",
+    "description": "Repas — soin héros % PV (niv. perso 190–199)",
     "mealTier": 190,
     "requiredCharLevelMin": 190,
-    "requiredCharLevelMax": 199
+    "requiredCharLevelMax": 199,
+    "mealRole": "hero"
   },
   "meal_omakase": {
     "id": "meal_omakase",
@@ -1729,9 +1749,120 @@
     "sellPrice": 232,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas — soin % PV max (niv. perso 200–209)",
+    "description": "Repas — soin héros % PV (niv. perso 200–209)",
     "mealTier": 200,
     "requiredCharLevelMin": 200,
-    "requiredCharLevelMax": 209
+    "requiredCharLevelMax": 209,
+    "mealRole": "hero"
+  },
+  "elixir_menthe": {
+    "id": "elixir_menthe",
+    "name": "Élixir de Menthe",
+    "emoji": "🌿",
+    "sellPrice": 28,
+    "craftOnly": true,
+    "consumable": true,
+    "mealRole": "buff",
+    "mealTier": 1,
+    "requiredCharLevelMin": 1,
+    "requiredCharLevelMax": 39,
+    "description": "Buff combat : +10% ATQ (1 combat)",
+    "buff": {
+      "atk": 0.1,
+      "def": 0,
+      "fights": 1
+    }
+  },
+  "elixir_ortie": {
+    "id": "elixir_ortie",
+    "name": "Élixir d'Ortie",
+    "emoji": "🛡️",
+    "sellPrice": 40,
+    "craftOnly": true,
+    "consumable": true,
+    "mealRole": "buff",
+    "mealTier": 10,
+    "requiredCharLevelMin": 10,
+    "requiredCharLevelMax": 49,
+    "description": "Buff combat : +10% DEF (1 combat)",
+    "buff": {
+      "atk": 0,
+      "def": 0.1,
+      "fights": 1
+    }
+  },
+  "elixir_ginseng": {
+    "id": "elixir_ginseng",
+    "name": "Élixir de Ginseng",
+    "emoji": "💪",
+    "sellPrice": 70,
+    "craftOnly": true,
+    "consumable": true,
+    "mealRole": "buff",
+    "mealTier": 30,
+    "requiredCharLevelMin": 20,
+    "requiredCharLevelMax": 79,
+    "description": "Buff combat : +8% ATQ et DEF (1 combat)",
+    "buff": {
+      "atk": 0.08,
+      "def": 0.08,
+      "fights": 1
+    }
+  },
+  "elixir_lavande": {
+    "id": "elixir_lavande",
+    "name": "Élixir de Lavande",
+    "emoji": "💜",
+    "sellPrice": 110,
+    "craftOnly": true,
+    "consumable": true,
+    "mealRole": "buff",
+    "mealTier": 50,
+    "requiredCharLevelMin": 40,
+    "requiredCharLevelMax": 119,
+    "description": "Buff combat : +15% DEF (1 combat)",
+    "buff": {
+      "atk": 0,
+      "def": 0.15,
+      "fights": 1
+    }
+  },
+  "elixir_lotus": {
+    "id": "elixir_lotus",
+    "name": "Élixir du Lotus",
+    "emoji": "🪷",
+    "sellPrice": 200,
+    "craftOnly": true,
+    "consumable": true,
+    "mealRole": "buff",
+    "mealTier": 100,
+    "requiredCharLevelMin": 80,
+    "requiredCharLevelMax": 200,
+    "description": "Buff combat : +12% ATQ et DEF (1 combat)",
+    "buff": {
+      "atk": 0.12,
+      "def": 0.12,
+      "fights": 1
+    }
+  },
+  "whetstone": {
+    "id": "whetstone",
+    "name": "Pierre à aiguiser",
+    "emoji": "🪨",
+    "sellPrice": 10,
+    "craftOnly": true,
+    "consumable": true,
+    "description": "Consommable outilleur — +5 usages à l’outil de récolte équipé.",
+    "toolRepair": 5
+  },
+  "tool_oil": {
+    "id": "tool_oil",
+    "name": "Huile d'entretien",
+    "emoji": "🫒",
+    "sellPrice": 22,
+    "craftOnly": true,
+    "consumable": true,
+    "description": "Consommable outilleur — +12 usages à l’outil de récolte équipé.",
+    "toolRepair": 12
   }
 }

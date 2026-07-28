@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "buildId": "20260728-2230",
+      "date": "2026-07-28",
+      "title": "Cuisine : Boulanger, Poissonnier, Chimiste",
+      "highlights": [
+        "La Cuisine devient une grande catégorie avec 3 métiers",
+        "Boulanger : soins héros · Poissonnier : soins équipiers · Chimiste : élixirs de buff",
+        "Recettes calées sur le tableau de ressources (ferme + récolte) — plus de mats inventés",
+        "Outilleur : pierre à aiguiser, huile et ustensiles (bois/minerai utiles)",
+        "Ancien métier Cuisinier migré vers Boulanger"
+      ]
+    },
+    {
       "buildId": "20260728-2215",
       "date": "2026-07-28",
       "title": "Équipiers dans l’onglet Combat",
