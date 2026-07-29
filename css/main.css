@@ -853,7 +853,10 @@ body.page-hidden .nav-btn-unlock-ready,
 body.page-hidden .slot-fx-chop,
 body.page-hidden .slot-fx-pop,
 body.page-hidden .slot-fx-float,
-body.page-hidden .slot-progress-fill {
+body.page-hidden .slot-progress-fill,
+body.page-hidden .slot-visual-emoji,
+body.page-hidden .slot-visual-sprite,
+body.page-hidden .slot-progress-overlay.slot-ring-live {
   animation: none !important;
 }
 
@@ -872,7 +875,8 @@ body.page-hidden .slot-progress-fill {
   .harvest-slot.active-harvest .slot-progress-fill,
   .harvest-slot.slot-can-harvest,
   .harvest-slot.state-harvesting .slot-visual-sprite,
-  .harvest-slot.state-regrowing .slot-visual-emoji {
+  .harvest-slot.state-regrowing .slot-visual-emoji,
+  .slot-progress-overlay.slot-ring-live {
     animation: none !important;
   }
 }

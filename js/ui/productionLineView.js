@@ -116,7 +116,7 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
     <div class="slot-visual slot-visual-tap" role="button" tabindex="0" aria-label="${resource.name}${statusLabel ? ` — ${statusLabel}` : ''}">
       ${canHarvest ? '<span class="slot-ready-badge">Prêt</span>' : ''}
       ${spriteHtml}
-      ${active ? slotProgressOverlayHtml(progressPct) : ''}
+      ${active ? slotProgressOverlayHtml(progressPct, remainingMs) : ''}
     </div>
     ${active ? slotTimeFooterHtml(statusLabel, phase) : ''}
     <div class="slot-tool-row"></div>
@@ -246,9 +246,14 @@ function buildFarmToolStatusControls(game, building, onRecrafted) {
   return buildToolStatusControlsFromStatus(game, status, onRecrafted);
 }
 
-function slotProgressOverlayHtml(progressPct) {
+function slotProgressOverlayHtml(progressPct, remainingMs = null) {
   const pct = Math.max(0, Math.min(100, Number(progressPct) || 0));
-  return `<div class="slot-progress-overlay" style="--slot-progress:${pct}" aria-hidden="true">
+  const rem = remainingMs != null ? Math.max(0, Number(remainingMs) || 0) : null;
+  const live = rem != null && rem > 80 && pct < 100;
+  const durStyle = live ? `;--slot-duration:${Math.round(rem)}ms` : '';
+  const liveClass = live ? ' slot-ring-live' : '';
+  const untilAttr = live ? ` data-ring-until="${Date.now() + Math.round(rem)}"` : '';
+  return `<div class="slot-progress-overlay${liveClass}" style="--slot-progress:${pct}${durStyle}" data-sync-pct="${pct}"${untilAttr} aria-hidden="true">
     <div class="slot-progress-ring"></div>
   </div>`;
 }
@@ -261,9 +266,36 @@ function slotTimeFooterHtml(statusLabel, phase = 'harvesting') {
   </div>`;
 }
 
-function setSlotProgressUi(card, pct, labelText) {
+/** Met à jour le timer ; l’anneau avance en CSS (fluide, peu de JS). */
+function setSlotProgressUi(card, pct, labelText, remainingMs = null) {
   const overlay = card.querySelector('.slot-progress-overlay');
-  if (overlay) overlay.style.setProperty('--slot-progress', String(Math.max(0, Math.min(100, pct))));
+  if (overlay) {
+    const clamped = Math.max(0, Math.min(100, Number(pct) || 0));
+    const rem = remainingMs != null ? Math.max(0, Number(remainingMs) || 0) : null;
+    if (rem != null && rem > 80 && clamped < 100) {
+      const expectedEnd = Number(overlay.dataset.ringUntil) || 0;
+      const actualEnd = Date.now() + rem;
+      const timeDrift = Math.abs(expectedEnd - actualEnd);
+      const needsRestart = !overlay.classList.contains('slot-ring-live') || timeDrift > 750;
+      if (needsRestart) {
+        overlay.classList.remove('slot-ring-live');
+        overlay.style.setProperty('--slot-progress', String(clamped));
+        overlay.style.setProperty('--slot-duration', `${Math.round(rem)}ms`);
+        overlay.dataset.syncPct = String(clamped);
+        overlay.dataset.ringUntil = String(actualEnd);
+        // Relance propre : frame suivante pour que le navigateur parte de la valeur courante
+        requestAnimationFrame(() => {
+          if (!overlay.isConnected) return;
+          overlay.classList.add('slot-ring-live');
+        });
+      }
+    } else {
+      overlay.classList.remove('slot-ring-live');
+      overlay.style.setProperty('--slot-progress', String(clamped));
+      overlay.dataset.syncPct = String(clamped);
+      delete overlay.dataset.ringUntil;
+    }
+  }
   const timer = card.querySelector('.slot-timer') || card.querySelector('.slot-progress-label');
   if (timer && labelText != null) timer.textContent = labelText;
 }
@@ -635,7 +667,7 @@ function buildFarmUnitCard(game, buildingId, lineKey, unitIndex, building) {
       <div class="slot-visual slot-visual-tap" role="button" tabindex="0" aria-label="${building.name}${statusLabel ? ` — ${statusLabel}` : ''}">
         ${canStart ? '<span class="slot-ready-badge">Produire</span>' : ''}
         ${spriteHtml}
-        ${active ? slotProgressOverlayHtml(progressPct) : ''}
+        ${active ? slotProgressOverlayHtml(progressPct, remainingMs) : ''}
       </div>
       ${active ? slotTimeFooterHtml(statusLabel, 'harvesting') : ''}
       ${animalBlock}
@@ -927,9 +959,10 @@ export function updateProductionLineProgresses(game, jobId) {
       if (!card) return;
       const pct = Math.floor(progress * 100);
       const phase = slot.active.phase;
+      const remainingMs = getSlotRemainingMs(slot);
       const labelText = phase === 'regrowing' && progress >= 1
         ? 'Prêt !'
-        : getHarvestBtnLabel(phase, progress, getSlotRemainingMs(slot));
+        : getHarvestBtnLabel(phase, progress, remainingMs);
       if (!card.querySelector('.slot-progress-overlay') || !card.querySelector('.slot-timer')) {
         const resource = game.resources[resourceId];
         if (resource) {
@@ -938,7 +971,7 @@ export function updateProductionLineProgresses(game, jobId) {
           card = fresh;
         }
       }
-      setSlotProgressUi(card, pct, labelText);
+      setSlotProgressUi(card, pct, labelText, remainingMs);
       if (progress >= 1 && phase === 'regrowing') {
         card?.classList.add('slot-can-harvest');
       }
@@ -972,8 +1005,9 @@ export function updateFarmLineProgresses(game, buildingId) {
           patchFarmUnitCard(game, buildingId, lineKey, unitIndex);
           card = document.querySelector(`.production-unit[data-building="${buildingId}"][data-product="${lineKey}"][data-unit="${unitIndex}"]`);
         }
-        const statusLabel = getFarmBtnLabel(progress, getSlotRemainingMs(slot));
-        setSlotProgressUi(card, pct, statusLabel);
+        const remainingMs = getSlotRemainingMs(slot);
+        const statusLabel = getFarmBtnLabel(progress, remainingMs);
+        setSlotProgressUi(card, pct, statusLabel, remainingMs);
         if (progress >= 1) {
           card?.classList.add('slot-can-harvest');
           const tap = card?.querySelector('.slot-visual-tap');

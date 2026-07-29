@@ -3981,7 +3981,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .harvest-slot.state-regrowing .slot-visual-emoji {
-  animation: slot-regrow-pulse 2.2s ease-in-out infinite;
+  animation: slot-regrow-pulse 3.6s ease-in-out infinite;
 }
 
 .harvest-slot.state-harvesting .slot-visual-sprite {
@@ -4468,6 +4468,13 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   transition: width 0.3s ease;
 }
 
+/* Anneau de progression fluide (repousse / récolte) — interpolable sans spam JS */
+@property --slot-progress {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 .slot-progress-overlay {
   position: absolute;
   inset: 0;
@@ -4478,6 +4485,8 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   border-radius: inherit;
   overflow: hidden;
   z-index: 2;
+  --slot-progress: 0;
+  --slot-duration: 1s;
 }
 
 .slot-progress-ring {
@@ -4497,7 +4506,15 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  transition: background 0.2s linear;
+  /* pas de transition background : le @property anime --slot-progress */
+}
+
+.slot-progress-overlay.slot-ring-live {
+  animation: slot-ring-fill var(--slot-duration, 1s) linear forwards;
+}
+
+@keyframes slot-ring-fill {
+  to { --slot-progress: 100; }
 }
 
 .slot-progress-fill {
@@ -5134,7 +5151,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 
 @keyframes slot-regrow-pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(0.96); opacity: 0.82; }
+  50% { transform: scale(0.98); opacity: 0.9; }
 }
 
 @keyframes slot-ready-glow {

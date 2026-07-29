@@ -458,8 +458,8 @@ export function initUI(game, audio) {
 
   let animTimer = null;
   let lastNavTickAt = 0;
-  const PROGRESS_TICK_MS = 350;
-  const NAV_TICK_MS = 1500;
+  const PROGRESS_TICK_MS = 1000;
+  const NAV_TICK_MS = 2000;
 
   function stopProgressTick() {
     if (animTimer != null) {
