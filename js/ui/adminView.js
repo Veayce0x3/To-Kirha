@@ -829,8 +829,29 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
 
   const runAdjust = async (payload, okMsg) => {
     const r = await adjustPlayerSave(userId, payload);
-    setStatus(r.ok ? okMsg : r.reason, !r.ok);
-    if (r.ok) loadPlayerDetail(userId);
+    if (!r.ok) {
+      setStatus(r.reason || 'Échec du don.', true);
+      return r;
+    }
+    setStatus(okMsg);
+    loadPlayerDetail(userId);
+    // Si on se donne à soi-même : appliquer tout de suite (sinon l’autosave écrase le cloud)
+    const selfId = getAuthState()?.userId;
+    if (selfId && selfId === userId && gameRef?.pullAdminPatch) {
+      try {
+        const applied = await gameRef.pullAdminPatch();
+        if (applied) {
+          setStatus(`${okMsg} Appliqué sur ta partie.`);
+        } else {
+          // Forcer un flush qui fusionnera le patch cloud
+          await gameRef.flushSave?.();
+          const again = await gameRef.pullAdminPatch();
+          if (again) setStatus(`${okMsg} Appliqué sur ta partie.`);
+        }
+      } catch (err) {
+        console.warn('[admin] pullAdminPatch', err);
+      }
+    }
     return r;
   };
 
@@ -1000,7 +1021,13 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     if (!confirm('Ajouter +1 niveau (métiers + bâtiments ferme + perso) sur la save cloud ?')) return;
     const r = await grantAllJobsLevel(userId);
     setStatus(r.ok ? 'Niveaux +1 appliqués (cloud). Sync auto côté joueur.' : r.reason, !r.ok);
-    if (r.ok) loadPlayerDetail(userId);
+    if (r.ok) {
+      loadPlayerDetail(userId);
+      const selfId = getAuthState()?.userId;
+      if (selfId && selfId === userId && gameRef?.pullAdminPatch) {
+        await gameRef.pullAdminPatch().catch(() => {});
+      }
+    }
   });
 
   detailEl.querySelector('#admin-grant-jobs-5')?.addEventListener('click', async () => {
@@ -1016,7 +1043,13 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
       }
     }
     setStatus(ok ? 'Niveaux +5 appliqués (cloud). Sync auto côté joueur.' : lastReason, !ok);
-    if (ok) loadPlayerDetail(userId);
+    if (ok) {
+      loadPlayerDetail(userId);
+      const selfId = getAuthState()?.userId;
+      if (selfId && selfId === userId && gameRef?.pullAdminPatch) {
+        await gameRef.pullAdminPatch().catch(() => {});
+      }
+    }
   });
 
   detailEl.querySelector('#admin-set-role')?.addEventListener('click', async () => {

@@ -74,42 +74,60 @@ export async function saveCloudSave(userId, state, balance, { force = false } = 
   }
 
   if (!force) {
-    // Si un admin a patché le cloud entre-temps, adopter Kirha/inventaire/niveaux
-    // avant d’uploader — sinon l’autosave écrase le don.
-    // Ne jamais adopter une save d’une saison plus ancienne (après prestige).
     let adoptedAdmin = false;
-    const existing = await loadCloudSave(userId);
-    if (existing?.data) {
-      const localResets = getResetRank(payload);
-      const cloudResets = getResetRank(existing.data);
-      const localRank = getSeasonRank(payload);
-      const cloudRank = getSeasonRank(existing.data);
-      // Après reset joueur, la save locale (même « saison 1 ») doit pouvoir écraser l’ancienne.
-      if (cloudRank > localRank && localResets <= cloudResets) {
-        return { ok: false, reason: 'Save cloud plus récente (saison) — recharge le jeu.' };
+
+    // Jusqu’à 3 essais : un don admin peut arriver entre le load et l’upsert.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const existing = await loadCloudSave(userId);
+      if (existing?.data) {
+        const localResets = getResetRank(payload);
+        const cloudResets = getResetRank(existing.data);
+        const localRank = getSeasonRank(payload);
+        const cloudRank = getSeasonRank(existing.data);
+        if (cloudRank > localRank && localResets <= cloudResets) {
+          return { ok: false, reason: 'Save cloud plus récente (saison) — recharge le jeu.' };
+        }
+        if (
+          cloudRank === localRank
+          && getAdminRevision(existing.data) > getAdminRevision(payload)
+        ) {
+          const adopted = adoptAdminPatchedFields(payload, existing.data);
+          if (adopted.changed) {
+            payload = adopted.state;
+            adoptedAdmin = true;
+          }
+        }
       }
+
+      const sanity = validateSaveSanity(payload, balance);
+      if (!sanity.ok) return { ok: false, reason: sanity.reason };
+
+      const supabase = await getSupabaseClient();
+      const { error } = await supabase.from('saves').upsert({
+        user_id: userId,
+        save_data: payload,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+      if (error) return { ok: false, reason: error.message };
+
+      // Vérifie qu’on n’a pas écrasé un patch admin concurrent
+      const verify = await loadCloudSave(userId);
       if (
-        cloudRank === localRank
-        && getAdminRevision(existing.data) > getAdminRevision(payload)
+        verify?.data
+        && getSeasonRank(verify.data) === getSeasonRank(payload)
+        && getAdminRevision(verify.data) > getAdminRevision(payload)
       ) {
-        const adopted = adoptAdminPatchedFields(payload, existing.data);
+        const adopted = adoptAdminPatchedFields(payload, verify.data);
         if (adopted.changed) {
           payload = adopted.state;
           adoptedAdmin = true;
+          continue;
         }
       }
+
+      return { ok: true, adoptedAdmin, state: payload };
     }
 
-    const sanity = validateSaveSanity(payload, balance);
-    if (!sanity.ok) return { ok: false, reason: sanity.reason };
-
-    const supabase = await getSupabaseClient();
-    const { error } = await supabase.from('saves').upsert({
-      user_id: userId,
-      save_data: payload,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id' });
-    if (error) return { ok: false, reason: error.message };
     return { ok: true, adoptedAdmin, state: payload };
   }
 

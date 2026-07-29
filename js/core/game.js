@@ -580,6 +580,7 @@ export class Game {
     await SaveProvider.save(this.state, this.balance);
     const { emit } = await import('./events.js');
     emit('adminPatchApplied', { revision: this.state.adminRevision });
+    emit('stateChange', this.state);
     return true;
   }
 

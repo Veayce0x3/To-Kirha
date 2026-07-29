@@ -64,7 +64,9 @@ export function validateSaveSanity(state, balance = {}) {
   const inv = state.inventory || {};
   for (const [id, qty] of Object.entries(inv)) {
     const n = Number(qty);
-    if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) {
+    if (!Number.isFinite(n) || n < 0) {
+      issues.push(`Inventaire invalide : ${id}`);
+    } else if (Math.abs(n - Math.round(n)) > 1e-6) {
       issues.push(`Inventaire invalide : ${id}`);
     } else if (n > MAX_STACK) {
       issues.push(`Stock suspect : ${id} (×${n})`);
@@ -75,7 +77,10 @@ export function validateSaveSanity(state, balance = {}) {
   if (kirha < 0 || kirha > MAX_KIRHA) issues.push('Kirha invalide');
 
   const earned = Number(state.lifetimeStats?.totalEarned) || 0;
-  if (kirha > earned + (balance.startingKirha || 0) + 50000) {
+  const adminRev = Math.max(0, Math.floor(Number(state.adminRevision) || 0));
+  // Les dons admin augmentent Kirha + lifetime ensemble ; marge large si patch admin présent
+  const kirhaSlack = adminRev > 0 ? 5_000_000 : 50_000;
+  if (kirha > earned + (balance.startingKirha || 0) + kirhaSlack) {
     issues.push('Kirha incohérent avec les gains lifetime');
   }
 

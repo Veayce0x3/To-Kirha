@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260729-0840",
+      "date": "2026-07-29",
+      "title": "Fix dons admin Kirha / ressources",
+      "highlights": [
+        "Les dons ne sont plus écrasés par l’autosave en parallèle",
+        "Se donner à soi-même applique tout de suite Kirha et inventaire en jeu",
+        "Sync cloud plus robuste face aux patches admin"
+      ]
+    },
+    {
       "buildId": "20260729-0825",
       "date": "2026-07-29",
       "title": "Repousse plus fluide, moins gourmande",

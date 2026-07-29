@@ -16,6 +16,17 @@ function cloneJson(value, fallback) {
   }
 }
 
+/** Quantités inventaire en entiers (évite le rejet sanity après don admin). */
+function normalizeInventory(inv) {
+  const src = inv && typeof inv === 'object' ? inv : {};
+  const out = {};
+  for (const [id, qty] of Object.entries(src)) {
+    const n = Math.floor(Number(qty) || 0);
+    if (n > 0) out[id] = n;
+  }
+  return out;
+}
+
 /**
  * @returns {{ state: object, changed: boolean }}
  */
@@ -27,7 +38,7 @@ export function adoptAdminPatchedFields(local, cloud) {
 
   const next = { ...local };
   if (cloud.kirha != null) next.kirha = Number(cloud.kirha) || 0;
-  next.inventory = cloneJson(cloud.inventory, {}) || {};
+  next.inventory = normalizeInventory(cloud.inventory);
   if (cloud.jobs && typeof cloud.jobs === 'object') {
     next.jobs = cloneJson(cloud.jobs, next.jobs);
   }
