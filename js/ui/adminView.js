@@ -28,7 +28,6 @@ import {
   banUser,
   unbanUser,
   setUserRole,
-  grantAllJobsLevel,
   adjustPlayerSave,
   flagCheat,
   deleteLeaderboardEntry,
@@ -538,47 +537,29 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
   const invList = Array.isArray(inventory_summary) ? inventory_summary : [];
   const jobsMap = jobs_summary && typeof jobs_summary === 'object' ? jobs_summary : {};
   const farmMap = farm_summary && typeof farm_summary === 'object' ? farm_summary : {};
-
-  const jobsPickHtml = allJobIds(jobsMap).map((id) => {
-    const lv = Number(jobsMap[id]) || 1;
-    return `
-      <label class="admin-pick-row">
-        <input type="checkbox" class="admin-pick-job" data-id="${escHtml(id)}" />
-        <span class="admin-pick-name">${escHtml(jobLabel(id))}</span>
-        <span class="admin-pick-meta">Nv.${lv}</span>
-      </label>`;
-  }).join('') || '<p class="view-desc">Aucun métier.</p>';
-
-  const farmPickHtml = allFarmIds(farmMap).map((id) => {
-    const lv = Number(farmMap[id]) || 1;
-    return `
-      <label class="admin-pick-row">
-        <input type="checkbox" class="admin-pick-farm" data-id="${escHtml(id)}" />
-        <span class="admin-pick-name">${escHtml(farmLabel(id))}</span>
-        <span class="admin-pick-meta">Nv.${lv}</span>
-      </label>`;
-  }).join('') || '<p class="view-desc">Aucun bâtiment.</p>';
-
-  const invPickHtml = invList.length
-    ? invList.map((r) => {
-      const id = r?.id || '?';
-      const qty = Number(r?.qty) || 0;
-      return `
-        <label class="admin-pick-row">
-          <input type="checkbox" class="admin-pick-inv" data-id="${escHtml(id)}" data-qty="${qty}" />
-          <span class="admin-pick-name">${escHtml(resourceLabel(id))}</span>
-          <span class="admin-pick-meta">×${fmtNum(qty)}</span>
-        </label>`;
-    }).join('')
-    : '<p class="view-desc">Inventaire vide.</p>';
+  const invQtyById = Object.fromEntries(invList.map((r) => [r?.id, Number(r?.qty) || 0]));
 
   const catalogOptions = gameRef?.resources
     ? Object.values(gameRef.resources)
       .filter((r) => r?.id)
       .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id, 'fr'))
-      .map((r) => `<option value="${escHtml(r.id)}">${escHtml(`${r.emoji || ''} ${r.name || r.id}`.trim())}</option>`)
+      .map((r) => {
+        const have = invQtyById[r.id] || 0;
+        const haveTag = have > 0 ? ` · ×${fmtNum(have)}` : '';
+        return `<option value="${escHtml(r.id)}">${escHtml(`${r.emoji || ''} ${r.name || r.id}`.trim())}${haveTag}</option>`;
+      })
       .join('')
     : '';
+
+  const jobOptions = allJobIds(jobsMap).map((id) => {
+    const lv = Number(jobsMap[id]) || 1;
+    return `<option value="${escHtml(id)}">${escHtml(jobLabel(id))} · Nv.${lv}</option>`;
+  }).join('');
+
+  const farmOptions = allFarmIds(farmMap).map((id) => {
+    const lv = Number(farmMap[id]) || 1;
+    return `<option value="${escHtml(id)}">${escHtml(farmLabel(id))} · Nv.${lv}</option>`;
+  }).join('');
 
   const combatHtml = Array.isArray(combat_items) && combat_items.length
     ? combat_items.map((c) => `<span class="admin-tag">${escHtml(combatItemLabel(c))}</span>`).join(' ')
@@ -655,77 +636,80 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
 
     ${canAdjust ? `
     <div class="admin-actions-block admin-adjust-block">
-      <h5 class="admin-section-title">Donner / Prendre</h5>
-      <div class="admin-mode-toggle" role="group" aria-label="Mode">
-        <button type="button" class="btn btn-sm admin-mode-btn active" data-mode="give">Donner</button>
-        <button type="button" class="btn btn-sm admin-mode-btn" data-mode="take">Prendre</button>
-      </div>
-      <p class="view-desc admin-grant-hint">Coche ce que tu veux, choisis le montant, puis applique. Les dons restent même si le joueur joue en parallèle (sync auto).</p>
+      <h5 class="admin-section-title">Ajuster</h5>
+      <p class="view-desc admin-grant-hint">Choisis un montant, puis <strong>Donner</strong> ou <strong>Prendre</strong>. Appliqué tout de suite si c’est toi.</p>
 
-      <div class="admin-adjust-section">
-        <h6 class="admin-subsection-title">Kirha & personnage</h6>
-        <div class="admin-grant-kirha-row">
-          <input type="number" class="auth-input admin-kirha-input" id="admin-kirha-amount" min="1" step="1" value="1000" />
-          <button type="button" class="btn btn-craft" id="admin-apply-kirha">Kirha</button>
-          <input type="number" class="auth-input admin-level-input" id="admin-char-levels" min="1" step="1" value="1" title="Niveaux perso" />
-          <button type="button" class="btn btn-muted" id="admin-apply-char">Perso Nv.</button>
+      <div class="admin-quick-card">
+        <h6 class="admin-subsection-title">💰 Kirha</h6>
+        <div class="admin-quick-presets" role="group" aria-label="Montants rapides">
+          <button type="button" class="btn btn-muted btn-sm" data-kirha-preset="1000">1k</button>
+          <button type="button" class="btn btn-muted btn-sm" data-kirha-preset="10000">10k</button>
+          <button type="button" class="btn btn-muted btn-sm" data-kirha-preset="100000">100k</button>
+          <button type="button" class="btn btn-muted btn-sm" data-kirha-preset="1000000">1M</button>
+        </div>
+        <div class="admin-quick-row">
+          <input type="number" class="auth-input admin-kirha-input" id="admin-kirha-amount" min="1" step="1" value="1000" inputmode="numeric" />
+          <button type="button" class="btn btn-craft" id="admin-give-kirha">Donner</button>
+          <button type="button" class="btn btn-danger" id="admin-take-kirha">Prendre</button>
         </div>
       </div>
 
-      <div class="admin-adjust-section">
-        <div class="admin-adjust-section-head">
-          <h6 class="admin-subsection-title">Métiers</h6>
-          <div class="admin-select-tools">
-            <button type="button" class="btn btn-muted btn-sm" data-select="jobs" data-all="1">Tout</button>
-            <button type="button" class="btn btn-muted btn-sm" data-select="jobs" data-all="0">Rien</button>
+      <div class="admin-quick-card">
+        <h6 class="admin-subsection-title">🎒 Ressource</h6>
+        <div class="admin-quick-row admin-quick-row-stack">
+          <select class="auth-input admin-catalog-select" id="admin-res-id">${catalogOptions || '<option value="">—</option>'}</select>
+          <div class="admin-quick-row">
+            <input type="number" class="auth-input admin-kirha-input" id="admin-res-qty" min="1" step="1" value="50" inputmode="numeric" />
+            <button type="button" class="btn btn-craft" id="admin-give-res">Donner</button>
+            <button type="button" class="btn btn-danger" id="admin-take-res">Prendre</button>
           </div>
         </div>
-        <div class="admin-pick-list" id="admin-jobs-list">${jobsPickHtml}</div>
-        <div class="admin-grant-kirha-row">
-          <input type="number" class="auth-input admin-level-input" id="admin-job-levels" min="1" step="1" value="1" />
-          <button type="button" class="btn btn-craft" id="admin-apply-jobs">Niveaux métiers</button>
-          <button type="button" class="btn btn-muted btn-sm" id="admin-grant-jobs">Tout +1</button>
-          <button type="button" class="btn btn-muted btn-sm" id="admin-grant-jobs-5">Tout +5</button>
+        <div class="admin-quick-presets" role="group" aria-label="Quantités rapides">
+          <button type="button" class="btn btn-muted btn-sm" data-res-preset="10">×10</button>
+          <button type="button" class="btn btn-muted btn-sm" data-res-preset="50">×50</button>
+          <button type="button" class="btn btn-muted btn-sm" data-res-preset="100">×100</button>
+          <button type="button" class="btn btn-muted btn-sm" data-res-preset="1000">×1k</button>
         </div>
       </div>
 
-      <div class="admin-adjust-section">
-        <div class="admin-adjust-section-head">
-          <h6 class="admin-subsection-title">Ferme</h6>
-          <div class="admin-select-tools">
-            <button type="button" class="btn btn-muted btn-sm" data-select="farm" data-all="1">Tout</button>
-            <button type="button" class="btn btn-muted btn-sm" data-select="farm" data-all="0">Rien</button>
+      <div class="admin-quick-card">
+        <h6 class="admin-subsection-title">📈 Niveaux</h6>
+        <div class="admin-quick-row">
+          <span class="admin-quick-label">Perso</span>
+          <input type="number" class="auth-input admin-level-input" id="admin-char-levels" min="1" step="1" value="1" />
+          <button type="button" class="btn btn-craft btn-sm" id="admin-give-char">+</button>
+          <button type="button" class="btn btn-danger btn-sm" id="admin-take-char">−</button>
+        </div>
+        <div class="admin-quick-row admin-quick-row-stack">
+          <select class="auth-input admin-catalog-select" id="admin-job-id">
+            <option value="__all__">Tous les métiers</option>
+            ${jobOptions}
+          </select>
+          <div class="admin-quick-row">
+            <input type="number" class="auth-input admin-level-input" id="admin-job-levels" min="1" step="1" value="1" />
+            <button type="button" class="btn btn-craft btn-sm" id="admin-give-job">+</button>
+            <button type="button" class="btn btn-danger btn-sm" id="admin-take-job">−</button>
           </div>
         </div>
-        <div class="admin-pick-list" id="admin-farm-list">${farmPickHtml}</div>
-        <div class="admin-grant-kirha-row">
-          <input type="number" class="auth-input admin-level-input" id="admin-farm-levels" min="1" step="1" value="1" />
-          <button type="button" class="btn btn-craft" id="admin-apply-farm">Niveaux ferme</button>
+        <div class="admin-quick-row admin-quick-row-stack">
+          <select class="auth-input admin-catalog-select" id="admin-farm-id">
+            <option value="__all__">Tous les bâtiments</option>
+            ${farmOptions}
+          </select>
+          <div class="admin-quick-row">
+            <input type="number" class="auth-input admin-level-input" id="admin-farm-levels" min="1" step="1" value="1" />
+            <button type="button" class="btn btn-craft btn-sm" id="admin-give-farm">+</button>
+            <button type="button" class="btn btn-danger btn-sm" id="admin-take-farm">−</button>
+          </div>
         </div>
       </div>
 
-      <div class="admin-adjust-section">
-        <div class="admin-adjust-section-head">
-          <h6 class="admin-subsection-title">Inventaire (${invList.length})</h6>
-          <div class="admin-select-tools">
-            <button type="button" class="btn btn-muted btn-sm" data-select="inv" data-all="1">Tout</button>
-            <button type="button" class="btn btn-muted btn-sm" data-select="inv" data-all="0">Rien</button>
-          </div>
+      <details class="admin-fold admin-danger-fold">
+        <summary>Vider l’inventaire…</summary>
+        <div class="admin-quick-row" style="margin-top:0.5rem">
+          <button type="button" class="btn btn-danger" id="admin-clear-inv-all">Vider tout l’inventaire</button>
         </div>
-        <input type="search" class="auth-input admin-filter-input" id="admin-inv-filter" placeholder="Filtrer ressources…" autocomplete="off" />
-        <div class="admin-pick-list admin-pick-list-tall" id="admin-inv-list">${invPickHtml}</div>
-        <div class="admin-grant-kirha-row">
-          <input type="number" class="auth-input admin-kirha-input" id="admin-inv-amount" min="1" step="1" value="100" />
-          <button type="button" class="btn btn-craft" id="admin-apply-inv">Qté sélection</button>
-          <button type="button" class="btn btn-danger btn-sm" id="admin-clear-inv-sel">Vider sélection</button>
-          <button type="button" class="btn btn-danger btn-sm" id="admin-clear-inv-all">Vider tout</button>
-        </div>
-        <div class="admin-grant-kirha-row admin-catalog-row">
-          <select class="auth-input admin-catalog-select" id="admin-catalog-res">${catalogOptions || '<option value="">—</option>'}</select>
-          <input type="number" class="auth-input admin-kirha-input" id="admin-catalog-qty" min="1" step="1" value="50" />
-          <button type="button" class="btn btn-muted" id="admin-catalog-add">Ajouter (donner)</button>
-        </div>
-      </div>
+      </details>
     </div>
     ` : ''}
 
@@ -781,52 +765,6 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
 }
 
 function bindPlayerDetailActions(userId, profile, detailEl) {
-  let mode = 'give'; // give | take
-
-  const getModeSign = () => (mode === 'take' ? -1 : 1);
-
-  const setMode = (next) => {
-    mode = next;
-    detailEl.querySelectorAll('.admin-mode-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.mode === mode);
-    });
-    detailEl.classList.toggle('admin-mode-take', mode === 'take');
-  };
-
-  detailEl.querySelectorAll('.admin-mode-btn').forEach((btn) => {
-    btn.addEventListener('click', () => setMode(btn.dataset.mode || 'give'));
-  });
-
-  detailEl.querySelectorAll('[data-select]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const kind = btn.dataset.select;
-      const all = btn.dataset.all === '1';
-      const sel = kind === 'jobs'
-        ? '.admin-pick-job'
-        : kind === 'farm'
-          ? '.admin-pick-farm'
-          : '.admin-pick-inv';
-      detailEl.querySelectorAll(sel).forEach((cb) => {
-        if (kind === 'inv') {
-          const row = cb.closest('.admin-pick-row');
-          if (row?.style.display === 'none') return;
-        }
-        cb.checked = all;
-      });
-    });
-  });
-
-  detailEl.querySelector('#admin-inv-filter')?.addEventListener('input', (e) => {
-    const q = String(e.target.value || '').trim().toLowerCase();
-    detailEl.querySelectorAll('#admin-inv-list .admin-pick-row').forEach((row) => {
-      const name = row.querySelector('.admin-pick-name')?.textContent?.toLowerCase() || '';
-      const id = row.querySelector('.admin-pick-inv')?.dataset?.id?.toLowerCase() || '';
-      row.style.display = !q || name.includes(q) || id.includes(q) ? '' : 'none';
-    });
-  });
-
-  const selectedIds = (sel) => [...detailEl.querySelectorAll(`${sel}:checked`)].map((el) => el.dataset.id).filter(Boolean);
-
   const runAdjust = async (payload, okMsg) => {
     const r = await adjustPlayerSave(userId, payload);
     if (!r.ok) {
@@ -835,7 +773,6 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     }
     setStatus(okMsg);
     loadPlayerDetail(userId);
-    // Si on se donne à soi-même : appliquer tout de suite (sinon l’autosave écrase le cloud)
     const selfId = getAuthState()?.userId;
     if (selfId && selfId === userId && gameRef?.pullAdminPatch) {
       try {
@@ -843,7 +780,6 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
         if (applied) {
           setStatus(`${okMsg} Appliqué sur ta partie.`);
         } else {
-          // Forcer un flush qui fusionnera le patch cloud
           await gameRef.flushSave?.();
           const again = await gameRef.pullAdminPatch();
           if (again) setStatus(`${okMsg} Appliqué sur ta partie.`);
@@ -854,6 +790,147 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     }
     return r;
   };
+
+  const readPositive = (sel, label) => {
+    const n = Math.abs(Number(detailEl.querySelector(sel)?.value));
+    if (!Number.isFinite(n) || n <= 0) {
+      setStatus(`${label} invalide.`, true);
+      return null;
+    }
+    return n;
+  };
+
+  const readPositiveInt = (sel, label) => {
+    const n = Math.abs(Math.trunc(Number(detailEl.querySelector(sel)?.value)));
+    if (!Number.isFinite(n) || n <= 0) {
+      setStatus(`${label} invalide.`, true);
+      return null;
+    }
+    return n;
+  };
+
+  const confirmTake = (msg) => confirm(`Prendre : ${msg} ?`);
+
+  detailEl.querySelectorAll('[data-kirha-preset]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const input = detailEl.querySelector('#admin-kirha-amount');
+      if (input) input.value = btn.dataset.kirhaPreset || '1000';
+    });
+  });
+
+  detailEl.querySelectorAll('[data-res-preset]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const input = detailEl.querySelector('#admin-res-qty');
+      if (input) input.value = btn.dataset.resPreset || '50';
+    });
+  });
+
+  const adjustKirha = async (sign) => {
+    const amount = readPositive('#admin-kirha-amount', 'Montant Kirha');
+    if (amount == null) return;
+    if (sign < 0 && !confirmTake(`${amount.toLocaleString('fr-FR')} 💰`)) return;
+    const verb = sign > 0 ? 'Donné' : 'Retiré';
+    await runAdjust(
+      { kirha_delta: amount * sign },
+      `${verb} ${amount.toLocaleString('fr-FR')} 💰.`
+    );
+  };
+
+  detailEl.querySelector('#admin-give-kirha')?.addEventListener('click', () => adjustKirha(1));
+  detailEl.querySelector('#admin-take-kirha')?.addEventListener('click', () => adjustKirha(-1));
+
+  const adjustRes = async (sign) => {
+    const id = detailEl.querySelector('#admin-res-id')?.value;
+    if (!id) {
+      setStatus('Choisis une ressource.', true);
+      return;
+    }
+    const qty = readPositive('#admin-res-qty', 'Quantité');
+    if (qty == null) return;
+    if (sign < 0 && !confirmTake(`${fmtNum(qty)} × ${resourceLabel(id)}`)) return;
+    const verb = sign > 0 ? 'Donné' : 'Retiré';
+    await runAdjust(
+      { inventory_deltas: { [id]: qty * sign } },
+      `${verb} ${fmtNum(qty)} × ${resourceLabel(id)}.`
+    );
+  };
+
+  detailEl.querySelector('#admin-give-res')?.addEventListener('click', () => adjustRes(1));
+  detailEl.querySelector('#admin-take-res')?.addEventListener('click', () => adjustRes(-1));
+
+  const adjustChar = async (sign) => {
+    const n = readPositiveInt('#admin-char-levels', 'Nombre de niveaux');
+    if (n == null) return;
+    if (sign < 0 && !confirmTake(`${n} Nv. perso`)) return;
+    const verb = sign > 0 ? 'Ajouté' : 'Retiré';
+    await runAdjust({ char_level_delta: n * sign }, `${verb} ${n} Nv. perso.`);
+  };
+
+  detailEl.querySelector('#admin-give-char')?.addEventListener('click', () => adjustChar(1));
+  detailEl.querySelector('#admin-take-char')?.addEventListener('click', () => adjustChar(-1));
+
+  const resolveJobIds = () => {
+    const selected = detailEl.querySelector('#admin-job-id')?.value;
+    if (!selected) return [];
+    if (selected === '__all__') {
+      return [...detailEl.querySelectorAll('#admin-job-id option')]
+        .map((o) => o.value)
+        .filter((v) => v && v !== '__all__');
+    }
+    return [selected];
+  };
+
+  const resolveFarmIds = () => {
+    const selected = detailEl.querySelector('#admin-farm-id')?.value;
+    if (!selected) return [];
+    if (selected === '__all__') {
+      return [...detailEl.querySelectorAll('#admin-farm-id option')]
+        .map((o) => o.value)
+        .filter((v) => v && v !== '__all__');
+    }
+    return [selected];
+  };
+
+  const adjustJobs = async (sign) => {
+    const ids = resolveJobIds();
+    if (!ids.length) {
+      setStatus('Aucun métier.', true);
+      return;
+    }
+    const n = readPositiveInt('#admin-job-levels', 'Nombre de niveaux');
+    if (n == null) return;
+    if (sign < 0 && !confirmTake(`${n} Nv. sur ${ids.length} métier(s)`)) return;
+    const job_level_deltas = {};
+    ids.forEach((id) => { job_level_deltas[id] = n * sign; });
+    const verb = sign > 0 ? 'Ajouté' : 'Retiré';
+    await runAdjust({ job_level_deltas }, `${verb} ${n} Nv. · ${ids.length} métier(s).`);
+  };
+
+  detailEl.querySelector('#admin-give-job')?.addEventListener('click', () => adjustJobs(1));
+  detailEl.querySelector('#admin-take-job')?.addEventListener('click', () => adjustJobs(-1));
+
+  const adjustFarm = async (sign) => {
+    const ids = resolveFarmIds();
+    if (!ids.length) {
+      setStatus('Aucun bâtiment.', true);
+      return;
+    }
+    const n = readPositiveInt('#admin-farm-levels', 'Nombre de niveaux');
+    if (n == null) return;
+    if (sign < 0 && !confirmTake(`${n} Nv. sur ${ids.length} bâtiment(s)`)) return;
+    const farm_level_deltas = {};
+    ids.forEach((id) => { farm_level_deltas[id] = n * sign; });
+    const verb = sign > 0 ? 'Ajouté' : 'Retiré';
+    await runAdjust({ farm_level_deltas }, `${verb} ${n} Nv. · ${ids.length} bâtiment(s).`);
+  };
+
+  detailEl.querySelector('#admin-give-farm')?.addEventListener('click', () => adjustFarm(1));
+  detailEl.querySelector('#admin-take-farm')?.addEventListener('click', () => adjustFarm(-1));
+
+  detailEl.querySelector('#admin-clear-inv-all')?.addEventListener('click', async () => {
+    if (!confirm('Vider TOUT l’inventaire cloud de ce joueur ?')) return;
+    await runAdjust({ inventory_clear: true }, 'Inventaire vidé.');
+  });
 
   detailEl.querySelector('#admin-copy-btn')?.addEventListener('click', async () => {
     try {
@@ -898,158 +975,6 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     const r = await resetCloudSave(userId);
     setStatus(r.ok ? 'Save cloud supprimée.' : r.reason, !r.ok);
     if (r.ok) loadPlayerDetail(userId);
-  });
-
-  detailEl.querySelector('#admin-apply-kirha')?.addEventListener('click', async () => {
-    const amount = Math.abs(Number(detailEl.querySelector('#admin-kirha-amount')?.value));
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setStatus('Montant Kirha invalide.', true);
-      return;
-    }
-    const delta = amount * getModeSign();
-    const verb = delta > 0 ? 'Donner' : 'Prendre';
-    if (!confirm(`${verb} ${amount.toLocaleString('fr-FR')} 💰 ?`)) return;
-    await runAdjust(
-      { kirha_delta: delta },
-      `${verb} ${amount.toLocaleString('fr-FR')} 💰 — sync auto côté joueur.`
-    );
-  });
-
-  detailEl.querySelector('#admin-apply-char')?.addEventListener('click', async () => {
-    const n = Math.abs(Math.trunc(Number(detailEl.querySelector('#admin-char-levels')?.value)));
-    if (!Number.isFinite(n) || n <= 0) {
-      setStatus('Nombre de niveaux invalide.', true);
-      return;
-    }
-    const delta = n * getModeSign();
-    const verb = delta > 0 ? 'Ajouter' : 'Retirer';
-    if (!confirm(`${verb} ${n} niveau(x) perso ?`)) return;
-    await runAdjust(
-      { char_level_delta: delta },
-      `${verb} ${n} Nv. perso — sync auto.`
-    );
-  });
-
-  detailEl.querySelector('#admin-apply-jobs')?.addEventListener('click', async () => {
-    const ids = selectedIds('.admin-pick-job');
-    if (!ids.length) {
-      setStatus('Sélectionne au moins un métier.', true);
-      return;
-    }
-    const n = Math.abs(Math.trunc(Number(detailEl.querySelector('#admin-job-levels')?.value)));
-    if (!Number.isFinite(n) || n <= 0) {
-      setStatus('Nombre de niveaux invalide.', true);
-      return;
-    }
-    const delta = n * getModeSign();
-    const verb = delta > 0 ? 'Ajouter' : 'Retirer';
-    if (!confirm(`${verb} ${n} Nv. sur ${ids.length} métier(s) ?`)) return;
-    const job_level_deltas = {};
-    ids.forEach((id) => { job_level_deltas[id] = delta; });
-    await runAdjust({ job_level_deltas }, `${verb} ${n} Nv. métiers — sync auto.`);
-  });
-
-  detailEl.querySelector('#admin-apply-farm')?.addEventListener('click', async () => {
-    const ids = selectedIds('.admin-pick-farm');
-    if (!ids.length) {
-      setStatus('Sélectionne au moins un bâtiment.', true);
-      return;
-    }
-    const n = Math.abs(Math.trunc(Number(detailEl.querySelector('#admin-farm-levels')?.value)));
-    if (!Number.isFinite(n) || n <= 0) {
-      setStatus('Nombre de niveaux invalide.', true);
-      return;
-    }
-    const delta = n * getModeSign();
-    const verb = delta > 0 ? 'Ajouter' : 'Retirer';
-    if (!confirm(`${verb} ${n} Nv. sur ${ids.length} bâtiment(s) ?`)) return;
-    const farm_level_deltas = {};
-    ids.forEach((id) => { farm_level_deltas[id] = delta; });
-    await runAdjust({ farm_level_deltas }, `${verb} ${n} Nv. ferme — sync auto.`);
-  });
-
-  detailEl.querySelector('#admin-apply-inv')?.addEventListener('click', async () => {
-    const ids = selectedIds('.admin-pick-inv');
-    if (!ids.length) {
-      setStatus('Sélectionne au moins une ressource.', true);
-      return;
-    }
-    const amount = Math.abs(Number(detailEl.querySelector('#admin-inv-amount')?.value));
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setStatus('Quantité invalide.', true);
-      return;
-    }
-    const delta = amount * getModeSign();
-    const verb = delta > 0 ? 'Donner' : 'Prendre';
-    if (!confirm(`${verb} ${fmtNum(amount)} sur ${ids.length} ressource(s) ?`)) return;
-    const inventory_deltas = {};
-    ids.forEach((id) => { inventory_deltas[id] = delta; });
-    await runAdjust({ inventory_deltas }, `${verb} ressources — sync auto.`);
-  });
-
-  detailEl.querySelector('#admin-clear-inv-sel')?.addEventListener('click', async () => {
-    const ids = selectedIds('.admin-pick-inv');
-    if (!ids.length) {
-      setStatus('Sélectionne des ressources à vider.', true);
-      return;
-    }
-    if (!confirm(`Retirer entièrement ${ids.length} ressource(s) de l’inventaire ?`)) return;
-    await runAdjust({ inventory_clear_ids: ids }, 'Ressources vidées — sync auto.');
-  });
-
-  detailEl.querySelector('#admin-clear-inv-all')?.addEventListener('click', async () => {
-    if (!confirm('Vider TOUT l’inventaire cloud de ce joueur ?')) return;
-    await runAdjust({ inventory_clear: true }, 'Inventaire vidé — sync auto.');
-  });
-
-  detailEl.querySelector('#admin-catalog-add')?.addEventListener('click', async () => {
-    const id = detailEl.querySelector('#admin-catalog-res')?.value;
-    const qty = Math.abs(Number(detailEl.querySelector('#admin-catalog-qty')?.value));
-    if (!id) {
-      setStatus('Choisis une ressource.', true);
-      return;
-    }
-    if (!Number.isFinite(qty) || qty <= 0) {
-      setStatus('Quantité invalide.', true);
-      return;
-    }
-    if (!confirm(`Donner ${fmtNum(qty)} × ${resourceLabel(id)} ?`)) return;
-    await runAdjust({ inventory_deltas: { [id]: qty } }, 'Ressource ajoutée — sync auto.');
-  });
-
-  detailEl.querySelector('#admin-grant-jobs')?.addEventListener('click', async () => {
-    if (!confirm('Ajouter +1 niveau (métiers + bâtiments ferme + perso) sur la save cloud ?')) return;
-    const r = await grantAllJobsLevel(userId);
-    setStatus(r.ok ? 'Niveaux +1 appliqués (cloud). Sync auto côté joueur.' : r.reason, !r.ok);
-    if (r.ok) {
-      loadPlayerDetail(userId);
-      const selfId = getAuthState()?.userId;
-      if (selfId && selfId === userId && gameRef?.pullAdminPatch) {
-        await gameRef.pullAdminPatch().catch(() => {});
-      }
-    }
-  });
-
-  detailEl.querySelector('#admin-grant-jobs-5')?.addEventListener('click', async () => {
-    if (!confirm('Ajouter +5 niveaux (5× +1 métiers/ferme/perso) ?')) return;
-    let ok = true;
-    let lastReason = '';
-    for (let i = 0; i < 5; i++) {
-      const r = await grantAllJobsLevel(userId);
-      if (!r.ok) {
-        ok = false;
-        lastReason = r.reason;
-        break;
-      }
-    }
-    setStatus(ok ? 'Niveaux +5 appliqués (cloud). Sync auto côté joueur.' : lastReason, !ok);
-    if (ok) {
-      loadPlayerDetail(userId);
-      const selfId = getAuthState()?.userId;
-      if (selfId && selfId === userId && gameRef?.pullAdminPatch) {
-        await gameRef.pullAdminPatch().catch(() => {});
-      }
-    }
   });
 
   detailEl.querySelector('#admin-set-role')?.addEventListener('click', async () => {

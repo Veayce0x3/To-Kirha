@@ -895,12 +895,57 @@ body.admin-sheet-open {
   align-items: center;
 }
 
-.admin-grant-kirha-row {
+.admin-quick-card {
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 253, 249, 0.95);
+  border: 1px solid rgba(45, 90, 39, 0.14);
+}
+
+.admin-quick-card .admin-subsection-title {
+  margin-bottom: 0.45rem;
+}
+
+.admin-quick-row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   align-items: center;
   width: 100%;
+}
+
+.admin-quick-row-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.admin-quick-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 3.5rem;
+  color: var(--brun-bois, #4A3728);
+}
+
+.admin-quick-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.admin-quick-presets .btn {
+  min-height: 36px;
+  padding: 0.25rem 0.65rem;
+}
+
+.admin-catalog-select {
+  width: 100%;
+  min-height: 44px;
+}
+
+.admin-danger-fold {
+  margin-top: 0.85rem;
 }
 
 .admin-kirha-input {
