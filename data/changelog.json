@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260729-0825",
+      "date": "2026-07-29",
+      "title": "Repousse plus fluide, moins gourmande",
+      "highlights": [
+        "Anneau de progression animé en CSS (plus de sauts toutes les 350 ms)",
+        "Mise à jour du timer 1×/s seulement — moins de travail CPU / batterie",
+        "Animations en pause quand l’onglet est en arrière-plan"
+      ]
+    },
+    {
       "buildId": "20260728-2315",
       "date": "2026-07-28",
       "title": "Cuisine complète : effets, sac, kits",
