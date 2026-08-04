@@ -381,21 +381,32 @@ export function buyHarvestUnit(state, balance, jobId, resourceId, resources) {
   return true;
 }
 
-export function canBuyFarmUnit(state, balance, buildingId, productId) {
+/** Coût Kirha pour passer de `unitIndex` à `unitIndex+1` unités (0 = 1ʳᵉ unité gratuite). */
+export function getFarmUnitUnlockKirha(buildingId, unitIndex, balance, farmData) {
+  const building = farmData?.buildings?.[buildingId]
+    || (buildingId === 'well' ? { requiresAnimal: false } : null);
+  // Puits / utilitaires : même courbe que les emplacements récolte (max 6).
+  if (building && !building.requiresAnimal) {
+    const costs = cfg(balance).unitUnlockSameResource || cfg(balance).unitUnlockCosts || [];
+    return costs[unitIndex] ?? null;
+  }
+  const costs = cfg(balance).farmUnitUnlockCosts || cfg(balance).unitUnlockCosts || [];
+  return costs[unitIndex] ?? null;
+}
+
+export function canBuyFarmUnit(state, balance, buildingId, productId, farmData) {
   const line = getFarmLine(state, buildingId, productId);
   if (!line) return false;
   if (line.units >= getMaxUnits(balance)) return false;
-  const costs = cfg(balance).farmUnitUnlockCosts || cfg(balance).unitUnlockCosts || [];
-  const kirha = costs[line.units] ?? null;
+  const kirha = getFarmUnitUnlockKirha(buildingId, line.units, balance, farmData);
   if (kirha == null || (state.kirha || 0) < kirha) return false;
   return true;
 }
 
-export function buyFarmUnit(state, balance, buildingId, productId) {
+export function buyFarmUnit(state, balance, buildingId, productId, farmData) {
   const line = getFarmLine(state, buildingId, productId);
   if (!line || line.units >= getMaxUnits(balance)) return false;
-  const costs = cfg(balance).farmUnitUnlockCosts || cfg(balance).unitUnlockCosts || [];
-  const kirha = costs[line.units] ?? null;
+  const kirha = getFarmUnitUnlockKirha(buildingId, line.units, balance, farmData);
   if (kirha == null || (state.kirha || 0) < kirha) return false;
   state.kirha -= kirha;
   line.units += 1;

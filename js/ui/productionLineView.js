@@ -951,11 +951,18 @@ export function renderFarmProduction(game, el, buildingId) {
     return;
   }
 
-  // Puits / bâtiments simples : une ligne avec barre overlay
+  // Puits / bâtiments simples : une ligne avec barre overlay + emplacements jusqu’à max (6)
   for (const productId of getFarmProductionLineIds(building)) {
     const resource = game.resources[productId];
     const line = game.state.productionLines?.farm?.[buildingId]?.[productId];
     if (!line) continue;
+    const maxUnits = game.balance.productionLines?.maxUnitsPerResource
+      ?? game.balance.productionLines?.maxUnits
+      ?? 6;
+    const nextCost = game.getFarmUnitUnlockKirha(buildingId, line.units);
+    const canBuy = game.canBuyFarmUnit(buildingId, productId);
+    const atCap = line.units >= maxUnits;
+
     const section = document.createElement('div');
     section.className = 'production-line-section';
     section.innerHTML = `
@@ -965,18 +972,38 @@ export function renderFarmProduction(game, el, buildingId) {
           <span class="production-stock">Stock ${game.state.inventory[productId] || 0}</span>
           ${toolDur ? `<span class="production-tool-dur">${toolDur}</span>` : ''}
         </div>
+        <div class="production-line-meta production-line-meta-clear">
+          <span class="production-units" title="Emplacements d’eau débloqués">📍 Emplacements ${line.units}/${maxUnits}</span>
+          <span class="farm-info-chip">${Math.round((building.cycleMs || 0) / 1000)}s / cycle</span>
+          ${xpGain > 0
+            ? `<span class="farm-info-chip">📜 +${formatNumber(xpGain)} XP${xpBonusTag}</span>`
+            : `<span class="farm-info-chip">Eau utilitaire · pas d’XP</span>`}
+        </div>
       </div>
-      <div class="farm-info-chips">
-        ${xpGain > 0
-          ? `<span class="farm-info-chip">📜 +${formatNumber(xpGain)} XP${xpBonusTag}</span>`
-          : `<span class="farm-info-chip">Eau utilitaire · pas d’XP</span>`}
-        <span class="farm-info-chip">${Math.round((building.cycleMs || 0) / 1000)}s / cycle</span>
-      </div>
-      <div class="slots-grid production-units-grid"></div>`;
+      <div class="slots-grid production-units-grid"></div>
+      ${atCap ? '' : `
+        <div class="production-unlock-panel farm-unit-unlock">
+          <div class="production-unlock-head">
+            <strong>Ajouter un point d’eau (${line.units + 1}/${maxUnits})</strong>
+            <span class="production-unlock-cost">${
+              nextCost == null
+                ? '—'
+                : `<span class="${(game.state.kirha || 0) >= nextCost ? 'ing-ok' : 'ing-missing'}">${formatNumber(game.state.kirha || 0)}/${formatNumber(nextCost)} 💰</span>`
+            }</span>
+          </div>
+          <button type="button" class="btn btn-upgrade btn-buy-farm-unit"${canBuy ? '' : ' disabled'}>
+            Débloquer · ${nextCost == null ? '—' : `${formatNumber(nextCost)} 💰`}
+          </button>
+          <p class="production-unlock-desc">Comme la récolte : jusqu’à ${maxUnits} points d’eau en parallèle.</p>
+        </div>`}`;
     const grid = section.querySelector('.production-units-grid');
     for (let i = 0; i < line.units; i++) {
       grid.appendChild(buildFarmUnitCard(game, buildingId, productId, i, building));
     }
+    section.querySelector('.btn-buy-farm-unit')?.addEventListener('click', () => {
+      if (!game.buyFarmSlot(buildingId, productId)) return;
+      renderFarmProduction(game, el, buildingId);
+    });
     container.appendChild(section);
   }
 }

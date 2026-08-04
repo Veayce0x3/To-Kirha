@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260804-1405",
+      "date": "2026-08-04",
+      "title": "Puits : jusqu’à 6 points d’eau",
+      "highlights": [
+        "Le Puits se débloque comme la récolte : jusqu’à 6 points d’eau en parallèle",
+        "Bouton Débloquer + compteur Emplacements X/6 sous le puits"
+      ]
+    },
+    {
       "buildId": "20260804-1330",
       "date": "2026-08-04",
       "title": "Reset fiable, récolte claire, classement & tuto",

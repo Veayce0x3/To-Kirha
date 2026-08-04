@@ -68,7 +68,8 @@ import {
   buyHarvestUnit,
   buyFarmUnit,
   canBuyHarvestUnit,
-  canBuyFarmUnit,
+  canBuyFarmUnit as checkCanBuyFarmUnit,
+  getFarmUnitUnlockKirha as farmUnitUnlockKirhaCost,
   getUnitUnlockRequirements,
   getNextProductionUnlock,
   canBuyNextProductionUnlock as checkCanBuyNextProductionUnlock,
@@ -1170,8 +1171,16 @@ export class Game {
     return getFarmSlotUnlockRequirements(buildingId, current, this.balance);
   }
 
+  canBuyFarmUnit(buildingId, productId) {
+    return checkCanBuyFarmUnit(this.state, this.balance, buildingId, productId, this.farmData);
+  }
+
+  getFarmUnitUnlockKirha(buildingId, unitIndex) {
+    return farmUnitUnlockKirhaCost(buildingId, unitIndex, this.balance, this.farmData);
+  }
+
   buyFarmSlot(buildingId, productId) {
-    if (!buyFarmUnit(this.state, this.balance, buildingId, productId)) return false;
+    if (!buyFarmUnit(this.state, this.balance, buildingId, productId, this.farmData)) return false;
     emit('lineUnitUnlock', { buildingId, productId });
     emit('stateChange', this.state);
     this.scheduleSave();
