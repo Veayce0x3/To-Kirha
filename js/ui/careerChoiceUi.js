@@ -1,7 +1,6 @@
 /** Onboarding : pseudo + arme de départ (Paysan débloqué automatiquement). */
 
 import { emit } from '../core/events.js';
-import { SaveProvider } from '../core/save.js';
 import { forceAppRefresh, forceNewGameReload } from '../core/reload.js';
 import {
   STARTER_WEAPON_CHOICES,
@@ -165,8 +164,13 @@ function bindCareerModalListeners() {
       return;
     }
     if (e.target.closest('#career-reset')) {
-      SaveProvider.beginReset();
-      SaveProvider.clear().then(() => forceNewGameReload());
+      // Même pipeline que Options → resetSave + wipe cloud (sinon l’ancienne partie revient)
+      (async () => {
+        if (!gameRef) return;
+        gameRef.resetSave();
+        await gameRef.wipeCloudAfterReset?.();
+        await forceNewGameReload();
+      })();
     }
   });
 

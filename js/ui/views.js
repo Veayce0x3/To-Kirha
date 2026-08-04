@@ -1665,12 +1665,27 @@ function renderAchievements(game, el) {
   el.innerHTML = `
     <div class="view-header">
       <h2>🏆 Succès</h2>
-      <p class="view-desc">Quand un objectif est atteint, appuie sur <strong>Récupérer</strong> pour valider et recevoir la récompense.</p>
-      ${claimable > 0 ? `<p class="view-desc quest-claimable-banner">${claimable} succès à récupérer</p>` : ''}
+      <p class="view-desc">Les succès ne se valident <strong>pas tout seuls</strong> : appuie sur <strong>Récupérer</strong> pour la récompense. Un point rose apparaît sur Succès dès qu’il y en a un prêt.</p>
+      ${claimable > 0 ? `
+        <p class="view-desc quest-claimable-banner">${claimable} succès à récupérer</p>
+        <button type="button" class="btn btn-craft" id="ach-claim-all">Récupérer tout (${claimable})</button>
+      ` : ''}
       ${bonusLine}
     </div>
     <div id="achievements-list" class="panel-inner"></div>
   `;
+
+  el.querySelector('#ach-claim-all')?.addEventListener('click', () => {
+    let n = 0;
+    for (const ach of Object.values(game.achievements || {})) {
+      if (!isAchievementReady(ach, game.state, game.recipes)) continue;
+      if (isAchievementCompleted(game.state, ach.id)) continue;
+      const result = game.claimAchievement(ach.id);
+      if (result?.ok) n += 1;
+    }
+    emit('farmBlocked', { message: n > 0 ? `${n} succès récupéré(s)` : 'Aucun succès à récupérer' });
+    renderAchievements(game, el);
+  });
 
   const list = el.querySelector('#achievements-list');
   const order = ['season_1', 'season_meta', 'harvest', 'farm', 'craft', 'combat'];
@@ -4833,7 +4848,7 @@ export function formatNumber(n) {
   // Max 2 décimales (bonus saison, évite les flottants genre 4,6000001)
   const rounded = Math.round(x * 100) / 100;
   if (Math.abs(rounded - Math.round(rounded)) > 1e-9) {
-    return rounded.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+    return rounded.toLocaleString('fr-FR', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
   }
   return Math.round(rounded).toLocaleString('fr-FR');
 }

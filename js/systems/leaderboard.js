@@ -28,8 +28,11 @@ export function buildLeaderboardSnapshot(state) {
     season: Math.max(1, safeInt(state.season, 1)),
     total_earned: Math.max(0, safeInt(state.lifetimeStats?.totalEarned ?? state.stats?.totalEarned, 0)),
     seasons_completed: Math.max(0, safeInt(state.lifetimeStats?.seasonsCompleted, 0)),
-    total_harvests: Math.max(0, safeInt(state.lifetimeStats?.totalHarvests ?? state.stats?.totalHarvests, 0)),
-    boss_kills_total: Math.max(0, safeInt(bossKills, 0)),
+    total_harvests: Math.max(
+      0,
+      safeInt(state.lifetimeStats?.totalHarvests, 0) + safeInt(state.stats?.totalHarvests, 0)
+    ),
+    boss_kills_total: Math.max(0, safeInt(bossKills, 0) + safeInt(state.lifetimeStats?.bossKillsTotal, 0)),
     kirha_current: Math.max(0, safeInt(state.kirha, 0)),
   };
 }
@@ -104,12 +107,12 @@ export async function fetchLeaderboard(sortKey = 'char_level', limit = 50, local
 
 export function formatLeaderboardValue(tabId, row) {
   switch (tabId) {
-    case 'level': return `Nv.${row.char_level} · S${row.season}`;
+    case 'level': return `Perso Nv.${row.char_level} · Saison ${row.season}`;
     case 'jobs': return `Métier max Nv.${row.max_job_level || 1}`;
-    case 'fortune': return `${Number(row.total_earned || 0).toLocaleString('fr-FR')} 💰`;
-    case 'seasons': return `${row.seasons_completed || 0} saison(s)`;
+    case 'fortune': return `${Number(row.total_earned || 0).toLocaleString('fr-FR')} 💰 gagnés`;
+    case 'seasons': return `${row.seasons_completed || 0} renaissance(s)`;
     case 'harvest': return `${Number(row.total_harvests || 0).toLocaleString('fr-FR')} récoltes`;
-    case 'combat': return `${row.boss_kills_total || 0} victoires DJ`;
+    case 'combat': return `${Number(row.boss_kills_total || 0).toLocaleString('fr-FR')} boss vaincu(s)`;
     default: return '';
   }
 }

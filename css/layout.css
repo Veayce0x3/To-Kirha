@@ -736,8 +736,10 @@
 }
 
 .nav-btn.nav-achievement-ready:not(.active) .nav-status-dot {
+  width: 10px;
+  height: 10px;
   background: #E891B0;
-  box-shadow: 0 0 0 2px rgba(232, 145, 176, 0.4);
+  box-shadow: 0 0 0 2px rgba(232, 145, 176, 0.45);
 }
 
 .nav-btn.nav-achievement-ready.active .nav-status-dot {
@@ -4572,6 +4574,57 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   justify-content: space-between;
   gap: 0.35rem 0.75rem;
   margin-bottom: 0.45rem;
+}
+
+.production-line-meta-clear {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.85rem;
+  width: 100%;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brun-bois, #4A3728);
+}
+
+.production-line-meta-clear .production-units,
+.production-line-meta-clear .production-harvest-time {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.9);
+  border: 1px solid rgba(45, 90, 39, 0.18);
+}
+
+.harvest-mini-tuto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(248, 232, 238, 0.75);
+  border: 1px solid rgba(232, 145, 176, 0.35);
+}
+
+.harvest-mini-tuto p {
+  margin: 0;
+  flex: 1;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.harvest-bulk-bar {
+  margin: 0 0 0.65rem;
+}
+
+.harvest-bulk-bar .btn {
+  width: 100%;
+  min-height: 48px;
 }
 
 .production-line-title {

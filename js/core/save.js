@@ -5,6 +5,8 @@ import { attachIntegrityMeta, verifySaveIntegrity, validateSaveSanity } from './
 const SAVE_KEY = 'tokirha_save';
 const RESET_FLAG_KEY = 'tokirha_resetting';
 const FRESH_RESET_KEY = 'tokirha_fresh_reset';
+/** Flag durable (survit à un refresh / nouvel onglet) — évite de restaurer le cloud après reset. */
+const FRESH_RESET_LOCAL_KEY = 'tokirha_fresh_reset_durable';
 
 function storageHasResetFlag() {
   try {
@@ -12,6 +14,21 @@ function storageHasResetFlag() {
   } catch {
     return false;
   }
+}
+
+function readDurableFreshReset() {
+  try {
+    return localStorage.getItem(FRESH_RESET_LOCAL_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeDurableFreshReset(on) {
+  try {
+    if (on) localStorage.setItem(FRESH_RESET_LOCAL_KEY, '1');
+    else localStorage.removeItem(FRESH_RESET_LOCAL_KEY);
+  } catch {}
 }
 
 export const SaveProvider = {
@@ -79,26 +96,28 @@ export const SaveProvider = {
       sessionStorage.setItem(RESET_FLAG_KEY, '1');
       sessionStorage.setItem(FRESH_RESET_KEY, '1');
     } catch {}
+    writeDurableFreshReset(true);
   },
 
   markFreshReset() {
     try {
       sessionStorage.setItem(FRESH_RESET_KEY, '1');
     } catch {}
+    writeDurableFreshReset(true);
   },
 
   isFreshReset() {
     try {
-      return sessionStorage.getItem(FRESH_RESET_KEY) === '1';
-    } catch {
-      return false;
-    }
+      if (sessionStorage.getItem(FRESH_RESET_KEY) === '1') return true;
+    } catch {}
+    return readDurableFreshReset();
   },
 
   clearFreshReset() {
     try {
       sessionStorage.removeItem(FRESH_RESET_KEY);
     } catch {}
+    writeDurableFreshReset(false);
   },
 
   isResetting() {

@@ -21,7 +21,7 @@ import {
   getUnitProgress,
   ensureProductionLines,
 } from '../systems/productionLines.js';
-import { getHarvestTime, getHarvestXp } from '../systems/harvest.js';
+import { getHarvestTime, getHarvestXp, getRegrowthTime } from '../systems/harvest.js';
 import { getSeasonBonusPercents } from '../systems/prestige.js';
 import { getFarmToolCheck, getHarvestLineToolStatus, getFarmLineToolStatus } from '../systems/toolTier.js';
 import { getToolUsesRemaining, isDurabilityTool, getEffectiveMaxUses } from '../systems/toolDurability.js';
@@ -46,7 +46,7 @@ function formatNumber(n) {
   if (x >= 10_000) return `${(x / 1_000).toFixed(1)}K`;
   const rounded = Math.round(x * 100) / 100;
   if (Math.abs(rounded - Math.round(rounded)) > 1e-9) {
-    return rounded.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+    return rounded.toLocaleString('fr-FR', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
   }
   return Math.round(rounded).toLocaleString('fr-FR');
 }
@@ -343,6 +343,7 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   const maxUnits = game.balance.productionLines?.maxUnitsPerResource ?? 6;
   const xpPerHarvest = getHarvestXp(resource, game.state, game.balance, game.resources);
   const harvestMs = Math.round(getHarvestTime(resource, game.state, game.jobs, game.balance, game.resources) / 1000);
+  const regrowthSec = Math.round(getRegrowthTime(resource, game.state, game.jobs, game.balance, game.resources) / 1000);
   const xpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
   const xpBonusTag = xpBonusPct > 0
     ? `<span class="bonus-tag" title="Bonus XP métiers">+${xpBonusPct}%</span>`
@@ -356,13 +357,13 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
       <div class="production-line-title">
         ${renderResourceIcon(resource, 'tile-resource-icon')}
         <strong>${resource.name}</strong>
-        <span class="production-stock">Stock : ${qty}</span>
+        <span class="production-stock">Stock : ${formatNumber(qty)}</span>
         <span class="production-xp">+${formatNumber(xpPerHarvest)} XP${xpBonusTag}</span>
         <span class="production-tool-slot"></span>
       </div>
-      <div class="production-line-meta">
-        <span class="production-units">${line.units}/${maxUnits}</span>
-        <span class="production-harvest-time">${harvestMs}s/récolte</span>
+      <div class="production-line-meta production-line-meta-clear">
+        <span class="production-units" title="Emplacements débloqués pour cette ressource">📍 Emplacements ${line.units}/${maxUnits}</span>
+        <span class="production-harvest-time" title="Temps de récolte puis repousse">⏱ Récolte ${harvestMs}s · Repousse ${regrowthSec}s</span>
       </div>
     </div>
     <div class="slots-grid production-units-grid"></div>
@@ -424,7 +425,18 @@ export function renderJobProduction(game, el, jobId) {
       <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${formatNumber(prog.xp)} / ${formatNumber(prog.needed)} XP`}</p>
     </div>
     <div class="panel-inner">
+      ${!game.state.settings?.harvestTutorialDone ? `
+        <div class="harvest-mini-tuto" id="harvest-mini-tuto">
+          <p><strong>Mini-guide</strong> — 1) Touche une plante pour récolter · 2) Vends à la Place marchande pour des 💰 · 3) Achète plus d’emplacements pour cette ressource.</p>
+          <button type="button" class="btn btn-muted btn-sm" id="harvest-tuto-dismiss">Compris</button>
+        </div>
+      ` : ''}
       <div id="harvest-resource-tabs"></div>
+      ${unlocked.length >= 6 ? `
+        <div class="harvest-bulk-bar">
+          <button type="button" class="btn btn-craft" id="harvest-all-btn">🌾 Tout récolter (${unlocked.length} plantes)</button>
+        </div>
+      ` : ''}
       <div id="production-lines"></div>
       <div id="production-unlock"></div>
       <div id="job-next-footer"></div>
@@ -433,6 +445,26 @@ export function renderJobProduction(game, el, jobId) {
 
   el.querySelector('#job-prev')?.addEventListener('click', () => { if (prevView) navigate(prevView); });
   el.querySelector('#job-next')?.addEventListener('click', () => { if (nextView) navigate(nextView); });
+
+  el.querySelector('#harvest-tuto-dismiss')?.addEventListener('click', () => {
+    if (!game.state.settings) game.state.settings = {};
+    game.state.settings.harvestTutorialDone = true;
+    game.scheduleSave?.();
+    el.querySelector('#harvest-mini-tuto')?.remove();
+  });
+
+  el.querySelector('#harvest-all-btn')?.addEventListener('click', () => {
+    const result = game.harvestAllReadyForJob(jobId);
+    const bits = [];
+    if (result.started) bits.push(`${result.started} lancée(s)`);
+    if (result.completed) bits.push(`${result.completed} terminée(s)`);
+    emit('farmBlocked', {
+      message: bits.length
+        ? `Tout récolter : ${bits.join(' · ')}`
+        : 'Rien à récolter pour le moment (outils / déjà en cours).',
+    });
+    renderJobProduction(game, el, jobId);
+  });
 
   const tabsEl = el.querySelector('#harvest-resource-tabs');
   if (tabsEl && unlocked.length) {

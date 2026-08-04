@@ -17,8 +17,8 @@
 
 ## 3. Paliers déblocage ressource (niveau métier requis)
 
-- Config : `balance.resourceUnlock` → starter **1**, puis **12 + (tier-1)×6**
-  - Tier 1 ressource → Nv.12 · Tier 2 → Nv.18 · Tier 3 → Nv.24…
+- Config : `balance.resourceUnlock` → starter **1**, puis **20 + (tier)×20**
+  - Tier 1 ressource → Nv.20 · Tier 2 → Nv.40 · Tier 3 → Nv.60… (aligné zones)
 - Code : `getResourceUnlockJobLevel()` — utilisé pour le bouton Déblocage production
 - **≠ XP récolte** (10/14/18)
 

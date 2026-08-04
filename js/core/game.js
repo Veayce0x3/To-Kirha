@@ -499,7 +499,15 @@ export class Game {
       try {
         const cloud = await loadCloudSave(auth.userId);
         const freshReset = SaveProvider.isFreshReset();
-        if (!freshReset && cloud?.data) {
+        const { getResetRank } = await import('./cloudSave.js');
+        const localResets = getResetRank(this.state);
+        const cloudResets = cloud?.data ? getResetRank(cloud.data) : 0;
+        if (freshReset) {
+          // Ne pas restaurer l’ancienne partie ; réessayer le wipe si le cloud est en retard
+          if (cloud?.data && localResets > cloudResets) {
+            await this.wipeCloudAfterReset?.();
+          }
+        } else if (cloud?.data) {
           const merged = await mergeCloudAndLocal(cloud, rawLocal, this.balance, { userId: auth.userId });
           if (merged) {
             this.state = this.mergeState(merged);
@@ -1490,6 +1498,35 @@ export class Game {
 
   completeSlotHarvest(jobId, resourceId, unitIndex = 0) {
     this.completeHarvestLine(jobId, resourceId, unitIndex);
+  }
+
+  /**
+   * Démarre / finalise toutes les unités prêtes d’un métier (raccourci « Tout récolter »).
+   * @returns {{ started: number, completed: number }}
+   */
+  harvestAllReadyForJob(jobId) {
+    ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
+    const lines = this.state.productionLines?.harvest?.[jobId] || {};
+    let started = 0;
+    let completed = 0;
+    for (const [resourceId, line] of Object.entries(lines)) {
+      const slots = line?.slots || [];
+      for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i];
+        if (!slot) continue;
+        if (slot.active) {
+          const progress = getUnitProgress(slot);
+          if (progress >= 1 && slot.active.phase === 'regrowing') {
+            this.completeHarvestLine(jobId, resourceId, i);
+            completed += 1;
+          }
+          continue;
+        }
+        if (this.getHarvestToolBlockReason?.(jobId, resourceId)) continue;
+        if (this.startLineHarvest(jobId, resourceId, i)) started += 1;
+      }
+    }
+    return { started, completed };
   }
 
   getLineHarvestProgress(jobId, resourceId, unitIndex) {

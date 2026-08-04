@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 42,
-  "appBuildId": "20260729-0850",
+  "appBuildId": "20260804-1330",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -70,9 +70,9 @@
     "comment": "Early soft : Frêne ~14s, Séquoia ~42s, Chêne ~70s"
   },
   "harvestXpByTier": {
-    "base": 12,
+    "base": 10,
     "step": 4,
-    "comment": "Tier 1=12 XP, puis +4/palier — early un peu plus généreux"
+    "comment": "Tier 0=10 XP, puis +4/palier (10/14/18…) — aligné progression-design"
   },
   "xpScalingCurve": [
     {
@@ -635,22 +635,20 @@
       "hint": "Boulanger Nv.8 pour le Chimiste (élixirs de combat)."
     },
     "farm": {
-      "chicken_coop": {
+      "well": {
         "when": {
           "craftJobUnlocked": "toolmaker"
         },
-        "hint": "Débloque d’abord l’Outilleur, puis le Poulailler."
+        "hint": "Débloque d’abord l’Outilleur, puis le Puits."
       },
-      "well": {
+      "chicken_coop": {
         "when": {
           "jobLevel": {
-            "farmer": 10
+            "farmer": 8
           },
-          "buildingLevel": {
-            "chicken_coop": 5
-          }
+          "buildingUnlocked": "well"
         },
-        "hint": "Paysan Nv.10 et Poulailler Nv.5 pour le Puits."
+        "hint": "Puits débloqué et Paysan Nv.8 pour le Poulailler."
       },
       "barn": {
         "when": {
@@ -699,22 +697,20 @@
         "hint": "Alchimiste Nv.6, Porcherie Nv.16 et Paysan Nv.16 pour les Ruches."
       }
     },
-    "farm_chicken_coop": {
+    "farm_well": {
       "when": {
         "craftJobUnlocked": "toolmaker"
       },
-      "hint": "Débloque d’abord l’Outilleur, puis le Poulailler."
+      "hint": "Débloque d’abord l’Outilleur, puis le Puits."
     },
-    "farm_well": {
+    "farm_chicken_coop": {
       "when": {
         "jobLevel": {
-          "farmer": 10
+          "farmer": 8
         },
-        "buildingLevel": {
-          "chicken_coop": 5
-        }
+        "buildingUnlocked": "well"
       },
-      "hint": "Paysan Nv.10 et Poulailler Nv.5 pour le Puits."
+      "hint": "Puits débloqué et Paysan Nv.8 pour le Poulailler."
     },
     "farm_barn": {
       "when": {

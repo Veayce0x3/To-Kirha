@@ -301,6 +301,35 @@ body.auth-modal-open #career-choice-modal {
   border-bottom-color: transparent;
 }
 
+.leaderboard-row.lb-podium {
+  background: rgba(248, 232, 238, 0.45);
+  border-radius: 10px;
+  margin-bottom: 0.2rem;
+  border-bottom-color: transparent;
+}
+
+.lb-you-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(248, 232, 238, 0.9), rgba(228, 240, 223, 0.85));
+  border: 1px solid rgba(232, 145, 176, 0.35);
+}
+
+.lb-you-rank {
+  font-size: 1.35rem;
+  font-weight: 800;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.lb-you-score {
+  margin: 0.15rem 0 0;
+}
+
 .lb-rank {
   font-weight: 700;
   color: var(--vert-foret);

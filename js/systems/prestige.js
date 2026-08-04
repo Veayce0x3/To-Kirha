@@ -444,6 +444,9 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     seasonsCompleted: (state.lifetimeStats?.seasonsCompleted || 0) + 1,
     totalEarned: state.lifetimeStats?.totalEarned || 0,
     totalHarvests: (state.lifetimeStats?.totalHarvests || 0) + (state.stats?.totalHarvests || 0),
+    bossKillsTotal: (state.lifetimeStats?.bossKillsTotal || 0)
+      + Object.values(state.bossKills || {}).reduce((a, b) => a + (Number(b) || 0), 0),
+    combatFights: (state.lifetimeStats?.combatFights || 0) + (state.stats?.combatFights || 0),
     maxSeasonReached: Math.max(
       Number(state.lifetimeStats?.maxSeasonReached) || 1,
       Number(state.season) || 1,
@@ -574,5 +577,5 @@ function getFreshProgress(balance) {
 }
 
 export function getDefaultSettings() {
-  return { sfx: true, sfxVolume: 0.35, darkMode: false };
+  return { sfx: true, sfxVolume: 0.35, darkMode: false, harvestTutorialDone: false };
 }
