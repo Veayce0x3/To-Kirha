@@ -99,6 +99,12 @@ import {
   discardPendingEvent,
   ensureHarvestEventsForJob,
 } from '../systems/harvestEvents.js';
+import {
+  ensureVillageBoardDay,
+  getVillageBoardViewModel,
+  turnInVillageQuest,
+  noteVillageCombatResult,
+} from '../systems/villageBoard.js';
 import { isCraftJobUnlocked, isCombatUnlocked } from '../systems/jobUnlock.js';
 import {
   getFarmBuildingProgress as computeFarmBuildingProgress,
@@ -272,7 +278,7 @@ function migrateLegacyCombatResources(state) {
 }
 
 export class Game {
-  constructor(resources, jobs, balance, recipes, aides, equipment, farmData, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, achievements, weaponRoles) {
+  constructor(resources, jobs, balance, recipes, aides, equipment, farmData, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, achievements, weaponRoles, villageBoardData = null) {
     this.resources = resources;
     this.jobs = jobs;
     this.balance = balance;
@@ -291,6 +297,7 @@ export class Game {
     this.achievements = achievements || {};
     this.quests = this.achievements;
     this.weaponRoles = weaponRoles || {};
+    this.villageBoardData = villageBoardData || { npcs: {}, quests: {}, difficulties: {} };
     this.state = null;
     this.harvestTimers = {};
     this.farmTimers = {};
@@ -368,6 +375,7 @@ export class Game {
         },
       },
       harvestEventsDaily: null,
+      villageBoard: null,
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
       playtime: { foregroundMs: 0, backgroundMs: 0 },
@@ -812,7 +820,39 @@ export class Game {
     if (!this.state.stats) this.state.stats = {};
     this.state.stats.combatFights = (this.state.stats.combatFights || 0) + 1;
     consumeCombatMealBuffFight(this.state);
+    noteVillageCombatResult(this.state, this.villageBoardData, result);
     this.processAchievements();
+  }
+
+  ensureVillageBoardDay() {
+    return ensureVillageBoardDay(this.state, this.villageBoardData);
+  }
+
+  getVillageBoardView() {
+    return getVillageBoardViewModel(
+      this.state,
+      this.villageBoardData,
+      this.balance,
+      this.jobs,
+      this.farmData,
+      this.resources
+    );
+  }
+
+  turnInVillageQuest(questId) {
+    const result = turnInVillageQuest(
+      this.state,
+      this.villageBoardData,
+      questId,
+      this.balance,
+      this.jobs,
+      this.farmData
+    );
+    if (result.ok) {
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
+    return result;
   }
 
   setCompanionNickname(companionId, name, isRename = false) {

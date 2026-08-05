@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260805-1800",
+      "date": "2026-08-05",
+      "title": "Village : météo & panneau du jour",
+      "highlights": [
+        "Nouvel onglet Village : ciel du jour (météo) + compteurs événements",
+        "Panneau du village : 5 quêtes/jour (récolte, ferme, cuisine, combat + joker)",
+        "Difficulté Facile / Moyen / Difficile · livraison qui consomme · peu de pépites"
+      ]
+    },
+    {
       "buildId": "20260805-1635",
       "date": "2026-08-05",
       "title": "Puits disponible dès le début",

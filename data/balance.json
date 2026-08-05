@@ -1,8 +1,8 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 43,
-  "appBuildId": "20260805-1635",
+  "saveVersion": 44,
+  "appBuildId": "20260805-1800",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,

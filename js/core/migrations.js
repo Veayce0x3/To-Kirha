@@ -347,10 +347,13 @@ const MIGRATIONS = {
     }
     if (!state.harvestEventsDaily) state.harvestEventsDaily = null;
   },
+  44(state) {
+    if (!state.villageBoard) state.villageBoard = null;
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 43;
+  const target = ctx.balance?.saveVersion ?? 44;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

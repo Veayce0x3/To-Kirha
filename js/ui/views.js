@@ -41,6 +41,7 @@ import { renderGuestBanner, renderAccountPanel, showAccountRequiredModal } from 
 import { isRegisteredAccount, hasFreeRenameAvailable, applyServerDisplayNameToGame, refreshProfile } from '../core/auth.js';
 import { changeDisplayNameFree } from '../systems/accountProfile.js';
 import { renderLeaderboard } from './leaderboardView.js';
+import { renderVillage } from './villageView.js';
 import { renderJobProduction, renderFarmProduction, updateProductionLineProgresses, updateFarmLineProgresses } from './productionLineView.js';
 import { renderAdmin } from './adminView.js';
 import { canUseOnlineFeatures, getOnlineBlockReason } from '../core/auth.js';
@@ -374,6 +375,7 @@ export function renderView(game, container, viewId) {
     achievements: renderAchievements,
     missions: renderAchievements,
     world: renderWorld,
+    village: renderVillage,
     job_lumberjack: () => renderJob(game, container, 'lumberjack'),
     job_fisher: () => renderJob(game, container, 'fisher'),
     job_miner: () => renderJob(game, container, 'miner'),

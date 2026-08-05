@@ -21,7 +21,8 @@ import {
   getUnitProgress,
   ensureProductionLines,
 } from '../systems/productionLines.js';
-import { getSlotEventVisual, DISCOVERY_META } from '../systems/harvestEvents.js';
+import { getSlotEventVisual } from '../systems/harvestEvents.js';
+import { buildWeatherMiniChip, bindWeatherMiniChip } from './villageView.js';
 import { getHarvestTime, getHarvestXp, getRegrowthTime } from '../systems/harvest.js';
 import { getSeasonBonusPercents } from '../systems/prestige.js';
 import { getFarmToolCheck, getHarvestLineToolStatus, getFarmLineToolStatus } from '../systems/toolTier.js';
@@ -169,31 +170,8 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
   return card;
 }
 
-function buildWeatherEventsBanner(game, jobId) {
-  const status = game.getHarvestEventsStatus?.() || null;
-  if (!status) return '';
-  const w = status.weather;
-  const jobName = game.jobs[w.jobId]?.name || w.jobId;
-  const discovery = DISCOVERY_META[w.discoveryId];
-  const isTodayJob = w.jobId === jobId;
-  return `
-    <div class="harvest-weather-bar" title="Météo commune · reset 00:00 UTC">
-      <div class="harvest-weather-main">
-        <span class="harvest-weather-emoji">${w.emoji}</span>
-        <div>
-          <strong>${w.label}</strong>
-          <p class="harvest-weather-hint">${isTodayJob
-            ? `Aujourd’hui : découvertes « ${discovery?.label || ''} » possibles`
-            : `Découvertes Kirha : ${jobName} aujourd’hui`}</p>
-        </div>
-      </div>
-      <div class="harvest-weather-caps" aria-label="Limites du jour">
-        <span title="Brillants ressource">✨ ${status.shiny.used}/${status.shiny.cap}</span>
-        <span title="Jackpots">🎰 ${status.jackpot.used}/${status.jackpot.cap}</span>
-        <span title="Découvertes Kirha">💰 ${status.kirha.used}/${status.kirha.cap}</span>
-      </div>
-    </div>
-  `;
+function buildWeatherEventsBanner(game, _jobId) {
+  return buildWeatherMiniChip(game);
 }
 
 function getFarmToolDurabilityLabel(game, building) {
@@ -487,6 +465,8 @@ export function renderJobProduction(game, el, jobId) {
     game.scheduleSave?.();
     el.querySelector('#harvest-mini-tuto')?.remove();
   });
+
+  bindWeatherMiniChip(el);
 
   el.querySelector('#harvest-all-btn')?.addEventListener('click', () => {
     const result = game.harvestAllReadyForJob(jobId);

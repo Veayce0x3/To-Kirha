@@ -713,6 +713,24 @@ export function initUI(game, audio) {
     tickHarvestUI();
     refreshHeader(game.state);
   });
+  on('villageQuestComplete', (result) => {
+    const name = result?.npc?.name || 'Villageois';
+    const thanks = result?.thanks || 'Merci !';
+    const r = result?.rewards || {};
+    const bits = [];
+    if (r.kirha) bits.push(`+${r.kirha} 💰`);
+    if (r.nuggets) bits.push(`+${r.nuggets} pépite`);
+    showToast(els, `${name} : ${thanks}${bits.length ? ` · ${bits.join(' · ')}` : ''}`, 'upgrade');
+    if (result?.clearBonus) {
+      const b = result.clearBonus;
+      const bBits = [];
+      if (b.kirha) bBits.push(`+${b.kirha} 💰`);
+      if (b.nuggets) bBits.push(`+${b.nuggets} pépite`);
+      showToast(els, `Panneau 5/5 ! ${bBits.join(' · ')}`, 'prestige');
+    }
+    audio.playSfx('ready');
+    refreshHeader(game.state);
+  });
   on('regrowthStart', ({ jobId, unitIndex, slotIndex, resourceId }) => {
     patchHarvestSlot(game, jobId, unitIndex ?? slotIndex, resourceId);
     tickHarvestUI();
