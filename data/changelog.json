@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260805-1815",
+      "date": "2026-08-05",
+      "title": "Événements récolte plus visibles",
+      "highlights": [
+        "Brillant doré / rose visible pendant toute la récolte et ~8 s après",
+        "Texte Kirha plus long : phrase ~3 s puis montant bien affiché"
+      ]
+    },
+    {
       "buildId": "20260805-1800",
       "date": "2026-08-05",
       "title": "Village : météo & panneau du jour",

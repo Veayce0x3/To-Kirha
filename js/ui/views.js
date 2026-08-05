@@ -2250,31 +2250,8 @@ export function playHarvestSlotFx(jobId, unitIndex, resourceId, kind, amount = n
       setTimeout(() => visual.classList.remove('slot-fx-pop'), 520);
 
       const ev = eventInfo?.harvestEvent;
-      if (ev?.type === 'kirha') {
-        const flavor = document.createElement('div');
-        flavor.className = 'slot-event-announce slot-event-announce-flavor';
-        flavor.textContent = ev.flavor || 'Découverte !';
-        visual.appendChild(flavor);
-        setTimeout(() => {
-          flavor.remove();
-          const kirha = Math.max(0, Math.floor(Number(eventInfo?.kirhaGain) || ev.amount || 0));
-          if (kirha > 0) {
-            const bang = document.createElement('div');
-            bang.className = 'slot-event-announce slot-event-announce-kirha';
-            bang.textContent = `+${kirha} 💰`;
-            visual.appendChild(bang);
-            setTimeout(() => bang.remove(), 1400);
-          }
-        }, 1000);
-        return;
-      }
-
-      if (ev?.type === 'shiny' || ev?.type === 'jackpot') {
-        const bang = document.createElement('div');
-        bang.className = `slot-event-announce slot-event-announce-${ev.type}`;
-        bang.textContent = `+${Math.max(0, Math.floor(Number(amount) || ev.amount || 0))}`;
-        visual.appendChild(bang);
-        setTimeout(() => bang.remove(), 1400);
+      // Annonce longue gérée par eventReveal sur la carte — pas de flash court ici
+      if (ev?.type === 'kirha' || ev?.type === 'shiny' || ev?.type === 'jackpot') {
         return;
       }
 

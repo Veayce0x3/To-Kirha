@@ -21,7 +21,7 @@ import {
   getUnitProgress,
   ensureProductionLines,
 } from '../systems/productionLines.js';
-import { getSlotEventVisual } from '../systems/harvestEvents.js';
+import { getSlotEventVisual, getEventRevealAnnounceHtml } from '../systems/harvestEvents.js';
 import { buildWeatherMiniChip, bindWeatherMiniChip } from './villageView.js';
 import { getHarvestTime, getHarvestXp, getRegrowthTime } from '../systems/harvest.js';
 import { getSeasonBonusPercents } from '../systems/prestige.js';
@@ -111,10 +111,19 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
 
   const eventVis = getSlotEventVisual(slot);
   const eventClass = eventVis ? ` slot-event-${eventVis.kind}` : '';
-  const harvestingEvent = active && phase === 'harvesting' && eventVis ? ' slot-event-growing' : '';
+  const isGrowingEvent = !!(
+    eventVis
+    && (
+      (active && phase === 'harvesting')
+      || eventVis.reveal
+      || (!active && slot?.pendingEvent)
+    )
+  );
+  const growingClass = isGrowingEvent ? ' slot-event-growing' : '';
+  const announceHtml = eventVis?.reveal ? getEventRevealAnnounceHtml(eventVis.reveal) : '';
 
   const card = document.createElement('div');
-  card.className = `harvest-slot production-unit production-unit-tap${active ? ' active-harvest' : ''}${canHarvest || canComplete ? ' slot-can-harvest' : ''}${eventClass}${harvestingEvent}`;
+  card.className = `harvest-slot production-unit production-unit-tap${active ? ' active-harvest' : ''}${canHarvest || canComplete ? ' slot-can-harvest' : ''}${eventClass}${growingClass}`;
   card.dataset.job = jobId;
   card.dataset.resource = resourceId;
   card.dataset.unit = String(unitIndex);
@@ -123,6 +132,7 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
       ${canHarvest ? '<span class="slot-ready-badge">Prêt</span>' : ''}
       ${eventVis ? `<span class="slot-event-glow" aria-hidden="true"></span>` : ''}
       ${spriteHtml}
+      ${announceHtml}
       ${active ? slotProgressOverlayHtml(progressPct, remainingMs) : ''}
     </div>
     ${active ? slotTimeFooterHtml(statusLabel, phase) : ''}
@@ -1046,6 +1056,24 @@ export function updateProductionLineProgresses(game, jobId) {
         }
       }
       setSlotProgressUi(card, pct, labelText, remainingMs);
+
+      // Révélation événement : met à jour le texte (flavor → montant) sans rebuild
+      const eventVis = getSlotEventVisual(slot);
+      const visual = card.querySelector('.slot-visual');
+      if (visual && eventVis?.reveal) {
+        const html = getEventRevealAnnounceHtml(eventVis.reveal);
+        let announce = visual.querySelector('.slot-event-announce');
+        if (html) {
+          if (!announce) {
+            visual.insertAdjacentHTML('beforeend', html);
+          } else if (announce.outerHTML !== html.trim()) {
+            announce.outerHTML = html;
+          }
+        } else {
+          announce?.remove();
+        }
+      }
+
       if (progress >= 1 && phase === 'regrowing') {
         card?.classList.add('slot-can-harvest');
       }

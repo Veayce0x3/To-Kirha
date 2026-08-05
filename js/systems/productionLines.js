@@ -644,11 +644,22 @@ export function completeHarvestUnit(state, resources, jobs, balance, jobId, reso
     state.stats.totalHarvests = (state.stats.totalHarvests || 0) + 1;
 
     const regrowthDuration = getRegrowthTime(resource, state, jobs, balance, resources);
+    const reveal = eventResult.event
+      ? {
+          type: eventResult.event.type,
+          flavor: eventResult.event.flavor || null,
+          yieldAmount: eventResult.yieldOverride != null ? yield_ : null,
+          kirhaGain: eventResult.kirhaGain || 0,
+          startedAt: Date.now(),
+          until: Date.now() + 8000,
+        }
+      : null;
     slot.active = {
       phase: 'regrowing',
       start: Date.now(),
       duration: regrowthDuration,
       resourceId,
+      ...(reveal ? { eventReveal: reveal } : {}),
     };
 
     return {

@@ -390,10 +390,38 @@ export function ensureHarvestEventsForJob(state, balance, jobId, now = Date.now(
   }
 }
 
+export function getActiveEventReveal(slot, now = Date.now()) {
+  const reveal = slot?.active?.eventReveal;
+  if (!reveal?.type) return null;
+  if ((Number(reveal.until) || 0) <= now) {
+    if (slot?.active) delete slot.active.eventReveal;
+    return null;
+  }
+  return reveal;
+}
+
 export function getSlotEventVisual(slot) {
-  const ev = slot?.pendingEvent || slot?.active?.event;
+  const reveal = getActiveEventReveal(slot);
+  const ev = reveal || slot?.pendingEvent || slot?.active?.event;
   if (!ev?.type) return null;
-  if (ev.type === 'kirha') return { kind: 'kirha', label: 'Découverte' };
-  if (ev.type === 'jackpot') return { kind: 'jackpot', label: 'Jackpot' };
-  return { kind: 'shiny', label: 'Bonus' };
+  if (ev.type === 'kirha') return { kind: 'kirha', label: 'Découverte', reveal };
+  if (ev.type === 'jackpot') return { kind: 'jackpot', label: 'Jackpot', reveal };
+  return { kind: 'shiny', label: 'Bonus', reveal };
+}
+
+/** Overlay texte pendant la révélation (reste affiché ~8 s). */
+export function getEventRevealAnnounceHtml(reveal, now = Date.now()) {
+  if (!reveal?.type) return '';
+  const elapsed = now - (Number(reveal.startedAt) || now);
+  if (reveal.type === 'kirha') {
+    if (elapsed < 3200) {
+      return `<div class="slot-event-announce slot-event-announce-flavor">${reveal.flavor || 'Découverte !'}</div>`;
+    }
+    const kirha = Math.max(0, Math.floor(Number(reveal.kirhaGain) || 0));
+    if (kirha <= 0) return '';
+    return `<div class="slot-event-announce slot-event-announce-kirha">+${kirha} 💰</div>`;
+  }
+  const qty = Math.max(0, Math.floor(Number(reveal.yieldAmount) || 0));
+  if (qty <= 0) return '';
+  return `<div class="slot-event-announce slot-event-announce-${reveal.type}">+${qty}</div>`;
 }
