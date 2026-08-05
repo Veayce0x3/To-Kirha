@@ -57,6 +57,7 @@ export function getQuestDef(boardData, questId) {
 }
 
 export function getNpc(boardData, npcId) {
+  if (npcId === 'kenji') npcId = 'haru'; // ancien id
   return boardData?.npcs?.[npcId] || null;
 }
 
@@ -143,6 +144,22 @@ function emptyDaily(roll) {
 export function ensureVillageBoardDay(state, boardData, now = Date.now()) {
   const dateKey = getUtcDateKey(now);
   if (state.villageBoard?.date === dateKey && Array.isArray(state.villageBoard.questIds)) {
+    // Migration douce : anciens ids Kenji → Haru
+    state.villageBoard.questIds = state.villageBoard.questIds.map((id) => {
+      if (id === 'e_f_kenji_eau') return 'e_f_haru_eau';
+      if (id === 'h_h_kenji') return 'h_h_haru';
+      return id;
+    });
+    if (state.villageBoard.completed) {
+      if (state.villageBoard.completed.e_f_kenji_eau) {
+        state.villageBoard.completed.e_f_haru_eau = true;
+        delete state.villageBoard.completed.e_f_kenji_eau;
+      }
+      if (state.villageBoard.completed.h_h_kenji) {
+        state.villageBoard.completed.h_h_haru = true;
+        delete state.villageBoard.completed.h_h_kenji;
+      }
+    }
     return { daily: state.villageBoard, rolled: false };
   }
   const roll = rollDailyBoard(boardData, dateKey);
