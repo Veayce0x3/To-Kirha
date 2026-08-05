@@ -334,10 +334,23 @@ const MIGRATIONS = {
     }
     if (state.equipment?.accessories) delete state.equipment.accessories.cook;
   },
+  43(state) {
+    if (!state.lifetimeStats) state.lifetimeStats = {};
+    if (!state.lifetimeStats.discoveries || typeof state.lifetimeStats.discoveries !== 'object') {
+      state.lifetimeStats.discoveries = {
+        nest: 0,
+        rock_purse: 0,
+        field_purse: 0,
+        bottle: 0,
+        herb_bag: 0,
+      };
+    }
+    if (!state.harvestEventsDaily) state.harvestEventsDaily = null;
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 42;
+  const target = ctx.balance?.saveVersion ?? 43;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

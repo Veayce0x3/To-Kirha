@@ -25,6 +25,7 @@ create table if not exists leaderboard_entries (
   total_harvests bigint not null default 0,
   boss_kills_total int not null default 0,
   kirha_current bigint not null default 0,
+  total_discoveries bigint not null default 0,
   updated_at timestamptz default now()
 );
 

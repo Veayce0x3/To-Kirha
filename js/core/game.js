@@ -91,6 +91,14 @@ import {
   listActiveProductionTimers,
   getJobHarvestResources,
 } from '../systems/productionLines.js';
+import {
+  syncHarvestEventsDay,
+  getHarvestEventsDailyStatus,
+  getCurrentWeather,
+  getTotalDiscoveries,
+  discardPendingEvent,
+  ensureHarvestEventsForJob,
+} from '../systems/harvestEvents.js';
 import { isCraftJobUnlocked, isCombatUnlocked } from '../systems/jobUnlock.js';
 import {
   getFarmBuildingProgress as computeFarmBuildingProgress,
@@ -351,7 +359,15 @@ export class Game {
         lastResetAt: null,
         lastResetSeason: null,
         maxSeasonReached: 1,
+        discoveries: {
+          nest: 0,
+          rock_purse: 0,
+          field_purse: 0,
+          bottle: 0,
+          herb_bag: 0,
+        },
       },
+      harvestEventsDaily: null,
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
       playtime: { foregroundMs: 0, backgroundMs: 0 },
@@ -449,7 +465,14 @@ export class Game {
       seasonHistory: Array.isArray(saved.seasonHistory)
         ? saved.seasonHistory.slice(-20)
         : [],
-      lifetimeStats: { ...defaults.lifetimeStats, ...(saved.lifetimeStats || {}) },
+      lifetimeStats: {
+        ...defaults.lifetimeStats,
+        ...(saved.lifetimeStats || {}),
+        discoveries: {
+          ...defaults.lifetimeStats.discoveries,
+          ...(saved.lifetimeStats?.discoveries || {}),
+        },
+      },
       settings: mergeSettings(saved.settings),
       playtime: {
         foregroundMs: Math.max(0, Number(saved.playtime?.foregroundMs) || 0),
@@ -1397,7 +1420,7 @@ export class Game {
     return isAnyFarmLineActive(this.state, buildingId);
   }
 
-  startLineHarvest(jobId, resourceId, unitIndex = 0) {
+  startLineHarvest(jobId, resourceId, unitIndex = 0, options = null) {
     const resource = this.resources[resourceId];
     if (!resource || !isResourceHarvestable(resource, this.state, this.balance, this.resources)) {
       return false;
@@ -1439,7 +1462,8 @@ export class Game {
       resourceId,
       unitIndex,
       this.recipes,
-      this.equipment
+      this.equipment,
+      options
     );
     if (!result.ok) return false;
 
@@ -1451,7 +1475,14 @@ export class Game {
     }
 
     this.scheduleProductionTimer('harvest', { jobId, resourceId }, unitIndex, result.duration);
-    emit('harvestStart', { resourceId, jobId, unitIndex, duration: result.duration, phase: 'harvesting' });
+    emit('harvestStart', {
+      resourceId,
+      jobId,
+      unitIndex,
+      duration: result.duration,
+      phase: 'harvesting',
+      harvestEvent: result.harvestEvent || null,
+    });
     emit('stateChange', this.state);
     return true;
   }
@@ -1494,11 +1525,19 @@ export class Game {
         xp: outcome.xp,
         levelResult: outcome.levelResult,
         dailyBonus: outcome.dailyBonus,
+        harvestEvent: outcome.harvestEvent || null,
+        kirhaGain: outcome.kirhaGain || 0,
+        discoveryId: outcome.discoveryId || null,
       });
       emit('regrowthStart', { resourceId, jobId, unitIndex, duration: outcome.regrowthDuration });
       ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
     } else if (outcome.phase === 'ready') {
-      emit('regrowthComplete', { resourceId, jobId, unitIndex });
+      emit('regrowthComplete', {
+        resourceId,
+        jobId,
+        unitIndex,
+        pendingEvent: outcome.pendingEvent || null,
+      });
     }
 
     emit('stateChange', this.state);
@@ -1515,6 +1554,7 @@ export class Game {
    */
   harvestAllReadyForJob(jobId) {
     ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
+    syncHarvestEventsDay(this.state, this.balance);
     const lines = this.state.productionLines?.harvest?.[jobId] || {};
     let started = 0;
     let completed = 0;
@@ -1532,10 +1572,29 @@ export class Game {
           continue;
         }
         if (this.getHarvestToolBlockReason?.(jobId, resourceId)) continue;
-        if (this.startLineHarvest(jobId, resourceId, i)) started += 1;
+        // Pas d’événements via Tout récolter
+        if (slot.pendingEvent) discardPendingEvent(this.state, slot);
+        if (this.startLineHarvest(jobId, resourceId, i, { skipEvents: true })) started += 1;
       }
     }
     return { started, completed };
+  }
+
+  getHarvestEventsStatus() {
+    syncHarvestEventsDay(this.state, this.balance);
+    return getHarvestEventsDailyStatus(this.state, this.balance);
+  }
+
+  getCurrentWeather() {
+    return getCurrentWeather();
+  }
+
+  getTotalDiscoveries() {
+    return getTotalDiscoveries(this.state);
+  }
+
+  ensureHarvestEventsForJob(jobId) {
+    ensureHarvestEventsForJob(this.state, this.balance, jobId);
   }
 
   getLineHarvestProgress(jobId, resourceId, unitIndex) {
@@ -2321,6 +2380,13 @@ export class Game {
       totalHarvests: 0,
       seasonsCompleted: Number(prev.lifetimeStats?.seasonsCompleted) || 0,
       combatFights: 0,
+      discoveries: {
+        nest: Number(prev.lifetimeStats?.discoveries?.nest) || 0,
+        rock_purse: Number(prev.lifetimeStats?.discoveries?.rock_purse) || 0,
+        field_purse: Number(prev.lifetimeStats?.discoveries?.field_purse) || 0,
+        bottle: Number(prev.lifetimeStats?.discoveries?.bottle) || 0,
+        herb_bag: Number(prev.lifetimeStats?.discoveries?.herb_bag) || 0,
+      },
     };
     const seasonHistory = Array.isArray(prev.seasonHistory)
       ? prev.seasonHistory.slice(-20)

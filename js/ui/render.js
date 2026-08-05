@@ -689,9 +689,13 @@ export function initUI(game, audio) {
     tickHarvestUI();
     audio.playSfx('click');
   });
-  on('harvestComplete', ({ resourceId, jobId, unitIndex, slotIndex, yield: y, xp, levelResult, dailyBonus }) => {
+  on('harvestComplete', ({ resourceId, jobId, unitIndex, slotIndex, yield: y, xp, levelResult, dailyBonus, harvestEvent, kirhaGain, discoveryId }) => {
     patchHarvestSlot(game, jobId, unitIndex ?? slotIndex, resourceId);
-    playHarvestSlotFx(jobId, unitIndex ?? slotIndex, resourceId, 'complete', y);
+    playHarvestSlotFx(jobId, unitIndex ?? slotIndex, resourceId, 'complete', y, {
+      harvestEvent,
+      kirhaGain,
+      discoveryId,
+    });
     if (levelResult) {
       const job = game.jobs[levelResult.jobId];
       const resource = game.resources[resourceId];
@@ -704,9 +708,10 @@ export function initUI(game, audio) {
       syncJobUnlockToasts();
       buildNav();
     } else {
-      audio.playSfx('harvest');
+      audio.playSfx(harvestEvent ? 'ready' : 'harvest');
     }
     tickHarvestUI();
+    refreshHeader(game.state);
   });
   on('regrowthStart', ({ jobId, unitIndex, slotIndex, resourceId }) => {
     patchHarvestSlot(game, jobId, unitIndex ?? slotIndex, resourceId);

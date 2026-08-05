@@ -21,6 +21,7 @@ import {
   getUnitProgress,
   ensureProductionLines,
 } from '../systems/productionLines.js';
+import { getSlotEventVisual, DISCOVERY_META } from '../systems/harvestEvents.js';
 import { getHarvestTime, getHarvestXp, getRegrowthTime } from '../systems/harvest.js';
 import { getSeasonBonusPercents } from '../systems/prestige.js';
 import { getFarmToolCheck, getHarvestLineToolStatus, getFarmLineToolStatus } from '../systems/toolTier.js';
@@ -107,14 +108,19 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
     ? (phase === 'regrowing' && progress >= 1 ? 'Prêt !' : getHarvestBtnLabel(phase, progress, remainingMs))
     : (canHarvest ? 'Prêt' : '');
 
+  const eventVis = getSlotEventVisual(slot);
+  const eventClass = eventVis ? ` slot-event-${eventVis.kind}` : '';
+  const harvestingEvent = active && phase === 'harvesting' && eventVis ? ' slot-event-growing' : '';
+
   const card = document.createElement('div');
-  card.className = `harvest-slot production-unit production-unit-tap${active ? ' active-harvest' : ''}${canHarvest || canComplete ? ' slot-can-harvest' : ''}`;
+  card.className = `harvest-slot production-unit production-unit-tap${active ? ' active-harvest' : ''}${canHarvest || canComplete ? ' slot-can-harvest' : ''}${eventClass}${harvestingEvent}`;
   card.dataset.job = jobId;
   card.dataset.resource = resourceId;
   card.dataset.unit = String(unitIndex);
   card.innerHTML = `
-    <div class="slot-visual slot-visual-tap" role="button" tabindex="0" aria-label="${resource.name}${statusLabel ? ` — ${statusLabel}` : ''}">
+    <div class="slot-visual slot-visual-tap" role="button" tabindex="0" aria-label="${resource.name}${statusLabel ? ` — ${statusLabel}` : ''}${eventVis ? ` — ${eventVis.label}` : ''}">
       ${canHarvest ? '<span class="slot-ready-badge">Prêt</span>' : ''}
+      ${eventVis ? `<span class="slot-event-glow" aria-hidden="true"></span>` : ''}
       ${spriteHtml}
       ${active ? slotProgressOverlayHtml(progressPct, remainingMs) : ''}
     </div>
@@ -161,6 +167,33 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
     }
   });
   return card;
+}
+
+function buildWeatherEventsBanner(game, jobId) {
+  const status = game.getHarvestEventsStatus?.() || null;
+  if (!status) return '';
+  const w = status.weather;
+  const jobName = game.jobs[w.jobId]?.name || w.jobId;
+  const discovery = DISCOVERY_META[w.discoveryId];
+  const isTodayJob = w.jobId === jobId;
+  return `
+    <div class="harvest-weather-bar" title="Météo commune · reset 00:00 UTC">
+      <div class="harvest-weather-main">
+        <span class="harvest-weather-emoji">${w.emoji}</span>
+        <div>
+          <strong>${w.label}</strong>
+          <p class="harvest-weather-hint">${isTodayJob
+            ? `Aujourd’hui : découvertes « ${discovery?.label || ''} » possibles`
+            : `Découvertes Kirha : ${jobName} aujourd’hui`}</p>
+        </div>
+      </div>
+      <div class="harvest-weather-caps" aria-label="Limites du jour">
+        <span title="Brillants ressource">✨ ${status.shiny.used}/${status.shiny.cap}</span>
+        <span title="Jackpots">🎰 ${status.jackpot.used}/${status.jackpot.cap}</span>
+        <span title="Découvertes Kirha">💰 ${status.kirha.used}/${status.kirha.cap}</span>
+      </div>
+    </div>
+  `;
 }
 
 function getFarmToolDurabilityLabel(game, building) {
@@ -390,6 +423,7 @@ const selectedHarvestResourceByJob = {};
 
 export function renderJobProduction(game, el, jobId) {
   ensureProductionLines(game.state, game.resources, game.farmData, game.balance);
+  game.ensureHarvestEventsForJob?.(jobId);
 
   const job = game.jobs[jobId];
   const prog = game.getJobProgress(jobId);
@@ -425,6 +459,7 @@ export function renderJobProduction(game, el, jobId) {
       <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${formatNumber(prog.xp)} / ${formatNumber(prog.needed)} XP`}</p>
     </div>
     <div class="panel-inner">
+      ${buildWeatherEventsBanner(game, jobId)}
       ${!game.state.settings?.harvestTutorialDone ? `
         <div class="harvest-mini-tuto" id="harvest-mini-tuto">
           <p><strong>Mini-guide</strong> — 1) Touche une plante pour récolter · 2) Vends à la Place marchande pour des 💰 · 3) Achète plus d’emplacements pour cette ressource.</p>

@@ -1,7 +1,12 @@
+/**
+ * Classement joueurs (Supabase).
+ */
+
 import { getSupabaseClient, isSupabaseConfigured } from '../core/supabaseClient.js';
 import { isRegisteredAccount, getAuthState } from '../core/auth.js';
 import { DEV_FAKE_ACCOUNT } from '../config.js';
 import { isLeaderboardEnabled, isMaintenanceMode } from './gameConfig.js';
+import { getTotalDiscoveries } from './harvestEvents.js';
 
 export const LEADERBOARD_TABS = [
   { id: 'level', label: 'Niveau', sortKey: 'char_level', desc: true },
@@ -9,6 +14,7 @@ export const LEADERBOARD_TABS = [
   { id: 'fortune', label: 'Fortune', sortKey: 'total_earned', desc: true },
   { id: 'seasons', label: 'Renaissance', sortKey: 'seasons_completed', desc: true },
   { id: 'harvest', label: 'Récolte', sortKey: 'total_harvests', desc: true },
+  { id: 'discoveries', label: 'Découvertes', sortKey: 'total_discoveries', desc: true },
   { id: 'combat', label: 'Combat', sortKey: 'boss_kills_total', desc: true },
 ];
 
@@ -32,6 +38,7 @@ export function buildLeaderboardSnapshot(state) {
       0,
       safeInt(state.lifetimeStats?.totalHarvests, 0) + safeInt(state.stats?.totalHarvests, 0)
     ),
+    total_discoveries: Math.max(0, getTotalDiscoveries(state)),
     boss_kills_total: Math.max(0, safeInt(bossKills, 0) + safeInt(state.lifetimeStats?.bossKillsTotal, 0)),
     kirha_current: Math.max(0, safeInt(state.kirha, 0)),
   };
@@ -62,11 +69,26 @@ export async function submitLeaderboardSnapshot(state, displayName) {
     p_total_harvests: metrics.total_harvests,
     p_boss_kills_total: metrics.boss_kills_total,
     p_kirha_current: metrics.kirha_current,
+    p_total_discoveries: metrics.total_discoveries,
   });
 
   if (!rpcError) return { ok: true };
 
-  // Repli upsert table (anciens déploiements)
+  // Ancienne signature RPC (sans découvertes)
+  const { error: rpcLegacy } = await supabase.rpc('upsert_my_leaderboard', {
+    p_display_name: name,
+    p_char_level: metrics.char_level,
+    p_max_job_level: metrics.max_job_level,
+    p_season: metrics.season,
+    p_total_earned: metrics.total_earned,
+    p_seasons_completed: metrics.seasons_completed,
+    p_total_harvests: metrics.total_harvests,
+    p_boss_kills_total: metrics.boss_kills_total,
+    p_kirha_current: metrics.kirha_current,
+  });
+  if (!rpcLegacy) return { ok: true };
+
+  // Repli upsert table
   const row = {
     user_id: auth.userId,
     display_name: name,
@@ -75,8 +97,13 @@ export async function submitLeaderboardSnapshot(state, displayName) {
   };
   const { error } = await supabase.from('leaderboard_entries').upsert(row, { onConflict: 'user_id' });
   if (error) {
-    console.warn('[leaderboard] upsert failed', rpcError?.message || error.message);
-    return { ok: false, reason: error.message || rpcError.message };
+    // Colonne total_discoveries absente : retry sans
+    const { total_discoveries, ...rest } = row;
+    const { error: err2 } = await supabase.from('leaderboard_entries').upsert(rest, { onConflict: 'user_id' });
+    if (err2) {
+      console.warn('[leaderboard] upsert failed', rpcError?.message || error.message);
+      return { ok: false, reason: err2.message || error.message || rpcError.message };
+    }
   }
   return { ok: true };
 }
@@ -95,12 +122,23 @@ export async function fetchLeaderboard(sortKey = 'char_level', limit = 50, local
     return { ok: false, reason: 'Supabase non configuré.', rows: [] };
   }
   const supabase = await getSupabaseClient();
-  const col = LEADERBOARD_TABS.some((t) => t.sortKey === sortKey) ? sortKey : 'char_level';
-  const { data, error } = await supabase
+  let col = LEADERBOARD_TABS.some((t) => t.sortKey === sortKey) ? sortKey : 'char_level';
+  let { data, error } = await supabase
     .from('leaderboard_entries')
     .select('*')
     .order(col, { ascending: false })
     .limit(limit);
+
+  // Colonne découvertes pas encore migrée → repli sur récoltes
+  if (error && col === 'total_discoveries') {
+    col = 'total_harvests';
+    ({ data, error } = await supabase
+      .from('leaderboard_entries')
+      .select('*')
+      .order(col, { ascending: false })
+      .limit(limit));
+  }
+
   if (error) return { ok: false, reason: error.message, rows: [] };
   return { ok: true, rows: data || [] };
 }
@@ -112,6 +150,7 @@ export function formatLeaderboardValue(tabId, row) {
     case 'fortune': return `${Number(row.total_earned || 0).toLocaleString('fr-FR')} 💰 gagnés`;
     case 'seasons': return `${row.seasons_completed || 0} renaissance(s)`;
     case 'harvest': return `${Number(row.total_harvests || 0).toLocaleString('fr-FR')} récoltes`;
+    case 'discoveries': return `${Number(row.total_discoveries || 0).toLocaleString('fr-FR')} découverte(s)`;
     case 'combat': return `${Number(row.boss_kills_total || 0).toLocaleString('fr-FR')} boss vaincu(s)`;
     default: return '';
   }

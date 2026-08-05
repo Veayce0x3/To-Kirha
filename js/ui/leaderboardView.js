@@ -21,6 +21,7 @@ function medalForRank(i) {
 function emptyHint(tabId) {
   switch (tabId) {
     case 'harvest': return 'Les récoltes de la saison comptent ici — récolte pour monter !';
+    case 'discoveries': return 'Trouve des événements Kirha en récolte (météo du jour) pour apparaître ici.';
     case 'combat': return 'Vaincs des boss de zone pour apparaître ici.';
     case 'seasons': return 'Passe une Renaissance (nouvelle saison) pour être classé.';
     case 'fortune': return 'Gagne des Kirha (vente, etc.) pour grimper.';

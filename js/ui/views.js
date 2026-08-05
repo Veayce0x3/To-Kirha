@@ -2224,7 +2224,7 @@ function findHarvestSlotCard(jobId, unitIndex, resourceId) {
 }
 
 /** FX légers récolte (respecte reduced-motion / onglet caché). */
-export function playHarvestSlotFx(jobId, unitIndex, resourceId, kind, amount = null) {
+export function playHarvestSlotFx(jobId, unitIndex, resourceId, kind, amount = null, eventInfo = null) {
   if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if (document.hidden || document.body.classList.contains('page-hidden')) return;
 
@@ -2246,6 +2246,35 @@ export function playHarvestSlotFx(jobId, unitIndex, resourceId, kind, amount = n
       void visual.offsetWidth;
       visual.classList.add('slot-fx-pop');
       setTimeout(() => visual.classList.remove('slot-fx-pop'), 520);
+
+      const ev = eventInfo?.harvestEvent;
+      if (ev?.type === 'kirha') {
+        const flavor = document.createElement('div');
+        flavor.className = 'slot-event-announce slot-event-announce-flavor';
+        flavor.textContent = ev.flavor || 'Découverte !';
+        visual.appendChild(flavor);
+        setTimeout(() => {
+          flavor.remove();
+          const kirha = Math.max(0, Math.floor(Number(eventInfo?.kirhaGain) || ev.amount || 0));
+          if (kirha > 0) {
+            const bang = document.createElement('div');
+            bang.className = 'slot-event-announce slot-event-announce-kirha';
+            bang.textContent = `+${kirha} 💰`;
+            visual.appendChild(bang);
+            setTimeout(() => bang.remove(), 1400);
+          }
+        }, 1000);
+        return;
+      }
+
+      if (ev?.type === 'shiny' || ev?.type === 'jackpot') {
+        const bang = document.createElement('div');
+        bang.className = `slot-event-announce slot-event-announce-${ev.type}`;
+        bang.textContent = `+${Math.max(0, Math.floor(Number(amount) || ev.amount || 0))}`;
+        visual.appendChild(bang);
+        setTimeout(() => bang.remove(), 1400);
+        return;
+      }
 
       const qty = Math.max(0, Math.floor(Number(amount) || 0));
       if (qty > 0) {

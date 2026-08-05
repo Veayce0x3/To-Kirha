@@ -30,6 +30,12 @@ import {
   getEffectiveAnimalMaxCycles,
 } from './farm.js';
 import { addFarmBuildingXp, getFarmBuildingLevel } from './farmProgress.js';
+import {
+  syncHarvestEventsDay,
+  takeEventForHarvestStart,
+  applyHarvestEventOnComplete,
+  onHarvestSlotReady,
+} from './harvestEvents.js';
 
 function cfg(balance) {
   return balance?.productionLines || {};
@@ -557,14 +563,35 @@ export function isAnyProductionActive(state) {
   return false;
 }
 
-export function startHarvestUnit(state, resources, jobs, balance, jobId, resourceId, unitIndex, recipes = null, equipment = null) {
+export function startHarvestUnit(
+  state,
+  resources,
+  jobs,
+  balance,
+  jobId,
+  resourceId,
+  unitIndex,
+  recipes = null,
+  equipment = null,
+  options = null
+) {
   const line = getHarvestLine(state, jobId, resourceId);
   const slot = line?.slots?.[unitIndex];
   const resource = resources[resourceId];
   if (!slot || slot.active || !resource) return { ok: false, reason: 'Indisponible' };
 
+  syncHarvestEventsDay(state, balance);
+  const skipEvents = !!options?.skipEvents;
+  const harvestEvent = takeEventForHarvestStart(state, slot, { skipEvents });
+
   const duration = getHarvestTime(resource, state, jobs, balance, resources);
-  slot.active = { phase: 'harvesting', start: Date.now(), duration, resourceId };
+  slot.active = {
+    phase: 'harvesting',
+    start: Date.now(),
+    duration,
+    resourceId,
+    ...(harvestEvent ? { event: harvestEvent } : {}),
+  };
 
   // Usure à au démarrage : 1 utilisation = 1 récolte lancée (pas de multi-clic gratuit)
   let wornTools = [];
@@ -572,7 +599,15 @@ export function startHarvestUnit(state, resources, jobs, balance, jobId, resourc
     wornTools = wearToolsForHarvest(state, recipes, equipment, jobId, resourceId, resources);
   }
 
-  return { ok: true, duration, jobId, resourceId, unitIndex, wornTools };
+  return {
+    ok: true,
+    duration,
+    jobId,
+    resourceId,
+    unitIndex,
+    wornTools,
+    harvestEvent: harvestEvent || null,
+  };
 }
 
 export function completeHarvestUnit(state, resources, jobs, balance, jobId, resourceId, unitIndex, recipes, equipment) {
@@ -584,17 +619,25 @@ export function completeHarvestUnit(state, resources, jobs, balance, jobId, reso
   const phase = slot.active.phase || 'harvesting';
 
   if (phase === 'harvesting') {
+    syncHarvestEventsDay(state, balance);
     const today = new Date().toISOString().slice(0, 10);
     if (!state.dailyHarvest || state.dailyHarvest.date !== today) {
       state.dailyHarvest = { date: today, bonusUsed: false };
     }
+
+    const eventResult = applyHarvestEventOnComplete(state, slot.active.event);
     let yield_ = applyHarvestYieldBonus(getHarvestYield(resource, state, jobs, balance), state);
     let dailyBonus = false;
-    if (!state.dailyHarvest.bonusUsed) {
+
+    // Brillant / jackpot : quantité fixe (remplace le yield normal, pas de ×2 daily)
+    if (eventResult.yieldOverride != null) {
+      yield_ = eventResult.yieldOverride;
+    } else if (!state.dailyHarvest.bonusUsed) {
       state.dailyHarvest.bonusUsed = true;
       yield_ *= 2;
       dailyBonus = true;
     }
+
     const xp = getHarvestXp(resource, state, balance, resources);
     state.inventory[resourceId] = (state.inventory[resourceId] || 0) + yield_;
     const levelResult = addJobXp(state, jobId, xp, jobs, balance);
@@ -619,11 +662,21 @@ export function completeHarvestUnit(state, resources, jobs, balance, jobId, reso
       dailyBonus,
       regrowthDuration,
       wornTools: [],
+      harvestEvent: eventResult.event,
+      kirhaGain: eventResult.kirhaGain || 0,
+      discoveryId: eventResult.discoveryId,
     };
   }
 
   slot.active = null;
-  return { phase: 'ready', resourceId, jobId, unitIndex };
+  onHarvestSlotReady(state, balance, jobId, slot);
+  return {
+    phase: 'ready',
+    resourceId,
+    jobId,
+    unitIndex,
+    pendingEvent: slot.pendingEvent || null,
+  };
 }
 
 export function buyFarmAnimal(state, farmData, buildingId, balance = null) {
