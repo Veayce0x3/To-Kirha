@@ -28,21 +28,17 @@ function makeRng(seed) {
   };
 }
 
-function pickWeighted(rng, weights) {
-  const entries = Object.entries(weights || {});
-  const total = entries.reduce((s, [, w]) => s + (Number(w) || 0), 0);
-  if (total <= 0) return 'easy';
-  let roll = rng() * total;
-  for (const [id, w] of entries) {
-    roll -= Number(w) || 0;
-    if (roll <= 0) return id;
-  }
-  return entries[entries.length - 1]?.[0] || 'easy';
-}
-
 function pickOne(rng, list) {
   if (!list?.length) return null;
   return list[Math.floor(rng() * list.length)];
+}
+
+function shuffleInPlace(rng, arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 function randInt(rng, min, max) {
@@ -71,59 +67,120 @@ function questsFor(boardData, pillar, difficulty) {
   );
 }
 
-/** Tirage global du jour (même pour tous). */
+function pickQuest(rng, boardData, { pillar, difficulty, usedIds, usedNpcs, allowNpcReuse }) {
+  let pool = questsFor(boardData, pillar, difficulty).filter((q) => !usedIds.has(q.id));
+  if (!allowNpcReuse && usedNpcs?.size) {
+    const filtered = pool.filter((q) => !usedNpcs.has(q.npcId));
+    if (filtered.length) pool = filtered;
+  }
+  return pickOne(rng, pool);
+}
+
+/**
+ * Tirage global du jour :
+ * - 2 faciles + 2 moyens + 1 difficile
+ * - 1 récolte, 1 ferme, 1 cuisine, 1 combat + 1 joker (pilier doublé)
+ * - PNJ uniques sur les 4 premières ; joker peut réutiliser un PNJ mais jamais la même quête
+ */
 export function rollDailyBoard(boardData, dateKey) {
-  const rng = makeRng(hashStr(`village_board:${dateKey}`));
-  const difficulty = pickWeighted(rng, boardData.difficultyWeights || { easy: 50, medium: 35, hard: 15 });
+  const rng = makeRng(hashStr(`village_board_mixed_v2:${dateKey}`));
+  const difficultySlots = shuffleInPlace(rng, ['easy', 'easy', 'medium', 'medium', 'hard']);
+  const pillars = shuffleInPlace(rng, [...PILLARS]);
+
   const picked = [];
   const usedIds = new Set();
+  const usedNpcs = new Set();
 
-  for (const pillar of PILLARS) {
-    const pool = questsFor(boardData, pillar, difficulty).filter((q) => !usedIds.has(q.id));
-    const q = pickOne(rng, pool);
+  for (let i = 0; i < pillars.length; i++) {
+    const pillar = pillars[i];
+    const difficulty = difficultySlots[i];
+    let q = pickQuest(rng, boardData, {
+      pillar,
+      difficulty,
+      usedIds,
+      usedNpcs,
+      allowNpcReuse: false,
+    });
+    // Fallback : autre difficulté du même pilier si pool trop restreint
+    if (!q) {
+      for (const d of ['easy', 'medium', 'hard']) {
+        if (d === difficulty) continue;
+        q = pickQuest(rng, boardData, {
+          pillar,
+          difficulty: d,
+          usedIds,
+          usedNpcs,
+          allowNpcReuse: false,
+        });
+        if (q) break;
+      }
+    }
     if (q) {
       picked.push(q.id);
       usedIds.add(q.id);
+      if (q.npcId) usedNpcs.add(q.npcId);
     }
   }
 
-  // Joker : doublon d’un pilier, autre quête
-  const jokerPillar = pickOne(rng, PILLARS);
-  const jokerPool = questsFor(boardData, jokerPillar, difficulty).filter((q) => !usedIds.has(q.id));
-  const joker = pickOne(rng, jokerPool);
+  // Joker : autre quête (jamais identique), PNJ éventuellement déjà vu
+  const jokerDiff = difficultySlots[4] || 'medium';
+  const jokerPillarOrder = shuffleInPlace(rng, [...PILLARS]);
+  let joker = null;
+  for (const pillar of jokerPillarOrder) {
+    joker = pickQuest(rng, boardData, {
+      pillar,
+      difficulty: jokerDiff,
+      usedIds,
+      usedNpcs,
+      allowNpcReuse: true,
+    });
+    if (joker) break;
+  }
+  if (!joker) {
+    for (const pillar of jokerPillarOrder) {
+      for (const d of ['easy', 'medium', 'hard']) {
+        joker = pickQuest(rng, boardData, {
+          pillar,
+          difficulty: d,
+          usedIds,
+          usedNpcs,
+          allowNpcReuse: true,
+        });
+        if (joker) break;
+      }
+      if (joker) break;
+    }
+  }
   if (joker) {
     picked.push(joker.id);
     usedIds.add(joker.id);
-  } else {
-    // Fallback : n’importe quel pilier encore disponible
-    for (const pillar of PILLARS) {
-      const pool = questsFor(boardData, pillar, difficulty).filter((q) => !usedIds.has(q.id));
-      const q = pickOne(rng, pool);
-      if (q) {
-        picked.push(q.id);
-        break;
-      }
-    }
   }
 
-  const diffDef = getDifficultyDef(boardData, difficulty);
-  const rewardKirha = randInt(rng, diffDef?.kirhaMin ?? 60, diffDef?.kirhaMax ?? 100);
+  // Bonus 5/5 : mix léger (1 pépite + Kirha moyen)
+  const clearEasy = getDifficultyDef(boardData, 'easy');
+  const clearMed = getDifficultyDef(boardData, 'medium');
 
   return {
     date: dateKey,
-    difficulty,
+    scheme: 'mixed_v2',
+    difficulty: 'mixed',
     questIds: picked,
-    rewardKirha,
-    rewardNuggets: Number(diffDef?.nuggets) || 0,
-    clearBonusNuggets: Number(diffDef?.clearBonusNuggets) || 0,
-    clearBonusKirha: Number(diffDef?.clearBonusKirha) || 0,
+    // legacy fields (non utilisés pour le turn-in mixte)
+    rewardKirha: 0,
+    rewardNuggets: 0,
+    clearBonusNuggets: Math.max(
+      Number(clearEasy?.clearBonusNuggets) || 0,
+      Number(clearMed?.clearBonusNuggets) || 1
+    ),
+    clearBonusKirha: Number(clearMed?.clearBonusKirha) || 80,
   };
 }
 
 function emptyDaily(roll) {
   return {
     date: roll.date,
-    difficulty: roll.difficulty,
+    scheme: roll.scheme || 'mixed_v2',
+    difficulty: roll.difficulty || 'mixed',
     questIds: roll.questIds.slice(),
     rewardKirha: roll.rewardKirha,
     rewardNuggets: roll.rewardNuggets,
@@ -143,7 +200,11 @@ function emptyDaily(roll) {
  */
 export function ensureVillageBoardDay(state, boardData, now = Date.now()) {
   const dateKey = getUtcDateKey(now);
-  if (state.villageBoard?.date === dateKey && Array.isArray(state.villageBoard.questIds)) {
+  const daily = state.villageBoard;
+  const sameDay = daily?.date === dateKey && Array.isArray(daily.questIds);
+  const needsReroll = !sameDay || daily.scheme !== 'mixed_v2';
+
+  if (sameDay && !needsReroll) {
     // Migration douce : anciens ids Kenji → Haru
     state.villageBoard.questIds = state.villageBoard.questIds.map((id) => {
       if (id === 'e_f_kenji_eau') return 'e_f_haru_eau';
@@ -303,7 +364,11 @@ export function turnInVillageQuest(state, boardData, questId, balance, jobs, far
   if (!daily.completed) daily.completed = {};
   daily.completed[questId] = true;
 
-  const rewards = grantRewards(state, daily.rewardKirha, daily.rewardNuggets);
+  const diffDef = getDifficultyDef(boardData, quest.difficulty);
+  const rewardRng = makeRng(hashStr(`${daily.date}:${questId}:reward`));
+  const kirha = randInt(rewardRng, diffDef?.kirhaMin ?? 60, diffDef?.kirhaMax ?? 100);
+  const nuggets = Number(diffDef?.nuggets) || 0;
+  const rewards = grantRewards(state, kirha, nuggets);
   const npc = getNpc(boardData, quest.npcId);
   const doneCount = Object.keys(daily.completed).length;
   const allDone = doneCount >= (daily.questIds?.length || 0);
@@ -330,8 +395,7 @@ export function turnInVillageQuest(state, boardData, questId, balance, jobs, far
 export function getVillageBoardViewModel(state, boardData, balance, jobs, farmData, resources) {
   ensureVillageBoardDay(state, boardData);
   const daily = state.villageBoard;
-  const diff = getDifficultyDef(boardData, daily.difficulty);
-  const cards = (daily.questIds || []).map((id) => {
+  const cards = (daily.questIds || []).map((id, idx) => {
     const quest = getQuestDef(boardData, id);
     const npc = getNpc(boardData, quest?.npcId);
     const locked = !isQuestRequirementMet(quest?.requires, state, balance);
@@ -342,6 +406,8 @@ export function getVillageBoardViewModel(state, boardData, balance, jobs, farmDa
       name: resources?.[p.resId]?.name || p.resId,
       emoji: resources?.[p.resId]?.emoji || '',
     }));
+    const diffDef = getDifficultyDef(boardData, quest?.difficulty);
+    const isJoker = idx === (daily.questIds?.length || 0) - 1;
     return {
       quest,
       npc,
@@ -349,15 +415,24 @@ export function getVillageBoardViewModel(state, boardData, balance, jobs, farmDa
       completed,
       progress,
       deliverParts,
+      difficulty: diffDef,
+      isJoker,
       lockHint: locked ? getRequirementHint(quest?.requires, jobs, farmData) : null,
       canTurnIn: !completed && !locked && progress.ready,
     };
   });
 
+  const counts = { easy: 0, medium: 0, hard: 0 };
+  for (const c of cards) {
+    const d = c.quest?.difficulty;
+    if (d && counts[d] != null) counts[d] += 1;
+  }
+
   const doneCount = cards.filter((c) => c.completed).length;
   return {
     daily,
-    difficulty: diff,
+    difficulty: { id: 'mixed', label: 'Mixte', emoji: '🎯' },
+    mixCounts: counts,
     cards,
     doneCount,
     total: cards.length,

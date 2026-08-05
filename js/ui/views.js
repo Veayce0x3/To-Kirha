@@ -1,12 +1,13 @@
 import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats, getSkillUsesLeft, getSkillMaxUses } from '../systems/combat.js';
 import { getCraftSellBonus, getRecipeRequiredLevel } from '../systems/crafting.js';
-import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, hasSeasonBonus, getSeasonBoostMult, isSeasonBoostActive, canActivateSeasonBoost, getSeasonBoostLevelCaps } from '../systems/prestige.js';
+import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, getJobXpBonusPercent, hasSeasonBonus, getSeasonBoostMult, isSeasonBoostActive, canActivateSeasonBoost, getSeasonBoostLevelCaps } from '../systems/prestige.js';
 import { mountCraftWorkshop } from './craftView.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
 import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped } from '../systems/equipment.js';
 import { formatOfflineDuration } from '../systems/offline.js';
 import { navigate, getView, VIEWS, JOB_VIEW_MAP, getCraftJobFromView, CRAFT_NAV, getHarvestViewForJob, getFarmViewForBuilding, isFarmView, HARVEST_JOB_VIEWS, FARM_BUILDING_VIEWS, isWorkshopView } from './router.js';
-import { getHarvestTime, getRegrowthTime, getHarvestYield, getHarvestXp } from '../systems/harvest.js';
+import { getHarvestTime, getRegrowthTime, getHarvestYield } from '../systems/harvest.js';
+import { getHarvestXpForResource } from '../systems/progression.js';
 import { getResourceVisual, getSlotVisualDisplay, renderResourceIcon, getResourceIcon } from '../systems/resourceVisual.js';
 import { getJobIcon, getNavIcon, getFarmBuildingIcon, getFarmProductIcon, UI, iconHtml } from '../core/assets.js';
 import { forceAppRefresh } from '../core/reload.js';
@@ -2135,8 +2136,10 @@ function createHarvestSlotCard(game, jobId, slotIndex) {
   const harvestHint = !active && selectedId
     ? (game.getHarvestSlotHint?.(jobId, selectedId) || toolBlock)
     : null;
-  const harvestXp = selected && !active ? getHarvestXp(selected, game.state, game.balance) : 0;
-  const jobXpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
+  const harvestXp = selected && !active
+    ? getHarvestXpForResource(selected, game.resources, game.balance)
+    : 0;
+  const jobXpBonusPct = getJobXpBonusPercent(game.state);
 
   const card = document.createElement('div');
   card.className = `harvest-slot state-${display.visualState}${active ? ' active-harvest' : ''}${canHarvest ? ' slot-can-harvest' : ''}`;

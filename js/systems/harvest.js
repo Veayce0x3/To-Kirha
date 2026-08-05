@@ -66,11 +66,15 @@ export function applyHarvestYieldBonus(amount, state) {
   return next;
 }
 
+/**
+ * XP métier gagnée à la récolte = XP fixe ressource × bonus (saison / succès / boost).
+ * L’affichage UI doit montrer l’XP fixe via getHarvestXpForResource + le % à part.
+ */
 export function getHarvestXp(resource, state, balance, resources = null) {
   const prestigeBonus = getPrestigeBonuses(state).jobXp;
   const base = resources
     ? getHarvestXpForResource(resource, resources, balance)
-    : (resource.xpPerHarvest ?? 10);
+    : (resource.xpPerHarvest ?? balance?.harvestXpByTier?.base ?? 10);
   const withPrestige = applyMultiplierBonus(base, prestigeBonus);
   return withPrestige * getSeasonBoostMult(state);
 }

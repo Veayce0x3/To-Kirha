@@ -9,7 +9,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 4,
-    "xpPerHarvest": 8,
+    "xpPerHarvest": 10,
     "rarity": "common",
     "visual": {
       "available": {
@@ -36,7 +36,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 7,
-    "xpPerHarvest": 12,
+    "xpPerHarvest": 14,
     "rarity": "common",
     "visual": {
       "available": {
@@ -63,7 +63,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 10,
-    "xpPerHarvest": 16,
+    "xpPerHarvest": 18,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -90,7 +90,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 13,
-    "xpPerHarvest": 20,
+    "xpPerHarvest": 22,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -117,7 +117,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 16,
-    "xpPerHarvest": 24,
+    "xpPerHarvest": 26,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -144,7 +144,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 19,
-    "xpPerHarvest": 28,
+    "xpPerHarvest": 30,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -171,7 +171,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 22,
-    "xpPerHarvest": 32,
+    "xpPerHarvest": 34,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -198,7 +198,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 3,
     "sellPrice": 25,
-    "xpPerHarvest": 36,
+    "xpPerHarvest": 38,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -225,7 +225,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 3,
     "sellPrice": 28,
-    "xpPerHarvest": 40,
+    "xpPerHarvest": 42,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -252,7 +252,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 4,
     "sellPrice": 34,
-    "xpPerHarvest": 48,
+    "xpPerHarvest": 46,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -279,7 +279,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 4,
-    "xpPerHarvest": 8,
+    "xpPerHarvest": 10,
     "rarity": "common",
     "visual": {
       "available": {
@@ -306,7 +306,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 7,
-    "xpPerHarvest": 12,
+    "xpPerHarvest": 14,
     "rarity": "common",
     "visual": {
       "available": {
@@ -333,7 +333,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 10,
-    "xpPerHarvest": 16,
+    "xpPerHarvest": 18,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -360,7 +360,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 13,
-    "xpPerHarvest": 20,
+    "xpPerHarvest": 22,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -387,7 +387,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 16,
-    "xpPerHarvest": 24,
+    "xpPerHarvest": 26,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -414,7 +414,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 19,
-    "xpPerHarvest": 28,
+    "xpPerHarvest": 30,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -441,7 +441,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 22,
-    "xpPerHarvest": 32,
+    "xpPerHarvest": 34,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -468,7 +468,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 3,
     "sellPrice": 25,
-    "xpPerHarvest": 36,
+    "xpPerHarvest": 38,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -495,7 +495,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 3,
     "sellPrice": 28,
-    "xpPerHarvest": 40,
+    "xpPerHarvest": 42,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -522,7 +522,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 4,
     "sellPrice": 34,
-    "xpPerHarvest": 48,
+    "xpPerHarvest": 46,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -549,7 +549,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 4,
-    "xpPerHarvest": 8,
+    "xpPerHarvest": 10,
     "rarity": "common",
     "visual": {
       "available": {
@@ -576,7 +576,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 7,
-    "xpPerHarvest": 12,
+    "xpPerHarvest": 14,
     "rarity": "common",
     "visual": {
       "available": {
@@ -603,7 +603,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 10,
-    "xpPerHarvest": 16,
+    "xpPerHarvest": 18,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -630,7 +630,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 13,
-    "xpPerHarvest": 20,
+    "xpPerHarvest": 22,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -657,7 +657,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 16,
-    "xpPerHarvest": 24,
+    "xpPerHarvest": 26,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -684,7 +684,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 19,
-    "xpPerHarvest": 28,
+    "xpPerHarvest": 30,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -711,7 +711,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 22,
-    "xpPerHarvest": 32,
+    "xpPerHarvest": 34,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -738,7 +738,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 3,
     "sellPrice": 25,
-    "xpPerHarvest": 36,
+    "xpPerHarvest": 38,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -765,7 +765,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 3,
     "sellPrice": 28,
-    "xpPerHarvest": 40,
+    "xpPerHarvest": 42,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -792,7 +792,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 4,
     "sellPrice": 34,
-    "xpPerHarvest": 48,
+    "xpPerHarvest": 46,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -819,7 +819,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 4,
-    "xpPerHarvest": 8,
+    "xpPerHarvest": 10,
     "rarity": "common",
     "visual": {
       "available": {
@@ -846,7 +846,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 7,
-    "xpPerHarvest": 12,
+    "xpPerHarvest": 14,
     "rarity": "common",
     "visual": {
       "available": {
@@ -873,7 +873,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 10,
-    "xpPerHarvest": 16,
+    "xpPerHarvest": 18,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -900,7 +900,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 13,
-    "xpPerHarvest": 20,
+    "xpPerHarvest": 22,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -927,7 +927,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 16,
-    "xpPerHarvest": 24,
+    "xpPerHarvest": 26,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -954,7 +954,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 19,
-    "xpPerHarvest": 28,
+    "xpPerHarvest": 30,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -981,7 +981,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 22,
-    "xpPerHarvest": 32,
+    "xpPerHarvest": 34,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -1008,7 +1008,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 3,
     "sellPrice": 25,
-    "xpPerHarvest": 36,
+    "xpPerHarvest": 38,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -1035,7 +1035,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 3,
     "sellPrice": 28,
-    "xpPerHarvest": 40,
+    "xpPerHarvest": 42,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -1062,7 +1062,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 4,
     "sellPrice": 34,
-    "xpPerHarvest": 48,
+    "xpPerHarvest": 46,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -1089,7 +1089,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 4,
-    "xpPerHarvest": 8,
+    "xpPerHarvest": 10,
     "rarity": "common",
     "visual": {
       "available": {
@@ -1116,7 +1116,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 7,
-    "xpPerHarvest": 12,
+    "xpPerHarvest": 14,
     "rarity": "common",
     "visual": {
       "available": {
@@ -1143,7 +1143,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 1,
     "sellPrice": 10,
-    "xpPerHarvest": 16,
+    "xpPerHarvest": 18,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -1170,7 +1170,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 13,
-    "xpPerHarvest": 20,
+    "xpPerHarvest": 22,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -1197,7 +1197,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 16,
-    "xpPerHarvest": 24,
+    "xpPerHarvest": 26,
     "rarity": "uncommon",
     "visual": {
       "available": {
@@ -1224,7 +1224,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 19,
-    "xpPerHarvest": 28,
+    "xpPerHarvest": 30,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -1251,7 +1251,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 2,
     "sellPrice": 22,
-    "xpPerHarvest": 32,
+    "xpPerHarvest": 34,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -1278,7 +1278,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 3,
     "sellPrice": 25,
-    "xpPerHarvest": 36,
+    "xpPerHarvest": 38,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -1305,7 +1305,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 3,
     "sellPrice": 28,
-    "xpPerHarvest": 40,
+    "xpPerHarvest": 42,
     "rarity": "rare",
     "visual": {
       "available": {
@@ -1332,7 +1332,7 @@
     "baseHarvestTime": 3000,
     "baseYield": 4,
     "sellPrice": 34,
-    "xpPerHarvest": 48,
+    "xpPerHarvest": 46,
     "rarity": "rare",
     "visual": {
       "available": {

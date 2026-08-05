@@ -5,7 +5,7 @@ import {
   isUnifiedFarmBuilding,
   getUnifiedFarmLineKey,
   getFarmProductionLineIds,
-  computeFarmCycleXp,
+  getFarmProductionXp,
   getPrimaryFeedId,
   getFeedCost,
   getEffectiveAnimalMaxCycles,
@@ -23,8 +23,9 @@ import {
 } from '../systems/productionLines.js';
 import { getSlotEventVisual, getEventRevealAnnounceHtml } from '../systems/harvestEvents.js';
 import { buildWeatherMiniChip, bindWeatherMiniChip } from './villageView.js';
-import { getHarvestTime, getHarvestXp, getRegrowthTime } from '../systems/harvest.js';
-import { getSeasonBonusPercents } from '../systems/prestige.js';
+import { getHarvestTime, getRegrowthTime } from '../systems/harvest.js';
+import { getHarvestXpForResource } from '../systems/progression.js';
+import { getJobXpBonusPercent } from '../systems/prestige.js';
 import { getFarmToolCheck, getHarvestLineToolStatus, getFarmLineToolStatus } from '../systems/toolTier.js';
 import { getToolUsesRemaining, isDurabilityTool, getEffectiveMaxUses } from '../systems/toolDurability.js';
 import { getJobEquippedTool } from '../systems/equipment.js';
@@ -362,12 +363,12 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   if (!line) return;
   const qty = game.state.inventory[resourceId] || 0;
   const maxUnits = game.balance.productionLines?.maxUnitsPerResource ?? 6;
-  const xpPerHarvest = getHarvestXp(resource, game.state, game.balance, game.resources);
+  const baseXp = getHarvestXpForResource(resource, game.resources, game.balance);
   const harvestMs = Math.round(getHarvestTime(resource, game.state, game.jobs, game.balance, game.resources) / 1000);
   const regrowthSec = Math.round(getRegrowthTime(resource, game.state, game.jobs, game.balance, game.resources) / 1000);
-  const xpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
+  const xpBonusPct = getJobXpBonusPercent(game.state);
   const xpBonusTag = xpBonusPct > 0
-    ? `<span class="bonus-tag" title="Bonus XP métiers">+${xpBonusPct}%</span>`
+    ? `<span class="bonus-tag" title="Bonus XP métiers (saison / succès / boost)">+${xpBonusPct}%</span>`
     : '';
 
   const section = document.createElement('div');
@@ -379,7 +380,7 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
         ${renderResourceIcon(resource, 'tile-resource-icon')}
         <strong>${resource.name}</strong>
         <span class="production-stock">Stock : ${formatNumber(qty)}</span>
-        <span class="production-xp">+${formatNumber(xpPerHarvest)} XP${xpBonusTag}</span>
+        <span class="production-xp">+${formatNumber(baseXp)} XP${xpBonusTag}</span>
         <span class="production-tool-slot"></span>
       </div>
       <div class="production-line-meta production-line-meta-clear">
@@ -814,10 +815,10 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
     return `${renderResourceIcon(res, 'tile-resource-icon') || ''}${res?.name || id} : ${game.state.inventory[id] || 0}`;
   });
   const cycleSec = Math.round((building.cycleMs || 10000) / 1000);
-  const xpGain = computeFarmCycleXp(building, game.state);
-  const xpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
+  const baseXp = getFarmProductionXp(building);
+  const xpBonusPct = getJobXpBonusPercent(game.state);
   const xpBonusTag = xpBonusPct > 0
-    ? `<span class="bonus-tag" title="Bonus XP métiers">+${xpBonusPct}%</span>`
+    ? `<span class="bonus-tag" title="Bonus XP métiers (saison / succès / boost)">+${xpBonusPct}%</span>`
     : '';
   const toolDur = getFarmToolDurabilityLabel(game, building);
 
@@ -834,7 +835,7 @@ function buildUnifiedFarmSection(game, buildingId, building, container) {
       </div>
       <div class="production-line-meta">
         <span class="production-units">${line.units} emplacement${line.units > 1 ? 's' : ''}</span>
-        <span class="production-harvest-time">${cycleSec}s/prod.${xpGain > 0 ? ` · +${formatNumber(xpGain)} XP${xpBonusTag}` : ''}</span>
+        <span class="production-harvest-time">${cycleSec}s/prod.${baseXp > 0 ? ` · +${formatNumber(baseXp)} XP${xpBonusTag}` : ''}</span>
       </div>
     </div>
     <div class="slots-grid production-units-grid"></div>
@@ -869,10 +870,10 @@ export function renderFarmProduction(game, el, buildingId) {
   const pct = prog.grantsXp ? (prog.xp / prog.needed) * 100 : 0;
   const meta = game.getFarmMeta(buildingId);
   const needsFeed = Object.keys(building.feed || {}).length > 0;
-  const xpGain = computeFarmCycleXp(building, game.state);
-  const xpBonusPct = getSeasonBonusPercents(game.state).jobXpPct;
+  const baseXp = getFarmProductionXp(building);
+  const xpBonusPct = getJobXpBonusPercent(game.state);
   const xpBonusTag = xpBonusPct > 0
-    ? `<span class="bonus-tag" title="Bonus XP métiers">+${xpBonusPct}%</span>`
+    ? `<span class="bonus-tag" title="Bonus XP métiers (saison / succès / boost)">+${xpBonusPct}%</span>`
     : '';
   const feedId = getPrimaryFeedId(building) || meta.feedId;
   if (needsFeed && feedId) {
@@ -901,11 +902,11 @@ export function renderFarmProduction(game, el, buildingId) {
       <div class="farm-feed-stock-hero${anyMissing ? ' missing' : ''}">
         <span class="farm-feed-stock-label">Nourriture</span>
         <div class="farm-feed-stock-main">${stocks || '—'}</div>
-        ${xpGain > 0 ? `<span class="farm-feed-stock-xp">+${formatNumber(xpGain)} XP${xpBonusTag}</span>` : ''}
+        ${baseXp > 0 ? `<span class="farm-feed-stock-xp">+${formatNumber(baseXp)} XP${xpBonusTag}</span>` : ''}
       </div>`;
   } else if (!building.requiresAnimal) {
-    feedHtml = xpGain > 0
-      ? `<p class="farm-feed-preview">Gain : <strong>+${formatNumber(xpGain)} XP ${building.name}</strong>${xpBonusTag} / production</p>`
+    feedHtml = baseXp > 0
+      ? `<p class="farm-feed-preview">Gain : <strong>+${formatNumber(baseXp)} XP ${building.name}</strong>${xpBonusTag} / production</p>`
       : `<p class="farm-feed-preview">Le Puits fournit l’eau — <strong>pas d’XP</strong>.</p>`;
   }
 
@@ -1000,8 +1001,8 @@ export function renderFarmProduction(game, el, buildingId) {
         <div class="production-line-meta production-line-meta-clear">
           <span class="production-units" title="Emplacements d’eau débloqués">📍 Emplacements ${line.units}/${maxUnits}</span>
           <span class="farm-info-chip">${Math.round((building.cycleMs || 0) / 1000)}s / cycle</span>
-          ${xpGain > 0
-            ? `<span class="farm-info-chip">📜 +${formatNumber(xpGain)} XP${xpBonusTag}</span>`
+          ${baseXp > 0
+            ? `<span class="farm-info-chip">📜 +${formatNumber(baseXp)} XP${xpBonusTag}</span>`
             : `<span class="farm-info-chip">Eau utilitaire · pas d’XP</span>`}
         </div>
       </div>

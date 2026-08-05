@@ -1,6 +1,25 @@
 {
   "entries": [
     {
+      "buildId": "20260805-1855",
+      "date": "2026-08-05",
+      "title": "XP récolte fixe 10/14/18…",
+      "highlights": [
+        "Toutes les ressources de récolte réalignées sur le tableau fixe (Blé 10, Orge 14, Avoine 18…)",
+        "L’UI affiche l’XP de base ; les bonus succès/saison apparaissent à part (+X %)"
+      ]
+    },
+    {
+      "buildId": "20260805-1845",
+      "date": "2026-08-05",
+      "title": "Panneau : mix de difficultés",
+      "highlights": [
+        "Chaque jour : 2 quêtes faciles, 2 moyennes, 1 difficile",
+        "PNJ uniques sur les 4 piliers ; le joker peut réutiliser un PNJ mais jamais la même quête",
+        "Récompenses selon la difficulté de chaque quête"
+      ]
+    },
+    {
       "buildId": "20260805-1835",
       "date": "2026-08-05",
       "title": "Village : Haru & dialogues",

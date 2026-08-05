@@ -4819,6 +4819,12 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   opacity: 0.75;
 }
 
+.village-quest-reward {
+  margin: 0 0 0.55rem;
+  font-size: 0.82rem;
+  opacity: 0.85;
+}
+
 .village-quest-pillar {
   margin-left: auto;
   font-size: 0.75rem;

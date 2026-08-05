@@ -57,19 +57,21 @@ export function renderVillage(game, el) {
     return `<span class="village-weather-pill${active ? ' active' : ''}" title="${meta.label}">${meta.emoji}</span>`;
   }).join('');
 
-  const diff = board?.difficulty;
-  const rewardLine = board
-    ? `Récompense / quête : ${formatNumber(board.daily.rewardKirha)} 💰${board.daily.rewardNuggets ? ` + ${board.daily.rewardNuggets} pépite` : ''}`
-    : '';
+  const mix = board?.mixCounts || {};
+  const rewardLine = 'Récompenses selon la difficulté de chaque quête · bonus 5/5';
 
   const cardsHtml = (board?.cards || []).map((card, idx) => {
     const q = card.quest;
     const npc = card.npc;
+    const diff = card.difficulty;
     const statusClass = card.completed ? ' done' : (card.locked ? ' locked' : (card.canTurnIn ? ' ready' : ''));
     const deliverIcons = (card.deliverParts || []).map((p) => {
       const res = game.resources[p.resId];
       return `<span class="village-quest-mat">${renderResourceIcon(res, 'village-quest-mat-icon') || p.emoji || ''} ${formatNumber(Math.min(p.have, p.need))}/${formatNumber(p.need)}</span>`;
     }).join('');
+    const rewardHint = diff
+      ? `${formatNumber(diff.kirhaMin)}–${formatNumber(diff.kirhaMax)} 💰${diff.nuggets ? ` + ${diff.nuggets} pépite` : ''}`
+      : '';
 
     return `
       <article class="village-quest-card${statusClass}" data-quest="${q?.id || ''}">
@@ -79,7 +81,7 @@ export function renderVillage(game, el) {
             <strong>${npc?.name || 'Villageois'}</strong>
             <span class="village-quest-title">${npc?.title || ''}</span>
           </div>
-          <span class="village-quest-pillar">${pillarLabel(q?.pillar)} · #${idx + 1}</span>
+          <span class="village-quest-pillar">${diff?.emoji || ''} ${diff?.label || ''}${card.isJoker ? ' · Joker' : ''} · ${pillarLabel(q?.pillar)}</span>
         </header>
         <p class="village-quest-msg">${q?.message || ''}</p>
         <div class="village-quest-progress">
@@ -87,6 +89,7 @@ export function renderVillage(game, el) {
             ? `<span class="village-quest-lock">🔒 ${card.lockHint || 'Verrouillé'}</span>`
             : (q?.type === 'deliver' ? deliverIcons : `<span>${progressLabel(card)}</span>`)}
         </div>
+        ${rewardHint && !card.completed ? `<p class="village-quest-reward">${rewardHint}</p>` : ''}
         <footer class="village-quest-foot">
           ${card.completed
             ? `<span class="village-quest-done">✓ ${npc?.thanks || 'Terminé'}</span>`
@@ -127,7 +130,7 @@ export function renderVillage(game, el) {
       <div class="village-board-head">
         <div>
           <h3>📋 Panneau du village</h3>
-          <p class="view-desc">${diff?.emoji || ''} ${diff?.label || 'Quêtes'} · ${board?.doneCount || 0}/${board?.total || 0} terminée(s)</p>
+          <p class="view-desc">🟢 ${mix.easy || 0} facile(s) · 🟠 ${mix.medium || 0} moyen(s) · 🔴 ${mix.hard || 0} difficile · ${board?.doneCount || 0}/${board?.total || 0} terminée(s)</p>
         </div>
         <div class="village-board-reward">
           <span>${rewardLine}</span>

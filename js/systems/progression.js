@@ -61,8 +61,9 @@ export function getResourceUnlockJobLevel(resource, resources, balance) {
 export function getHarvestXpForResource(resource, resources, balance) {
   const cfg = balance?.harvestXpByTier || { base: 10, step: 4 };
   const tier = getResourceTierIndex(resource, resources);
+  // Source de vérité = formule (10 / 14 / 18…). xpPerHarvest dans resources.json est aligné pour fallback.
   if (cfg.useResourceData && resource?.xpPerHarvest != null) {
-    return resource.xpPerHarvest;
+    return Number(resource.xpPerHarvest) || 0;
   }
   return cfg.base + tier * cfg.step;
 }

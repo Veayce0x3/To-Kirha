@@ -142,6 +142,17 @@ export function getSeasonBonusPercents(state) {
   };
 }
 
+/**
+ * % de bonus XP métiers affiché (saison + succès + boost temporaire).
+ * L’XP de base ressource reste fixe ; ce % s’applique ensuite.
+ */
+export function getJobXpBonusPercent(state) {
+  const mult = getPrestigeBonuses(state).jobXp * getSeasonBoostMult(state);
+  const pct = (mult - 1) * 100;
+  if (pct <= 0) return 0;
+  return Math.round(pct * 10) / 10;
+}
+
 export function hasSeasonBonus(state) {
   const { kirhaPct, xpPct, jobXpPct, regrowthPct } = getSeasonBonusPercents(state);
   return kirhaPct > 0 || xpPct > 0 || jobXpPct > 0 || regrowthPct > 0;
