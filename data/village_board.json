@@ -319,7 +319,7 @@
       "difficulty": "easy",
       "npcId": "miko",
       "type": "deliver",
-      "deliver": { "meal_miso": 3 },
+      "deliver": { "meal_onigiri": 3 },
       "message": "Une offrande légère pour les voyageurs du sanctuaire.",
       "requires": { "craftJob": "baker" }
     },
