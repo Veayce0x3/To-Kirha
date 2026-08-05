@@ -83,6 +83,54 @@ function getSlotRemainingMs(slot) {
   return Math.max(0, (slot.active.duration || 0) - elapsed);
 }
 
+const SLOT_EVENT_KINDS = ['shiny', 'jackpot', 'kirha'];
+
+/** Aligne classes / glow / annonce avec l’état réel (évite glow fantôme après la révélation). */
+function syncSlotEventDom(card, slot) {
+  if (!card) return;
+  const eventVis = getSlotEventVisual(slot);
+  const phase = slot?.active?.phase;
+  const active = !!slot?.active;
+
+  for (const kind of SLOT_EVENT_KINDS) {
+    card.classList.toggle(`slot-event-${kind}`, eventVis?.kind === kind);
+  }
+
+  const isGrowingEvent = !!(
+    eventVis
+    && (
+      (active && phase === 'harvesting')
+      || eventVis.reveal
+      || (!active && slot?.pendingEvent)
+    )
+  );
+  card.classList.toggle('slot-event-growing', isGrowingEvent);
+
+  const visual = card.querySelector('.slot-visual');
+  if (!visual) return;
+
+  const glow = visual.querySelector('.slot-event-glow');
+  if (eventVis) {
+    if (!glow) {
+      visual.insertAdjacentHTML('afterbegin', '<span class="slot-event-glow" aria-hidden="true"></span>');
+    }
+  } else {
+    glow?.remove();
+  }
+
+  const html = eventVis?.reveal ? getEventRevealAnnounceHtml(eventVis.reveal) : '';
+  const announce = visual.querySelector('.slot-event-announce');
+  if (html) {
+    if (!announce) {
+      visual.insertAdjacentHTML('beforeend', html);
+    } else if (announce.outerHTML !== html.trim()) {
+      announce.outerHTML = html;
+    }
+  } else {
+    announce?.remove();
+  }
+}
+
 function getAdjacentVisibleView(current, visible, direction) {
   const idx = visible.indexOf(current);
   if (idx < 0) return null;
@@ -1058,22 +1106,8 @@ export function updateProductionLineProgresses(game, jobId) {
       }
       setSlotProgressUi(card, pct, labelText, remainingMs);
 
-      // Révélation événement : met à jour le texte (flavor → montant) sans rebuild
-      const eventVis = getSlotEventVisual(slot);
-      const visual = card.querySelector('.slot-visual');
-      if (visual && eventVis?.reveal) {
-        const html = getEventRevealAnnounceHtml(eventVis.reveal);
-        let announce = visual.querySelector('.slot-event-announce');
-        if (html) {
-          if (!announce) {
-            visual.insertAdjacentHTML('beforeend', html);
-          } else if (announce.outerHTML !== html.trim()) {
-            announce.outerHTML = html;
-          }
-        } else {
-          announce?.remove();
-        }
-      }
+      // Glow / classes : toujours resync (retire le fantôme quand la révélation expire)
+      syncSlotEventDom(card, slot);
 
       if (progress >= 1 && phase === 'regrowing') {
         card?.classList.add('slot-can-harvest');

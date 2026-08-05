@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260805-2125",
+      "date": "2026-08-05",
+      "title": "Glow récolte fantôme corrigé",
+      "highlights": [
+        "Les parcelles ne restent plus dorées / roses après la fin d’un bonus",
+        "La couleur ne s’affiche que s’il y a vraiment un événement en cours"
+      ]
+    },
+    {
       "buildId": "20260805-1855",
       "date": "2026-08-05",
       "title": "XP récolte fixe 10/14/18…",

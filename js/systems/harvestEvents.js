@@ -149,7 +149,9 @@ function clearAllSlotEvents(state) {
       for (const slot of line?.slots || []) {
         if (!slot) continue;
         if (slot.pendingEvent) delete slot.pendingEvent;
+        if (slot.eventChecked) delete slot.eventChecked;
         if (slot.active?.event) delete slot.active.event;
+        if (slot.active?.eventReveal) delete slot.active.eventReveal;
       }
     }
   }
@@ -402,11 +404,29 @@ export function getActiveEventReveal(slot, now = Date.now()) {
 
 export function getSlotEventVisual(slot) {
   const reveal = getActiveEventReveal(slot);
-  const ev = reveal || slot?.pendingEvent || slot?.active?.event;
-  if (!ev?.type) return null;
-  if (ev.type === 'kirha') return { kind: 'kirha', label: 'Découverte', reveal };
-  if (ev.type === 'jackpot') return { kind: 'jackpot', label: 'Jackpot', reveal };
-  return { kind: 'shiny', label: 'Bonus', reveal };
+  if (reveal?.type) {
+    if (reveal.type === 'kirha') return { kind: 'kirha', label: 'Découverte', reveal };
+    if (reveal.type === 'jackpot') return { kind: 'jackpot', label: 'Jackpot', reveal };
+    if (reveal.type === 'shiny') return { kind: 'shiny', label: 'Bonus', reveal };
+  }
+
+  // Idle prêt : brillance en attente
+  if (!slot?.active && slot?.pendingEvent?.type) {
+    const ev = slot.pendingEvent;
+    if (ev.type === 'kirha') return { kind: 'kirha', label: 'Découverte', reveal: null };
+    if (ev.type === 'jackpot') return { kind: 'jackpot', label: 'Jackpot', reveal: null };
+    if (ev.type === 'shiny') return { kind: 'shiny', label: 'Bonus', reveal: null };
+  }
+
+  // Uniquement pendant la phase harvesting (pas la repousse)
+  if (slot?.active?.phase === 'harvesting' && slot.active.event?.type) {
+    const ev = slot.active.event;
+    if (ev.type === 'kirha') return { kind: 'kirha', label: 'Découverte', reveal: null };
+    if (ev.type === 'jackpot') return { kind: 'jackpot', label: 'Jackpot', reveal: null };
+    if (ev.type === 'shiny') return { kind: 'shiny', label: 'Bonus', reveal: null };
+  }
+
+  return null;
 }
 
 /** Overlay texte pendant la révélation (reste affiché ~8 s). */
