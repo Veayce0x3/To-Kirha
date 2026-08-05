@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 44,
-  "appBuildId": "20260805-1815",
+  "appBuildId": "20260805-1820",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -649,15 +649,19 @@
     },
     "farm": {
       "well": {
-        "always": true
+        "when": {
+          "craftJobUnlocked": "toolmaker"
+        },
+        "hint": "Débloque en même temps que l’Outilleur (Bûcheron Nv.5 + Paysan Nv.6)."
       },
       "chicken_coop": {
         "when": {
           "jobLevel": {
             "farmer": 8
-          }
+          },
+          "buildingUnlocked": "well"
         },
-        "hint": "Paysan Nv.8 pour le Poulailler."
+        "hint": "Puits débloqué et Paysan Nv.8 pour le Poulailler."
       },
       "barn": {
         "when": {
@@ -707,15 +711,19 @@
       }
     },
     "farm_well": {
-      "always": true
+      "when": {
+        "craftJobUnlocked": "toolmaker"
+      },
+      "hint": "Débloque en même temps que l’Outilleur (Bûcheron Nv.5 + Paysan Nv.6)."
     },
     "farm_chicken_coop": {
       "when": {
         "jobLevel": {
           "farmer": 8
-        }
+        },
+        "buildingUnlocked": "well"
       },
-      "hint": "Paysan Nv.8 pour le Poulailler."
+      "hint": "Puits débloqué et Paysan Nv.8 pour le Poulailler."
     },
     "farm_barn": {
       "when": {
