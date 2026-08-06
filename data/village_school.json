@@ -1,0 +1,147 @@
+{
+  "branches": {
+    "cuisine": {
+      "id": "cuisine",
+      "label": "Cuisine",
+      "emoji": "🍞",
+      "order": 1
+    },
+    "ferme": {
+      "id": "ferme",
+      "label": "Élevage",
+      "emoji": "🐄",
+      "order": 2
+    },
+    "atelier": {
+      "id": "atelier",
+      "label": "Atelier",
+      "emoji": "🛠️",
+      "order": 3
+    },
+    "village": {
+      "id": "village",
+      "label": "Connaissances",
+      "emoji": "📜",
+      "order": 4
+    }
+  },
+  "researches": {
+    "cuisine_fours": {
+      "id": "cuisine_fours",
+      "branch": "cuisine",
+      "tier": "seasonal",
+      "name": "Fours du village",
+      "description": "Les fournées nourrissent mieux les apprentis cuisiniers.",
+      "requires": [],
+      "kirhaCost": 120,
+      "ingredients": { "ble": 40, "eau": 10 },
+      "durationMs": 600000,
+      "effect": { "seasonBonuses": { "cuisineJobXp": 0.08 } },
+      "effectLabel": "+8 % XP métiers Cuisine (cette saison)"
+    },
+    "cuisine_garde_manger": {
+      "id": "cuisine_garde_manger",
+      "branch": "cuisine",
+      "tier": "seasonal",
+      "name": "Garde-manger",
+      "description": "Mieux stocker, mieux vendre les repas du marché.",
+      "requires": ["cuisine_fours"],
+      "kirhaCost": 280,
+      "ingredients": { "ble": 80, "oeuf": 20 },
+      "durationMs": 1200000,
+      "effect": { "seasonBonuses": { "mealSellBonus": 0.1 } },
+      "effectLabel": "+10 % Kirha à la vente des repas (cette saison)"
+    },
+    "cuisine_carnet": {
+      "id": "cuisine_carnet",
+      "branch": "cuisine",
+      "tier": "seasonal",
+      "name": "Carnet des fournées",
+      "description": "Tes notes serviront à la saison prochaine.",
+      "requires": ["cuisine_garde_manger"],
+      "kirhaCost": 450,
+      "ingredients": { "ble": 100, "miel": 15 },
+      "durationMs": 1800000,
+      "effect": { "legacy": { "nextSeasonKirha": 120 } },
+      "effectLabel": "Legs : +120 💰 au début de la saison suivante"
+    },
+    "ferme_nichoir": {
+      "id": "ferme_nichoir",
+      "branch": "ferme",
+      "tier": "seasonal",
+      "name": "Nichoir amélioré",
+      "description": "Les animaux apprennent plus vite sous un meilleur abri.",
+      "requires": [],
+      "kirhaCost": 150,
+      "ingredients": { "frene": 30, "ble": 25 },
+      "durationMs": 900000,
+      "effect": { "seasonBonuses": { "farmXp": 0.1 } },
+      "effectLabel": "+10 % XP bâtiments de ferme (cette saison)"
+    },
+    "ferme_mangeoire": {
+      "id": "ferme_mangeoire",
+      "branch": "ferme",
+      "tier": "seasonal",
+      "name": "Mangeoire renforcée",
+      "description": "Moins de gaspillage, cycles un peu plus souples.",
+      "requires": ["ferme_nichoir"],
+      "kirhaCost": 320,
+      "ingredients": { "ble": 60, "eau": 20 },
+      "durationMs": 1500000,
+      "effect": { "seasonBonuses": { "farmCycleSpeed": 0.05 } },
+      "effectLabel": "−5 % durée des cycles ferme (cette saison)"
+    },
+    "atelier_notes": {
+      "id": "atelier_notes",
+      "branch": "atelier",
+      "tier": "seasonal",
+      "name": "Notes de l’Outilleur",
+      "description": "Entretien soigné : les outils tiennent un peu plus longtemps.",
+      "requires": [],
+      "kirhaCost": 200,
+      "ingredients": { "frene": 40, "pierre": 20 },
+      "durationMs": 1200000,
+      "effect": { "seasonBonuses": { "toolDurability": 0.1 } },
+      "effectLabel": "+10 % durabilité outils (cette saison)"
+    },
+    "atelier_plans": {
+      "id": "atelier_plans",
+      "branch": "atelier",
+      "tier": "seasonal",
+      "name": "Plans annotés",
+      "description": "Tu laisses des plans pour la saison suivante.",
+      "requires": ["atelier_notes"],
+      "kirhaCost": 400,
+      "ingredients": { "frene": 50, "fer": 15 },
+      "durationMs": 1800000,
+      "effect": { "legacy": { "nextSeasonKirha": 80, "merchantFirstWeek": true } },
+      "effectLabel": "Legs : +80 💰 et marchand garanti la 1ʳᵉ semaine (saison suivante)"
+    },
+    "knowledge_routes": {
+      "id": "knowledge_routes",
+      "branch": "village",
+      "tier": "permanent",
+      "name": "Routes commerciales",
+      "description": "Les caravanes croisent plus souvent le village — pour toujours.",
+      "requires": [],
+      "kirhaCost": 900,
+      "ingredients": { "ble": 120, "dorade": 40, "pierre": 40 },
+      "durationMs": 3600000,
+      "effect": { "permanent": { "merchantChanceBonus": 0.04 } },
+      "effectLabel": "Permanent : marchand itinérant un peu plus fréquent"
+    },
+    "knowledge_warehouse": {
+      "id": "knowledge_warehouse",
+      "branch": "village",
+      "tier": "permanent",
+      "name": "Entrepôt du village",
+      "description": "Un emplacement de récolte supplémentaire, durable.",
+      "requires": ["knowledge_routes"],
+      "kirhaCost": 1400,
+      "ingredients": { "frene": 100, "pierre": 80, "ble": 100 },
+      "durationMs": 5400000,
+      "effect": { "permanent": { "extraHarvestSlot": 1 } },
+      "effectLabel": "Permanent : +1 emplacement max par ressource de récolte"
+    }
+  }
+}

@@ -410,7 +410,9 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   const line = game.state.productionLines?.harvest?.[jobId]?.[resourceId];
   if (!line) return;
   const qty = game.state.inventory[resourceId] || 0;
-  const maxUnits = game.balance.productionLines?.maxUnitsPerResource ?? 6;
+  const maxUnits = game.getMaxHarvestSlots?.()
+    ?? game.balance.productionLines?.maxUnitsPerResource
+    ?? 6;
   const baseXp = getHarvestXpForResource(resource, game.resources, game.balance);
   const harvestMs = Math.round(getHarvestTime(resource, game.state, game.jobs, game.balance, game.resources) / 1000);
   const regrowthSec = Math.round(getRegrowthTime(resource, game.state, game.jobs, game.balance, game.resources) / 1000);
@@ -1030,7 +1032,8 @@ export function renderFarmProduction(game, el, buildingId) {
     const resource = game.resources[productId];
     const line = game.state.productionLines?.farm?.[buildingId]?.[productId];
     if (!line) continue;
-    const maxUnits = game.balance.productionLines?.maxUnitsPerResource
+    const maxUnits = game.getMaxHarvestSlots?.()
+      ?? game.balance.productionLines?.maxUnitsPerResource
       ?? game.balance.productionLines?.maxUnits
       ?? 6;
     const nextCost = game.getFarmUnitUnlockKirha(buildingId, line.units);

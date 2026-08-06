@@ -3,6 +3,7 @@
  */
 
 import { getUtcDateKey, addUtcDays } from './harvestEvents.js';
+import { getSchoolBonusesFromState } from './villageSchool.js';
 
 const THEMES = {
   mine: {
@@ -118,6 +119,12 @@ function cfg(balance) {
   };
 }
 
+function getEffectiveMerchantChance(balance, state = null) {
+  const base = cfg(balance).chance;
+  const bonus = Number(getSchoolBonusesFromState(state).merchantChanceBonus) || 0;
+  return Math.min(1, Math.max(0, base + bonus));
+}
+
 function existingIds(ids, resources) {
   return (ids || []).filter((id) => resources?.[id]);
 }
@@ -150,22 +157,27 @@ function stockFor(kind, rng) {
 
 /**
  * Tirage déterministe : le marchand est-il présent ce jour UTC ?
+ * Legs « 1ʳᵉ semaine » : visite garantie le jour UTC du début de saison.
  */
-export function rollTravelingMerchantDay(dateKey, balance = null) {
-  const c = cfg(balance);
+export function rollTravelingMerchantDay(dateKey, balance = null, state = null) {
+  if (state?.villageSchool?.seasonFlags?.merchantFirstWeek && state.seasonStartedAt) {
+    const startKey = getUtcDateKey(state.seasonStartedAt);
+    if (dateKey === startKey) return true;
+  }
+  const chance = getEffectiveMerchantChance(balance, state);
   const rng = makeRng(hashStr(`traveling_merchant_v1:${dateKey}`));
-  return rng() < c.chance;
+  return rng() < chance;
 }
 
-export function isTravelingMerchantScheduled(dateKey, balance = null) {
-  return rollTravelingMerchantDay(dateKey, balance);
+export function isTravelingMerchantScheduled(dateKey, balance = null, state = null) {
+  return rollTravelingMerchantDay(dateKey, balance, state);
 }
 
 /**
  * Génère la visite du jour (stock, thème, demande, promo). Déterministe.
  */
-export function buildTravelingMerchantVisit(dateKey, resources, balance = null) {
-  if (!rollTravelingMerchantDay(dateKey, balance)) return null;
+export function buildTravelingMerchantVisit(dateKey, resources, balance = null, state = null) {
+  if (!rollTravelingMerchantDay(dateKey, balance, state)) return null;
 
   const c = cfg(balance);
   const rng = makeRng(hashStr(`traveling_merchant_stock_v1:${dateKey}`));
@@ -267,13 +279,13 @@ function ensureVisitState(state, dateKey) {
 
 export function getTravelingMerchantStatus(state, resources, balance, now = Date.now()) {
   const dateKey = getUtcDateKey(now);
-  const visit = buildTravelingMerchantVisit(dateKey, resources, balance);
+  const visit = buildTravelingMerchantVisit(dateKey, resources, balance, state);
   if (!visit) {
     return {
       active: false,
       dateKey,
       visit: null,
-      tomorrowRumor: isTravelingMerchantScheduled(addUtcDays(dateKey, 1), balance),
+      tomorrowRumor: isTravelingMerchantScheduled(addUtcDays(dateKey, 1), balance, state),
     };
   }
 
@@ -299,7 +311,7 @@ export function getTravelingMerchantStatus(state, resources, balance, now = Date
       soldToDemand: sold,
     },
     popupSeen: !!st.popupSeen,
-    tomorrowRumor: isTravelingMerchantScheduled(addUtcDays(dateKey, 1), balance),
+    tomorrowRumor: isTravelingMerchantScheduled(addUtcDays(dateKey, 1), balance, state),
   };
 }
 

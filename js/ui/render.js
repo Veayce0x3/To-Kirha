@@ -176,6 +176,19 @@ export function initUI(game, audio) {
   }
 
   function getLockedFeatureNavEntry(viewId) {
+    if (viewId === 'village_school') {
+      if (game.isVillageSchoolUnlocked?.()) return null;
+      return {
+        featureId: 'village_school',
+        viewId: 'village_school',
+        label: 'École',
+        emoji: '🏫',
+        ready: false,
+        progress: 0,
+        hint: game.balance?.jobUnlocks?.toolmaker?.hint || 'Débloque l’Outilleur.',
+        gates: [{ type: 'craftJobUnlocked', ready: false, jobName: 'Outilleur' }],
+      };
+    }
     const featureByView = { combat: 'combat', workshop: 'toolmaker', cuisine: 'baker' };
     const featureId = featureByView[viewId];
     if (!featureId) return null;
@@ -208,6 +221,9 @@ export function initUI(game, audio) {
           return `${pending.buildingName} Nv.${pending.currentLevel}/${pending.requiredLevel}`;
         }
         return `${pending.buildingName} 🔒`;
+      }
+      if (pending.type === 'craftJobUnlocked') {
+        return pending.jobName || 'Outilleur';
       }
     }
     const gateName = game.jobs[entry.gateJob]?.name || entry.gateJob;
@@ -757,6 +773,16 @@ export function initUI(game, audio) {
     }
     audio.playSfx('ready');
     refreshHeader(game.state);
+  });
+  on('villageSchoolComplete', (result) => {
+    const name = result?.research?.name || 'Recherche';
+    showToast(els, `🏫 ${name} terminée !`, 'upgrade');
+    audio.playSfx('ready');
+    refreshHeader(game.state);
+  });
+  on('villageSchoolStart', (result) => {
+    const name = result?.research?.name || 'Recherche';
+    showToast(els, `🏫 Étude commencée : ${name}`, 'upgrade');
   });
   on('regrowthStart', ({ jobId, unitIndex, slotIndex, resourceId }) => {
     patchHarvestSlot(game, jobId, unitIndex ?? slotIndex, resourceId);

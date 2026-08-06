@@ -41,12 +41,14 @@ function cfg(balance) {
   return balance?.productionLines || {};
 }
 
-export function getMaxUnits(balance) {
-  return cfg(balance).maxUnitsPerResource ?? cfg(balance).maxUnits ?? 5;
+export function getMaxUnits(balance, state = null) {
+  return getMaxUnitsPerResource(balance, state);
 }
 
-export function getMaxUnitsPerResource(balance) {
-  return cfg(balance).maxUnitsPerResource ?? 5;
+export function getMaxUnitsPerResource(balance, state = null) {
+  const base = cfg(balance).maxUnitsPerResource ?? cfg(balance).maxUnits ?? 5;
+  const extra = Math.max(0, Math.floor(Number(state?.villageSchool?.bonuses?.extraHarvestSlot) || 0));
+  return base + extra;
 }
 
 export function getVisibleProductionResources(state, resources, jobId) {
@@ -139,7 +141,7 @@ export function getNextProductionUnlock(state, balance, resources, jobId, jobs, 
   if (!tiers.length) return { kind: 'maxed' };
 
   const lines = state.productionLines?.harvest?.[jobId] || {};
-  const maxPer = getMaxUnitsPerResource(balance);
+  const maxPer = getMaxUnitsPerResource(balance, state);
   const jobName = jobs?.[jobId]?.name || jobId;
 
   const buildUnitPreview = (resource) => {
@@ -371,14 +373,14 @@ export function formatAnimalCostParts(cost, resources) {
 export function canBuyHarvestUnit(state, balance, jobId, resourceId, resources) {
   const line = getHarvestLine(state, jobId, resourceId);
   if (!line) return false;
-  if (line.units >= getMaxUnitsPerResource(balance)) return false;
+  if (line.units >= getMaxUnitsPerResource(balance, state)) return false;
   const req = getUnitUnlockRequirements(jobId, resourceId, state, balance, resources);
   return canAffordRequirements(state, req);
 }
 
 export function buyHarvestUnit(state, balance, jobId, resourceId, resources) {
   const line = getHarvestLine(state, jobId, resourceId);
-  if (!line || line.units >= getMaxUnitsPerResource(balance)) return false;
+  if (!line || line.units >= getMaxUnitsPerResource(balance, state)) return false;
   const req = getUnitUnlockRequirements(jobId, resourceId, state, balance, resources);
   if (!canAffordRequirements(state, req)) return false;
   deductRequirements(state, req);
@@ -403,7 +405,7 @@ export function getFarmUnitUnlockKirha(buildingId, unitIndex, balance, farmData)
 export function canBuyFarmUnit(state, balance, buildingId, productId, farmData) {
   const line = getFarmLine(state, buildingId, productId);
   if (!line) return false;
-  if (line.units >= getMaxUnits(balance)) return false;
+  if (line.units >= getMaxUnits(balance, state)) return false;
   const kirha = getFarmUnitUnlockKirha(buildingId, line.units, balance, farmData);
   if (kirha == null || (state.kirha || 0) < kirha) return false;
   return true;
@@ -411,7 +413,7 @@ export function canBuyFarmUnit(state, balance, buildingId, productId, farmData) 
 
 export function buyFarmUnit(state, balance, buildingId, productId, farmData) {
   const line = getFarmLine(state, buildingId, productId);
-  if (!line || line.units >= getMaxUnits(balance)) return false;
+  if (!line || line.units >= getMaxUnits(balance, state)) return false;
   const kirha = getFarmUnitUnlockKirha(buildingId, line.units, balance, farmData);
   if (kirha == null || (state.kirha || 0) < kirha) return false;
   state.kirha -= kirha;
@@ -470,7 +472,7 @@ export function ensureProductionLines(state, resources, farmData, balance) {
     if (!state.productionLines.harvest[jobId]) state.productionLines.harvest[jobId] = {};
 
     const lines = state.productionLines.harvest[jobId];
-    const maxPer = getMaxUnitsPerResource(balance);
+    const maxPer = getMaxUnitsPerResource(balance, state);
 
     if (jobResources.length && Object.keys(lines).length === 0) {
       const starter = jobResources[0];
@@ -752,7 +754,7 @@ export function ensureFarmUnitsForAnimalSlots(state, farmData, buildingId, balan
   if (!building?.requiresAnimal) return;
   const meta = getFarmBuildingMeta(state, buildingId);
   const want = Math.max(1, Number(meta.animalSlots) || 1);
-  const maxUnits = getMaxUnits(balance);
+  const maxUnits = getMaxUnits(balance, state);
   const target = Math.min(want, maxUnits);
 
   const lineKeys = isUnifiedFarmBuilding(building)
@@ -854,7 +856,12 @@ export function completeFarmUnit(state, farmData, jobs, balance, buildingId, pro
     state.inventory[resId] = (state.inventory[resId] || 0) + amount;
   }
 
-  const xp = computeFarmCycleXp(building, state);
+  const xp = (() => {
+    let v = computeFarmCycleXp(building, state);
+    const farmXpBonus = Number(state?.villageSchool?.bonuses?.farmXp) || 0;
+    if (farmXpBonus > 0 && v > 0) v = Math.floor(v * (1 + farmXpBonus));
+    return v;
+  })();
   const levelResult = xp > 0 ? addFarmBuildingXp(state, buildingId, xp, jobs, balance) : null;
   state.stats.totalHarvests = (state.stats.totalHarvests || 0) + 1;
   slot.active = null;
@@ -953,7 +960,7 @@ export function migrateSlotsToProductionLines(state, resources, farmData, balanc
       byResource[slot.resourceId].push(slot);
     }
     for (const [resourceId, resSlots] of Object.entries(byResource)) {
-      const units = Math.min(resSlots.length, getMaxUnits(balance));
+      const units = Math.min(resSlots.length, getMaxUnits(balance, state));
       const migrated = resSlots.slice(0, units).map((s) => ({ active: s.active ? { ...s.active } : null }));
       state.productionLines.harvest[jobId][resourceId] = normalizeLine({ units, slots: migrated }, units);
     }
@@ -964,7 +971,7 @@ export function migrateSlotsToProductionLines(state, resources, farmData, balanc
     if (!building) continue;
     if (!state.productionLines.farm[buildingId]) state.productionLines.farm[buildingId] = {};
     const productIds = Object.keys(building.products || {});
-    const units = Math.min(slots?.length || 1, getMaxUnits(balance));
+    const units = Math.min(slots?.length || 1, getMaxUnits(balance, state));
     for (const productId of productIds) {
       const migrated = (slots || []).slice(0, units).map((s) => ({
         active: s?.active ? { ...s.active, productId } : null,

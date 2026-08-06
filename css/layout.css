@@ -10461,3 +10461,156 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
   font-size: 0.8rem;
   color: var(--brun-doux, #6b5344);
 }
+
+/* ——— École du Village ——— */
+.school-view .view-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.school-summary {
+  margin-bottom: 0.85rem;
+  font-size: 0.9rem;
+}
+
+.school-bonus-list {
+  margin: 0.45rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+}
+
+.school-bonus-empty {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.school-flag {
+  margin: 0.45rem 0 0;
+  font-size: 0.85rem;
+  color: var(--vert-foret, #2d5a27);
+}
+
+.school-active {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.school-active.idle {
+  opacity: 0.85;
+  font-size: 0.9rem;
+}
+
+.school-progress-bar {
+  height: 10px;
+}
+
+.school-active-eta {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.school-branch {
+  margin-bottom: 1.25rem;
+}
+
+.school-branch-title {
+  margin: 0 0 0.55rem;
+  font-size: 1.05rem;
+  color: var(--brun-terre, #4a3728);
+}
+
+.school-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.school-card {
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(74, 55, 40, 0.12);
+}
+
+.school-card.permanent {
+  border-color: rgba(155, 89, 182, 0.35);
+  background: rgba(155, 89, 182, 0.06);
+}
+
+.school-card.status-done {
+  opacity: 0.72;
+}
+
+.school-card.status-locked,
+.school-card.status-blocked {
+  opacity: 0.65;
+}
+
+.school-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.school-card-head h4 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.school-tier {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+.school-card-desc,
+.school-card-effect,
+.school-card-meta {
+  margin: 0.2rem 0;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.school-card-effect {
+  color: var(--vert-foret, #2d5a27);
+  font-weight: 600;
+}
+
+.school-card-cost {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.45rem 0 0.55rem;
+  font-size: 0.82rem;
+}
+
+.school-ing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 8px;
+  background: rgba(228, 240, 223, 0.7);
+}
+
+.school-ing.missing {
+  background: rgba(180, 80, 80, 0.12);
+  color: #8b3a3a;
+}
+
+.school-ing-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.school-start-btn {
+  min-height: 44px;
+  width: 100%;
+}

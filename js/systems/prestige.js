@@ -1,5 +1,6 @@
 import { isChapterComplete, areAchievementsEnabled, isAchievementCompleted } from './achievements.js';
 import { isCareerChoiceComplete, STARTER_WEAPON_TYPES } from './careerChoice.js';
+import { extractVillageSchoolForPrestige } from './villageSchool.js';
 
 function getPrestigeReqForSeason(balance, season) {
   const base = balance?.prestige || {};
@@ -492,11 +493,16 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     previousSeasonSummary,
   ].slice(-20);
 
+  const schoolExtract = extractVillageSchoolForPrestige(state);
+  const baseKirha = balance.prestige?.seasonStartKirha ?? balance.startingKirha ?? 0;
+
   return {
     ...fresh,
-    // Aide de relance : Kirha de départ de saison (fixe)
-    kirha: balance.prestige?.seasonStartKirha ?? balance.startingKirha ?? 0,
+    // Aide de relance : Kirha de départ de saison (fixe) + legs école
+    kirha: baseKirha + schoolExtract.legacyKirha,
     season,
+    seasonStartedAt: Date.now(),
+    villageSchool: schoolExtract.preserved,
     prestige: newPrestige,
     // Boost ×2 : disponible à activer manuellement (pas auto)
     seasonBoost: null,

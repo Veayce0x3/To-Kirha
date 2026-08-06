@@ -145,6 +145,10 @@ export function computeFarmDuration(building, feedId, state) {
     const eff = getFeedEfficiency(building, feedId, state);
     duration = Math.max(2000, Math.floor(base / Math.max(0.4, eff)));
   }
+  const speed = Number(state?.villageSchool?.bonuses?.farmCycleSpeed) || 0;
+  if (speed > 0) {
+    duration = Math.max(1500, Math.floor(duration / (1 + speed)));
+  }
   return duration;
 }
 
@@ -336,7 +340,9 @@ export function completeFarmProduction(state, farmData, buildingId, slotIndex, j
     state.inventory[resId] = (state.inventory[resId] || 0) + amount;
   }
 
-  const xp = computeFarmCycleXp(building, state);
+  let xp = computeFarmCycleXp(building, state);
+  const farmXpBonus = Number(state?.villageSchool?.bonuses?.farmXp) || 0;
+  if (farmXpBonus > 0 && xp > 0) xp = Math.floor(xp * (1 + farmXpBonus));
   const levelResult = xp > 0 ? addFarmBuildingXp(state, buildingId, xp, jobs, balance) : null;
   state.stats.totalHarvests = (state.stats.totalHarvests || 0) + 1;
   slot.active = null;

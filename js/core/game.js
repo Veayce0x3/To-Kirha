@@ -61,6 +61,7 @@ import {
 import { runSaveMigrations } from './migrations.js';
 import {
   ensureProductionLines,
+  getMaxUnitsPerResource,
   startHarvestUnit,
   completeHarvestUnit,
   startFarmUnit,
@@ -119,6 +120,16 @@ import {
   getTravelingMerchantDemandUnitPrice,
   isTravelingMerchantScheduled,
 } from '../systems/travelingMerchant.js';
+import {
+  ensureVillageSchoolState,
+  emptyVillageSchoolState,
+  isVillageSchoolUnlocked,
+  startVillageResearch,
+  tickVillageSchool,
+  refreshSchoolBonusCache,
+  getVillageSchoolViewModel,
+  getSchoolBonusesFromState,
+} from '../systems/villageSchool.js';
 import { isCraftJobUnlocked, isCombatUnlocked } from '../systems/jobUnlock.js';
 import {
   getFarmBuildingProgress as computeFarmBuildingProgress,
@@ -292,7 +303,7 @@ function migrateLegacyCombatResources(state) {
 }
 
 export class Game {
-  constructor(resources, jobs, balance, recipes, aides, equipment, farmData, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, achievements, weaponRoles, villageBoardData = null) {
+  constructor(resources, jobs, balance, recipes, aides, equipment, farmData, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, achievements, weaponRoles, villageBoardData = null, villageSchoolData = null) {
     this.resources = resources;
     this.jobs = jobs;
     this.balance = balance;
@@ -312,6 +323,7 @@ export class Game {
     this.quests = this.achievements;
     this.weaponRoles = weaponRoles || {};
     this.villageBoardData = villageBoardData || { npcs: {}, quests: {}, difficulties: {} };
+    this.villageSchoolData = villageSchoolData || { branches: {}, researches: {} };
     this.state = null;
     this.harvestTimers = {};
     this.farmTimers = {};
@@ -392,6 +404,8 @@ export class Game {
       villageBoard: null,
       sakuraWind: null,
       travelingMerchant: null,
+      villageSchool: emptyVillageSchoolState(),
+      seasonStartedAt: Date.now(),
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
       playtime: { foregroundMs: 0, backgroundMs: 0 },
@@ -584,6 +598,10 @@ export class Game {
     syncExpiredFarmSlots(this.state, (buildingId, slotIndex) => {
       this.completeFarmSlot(buildingId, slotIndex);
     });
+    ensureVillageSchoolState(this.state);
+    if (!this.state.seasonStartedAt) this.state.seasonStartedAt = Date.now();
+    refreshSchoolBonusCache(this.state, this.villageSchoolData);
+    this.tickVillageSchool();
     this.processQuests();
     emit('stateChange', this.state);
 
@@ -954,7 +972,63 @@ export class Game {
   }
 
   isTravelingMerchantTomorrow() {
-    return isTravelingMerchantScheduled(addUtcDays(getUtcDateKey(), 1), this.balance);
+    return isTravelingMerchantScheduled(addUtcDays(getUtcDateKey(), 1), this.balance, this.state);
+  }
+
+  isVillageSchoolUnlocked() {
+    return isVillageSchoolUnlocked(this.state, this.balance);
+  }
+
+  getVillageSchoolView() {
+    this.tickVillageSchool();
+    return getVillageSchoolViewModel(
+      this.state,
+      this.villageSchoolData,
+      this.balance,
+      this.resources,
+      this.jobs
+    );
+  }
+
+  startVillageSchoolResearch(researchId) {
+    const result = startVillageResearch(
+      this.state,
+      this.villageSchoolData,
+      this.balance,
+      researchId
+    );
+    if (result.ok) {
+      emit('villageSchoolStart', result);
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
+    return result;
+  }
+
+  tickVillageSchool() {
+    const done = tickVillageSchool(this.state, this.villageSchoolData);
+    if (done?.ok) {
+      refreshSchoolBonusCache(this.state, this.villageSchoolData);
+      ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
+      emit('villageSchoolComplete', done);
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
+    return done;
+  }
+
+  getSchoolBonuses() {
+    return getSchoolBonusesFromState(this.state);
+  }
+
+  /** Multiplicateur vente repas (École). */
+  getMealSellMult(resourceId) {
+    const res = this.resources[resourceId];
+    if (!res) return 1;
+    const isMeal = String(resourceId).startsWith('meal_') || !!res.mealTier;
+    if (!isMeal) return 1;
+    const bonus = Number(getSchoolBonusesFromState(this.state).mealSellBonus) || 0;
+    return 1 + bonus;
   }
 
   setCompanionNickname(companionId, name, isRename = false) {
@@ -988,7 +1062,7 @@ export class Game {
   }
 
   getMaxHarvestSlots(_jobId) {
-    return this.balance.productionLines?.maxUnitsPerResource ?? this.balance.productionLines?.maxUnits ?? 5;
+    return getMaxUnitsPerResource(this.balance, this.state);
   }
 
   buyNextProductionUnlock(jobId, resourceId = null) {
@@ -1813,7 +1887,8 @@ export class Game {
     const resource = this.resources[resourceId];
     if (resource?.notSellable || resource?.merchantOnly) return 0;
     const artisanMult = resource?.craftOnly ? getCraftSellBonus(this.state, this.jobs) : 1;
-    const raw = sellResource(resourceId, sellAmount, this.resources, this.state.inventory, artisanMult);
+    const mealMult = this.getMealSellMult(resourceId);
+    const raw = sellResource(resourceId, sellAmount, this.resources, this.state.inventory, artisanMult * mealMult);
     const earnings = this.applyKirhaBonus(raw);
 
     if (earnings > 0) {
@@ -1833,7 +1908,7 @@ export class Game {
     for (const [id, amount] of Object.entries({ ...this.state.inventory })) {
       if (amount <= 0 || !this.resources[id]) continue;
       if (this.resources[id].notSellable || this.resources[id].merchantOnly) continue;
-      const mult = this.resources[id].craftOnly ? artisanBonus : 1;
+      const mult = (this.resources[id].craftOnly ? artisanBonus : 1) * this.getMealSellMult(id);
       rawTotal += this.resources[id].sellPrice * amount * mult;
       this.state.inventory[id] = 0;
     }
@@ -1858,7 +1933,7 @@ export class Game {
       if (amount <= 0 || !this.resources[id]) continue;
       if (exclude.has(id)) continue;
       if (this.resources[id].notSellable || this.resources[id].merchantOnly) continue;
-      const mult = this.resources[id].craftOnly ? artisanBonus : 1;
+      const mult = (this.resources[id].craftOnly ? artisanBonus : 1) * this.getMealSellMult(id);
       rawTotal += this.resources[id].sellPrice * amount * mult;
       this.state.inventory[id] = 0;
     }
@@ -2415,6 +2490,8 @@ export class Game {
 
     this.passiveAccum = {};
 
+    ensureVillageSchoolState(this.state);
+    refreshSchoolBonusCache(this.state, this.villageSchoolData);
     ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
 
     emit('prestige', { season, prestige: this.state.prestige });

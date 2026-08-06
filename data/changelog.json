@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260806-2130",
+      "date": "2026-08-06",
+      "title": "École du Village",
+      "highlights": [
+        "Nouvelle zone Monde : recherches Cuisine / Élevage / Atelier + connaissances permanentes",
+        "Se débloque avec l’Outilleur ; bonus saisonniers + legs pour la saison suivante",
+        "Permanents : marchand un peu plus fréquent, +1 emplacement de récolte max"
+      ]
+    },
+    {
       "buildId": "20260806-2040",
       "date": "2026-08-06",
       "title": "Marchand itinérant",

@@ -134,8 +134,12 @@ export function getEffectiveMaxUses(state, recipe, recipeId = null) {
   const base = recipe?.maxUses || 0;
   if (!base) return 0;
   const id = recipeId || recipe?.id;
-  const bonus = Number(state?.toolUpgrades?.[id]);
-  return base + (Number.isFinite(bonus) && bonus > 0 ? bonus : 0);
+  const upgrade = Number(state?.toolUpgrades?.[id]);
+  const upgradeBonus = Number.isFinite(upgrade) && upgrade > 0 ? upgrade : 0;
+  let max = base + upgradeBonus;
+  const pct = Number(state?.villageSchool?.bonuses?.toolDurability) || 0;
+  if (pct > 0) max = Math.floor(max * (1 + pct));
+  return max;
 }
 
 /** Ajoute des usages à un outil à durabilité (plafond = maxUses effectif). */

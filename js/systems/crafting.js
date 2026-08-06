@@ -167,8 +167,13 @@ export function performCraft(recipeId, ctx) {
 
   let levelResult = null;
   const rawJobXp = recipe.jobXp ?? 0;
-  const jobXp = applyMultiplierBonus(rawJobXp, getPrestigeBonuses(ctx.state).jobXp) * getSeasonBoostMult(ctx.state);
+  let jobXp = applyMultiplierBonus(rawJobXp, getPrestigeBonuses(ctx.state).jobXp) * getSeasonBoostMult(ctx.state);
   const craftJob = recipe.craftJob || 'blacksmith';
+  const cuisineJobs = new Set(['cook', 'baker', 'fishmonger', 'chemist']);
+  if (cuisineJobs.has(craftJob)) {
+    const schoolXp = Number(ctx.state?.villageSchool?.bonuses?.cuisineJobXp) || 0;
+    if (schoolXp > 0) jobXp = Math.floor(jobXp * (1 + schoolXp));
+  }
   if (jobXp > 0) {
     levelResult = addJobXp(ctx.state, craftJob, jobXp, ctx.jobs, ctx.balance);
   }

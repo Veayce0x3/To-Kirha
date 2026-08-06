@@ -354,10 +354,23 @@ const MIGRATIONS = {
     if (!state.travelingMerchant) state.travelingMerchant = null;
     if (!state.sakuraWind) state.sakuraWind = null;
   },
+  46(state) {
+    if (!state.villageSchool || typeof state.villageSchool !== 'object') {
+      state.villageSchool = {
+        completedSeasonal: [],
+        completedPermanent: [],
+        active: null,
+        legacyPending: null,
+        seasonFlags: {},
+        bonuses: {},
+      };
+    }
+    if (!state.seasonStartedAt) state.seasonStartedAt = Date.now();
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 45;
+  const target = ctx.balance?.saveVersion ?? 46;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

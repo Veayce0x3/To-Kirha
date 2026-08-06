@@ -43,6 +43,7 @@ import { isRegisteredAccount, hasFreeRenameAvailable, applyServerDisplayNameToGa
 import { changeDisplayNameFree } from '../systems/accountProfile.js';
 import { renderLeaderboard } from './leaderboardView.js';
 import { renderVillage } from './villageView.js';
+import { renderVillageSchool } from './villageSchoolView.js';
 import { renderJobProduction, renderFarmProduction, updateProductionLineProgresses, updateFarmLineProgresses } from './productionLineView.js';
 import { renderAdmin } from './adminView.js';
 import { canUseOnlineFeatures, getOnlineBlockReason } from '../core/auth.js';
@@ -381,6 +382,7 @@ export function renderView(game, container, viewId) {
     missions: renderAchievements,
     world: renderWorld,
     village: renderVillage,
+    village_school: renderVillageSchool,
     job_lumberjack: () => renderJob(game, container, 'lumberjack'),
     job_fisher: () => renderJob(game, container, 'fisher'),
     job_miner: () => renderJob(game, container, 'miner'),
@@ -3654,7 +3656,8 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
     const notSellable = resource.notSellable || resource.merchantOnly;
     const isProtected = protectedIds.has(id);
     const bonus = resource.craftOnly && !notSellable ? getCraftSellBonus(game.state, game.jobs) : 1;
-    const baseUnit = notSellable ? 0 : Math.floor(resource.sellPrice * bonus);
+    const mealMult = !notSellable && game.getMealSellMult ? game.getMealSellMult(id) : 1;
+    const baseUnit = notSellable ? 0 : Math.floor(resource.sellPrice * bonus * mealMult);
     const unitPrice = notSellable ? 0 : applyMultiplierBonus(baseUnit, getPrestigeBonuses(game.state).kirha) * getSeasonBoostMult(game.state);
     const value = unitPrice * amount;
     if (!notSellable && !isProtected) totalValue += value;
