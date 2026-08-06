@@ -363,14 +363,26 @@ const MIGRATIONS = {
         legacyPending: null,
         seasonFlags: {},
         bonuses: {},
+        unlockedSpells: [],
       };
     }
     if (!state.seasonStartedAt) state.seasonStartedAt = Date.now();
   },
+  47(state) {
+    if (!state.grimoire || typeof state.grimoire !== 'object') {
+      state.grimoire = { known: [], equipped: [] };
+    }
+    if (!Array.isArray(state.grimoire.known)) state.grimoire.known = [];
+    if (!Array.isArray(state.grimoire.equipped)) state.grimoire.equipped = [];
+    if (!state.keyQualities) state.keyQualities = {};
+    if (state.villageSchool && !Array.isArray(state.villageSchool.unlockedSpells)) {
+      state.villageSchool.unlockedSpells = [];
+    }
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 46;
+  const target = ctx.balance?.saveVersion ?? 47;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

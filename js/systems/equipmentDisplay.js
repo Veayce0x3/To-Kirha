@@ -73,16 +73,17 @@ export function renderEquippedToolRow(state, recipeId, recipes, slotLabel = 'Out
 
 export function renderDQStatsBlock(breakdown, charProg, { compact = false } = {}) {
   const { total, base, equipment, setBonus } = breakdown;
-  const setLine = setBonus.hp || setBonus.atk || setBonus.def
-    ? ` · Set : +${setBonus.hp} / +${setBonus.atk} / +${setBonus.def}`
+  const setLine = setBonus.hp || setBonus.atk || setBonus.def || setBonus.mp
+    ? ` · Set : +${setBonus.hp || 0} / +${setBonus.mp || 0} / +${setBonus.atk || 0} / +${setBonus.def || 0}`
     : '';
   return `
     <div class="dq-stats${compact ? ' dq-stats-compact' : ''}">
       <div class="dq-stat"><span class="dq-stat-val">${total.hp}</span><span class="dq-stat-lbl">PV</span></div>
+      <div class="dq-stat"><span class="dq-stat-val">${total.mp ?? 0}</span><span class="dq-stat-lbl">PM</span></div>
       <div class="dq-stat"><span class="dq-stat-val">${total.atk}</span><span class="dq-stat-lbl">ATQ</span></div>
       <div class="dq-stat"><span class="dq-stat-val">${total.def}</span><span class="dq-stat-lbl">DEF</span></div>
     </div>
-    <p class="dq-stats-detail">Base Nv.${charProg.level} : ${base.hp} / ${base.atk} / ${base.def} · Équip. : +${equipment.hp} / +${equipment.atk} / +${equipment.def}${setLine}</p>
+    <p class="dq-stats-detail">Base Nv.${charProg.level} : ${base.hp}/${base.mp ?? 0}/${base.atk}/${base.def} · Équip. : +${equipment.hp || 0}/+${equipment.mp || 0}/+${equipment.atk || 0}/+${equipment.def || 0}${setLine}</p>
   `;
 }
 

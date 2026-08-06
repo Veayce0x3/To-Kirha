@@ -852,9 +852,15 @@ export function initUI(game, audio) {
     showDungeonResult(game, r);
     refreshCharacterCombatPanels(game);
     const equipCount = (r.equipmentDrops || []).length;
-    const keyNote = r.keyDropped ? ' · 🗝️ Clé !' : '';
+    const qMeta = game.getKeyQualityMeta?.() || {};
+    const keyNote = r.keyDropped
+      ? ` · 🗝️${r.keyQuality && qMeta[r.keyQuality] ? qMeta[r.keyQuality].emoji : ''} Clé !`
+      : '';
+    const chestNote = r.chest ? ` · coffre ${qMeta[r.chest.quality]?.emoji || ''}` : '';
     const equipNote = equipCount ? ` · ${equipCount} équip.` : '';
-    const msg = r.isDungeon ? `Donjon terminé ! +${r.charXp} XP${equipNote}` : `Victoire ! +${r.charXp} XP${keyNote}${equipNote}`;
+    const msg = r.isDungeon
+      ? `Donjon terminé ! +${r.charXp} XP${equipNote}${chestNote}`
+      : `Victoire ! +${r.charXp} XP${keyNote}${equipNote}`;
     showToast(els, msg, 'prestige');
     audio.playSfx('levelup');
   });

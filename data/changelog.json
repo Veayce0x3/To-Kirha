@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260806-2200",
+      "date": "2026-08-06",
+      "title": "Combat v2 — PM, grimoire & clés",
+      "highlights": [
+        "Points de Magie (PM) + coûts sur les sorts ; attaque de base gratuite",
+        "Grimoire : jusqu’à 4 sorts équipés (Perso) ; sorts universels via l’École",
+        "Clés de qualité (Bronze→Mystique) à l’entrée donjon — coffre de loot selon la clé",
+        "Branche Combat à l’École + IA boss (patterns)"
+      ]
+    },
+    {
       "buildId": "20260806-2130",
       "date": "2026-08-06",
       "title": "École du Village",

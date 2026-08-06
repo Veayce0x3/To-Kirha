@@ -129,6 +129,7 @@ import {
   refreshSchoolBonusCache,
   getVillageSchoolViewModel,
   getSchoolBonusesFromState,
+  getSchoolUnlockedSpells,
 } from '../systems/villageSchool.js';
 import { isCraftJobUnlocked, isCombatUnlocked } from '../systems/jobUnlock.js';
 import {
@@ -158,6 +159,7 @@ import {
   getWeaponClassLabel,
   COMBAT_SLOT_IDS,
   grantCombatItem,
+  getSkillMpCost,
 } from '../systems/combat.js';
 import {
   canFight,
@@ -276,7 +278,14 @@ import {
 } from '../systems/careerChoice.js';
 import { getFusionableGroups, fuseEquipmentGroup } from '../systems/equipmentFusion.js';
 import { sellCombatItem, getCombatItemSellPrice } from '../systems/combatSell.js';
-import { getDungeonKeyId, getKeyCount as countDungeonKeys } from '../systems/dungeonKeys.js';
+import { getDungeonKeyId, getKeyCount as countDungeonKeys, getKeyQualityCounts, getAvailableKeyQualities, KEY_QUALITY_META, syncKeyQualities } from '../systems/dungeonKeys.js';
+import {
+  getGrimoireViewModel,
+  equipSpell,
+  unequipSpell,
+  syncGrimoireKnown,
+  ensureGrimoireState,
+} from '../systems/grimoire.js';
 
 const LEGACY_COMBAT_RESOURCES = [
   'spirit_ember', 'petal_gel', 'temple_fragment', 'sakura_core',
@@ -405,6 +414,8 @@ export class Game {
       sakuraWind: null,
       travelingMerchant: null,
       villageSchool: emptyVillageSchoolState(),
+      grimoire: { known: [], equipped: [] },
+      keyQualities: {},
       seasonStartedAt: Date.now(),
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
@@ -601,6 +612,9 @@ export class Game {
     ensureVillageSchoolState(this.state);
     if (!this.state.seasonStartedAt) this.state.seasonStartedAt = Date.now();
     refreshSchoolBonusCache(this.state, this.villageSchoolData);
+    ensureGrimoireState(this.state);
+    syncKeyQualities(this.state);
+    syncGrimoireKnown(this.state, this.combatEquipment.items, getSchoolUnlockedSpells(this.state));
     this.tickVillageSchool();
     this.processQuests();
     emit('stateChange', this.state);
@@ -2248,7 +2262,7 @@ export class Game {
     return getDungeonUnlockConfig(this.balance);
   }
 
-  startDungeonRun(zoneId) {
+  startDungeonRun(zoneId, keyQuality = 'bronze') {
     const combatZone = this.combatZones[zoneId];
     if (!combatZone) return { ok: false, reason: 'Zone inconnue' };
 
@@ -2259,14 +2273,58 @@ export class Game {
       this.characterConfig,
       this.combatEquipment.items,
       this.enemies,
-      this.companions
+      this.companions,
+      keyQuality
     );
 
     if (!result.ok) return result;
 
-    emit('combatStart', { zoneId, isDungeon: true, roomCount: result.roomCount });
+    emit('combatStart', { zoneId, isDungeon: true, roomCount: result.roomCount, keyQuality: result.keyQuality });
     emit('stateChange', this.state);
-    return { ok: true, zoneId, roomCount: result.roomCount };
+    return { ok: true, zoneId, roomCount: result.roomCount, keyQuality: result.keyQuality };
+  }
+
+  getDungeonKeyQualities(zoneId) {
+    return getKeyQualityCounts(this.state, zoneId);
+  }
+
+  getAvailableDungeonKeyQualities(zoneId) {
+    return getAvailableKeyQualities(this.state, zoneId);
+  }
+
+  getKeyQualityMeta() {
+    return KEY_QUALITY_META;
+  }
+
+  getGrimoireView() {
+    return getGrimoireViewModel(
+      this.state,
+      this.combatSkills,
+      this.combatEquipment.items,
+      getSchoolUnlockedSpells(this.state)
+    );
+  }
+
+  equipGrimoireSpell(skillId, slotIndex = null) {
+    const result = equipSpell(this.state, skillId, slotIndex);
+    if (result.ok) {
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
+    return result;
+  }
+
+  unequipGrimoireSpell(skillId) {
+    const result = unequipSpell(this.state, skillId);
+    if (result.ok) {
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
+    return result;
+  }
+
+  getSkillMpCost(skill) {
+    return getSkillMpCost(skill);
   }
 
   getActiveCombat() {

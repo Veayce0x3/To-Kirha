@@ -1,8 +1,8 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 46,
-  "appBuildId": "20260806-2130",
+  "saveVersion": 47,
+  "appBuildId": "20260806-2200",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -16,6 +16,49 @@
     "keyDrops": {
       "mobChance": 0.04,
       "bossChance": 0.18
+    },
+    "keyQuality": {
+      "dropWeights": {
+        "bronze": 70,
+        "silver": 22,
+        "gold": 7,
+        "mystic": 1
+      },
+      "bossWeightBoost": {
+        "silver": 8,
+        "gold": 5,
+        "mystic": 2
+      },
+      "chest": {
+        "bronze": {
+          "nuggetsMin": 1,
+          "nuggetsMax": 2,
+          "scrollChance": 0.08,
+          "equipChance": 0.2,
+          "equipRarityWeights": { "common": 75, "uncommon": 22, "rare": 3 }
+        },
+        "silver": {
+          "nuggetsMin": 2,
+          "nuggetsMax": 4,
+          "scrollChance": 0.18,
+          "equipChance": 0.35,
+          "equipRarityWeights": { "common": 45, "uncommon": 40, "rare": 14, "epic": 1 }
+        },
+        "gold": {
+          "nuggetsMin": 3,
+          "nuggetsMax": 6,
+          "scrollChance": 0.35,
+          "equipChance": 0.55,
+          "equipRarityWeights": { "common": 20, "uncommon": 40, "rare": 30, "epic": 9, "legendary": 1 }
+        },
+        "mystic": {
+          "nuggetsMin": 5,
+          "nuggetsMax": 10,
+          "scrollChance": 0.55,
+          "equipChance": 0.75,
+          "equipRarityWeights": { "uncommon": 25, "rare": 40, "epic": 28, "legendary": 7 }
+        }
+      }
     },
     "dungeonEntry": {
       "minBossKills": 2

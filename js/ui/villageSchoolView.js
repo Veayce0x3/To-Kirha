@@ -35,6 +35,12 @@ function formatBonusSummary(bonuses) {
   if (bonuses.toolDurability) lines.push(`+${Math.round(bonuses.toolDurability * 100)} % durabilité outils`);
   if (bonuses.merchantChanceBonus) lines.push(`Marchand +${Math.round(bonuses.merchantChanceBonus * 100)} pts`);
   if (bonuses.extraHarvestSlot) lines.push(`+${bonuses.extraHarvestSlot} emplacement récolte`);
+  if (bonuses.combatMpFlat) lines.push(`+${bonuses.combatMpFlat} PM`);
+  if (bonuses.combatHpFlat) lines.push(`+${bonuses.combatHpFlat} PV`);
+  if (bonuses.combatHp) lines.push(`+${Math.round(bonuses.combatHp * 100)} % PV`);
+  if (bonuses.combatMp) lines.push(`+${Math.round(bonuses.combatMp * 100)} % PM`);
+  if (bonuses.combatAtk) lines.push(`+${Math.round(bonuses.combatAtk * 100)} % ATQ`);
+  if (bonuses.combatDef) lines.push(`+${Math.round(bonuses.combatDef * 100)} % DEF`);
   return lines;
 }
 

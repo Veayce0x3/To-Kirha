@@ -21,13 +21,54 @@
     "hp": 58,
     "atk": 7,
     "def": 3,
-    "xp": 24
+    "xp": 24,
+    "ai": {
+      "patterns": [
+        {
+          "id": "strike",
+          "weight": 70,
+          "damageMult": 1
+        },
+        {
+          "id": "heavy",
+          "weight": 30,
+          "damageMult": 1.25
+        }
+      ]
+    }
   },
   "sakura_boss": {
     "hp": 105,
     "atk": 11,
     "def": 6,
-    "xp": 60
+    "xp": 60,
+    "ai": {
+      "patterns": [
+        {
+          "id": "strike",
+          "weight": 55,
+          "damageMult": 1
+        },
+        {
+          "id": "heavy",
+          "weight": 30,
+          "damageMult": 1.35
+        },
+        {
+          "id": "guard",
+          "weight": 15,
+          "type": "guard",
+          "defBonus": 4
+        },
+        {
+          "id": "recover",
+          "weight": 25,
+          "type": "heal",
+          "healPercent": 0.12,
+          "maxHpPct": 0.45
+        }
+      ]
+    }
   },
   "wild_fox": {
     "hp": 135,
@@ -45,13 +86,54 @@
     "hp": 210,
     "atk": 30,
     "def": 17,
-    "xp": 62
+    "xp": 62,
+    "ai": {
+      "patterns": [
+        {
+          "id": "strike",
+          "weight": 70,
+          "damageMult": 1
+        },
+        {
+          "id": "heavy",
+          "weight": 30,
+          "damageMult": 1.25
+        }
+      ]
+    }
   },
   "petal_boss": {
     "hp": 340,
     "atk": 38,
     "def": 22,
-    "xp": 130
+    "xp": 130,
+    "ai": {
+      "patterns": [
+        {
+          "id": "strike",
+          "weight": 55,
+          "damageMult": 1
+        },
+        {
+          "id": "heavy",
+          "weight": 30,
+          "damageMult": 1.35
+        },
+        {
+          "id": "guard",
+          "weight": 15,
+          "type": "guard",
+          "defBonus": 4
+        },
+        {
+          "id": "recover",
+          "weight": 25,
+          "type": "heal",
+          "healPercent": 0.12,
+          "maxHpPct": 0.45
+        }
+      ]
+    }
   },
   "cave_bat": {
     "hp": 250,
@@ -69,13 +151,54 @@
     "hp": 360,
     "atk": 52,
     "def": 30,
-    "xp": 100
+    "xp": 100,
+    "ai": {
+      "patterns": [
+        {
+          "id": "strike",
+          "weight": 70,
+          "damageMult": 1
+        },
+        {
+          "id": "heavy",
+          "weight": 30,
+          "damageMult": 1.25
+        }
+      ]
+    }
   },
   "jade_boss": {
     "hp": 650,
     "atk": 68,
     "def": 40,
-    "xp": 190
+    "xp": 190,
+    "ai": {
+      "patterns": [
+        {
+          "id": "strike",
+          "weight": 55,
+          "damageMult": 1
+        },
+        {
+          "id": "heavy",
+          "weight": 30,
+          "damageMult": 1.35
+        },
+        {
+          "id": "guard",
+          "weight": 15,
+          "type": "guard",
+          "defBonus": 4
+        },
+        {
+          "id": "recover",
+          "weight": 25,
+          "type": "heal",
+          "healPercent": 0.12,
+          "maxHpPct": 0.45
+        }
+      ]
+    }
   },
   "mist_koi": {
     "hp": 200,
@@ -99,7 +222,34 @@
     "hp": 470,
     "atk": 52,
     "def": 30,
-    "xp": 155
+    "xp": 155,
+    "ai": {
+      "patterns": [
+        {
+          "id": "strike",
+          "weight": 55,
+          "damageMult": 1
+        },
+        {
+          "id": "heavy",
+          "weight": 30,
+          "damageMult": 1.35
+        },
+        {
+          "id": "guard",
+          "weight": 15,
+          "type": "guard",
+          "defBonus": 4
+        },
+        {
+          "id": "recover",
+          "weight": 25,
+          "type": "heal",
+          "healPercent": 0.12,
+          "maxHpPct": 0.45
+        }
+      ]
+    }
   },
   "lotus_guard": {
     "hp": 430,
@@ -123,6 +273,33 @@
     "hp": 900,
     "atk": 95,
     "def": 58,
-    "xp": 260
+    "xp": 260,
+    "ai": {
+      "patterns": [
+        {
+          "id": "strike",
+          "weight": 55,
+          "damageMult": 1
+        },
+        {
+          "id": "heavy",
+          "weight": 30,
+          "damageMult": 1.35
+        },
+        {
+          "id": "guard",
+          "weight": 15,
+          "type": "guard",
+          "defBonus": 4
+        },
+        {
+          "id": "recover",
+          "weight": 25,
+          "type": "heal",
+          "healPercent": 0.12,
+          "maxHpPct": 0.45
+        }
+      ]
+    }
   }
 }

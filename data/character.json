@@ -8,11 +8,13 @@
   "xpScaling": 1.11,
   "baseStats": {
     "hp": 50,
+    "mp": 40,
     "atk": 8,
     "def": 3
   },
   "statsPerLevel": {
     "hp": 12,
+    "mp": 4,
     "atk": 2,
     "def": 1
   }

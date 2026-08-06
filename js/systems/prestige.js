@@ -495,6 +495,12 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
 
   const schoolExtract = extractVillageSchoolForPrestige(state);
   const baseKirha = balance.prestige?.seasonStartKirha ?? balance.startingKirha ?? 0;
+  const preservedGrimoire = state.grimoire && typeof state.grimoire === 'object'
+    ? {
+      known: [...(state.grimoire.known || [])],
+      equipped: [...(state.grimoire.equipped || [])].slice(0, 4),
+    }
+    : { known: [], equipped: [] };
 
   return {
     ...fresh,
@@ -503,6 +509,7 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     season,
     seasonStartedAt: Date.now(),
     villageSchool: schoolExtract.preserved,
+    grimoire: preservedGrimoire,
     prestige: newPrestige,
     // Boost ×2 : disponible à activer manuellement (pas auto)
     seasonBoost: null,

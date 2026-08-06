@@ -4,18 +4,21 @@ import {
   getCharacterDisplayName,
 } from './character.js';
 import { COMPANION_EQUIP_SLOTS, getCompanionDisplayName } from './companions.js';
+import {
+  getHeroCombatSkillIds,
+  getCompanionCombatSkillIds,
+  syncGrimoireKnown,
+  WEAPON_TYPE_SKILLS as GRIMOIRE_WEAPON_SKILLS,
+  UNARMED_SKILLS as GRIMOIRE_UNARMED,
+} from './grimoire.js';
+import { getSchoolUnlockedSpells } from './villageSchool.js';
 
 export const COMBAT_SLOT_IDS = [
   'helmet', 'cape', 'amulet', 'weapon',
   'ring_left', 'ring_right', 'belt', 'chest', 'boots',
 ];
 
-export const WEAPON_TYPE_SKILLS = {
-  sword_shield: ['ss_slash', 'ss_guard', 'ss_shield_bash', 'ss_riposte'],
-  bow: ['bow_quick', 'bow_precise', 'bow_volley', 'bow_pierce'],
-  staff: ['staff_spark', 'staff_bind', 'staff_heal', 'staff_orb'],
-};
-
+export const WEAPON_TYPE_SKILLS = GRIMOIRE_WEAPON_SKILLS;
 export const WEAPON_CLASS_LABELS = {
   sword_shield: 'Guerrier',
   bow: 'Archer',
@@ -28,7 +31,7 @@ export function getWeaponClassLabel(item) {
   return null;
 }
 
-export const UNARMED_SKILLS = ['punch', 'kick', 'throw_pebble', 'desperate_blow'];
+export const UNARMED_SKILLS = GRIMOIRE_UNARMED;
 
 export const DEFEND_ACTION = {
   id: 'defend',
@@ -150,18 +153,18 @@ export function getPlayerSkillIds(state, combatItems) {
 }
 
 export function getMemberSkillIds(member, state, combatItems) {
-  let weapon = null;
   if (member.role === 'hero') {
-    weapon = getEquippedWeapon(state, combatItems);
-    if (!weapon?.weaponType) return [...UNARMED_SKILLS];
-    return WEAPON_TYPE_SKILLS[weapon.weaponType] || [...UNARMED_SKILLS];
+    const schoolSpells = getSchoolUnlockedSpells(state);
+    return getHeroCombatSkillIds(state, combatItems, schoolSpells);
   }
+  return getCompanionCombatSkillIds(state, member.companionId, combatItems);
+}
 
-  const weaponId = state.companions?.[member.companionId]?.equipment?.weapon;
-  const itemId = weaponId ? resolveItemId(state, weaponId, combatItems) : null;
-  weapon = itemId ? combatItems[itemId] : null;
-  if (!weapon?.weaponType) return [...UNARMED_SKILLS];
-  return WEAPON_TYPE_SKILLS[weapon.weaponType] || [...UNARMED_SKILLS];
+export function getSkillMpCost(skill) {
+  if (!skill) return 0;
+  if (skill.mpCost != null) return Math.max(0, Number(skill.mpCost) || 0);
+  if (skill.paCost != null) return Math.max(0, (Number(skill.paCost) || 0) * 5);
+  return 0;
 }
 
 export function getCompanionStats(companionId, state, characterConfig, combatItems) {
@@ -175,13 +178,17 @@ export function getCompanionStats(companionId, state, characterConfig, combatIte
     const item = combatItems[itemId];
     if (!item?.stats) continue;
     stats.hp += item.stats.hp || 0;
+    stats.mp = (stats.mp || 0) + (item.stats.mp || 0);
     stats.atk += item.stats.atk || 0;
     stats.def += item.stats.def || 0;
   }
+  // Compagnons : un peu moins de PM que le héros
+  stats.mp = Math.max(20, Math.floor((stats.mp || 40) * 0.85));
   return stats;
 }
 
 export function buildHeroOnlyParty(state, characterConfig, combatItems, balance) {
+  syncGrimoireKnown(state, combatItems, getSchoolUnlockedSpells(state));
   const heroStats = getCombatStats(
     state,
     characterConfig,
@@ -189,6 +196,7 @@ export function buildHeroOnlyParty(state, characterConfig, combatItems, balance)
     combatItems,
     balance
   );
+  const maxMp = Math.max(0, heroStats.mp || 0);
   const party = [{
     id: 'hero',
     role: 'hero',
@@ -196,8 +204,11 @@ export function buildHeroOnlyParty(state, characterConfig, combatItems, balance)
     emoji: '🧘',
     hp: heroStats.hp,
     maxHp: heroStats.hp,
+    mp: maxMp,
+    maxMp,
     stats: heroStats,
     defBonus: 0,
+    nextDamageBonus: 0,
   }];
   applySavedSoloHp(state, party);
   return party;
@@ -265,8 +276,11 @@ export function buildParty(state, characterConfig, combatItems, companionDefs, b
       emoji: def.emoji,
       hp: stats.hp,
       maxHp: stats.hp,
+      mp: stats.mp || 0,
+      maxMp: stats.mp || 0,
       stats,
       defBonus: 0,
+      nextDamageBonus: 0,
     });
   }
 
@@ -300,8 +314,10 @@ export function createEnemyInstance(foe, enemiesDb, partySize, { hpScale = 1, is
     def: Math.max(0, Math.floor((base.def || 0) * s)),
     hp: scaledHp,
     maxHp: scaledHp,
+    defBonus: 0,
     stunned: false,
     atkPenalty: 0,
+    ai: base.ai || null,
     drops: foe.drops,
     charXpReward: foe.charXpReward,
     primary: isPrimary,
@@ -457,10 +473,16 @@ function applySkillDamage(run, skill, member, targetEnemyId) {
   const enemy = getEnemyById(run.combat, targetEnemyId);
   if (!enemy) return 0;
   const dmgSpec = skill.damage || {};
+  let mult = dmgSpec.multiplier || 0;
+  if (member.nextDamageBonus > 0) {
+    mult *= (1 + member.nextDamageBonus);
+    member.nextDamageBonus = 0;
+  }
+  const enemyDef = (enemy.def || 0) + (enemy.defBonus || 0);
   const dmg = calcDamage(
     member.stats.atk,
-    enemy.def,
-    dmgSpec.multiplier || 0,
+    enemyDef,
+    mult,
     dmgSpec.ignoreDef || 0
   );
   enemy.hp = Math.max(0, enemy.hp - dmg);
@@ -509,6 +531,15 @@ function applyMemberSkillEffects(run, skill, member, targetMember, targetEnemyId
     });
   }
 
+  if (skill.effect?.type === 'focus') {
+    member.nextDamageBonus = (member.nextDamageBonus || 0) + (skill.effect.nextDamageBonus || 0.5);
+    run.combat.log.push({
+      type: 'player',
+      text: `${member.emoji} ${member.name} — ${skill.emoji} ${skill.name} : prochaine attaque renforcée.`,
+      memberId: member.id,
+    });
+  }
+
   const targetEnemy = getEnemyById(run.combat, targetEnemyId);
 
   if (skill.effect?.type === 'weaken' && targetEnemy) {
@@ -537,6 +568,15 @@ export function useMemberSkill(run, skill, memberIndex, targetId = 'enemy') {
   const member = run.party[memberIndex];
   if (!member || member.hp <= 0) return null;
 
+  const mpCost = getSkillMpCost(skill);
+  if ((member.mp || 0) < mpCost) {
+    run.combat.log.push({
+      type: 'system',
+      text: `${member.emoji} ${member.name} — PM insuffisants (${mpCost} requis).`,
+    });
+    return { blocked: true, reason: 'PM insuffisants' };
+  }
+
   const useCheck = consumeSkillUse(skill, run);
   if (!useCheck.ok) {
     run.combat.log.push({
@@ -544,6 +584,10 @@ export function useMemberSkill(run, skill, memberIndex, targetId = 'enemy') {
       text: `${skill.emoji || ''} ${skill.name} épuisée (${useCheck.max}× max).`,
     });
     return { blocked: true };
+  }
+
+  if (mpCost > 0) {
+    member.mp = Math.max(0, (member.mp || 0) - mpCost);
   }
 
   let targetMember = member;
@@ -654,14 +698,40 @@ export function enemyAttackTurn(run) {
     return { playerDefeated: true };
   }
 
+  const pattern = pickEnemyPattern(enemy);
+  if (pattern?.type === 'guard') {
+    enemy.defBonus = (enemy.defBonus || 0) + (pattern.defBonus || 4);
+    run.combat.log.push({
+      type: 'enemy',
+      text: `${enemy.emoji} ${enemy.name} renforce sa défense !`,
+      enemyId: enemy.id,
+    });
+    return advanceEnemyTurnQueue(run, { enemyId: enemy.id, pattern: pattern.id });
+  }
+
+  if (pattern?.type === 'heal') {
+    const amount = Math.max(1, Math.floor(enemy.maxHp * (pattern.healPercent || 0.1)));
+    enemy.hp = Math.min(enemy.maxHp, enemy.hp + amount);
+    run.combat.log.push({
+      type: 'enemy',
+      text: `${enemy.emoji} ${enemy.name} se soigne : +${amount} PV.`,
+      enemyId: enemy.id,
+      heal: amount,
+    });
+    return advanceEnemyTurnQueue(run, { enemyId: enemy.id, pattern: pattern.id });
+  }
+
   const target = living[Math.floor(Math.random() * living.length)];
   const effectiveAtk = Math.max(1, enemy.atk - (enemy.atkPenalty || 0));
   const effectiveDef = target.stats.def + (target.defBonus || 0);
-  const dmg = calcDamage(effectiveAtk, effectiveDef);
+  const dmg = calcDamage(effectiveAtk, effectiveDef, pattern?.damageMult || 1);
   target.hp = Math.max(0, target.hp - dmg);
+  const label = pattern?.id && pattern.id !== 'strike'
+    ? ` (${pattern.id})`
+    : '';
   run.combat.log.push({
     type: 'enemy',
-    text: `${enemy.emoji} ${enemy.name} attaque ${target.emoji} ${target.name} : ${dmg} dégâts.`,
+    text: `${enemy.emoji} ${enemy.name} attaque${label} ${target.emoji} ${target.name} : ${dmg} dégâts.`,
     dmg,
     memberId: target.id,
     enemyId: enemy.id,
@@ -678,6 +748,27 @@ export function enemyAttackTurn(run) {
     targetId: target.id,
     enemyId: enemy.id,
   });
+}
+
+function pickEnemyPattern(enemy) {
+  const patterns = enemy?.ai?.patterns;
+  if (!Array.isArray(patterns) || !patterns.length) {
+    return { id: 'strike', damageMult: 1 };
+  }
+  const hpPct = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 1;
+  const eligible = patterns.filter((p) => {
+    if (p.maxHpPct != null && hpPct > p.maxHpPct) return false;
+    if (p.minHpPct != null && hpPct < p.minHpPct) return false;
+    return true;
+  });
+  const pool = eligible.length ? eligible : patterns;
+  const total = pool.reduce((a, p) => a + Math.max(0, Number(p.weight) || 1), 0);
+  let r = Math.random() * total;
+  for (const p of pool) {
+    r -= Math.max(0, Number(p.weight) || 1);
+    if (r <= 0) return p;
+  }
+  return pool[0];
 }
 
 export function runEnemyPhase(run) {

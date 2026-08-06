@@ -35,6 +35,11 @@ import {
   grantDungeonKey,
   rollKeyDrop,
   getDungeonKeyId,
+  getAvailableKeyQualities,
+  getKeyQualityCounts,
+  openDungeonChest,
+  KEY_QUALITY_META,
+  syncKeyQualities,
 } from './dungeonKeys.js';
 import {
   rollDungeonEquipmentDrop,
@@ -275,12 +280,19 @@ export function startDungeonRun(
   characterConfig,
   combatItems,
   enemies,
-  companionDefs
+  companionDefs,
+  keyQuality = 'bronze'
 ) {
   const check = canEnterDungeon(combatZone, state, balance, characterConfig);
   if (!check.ok) return check;
 
-  if (!consumeDungeonKey(state, combatZone.id)) {
+  syncKeyQualities(state);
+  const available = getAvailableKeyQualities(state, combatZone.id);
+  const quality = available.includes(keyQuality)
+    ? keyQuality
+    : (available[0] || 'bronze');
+
+  if (!consumeDungeonKey(state, combatZone.id, quality)) {
     return { ok: false, reason: 'Clé de donjon manquante' };
   }
 
@@ -299,6 +311,7 @@ export function startDungeonRun(
     dungeonDrops: {},
     dungeonEquipmentDrops: [],
     dungeonCharXp: 0,
+    keyQuality: quality,
     foe: first.foe,
     isBoss: first.isBoss,
     party,
@@ -312,7 +325,7 @@ export function startDungeonRun(
     combatZone,
     getSeasonEnemyScale(state.season, balance)
   );
-  return { ok: true, encounter: state.combatEncounter, roomCount: rooms.length };
+  return { ok: true, encounter: state.combatEncounter, roomCount: rooms.length, keyQuality: quality };
 }
 
 function wearAfterCombat(state, combatItems) {
@@ -329,10 +342,12 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, c
 
   const zoneMap = combatZone ? { [zoneId]: combatZone } : null;
   let keyDropped = false;
+  let keyQuality = null;
   // Entraînement solo uniquement (mobs + boss) — le donjon ne passe pas par ici.
   if (rollKeyDrop(!!isBoss, balance, zoneId, zoneMap)) {
-    grantDungeonKey(state, zoneId);
-    keyDropped = true;
+    const granted = grantDungeonKey(state, zoneId, balance, !!isBoss);
+    keyDropped = !!granted?.ok;
+    keyQuality = granted?.quality || null;
   }
 
   const equipDrop = null;
@@ -353,6 +368,7 @@ function completeVictory(zoneId, foe, isBoss, state, characterConfig, balance, c
     drops: {},
     equipmentDrops: equipDrop ? [equipDrop] : [],
     keyDropped,
+    keyQuality,
     isBoss,
     zoneId,
     isSolo: true,
@@ -366,8 +382,22 @@ function finishDungeonRun(run, state, characterConfig, balance, combatItems) {
   applyDrops(state, run.dungeonDrops || {});
   const roomCount = run.rooms?.length || 0;
 
+  const chest = openDungeonChest(
+    state,
+    run.keyQuality || 'bronze',
+    balance,
+    combatItems,
+    run.zoneId,
+    grantCombatItem
+  );
+  if (chest?.equipment?.length) {
+    if (!run.dungeonEquipmentDrops) run.dungeonEquipmentDrops = [];
+    run.dungeonEquipmentDrops.push(...chest.equipment);
+  }
+
   for (const member of run.party || []) {
     member.hp = member.maxHp;
+    if (member.maxMp != null) member.mp = member.maxMp;
   }
 
   clearSoloHpWear(state);
@@ -385,6 +415,8 @@ function finishDungeonRun(run, state, characterConfig, balance, combatItems) {
     levelResult,
     drops: { ...(run.dungeonDrops || {}) },
     equipmentDrops: [...(run.dungeonEquipmentDrops || [])],
+    chest,
+    keyQuality: run.keyQuality || 'bronze',
     roomCount,
     zoneId: run.zoneId,
     partyRestored: true,

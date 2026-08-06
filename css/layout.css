@@ -10614,3 +10614,81 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
   min-height: 44px;
   width: 100%;
 }
+
+/* ——— Combat v2 : PM / grimoire / clés ——— */
+.dq-party-mp,
+.dq-status-mp {
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+
+.key-quality-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.key-quality-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 44px;
+  padding: 0.35rem 0.55rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(74, 55, 40, 0.15);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.key-quality-option:has(input:checked) {
+  border-color: var(--vert-foret, #2d5a27);
+  background: rgba(228, 240, 223, 0.85);
+}
+
+.grimoire-panel .grimoire-section-title {
+  margin: 0.85rem 0 0.45rem;
+  font-size: 1rem;
+}
+
+.grimoire-equipped-list,
+.grimoire-known-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.grimoire-equipped-chip,
+.grimoire-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(74, 55, 40, 0.12);
+}
+
+.grimoire-card.equipped {
+  border-color: rgba(155, 89, 182, 0.35);
+}
+
+.grimoire-card-head {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.grimoire-card-desc {
+  margin: 0;
+  width: 100%;
+  font-size: 0.82rem;
+  opacity: 0.85;
+}
+
+.grimoire-mp {
+  font-size: 0.8rem;
+}

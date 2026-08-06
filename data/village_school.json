@@ -16,13 +16,19 @@
       "id": "atelier",
       "label": "Atelier",
       "emoji": "🛠️",
-      "order": 3
+      "order": 4
     },
     "village": {
       "id": "village",
       "label": "Connaissances",
       "emoji": "📜",
-      "order": 4
+      "order": 5
+    },
+    "combat": {
+      "id": "combat",
+      "label": "Combat",
+      "emoji": "⚔️",
+      "order": 3
     }
   },
   "researches": {
@@ -34,9 +40,16 @@
       "description": "Les fournées nourrissent mieux les apprentis cuisiniers.",
       "requires": [],
       "kirhaCost": 120,
-      "ingredients": { "ble": 40, "eau": 10 },
+      "ingredients": {
+        "ble": 40,
+        "eau": 10
+      },
       "durationMs": 600000,
-      "effect": { "seasonBonuses": { "cuisineJobXp": 0.08 } },
+      "effect": {
+        "seasonBonuses": {
+          "cuisineJobXp": 0.08
+        }
+      },
       "effectLabel": "+8 % XP métiers Cuisine (cette saison)"
     },
     "cuisine_garde_manger": {
@@ -45,11 +58,20 @@
       "tier": "seasonal",
       "name": "Garde-manger",
       "description": "Mieux stocker, mieux vendre les repas du marché.",
-      "requires": ["cuisine_fours"],
+      "requires": [
+        "cuisine_fours"
+      ],
       "kirhaCost": 280,
-      "ingredients": { "ble": 80, "oeuf": 20 },
+      "ingredients": {
+        "ble": 80,
+        "oeuf": 20
+      },
       "durationMs": 1200000,
-      "effect": { "seasonBonuses": { "mealSellBonus": 0.1 } },
+      "effect": {
+        "seasonBonuses": {
+          "mealSellBonus": 0.1
+        }
+      },
       "effectLabel": "+10 % Kirha à la vente des repas (cette saison)"
     },
     "cuisine_carnet": {
@@ -58,11 +80,20 @@
       "tier": "seasonal",
       "name": "Carnet des fournées",
       "description": "Tes notes serviront à la saison prochaine.",
-      "requires": ["cuisine_garde_manger"],
+      "requires": [
+        "cuisine_garde_manger"
+      ],
       "kirhaCost": 450,
-      "ingredients": { "ble": 100, "miel": 15 },
+      "ingredients": {
+        "ble": 100,
+        "miel": 15
+      },
       "durationMs": 1800000,
-      "effect": { "legacy": { "nextSeasonKirha": 120 } },
+      "effect": {
+        "legacy": {
+          "nextSeasonKirha": 120
+        }
+      },
       "effectLabel": "Legs : +120 💰 au début de la saison suivante"
     },
     "ferme_nichoir": {
@@ -73,9 +104,16 @@
       "description": "Les animaux apprennent plus vite sous un meilleur abri.",
       "requires": [],
       "kirhaCost": 150,
-      "ingredients": { "frene": 30, "ble": 25 },
+      "ingredients": {
+        "frene": 30,
+        "ble": 25
+      },
       "durationMs": 900000,
-      "effect": { "seasonBonuses": { "farmXp": 0.1 } },
+      "effect": {
+        "seasonBonuses": {
+          "farmXp": 0.1
+        }
+      },
       "effectLabel": "+10 % XP bâtiments de ferme (cette saison)"
     },
     "ferme_mangeoire": {
@@ -84,11 +122,20 @@
       "tier": "seasonal",
       "name": "Mangeoire renforcée",
       "description": "Moins de gaspillage, cycles un peu plus souples.",
-      "requires": ["ferme_nichoir"],
+      "requires": [
+        "ferme_nichoir"
+      ],
       "kirhaCost": 320,
-      "ingredients": { "ble": 60, "eau": 20 },
+      "ingredients": {
+        "ble": 60,
+        "eau": 20
+      },
       "durationMs": 1500000,
-      "effect": { "seasonBonuses": { "farmCycleSpeed": 0.05 } },
+      "effect": {
+        "seasonBonuses": {
+          "farmCycleSpeed": 0.05
+        }
+      },
       "effectLabel": "−5 % durée des cycles ferme (cette saison)"
     },
     "atelier_notes": {
@@ -99,9 +146,16 @@
       "description": "Entretien soigné : les outils tiennent un peu plus longtemps.",
       "requires": [],
       "kirhaCost": 200,
-      "ingredients": { "frene": 40, "pierre": 20 },
+      "ingredients": {
+        "frene": 40,
+        "pierre": 20
+      },
       "durationMs": 1200000,
-      "effect": { "seasonBonuses": { "toolDurability": 0.1 } },
+      "effect": {
+        "seasonBonuses": {
+          "toolDurability": 0.1
+        }
+      },
       "effectLabel": "+10 % durabilité outils (cette saison)"
     },
     "atelier_plans": {
@@ -110,11 +164,21 @@
       "tier": "seasonal",
       "name": "Plans annotés",
       "description": "Tu laisses des plans pour la saison suivante.",
-      "requires": ["atelier_notes"],
+      "requires": [
+        "atelier_notes"
+      ],
       "kirhaCost": 400,
-      "ingredients": { "frene": 50, "fer": 15 },
+      "ingredients": {
+        "frene": 50,
+        "fer": 15
+      },
       "durationMs": 1800000,
-      "effect": { "legacy": { "nextSeasonKirha": 80, "merchantFirstWeek": true } },
+      "effect": {
+        "legacy": {
+          "nextSeasonKirha": 80,
+          "merchantFirstWeek": true
+        }
+      },
       "effectLabel": "Legs : +80 💰 et marchand garanti la 1ʳᵉ semaine (saison suivante)"
     },
     "knowledge_routes": {
@@ -125,9 +189,17 @@
       "description": "Les caravanes croisent plus souvent le village — pour toujours.",
       "requires": [],
       "kirhaCost": 900,
-      "ingredients": { "ble": 120, "dorade": 40, "pierre": 40 },
+      "ingredients": {
+        "ble": 120,
+        "dorade": 40,
+        "pierre": 40
+      },
       "durationMs": 3600000,
-      "effect": { "permanent": { "merchantChanceBonus": 0.04 } },
+      "effect": {
+        "permanent": {
+          "merchantChanceBonus": 0.04
+        }
+      },
       "effectLabel": "Permanent : marchand itinérant un peu plus fréquent"
     },
     "knowledge_warehouse": {
@@ -136,12 +208,213 @@
       "tier": "permanent",
       "name": "Entrepôt du village",
       "description": "Un emplacement de récolte supplémentaire, durable.",
-      "requires": ["knowledge_routes"],
+      "requires": [
+        "knowledge_routes"
+      ],
       "kirhaCost": 1400,
-      "ingredients": { "frene": 100, "pierre": 80, "ble": 100 },
+      "ingredients": {
+        "frene": 100,
+        "pierre": 80,
+        "ble": 100
+      },
       "durationMs": 5400000,
-      "effect": { "permanent": { "extraHarvestSlot": 1 } },
+      "effect": {
+        "permanent": {
+          "extraHarvestSlot": 1
+        }
+      },
       "effectLabel": "Permanent : +1 emplacement max par ressource de récolte"
+    },
+    "combat_breath": {
+      "id": "combat_breath",
+      "branch": "combat",
+      "tier": "seasonal",
+      "name": "Souffle du guerrier",
+      "description": "Respiration maîtrisée : plus de Points de Magie.",
+      "requires": [],
+      "kirhaCost": 180,
+      "ingredients": {
+        "pierre": 30,
+        "ble": 20
+      },
+      "durationMs": 900000,
+      "effect": {
+        "seasonBonuses": {
+          "combatMpFlat": 12
+        }
+      },
+      "effectLabel": "+12 PM max (cette saison)"
+    },
+    "combat_vitality": {
+      "id": "combat_vitality",
+      "branch": "combat",
+      "tier": "seasonal",
+      "name": "Vitalité sakura",
+      "description": "Le corps tient mieux les assauts.",
+      "requires": [
+        "combat_breath"
+      ],
+      "kirhaCost": 280,
+      "ingredients": {
+        "miel": 12,
+        "dorade": 15
+      },
+      "durationMs": 1200000,
+      "effect": {
+        "seasonBonuses": {
+          "combatHp": 0.06
+        }
+      },
+      "effectLabel": "+6 % PV (cette saison)"
+    },
+    "combat_spell_fire": {
+      "id": "combat_spell_fire",
+      "branch": "combat",
+      "tier": "seasonal",
+      "name": "Grimoire : Boule de feu",
+      "description": "Inscrit la Boule de feu dans ton grimoire.",
+      "requires": [
+        "combat_breath"
+      ],
+      "kirhaCost": 350,
+      "ingredients": {
+        "fer": 20,
+        "pierre": 40
+      },
+      "durationMs": 1500000,
+      "effect": {
+        "unlockSpell": "uni_fire"
+      },
+      "effectLabel": "Débloque le sort 🔥 Boule de feu"
+    },
+    "combat_spell_heal": {
+      "id": "combat_spell_heal",
+      "branch": "combat",
+      "tier": "seasonal",
+      "name": "Grimoire : Soin",
+      "description": "Inscrit le sort de Soin.",
+      "requires": [
+        "combat_spell_fire"
+      ],
+      "kirhaCost": 400,
+      "ingredients": {
+        "miel": 20,
+        "eau": 30
+      },
+      "durationMs": 1800000,
+      "effect": {
+        "unlockSpell": "uni_heal"
+      },
+      "effectLabel": "Débloque le sort 💚 Soin"
+    },
+    "combat_spell_guard": {
+      "id": "combat_spell_guard",
+      "branch": "combat",
+      "tier": "seasonal",
+      "name": "Grimoire : Protection",
+      "description": "Inscrit le sort Protection.",
+      "requires": [
+        "combat_vitality"
+      ],
+      "kirhaCost": 320,
+      "ingredients": {
+        "frene": 40,
+        "pierre": 25
+      },
+      "durationMs": 1500000,
+      "effect": {
+        "unlockSpell": "uni_guard"
+      },
+      "effectLabel": "Débloque le sort 🛡️ Protection"
+    },
+    "combat_edge": {
+      "id": "combat_edge",
+      "branch": "combat",
+      "tier": "seasonal",
+      "name": "Tranchant affûté",
+      "description": "Les coups portent un peu plus fort.",
+      "requires": [
+        "combat_vitality"
+      ],
+      "kirhaCost": 380,
+      "ingredients": {
+        "fer": 25,
+        "frene": 30
+      },
+      "durationMs": 1800000,
+      "effect": {
+        "seasonBonuses": {
+          "combatAtk": 0.05
+        }
+      },
+      "effectLabel": "+5 % ATQ (cette saison)"
+    },
+    "knowledge_spirit": {
+      "id": "knowledge_spirit",
+      "branch": "village",
+      "tier": "permanent",
+      "name": "Esprit combatif",
+      "description": "Réserve de PM durable pour toutes les saisons.",
+      "requires": [
+        "knowledge_routes"
+      ],
+      "kirhaCost": 1100,
+      "ingredients": {
+        "ble": 80,
+        "dorade": 30,
+        "fer": 40
+      },
+      "durationMs": 4200000,
+      "effect": {
+        "permanent": {
+          "combatMpFlat": 20
+        }
+      },
+      "effectLabel": "Permanent : +20 PM max"
+    },
+    "knowledge_spellbook": {
+      "id": "knowledge_spellbook",
+      "branch": "combat",
+      "tier": "permanent",
+      "name": "Tome ancestral",
+      "description": "Concentration et Frappe magique : pour toujours.",
+      "requires": [
+        "combat_spell_heal"
+      ],
+      "kirhaCost": 1600,
+      "ingredients": {
+        "pierre": 100,
+        "fer": 60,
+        "miel": 25
+      },
+      "durationMs": 5400000,
+      "effect": {
+        "unlockSpell": "uni_focus",
+        "permanent": {
+          "combatMp": 0.05
+        }
+      },
+      "effectLabel": "Permanent : 🍃 Concentration + +5 % PM"
+    },
+    "combat_spell_pierce": {
+      "id": "combat_spell_pierce",
+      "branch": "combat",
+      "tier": "seasonal",
+      "name": "Grimoire : Frappe magique",
+      "description": "Ignore une part de la défense adverse.",
+      "requires": [
+        "combat_spell_fire"
+      ],
+      "kirhaCost": 360,
+      "ingredients": {
+        "fer": 30,
+        "pierre": 20
+      },
+      "durationMs": 1500000,
+      "effect": {
+        "unlockSpell": "uni_pierce"
+      },
+      "effectLabel": "Débloque le sort ⚡ Frappe magique"
     }
   }
 }

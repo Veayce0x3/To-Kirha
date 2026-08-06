@@ -1,4 +1,4 @@
-import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats, getSkillUsesLeft, getSkillMaxUses } from '../systems/combat.js';
+import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats, getSkillUsesLeft, getSkillMaxUses, getSkillMpCost } from '../systems/combat.js';
 import { getCraftSellBonus, getRecipeRequiredLevel } from '../systems/crafting.js';
 import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, getJobXpBonusPercent, hasSeasonBonus, getSeasonBoostMult, isSeasonBoostActive, canActivateSeasonBoost, getSeasonBoostLevelCaps } from '../systems/prestige.js';
 import { mountCraftWorkshop } from './craftView.js';
@@ -34,7 +34,7 @@ import { FARM_BUILDING_IDS, canAffordFeed, getBuildingDef, getFeedCost, getPrima
 import { listOwnedMeals, countOwnedMeals, getMealEffect, getActiveCombatMealBuff } from '../systems/consumables.js';
 import { RARITY_LABELS, RARITY_EMOJI, getInstanceRarity, getNextRarity } from '../systems/equipmentRarity.js';
 import { getFusionInputCount, getFusionKirhaCost, canFuseGroup } from '../systems/equipmentFusion.js';
-import { getDungeonKeyId } from '../systems/dungeonKeys.js';
+import { getDungeonKeyId, KEY_QUALITY_META } from '../systems/dungeonKeys.js';
 import { getVisibleHarvestViews, getVisibleFarmViews, isGatheringJobUnlocked, getGatheringJobUnlockProgress, getFeatureUnlockProgress, getJobSwitcherItems, getFarmBuildingUnlockProgress, isFarmBuildingUnlocked, isCraftJobUnlocked } from '../systems/careerChoice.js';
 import { showCareerChoiceIfNeeded } from './careerChoiceUi.js';
 import { reconcileAuthAfterLocalReset } from '../core/resetAuth.js';
@@ -51,7 +51,7 @@ import { isMaintenanceMode } from '../systems/gameConfig.js';
 
 let workshopTab = 'toolmaker';
 let charTab = 'bag';
-const CHAR_TABS = new Set(['bag', 'gear', 'tools']);
+const CHAR_TABS = new Set(['bag', 'gear', 'tools', 'grimoire']);
 let combatTab = 'zones';
 const COMBAT_TABS = new Set(['zones', 'team']);
 let cuisineTab = 'baker';
@@ -593,6 +593,7 @@ function renderCharStatPills(stats) {
   return `
     <div class="char-stat-pills" aria-label="Statistiques">
       <span class="char-stat-pill">❤️ ${stats.hp}</span>
+      <span class="char-stat-pill">💙 ${stats.mp ?? 0}</span>
       <span class="char-stat-pill">⚔️ ${stats.atk}</span>
       <span class="char-stat-pill">🛡️ ${stats.def}</span>
     </div>
@@ -675,6 +676,7 @@ function renderCharacter(game, el) {
       <nav class="char-tabs" role="tablist" aria-label="Sections personnage">
         <button type="button" class="char-tab-btn${charTab === 'bag' ? ' active' : ''}" data-tab="bag" role="tab">Sac</button>
         <button type="button" class="char-tab-btn${charTab === 'gear' ? ' active' : ''}" data-tab="gear" role="tab">Équipement</button>
+        <button type="button" class="char-tab-btn${charTab === 'grimoire' ? ' active' : ''}" data-tab="grimoire" role="tab">Grimoire</button>
         <button type="button" class="char-tab-btn${charTab === 'tools' ? ' active' : ''}" data-tab="tools" role="tab">Outils</button>
       </nav>
       <div class="char-tab-panel panel-inner" id="char-tab-panel"></div>
@@ -735,6 +737,7 @@ function renderCharTabPanel(game, el) {
   panel.innerHTML = '';
   if (charTab === 'bag') renderCharBagTab(game, panel);
   else if (charTab === 'gear') renderCharGearTab(game, panel);
+  else if (charTab === 'grimoire') renderCharGrimoireTab(game, panel);
   else if (charTab === 'tools') renderCharToolsTab(game, panel);
 }
 
@@ -1146,6 +1149,75 @@ function renderCombatOwnedReserve(game, container) {
 }
 
 let bagFilter = 'all';
+
+function renderKeyQualityPicker(game, zoneId) {
+  const counts = game.getDungeonKeyQualities?.(zoneId) || {};
+  const available = game.getAvailableDungeonKeyQualities?.(zoneId) || [];
+  if (!available.length) return '';
+  const meta = game.getKeyQualityMeta?.() || KEY_QUALITY_META;
+  const options = available.map((q, i) => {
+    const m = meta[q] || { emoji: '🗝️', label: q };
+    return `
+      <label class="key-quality-option">
+        <input type="radio" name="key-quality-${zoneId}" value="${q}" ${i === 0 ? 'checked' : ''} />
+        <span>${m.emoji} ${m.label} ×${counts[q] || 0}</span>
+      </label>`;
+  }).join('');
+  return `<div class="key-quality-picker" role="radiogroup" aria-label="Qualité de clé">${options}</div>`;
+}
+
+function renderCharGrimoireTab(game, panel) {
+  const vm = game.getGrimoireView?.();
+  if (!vm) {
+    panel.innerHTML = '<p class="view-desc">Grimoire indisponible.</p>';
+    return;
+  }
+
+  const equippedHtml = (vm.equipped || []).map((skill) => `
+    <div class="grimoire-equipped-chip">
+      <span>${skill.emoji} ${skill.name}</span>
+      <span class="grimoire-mp">💙 ${skill.mpCost ?? 0}</span>
+      <button type="button" class="btn btn-small" data-unequip="${skill.id}">Retirer</button>
+    </div>
+  `).join('') || '<p class="view-desc">Aucun sort équipé — équipe jusqu’à 4 sorts.</p>';
+
+  const knownHtml = (vm.known || []).map(({ id, skill, equipped, mpCost }) => `
+    <article class="grimoire-card${equipped ? ' equipped' : ''}">
+      <div class="grimoire-card-head">
+        <strong>${skill.emoji} ${skill.name}</strong>
+        <span>💙 ${mpCost}</span>
+      </div>
+      <p class="grimoire-card-desc">${skill.heal ? 'Soin' : skill.damage ? 'Dégâts' : 'Effet'}${equipped ? ' · Équipé' : ''}</p>
+      ${equipped
+        ? `<button type="button" class="btn btn-small" data-unequip="${id}">Retirer</button>`
+        : `<button type="button" class="btn btn-craft btn-small" data-equip="${id}" ${vm.slotsUsed >= vm.maxEquipped ? 'disabled' : ''}>Équiper</button>`}
+    </article>
+  `).join('');
+
+  panel.innerHTML = `
+    <div class="grimoire-panel">
+      <p class="view-desc">Équipe jusqu’à <strong>${vm.maxEquipped}</strong> sorts (${vm.slotsUsed}/${vm.maxEquipped}). L’attaque de base (0 PM) est toujours dispo en combat. Nouveaux sorts via l’École du Village.</p>
+      <h3 class="grimoire-section-title">Équipés</h3>
+      <div class="grimoire-equipped-list">${equippedHtml}</div>
+      <h3 class="grimoire-section-title">Connus</h3>
+      <div class="grimoire-known-list">${knownHtml}</div>
+    </div>
+  `;
+
+  panel.querySelectorAll('[data-equip]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const r = game.equipGrimoireSpell(btn.dataset.equip);
+      if (!r?.ok) emit('farmBlocked', { message: r?.reason || 'Impossible' });
+      renderCharGrimoireTab(game, panel);
+    });
+  });
+  panel.querySelectorAll('[data-unequip]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      game.unequipGrimoireSpell(btn.dataset.unequip);
+      renderCharGrimoireTab(game, panel);
+    });
+  });
+}
 
 function renderCharBagTab(game, panel) {
   panel.innerHTML = `
@@ -1584,7 +1656,7 @@ function renderCompanionsPanel(game, panel) {
         <span class="companion-emoji">${def.emoji}</span>
         <div class="companion-head-text">
           <strong>${displayName}</strong>${hasNick ? `<span class="companion-base-name"> (${def.name})</span>` : ''}
-          <p class="view-desc">Nv.${charProg.level} · ❤️ ${stats.hp} · ⚔️ ${stats.atk} · 🛡️ ${stats.def}</p>
+          <p class="view-desc">Nv.${charProg.level} · ❤️ ${stats.hp} · 💙 ${stats.mp ?? 0} · ⚔️ ${stats.atk} · 🛡️ ${stats.def}</p>
         </div>
         <button type="button" class="btn btn-small btn-party-toggle${inParty ? ' active' : ''}" data-companion="${def.id}">
           ${inParty ? 'En combat' : 'En réserve'}
@@ -4227,12 +4299,13 @@ function renderCombatZoneList(game, el, list) {
       <div class="combat-dungeon-hero">
         <div class="combat-dungeon-hero-copy">
           <h3>🚪 Donjon · ${roomCount} salles</h3>
-          <p>Boss vaincu ${minBossForDungeon}× en entraînement + 1 clé · équipement droppé ici · repas recommandés</p>
+          <p>Boss vaincu ${minBossForDungeon}× en entraînement + 1 clé · qualité = loot coffre · repas recommandés</p>
           ${!dungeonReady && dungeonCheck.reason ? `<p class="combat-dungeon-block">${dungeonCheck.reason}</p>` : ''}
-          ${bossKills >= minBossForDungeon ? '<p class="combat-dungeon-cleared">Prérequis boss OK — une clé suffit pour entrer</p>' : ''}
+          ${bossKills >= minBossForDungeon ? '<p class="combat-dungeon-cleared">Prérequis boss OK — choisis la qualité de clé</p>' : ''}
           ${bossKills > 0 && bossKills < minBossForDungeon
             ? `<p class="combat-dungeon-block">Boss entraînement : ${bossKills}/${minBossForDungeon} — encore ${minBossForDungeon - bossKills} victoire(s)</p>`
             : ''}
+          ${dungeonReady ? renderKeyQualityPicker(game, combatZone.id) : ''}
         </div>
         <button type="button" class="btn btn-prestige btn-dungeon-run" ${dungeonReady ? '' : 'disabled'} title="${dungeonCheck.reason || ''}">
           ${dungeonReady ? 'Entrer dans le donjon' : 'Donjon indisponible'}
@@ -4246,7 +4319,10 @@ function renderCombatZoneList(game, el, list) {
     `;
 
     card.querySelector('.btn-dungeon-run')?.addEventListener('click', () => {
-      const result = game.startDungeonRun(combatZone.id);
+      const selected = card.querySelector('input[name="key-quality-' + combatZone.id + '"]:checked')?.value
+        || game.getAvailableDungeonKeyQualities?.(combatZone.id)?.[0]
+        || 'bronze';
+      const result = game.startDungeonRun(combatZone.id, selected);
       if (!result?.ok && result?.reason) showCombatResult(game, result);
     });
 
@@ -4685,6 +4761,7 @@ function renderDungeonCombatBody(game) {
         <div class="dq-fighter-name">${member.name}</div>
         <div class="dq-mini-hp${hpStateClass(hpPct)}" aria-hidden="true"><div class="dq-mini-hp-fill" style="width:${hpPct}%"></div></div>
         <div class="dq-party-hp" aria-label="Points de vie">${member.hp}/${member.maxHp}</div>
+        <div class="dq-party-mp" aria-label="Points de magie">💙 ${member.mp ?? 0}/${member.maxMp ?? 0}</div>
         ${isActive ? '<span class="dq-active-cursor" aria-hidden="true">▶</span>' : ''}
       </${tag}>
     `;
@@ -4718,6 +4795,7 @@ function renderDungeonCombatBody(game) {
         <span class="dq-status-name">${member.emoji} ${member.name}</span>
         <div class="dq-status-hp${hpStateClass(hpPct)}"><div class="dq-status-hp-fill" style="width:${hpPct}%"></div></div>
         <span class="dq-status-num">❤️ ${member.hp}/${member.maxHp}</span>
+        <span class="dq-status-num dq-status-mp">💙 ${member.mp ?? 0}/${member.maxMp ?? 0}</span>
       </div>
     `;
   }).join('');
@@ -4750,12 +4828,15 @@ function renderDungeonCombatBody(game) {
         const left = getSkillUsesLeft(skill, run);
         const limited = maxUses != null;
         const exhausted = limited && left <= 0;
+        const mpCost = getSkillMpCost(skill);
+        const noMp = (activeMember?.mp || 0) < mpCost;
         const countLabel = limited ? ` · ${left}/${maxUses}` : '';
-        const hint = exhausted ? ' (épuisé)' : '';
+        const mpLabel = mpCost > 0 ? ` · 💙${mpCost}` : ' · 0 PM';
+        const hint = exhausted ? ' (épuisé)' : (noMp ? ' (PM)' : '');
         return `
-        <button type="button" class="dq-cmd-btn${exhausted ? '' : ' affordable'}${limited ? ' dq-cmd-limited' : ''}" data-skill="${skill.id}" ${exhausted ? 'disabled' : ''} title="${limited ? `${left} utilisation(s) restante(s) sur ${maxUses}` : ''}">
+        <button type="button" class="dq-cmd-btn${exhausted || noMp ? '' : ' affordable'}${limited ? ' dq-cmd-limited' : ''}" data-skill="${skill.id}" ${exhausted || noMp ? 'disabled' : ''} title="${mpCost} PM${limited ? ` · ${left}/${maxUses}` : ''}">
           <span class="dq-cmd-icon">${skill.emoji}</span>
-          <span class="dq-cmd-label">${skill.name}${countLabel}${hint}</span>
+          <span class="dq-cmd-label">${skill.name}${mpLabel}${countLabel}${hint}</span>
         </button>`;
       }).join('')}
     `;
@@ -4922,7 +5003,15 @@ export function showCombatResult(game, result) {
     }
     if (result.keyDropped) {
       const keyId = getDungeonKeyId(result.zoneId);
-      lootHtml += `<div class="offline-gain-row">🗝️ ${game.resources[keyId]?.name || keyId}</div>`;
+      const qMeta = KEY_QUALITY_META[result.keyQuality] || null;
+      const qLabel = qMeta ? ` ${qMeta.emoji} ${qMeta.label}` : '';
+      lootHtml += `<div class="offline-gain-row">🗝️ ${game.resources[keyId]?.name || keyId}${qLabel}</div>`;
+    }
+    if (result.chest) {
+      const qMeta = KEY_QUALITY_META[result.chest.quality] || KEY_QUALITY_META.bronze;
+      lootHtml += `<div class="offline-gain-row">📦 Coffre ${qMeta.emoji} ${qMeta.label}</div>`;
+      if (result.chest.nuggets) lootHtml += `<div class="offline-gain-row">✨ +${result.chest.nuggets} pépite(s)</div>`;
+      if (result.chest.scrolls) lootHtml += `<div class="offline-gain-row">📜 +${result.chest.scrolls} parchemin</div>`;
     }
     const title = result.isDungeon
       ? `🏰 Donjon terminé ! (${result.roomCount || ''} salles)`

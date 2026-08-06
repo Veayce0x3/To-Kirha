@@ -6,7 +6,8 @@
     "paCost": 1,
     "damage": {
       "multiplier": 0.5
-    }
+    },
+    "mpCost": 5
   },
   "kick": {
     "id": "kick",
@@ -15,7 +16,8 @@
     "paCost": 2,
     "damage": {
       "multiplier": 0.7
-    }
+    },
+    "mpCost": 10
   },
   "throw_pebble": {
     "id": "throw_pebble",
@@ -24,7 +26,8 @@
     "paCost": 1,
     "damage": {
       "multiplier": 0.4
-    }
+    },
+    "mpCost": 5
   },
   "desperate_blow": {
     "id": "desperate_blow",
@@ -32,14 +35,15 @@
     "emoji": "💢",
     "paCost": 3,
     "damage": {
-      "multiplier": 1.0
+      "multiplier": 1
     },
     "limitedUses": true,
     "usesPerEncounter": {
       "soloMob": 2,
       "soloBoss": 2,
       "dungeon": 2
-    }
+    },
+    "mpCost": 15
   },
   "ss_slash": {
     "id": "ss_slash",
@@ -50,8 +54,9 @@
       "sword_shield"
     ],
     "damage": {
-      "multiplier": 1.0
-    }
+      "multiplier": 1
+    },
+    "mpCost": 10
   },
   "ss_guard": {
     "id": "ss_guard",
@@ -64,7 +69,8 @@
     "effect": {
       "type": "guard",
       "defBonus": 4
-    }
+    },
+    "mpCost": 5
   },
   "ss_shield_bash": {
     "id": "ss_shield_bash",
@@ -80,7 +86,8 @@
     "effect": {
       "type": "stun",
       "chance": 0.2
-    }
+    },
+    "mpCost": 10
   },
   "ss_riposte": {
     "id": "ss_riposte",
@@ -98,7 +105,8 @@
       "soloMob": 1,
       "soloBoss": 2,
       "dungeon": 3
-    }
+    },
+    "mpCost": 15
   },
   "bow_quick": {
     "id": "bow_quick",
@@ -110,7 +118,8 @@
     ],
     "damage": {
       "multiplier": 0.8
-    }
+    },
+    "mpCost": 5
   },
   "bow_precise": {
     "id": "bow_precise",
@@ -123,7 +132,8 @@
     "damage": {
       "multiplier": 1.15,
       "ignoreDef": 2
-    }
+    },
+    "mpCost": 10
   },
   "bow_volley": {
     "id": "bow_volley",
@@ -141,7 +151,8 @@
       "soloMob": 1,
       "soloBoss": 2,
       "dungeon": 3
-    }
+    },
+    "mpCost": 15
   },
   "bow_pierce": {
     "id": "bow_pierce",
@@ -160,7 +171,8 @@
       "soloMob": 1,
       "soloBoss": 2,
       "dungeon": 3
-    }
+    },
+    "mpCost": 15
   },
   "staff_spark": {
     "id": "staff_spark",
@@ -171,8 +183,9 @@
       "staff"
     ],
     "damage": {
-      "multiplier": 1.0
-    }
+      "multiplier": 1
+    },
+    "mpCost": 10
   },
   "staff_bind": {
     "id": "staff_bind",
@@ -188,7 +201,8 @@
     "effect": {
       "type": "weaken",
       "atkReduction": 3
-    }
+    },
+    "mpCost": 10
   },
   "staff_heal": {
     "id": "staff_heal",
@@ -200,7 +214,8 @@
     ],
     "heal": {
       "percent": 0.12
-    }
+    },
+    "mpCost": 10
   },
   "staff_orb": {
     "id": "staff_orb",
@@ -218,6 +233,70 @@
       "soloMob": 1,
       "soloBoss": 2,
       "dungeon": 3
+    },
+    "mpCost": 15
+  },
+  "basic_attack": {
+    "id": "basic_attack",
+    "name": "Attaque",
+    "emoji": "⚔️",
+    "mpCost": 0,
+    "alwaysAvailable": true,
+    "damage": {
+      "multiplier": 0.9
+    }
+  },
+  "uni_fire": {
+    "id": "uni_fire",
+    "name": "Boule de feu",
+    "emoji": "🔥",
+    "mpCost": 15,
+    "universal": true,
+    "damage": {
+      "multiplier": 1.55
+    }
+  },
+  "uni_heal": {
+    "id": "uni_heal",
+    "name": "Soin",
+    "emoji": "💚",
+    "mpCost": 20,
+    "universal": true,
+    "heal": {
+      "percent": 0.22
+    }
+  },
+  "uni_guard": {
+    "id": "uni_guard",
+    "name": "Protection",
+    "emoji": "🛡️",
+    "mpCost": 15,
+    "universal": true,
+    "effect": {
+      "type": "guard",
+      "defBonus": 6
+    }
+  },
+  "uni_pierce": {
+    "id": "uni_pierce",
+    "name": "Frappe magique",
+    "emoji": "⚡",
+    "mpCost": 10,
+    "universal": true,
+    "damage": {
+      "multiplier": 1.05,
+      "ignoreDef": 6
+    }
+  },
+  "uni_focus": {
+    "id": "uni_focus",
+    "name": "Concentration",
+    "emoji": "🍃",
+    "mpCost": 10,
+    "universal": true,
+    "effect": {
+      "type": "focus",
+      "nextDamageBonus": 0.5
     }
   }
 }

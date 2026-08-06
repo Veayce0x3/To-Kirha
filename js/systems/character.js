@@ -12,31 +12,53 @@ export function getBaseStats(config, level) {
   const { baseStats, statsPerLevel } = config;
   const lv = level - 1;
   return {
-    hp: baseStats.hp + statsPerLevel.hp * lv,
-    atk: baseStats.atk + statsPerLevel.atk * lv,
-    def: baseStats.def + statsPerLevel.def * lv,
+    hp: baseStats.hp + (statsPerLevel.hp || 0) * lv,
+    mp: (baseStats.mp || 40) + (statsPerLevel.mp || 0) * lv,
+    atk: baseStats.atk + (statsPerLevel.atk || 0) * lv,
+    def: baseStats.def + (statsPerLevel.def || 0) * lv,
   };
 }
 
 export function getCombatStatsBreakdown(state, characterConfig, combatEquipment, combatItems, balance) {
   const level = state.character?.level || 1;
   const base = getBaseStats(characterConfig, level);
-  const equipment = { hp: 0, atk: 0, def: 0 };
+  const equipment = { hp: 0, mp: 0, atk: 0, def: 0 };
 
   for (const ref of Object.values(state.combatEquipment || {})) {
     if (!ref) continue;
     const stats = getInstanceEffectiveStats(state, ref, combatItems);
     equipment.hp += stats.hp || 0;
+    equipment.mp += stats.mp || 0;
     equipment.atk += stats.atk || 0;
     equipment.def += stats.def || 0;
   }
 
   const { bonus: setBonus, sets } = getActiveSetBonus(state, combatItems, balance);
-  const total = {
-    hp: base.hp + equipment.hp + setBonus.hp,
-    atk: base.atk + equipment.atk + setBonus.atk,
-    def: base.def + equipment.def + setBonus.def,
+  const school = state?.villageSchool?.bonuses || {};
+  const schoolFlat = {
+    hp: Math.floor(Number(school.combatHpFlat) || 0),
+    mp: Math.floor(Number(school.combatMpFlat) || 0),
+    atk: Math.floor(Number(school.combatAtkFlat) || 0),
+    def: Math.floor(Number(school.combatDefFlat) || 0),
   };
+  const schoolPct = {
+    hp: Number(school.combatHp) || 0,
+    mp: Number(school.combatMp) || 0,
+    atk: Number(school.combatAtk) || 0,
+    def: Number(school.combatDef) || 0,
+  };
+
+  let total = {
+    hp: base.hp + equipment.hp + (setBonus.hp || 0) + schoolFlat.hp,
+    mp: base.mp + equipment.mp + (setBonus.mp || 0) + schoolFlat.mp,
+    atk: base.atk + equipment.atk + (setBonus.atk || 0) + schoolFlat.atk,
+    def: base.def + equipment.def + (setBonus.def || 0) + schoolFlat.def,
+  };
+
+  total.hp = Math.max(1, Math.floor(total.hp * (1 + schoolPct.hp)));
+  total.mp = Math.max(0, Math.floor(total.mp * (1 + schoolPct.mp)));
+  total.atk = Math.max(1, Math.floor(total.atk * (1 + schoolPct.atk)));
+  total.def = Math.max(0, Math.floor(total.def * (1 + schoolPct.def)));
 
   const mealBuff = state.combatMealBuff;
   if (mealBuff) {
@@ -44,7 +66,7 @@ export function getCombatStatsBreakdown(state, characterConfig, combatEquipment,
     total.def = Math.max(0, Math.floor(total.def * (1 + (Number(mealBuff.def) || 0))));
   }
 
-  return { base, equipment, setBonus, sets, total, mealBuff };
+  return { base, equipment, setBonus, sets, total, mealBuff, schoolFlat, schoolPct };
 }
 
 export function getCombatStats(state, characterConfig, combatEquipment, combatItems, balance) {
@@ -59,6 +81,7 @@ export function getCombatStats(state, characterConfig, combatEquipment, combatIt
     if (!ref) continue;
     const eqStats = getInstanceEffectiveStats(state, ref, combatItems);
     stats.hp += eqStats.hp || 0;
+    stats.mp = (stats.mp || 0) + (eqStats.mp || 0);
     stats.atk += eqStats.atk || 0;
     stats.def += eqStats.def || 0;
   }

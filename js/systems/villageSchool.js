@@ -3,6 +3,7 @@
  */
 
 import { isCraftJobUnlocked } from './jobUnlock.js';
+import { learnSpell } from './grimoire.js';
 
 export function emptyVillageSchoolState() {
   return {
@@ -11,6 +12,7 @@ export function emptyVillageSchoolState() {
     active: null,
     legacyPending: null,
     seasonFlags: {},
+    unlockedSpells: [],
   };
 }
 
@@ -21,6 +23,7 @@ export function ensureVillageSchoolState(state) {
   const s = state.villageSchool;
   if (!Array.isArray(s.completedSeasonal)) s.completedSeasonal = [];
   if (!Array.isArray(s.completedPermanent)) s.completedPermanent = [];
+  if (!Array.isArray(s.unlockedSpells)) s.unlockedSpells = [];
   if (!s.seasonFlags || typeof s.seasonFlags !== 'object') s.seasonFlags = {};
   return s;
 }
@@ -133,6 +136,12 @@ function applyEffectOnComplete(state, research) {
     s.completedSeasonal.push(research.id);
   }
 
+  if (effect.unlockSpell) {
+    const spellId = effect.unlockSpell;
+    if (!s.unlockedSpells.includes(spellId)) s.unlockedSpells.push(spellId);
+    learnSpell(state, spellId);
+  }
+
   if (effect.legacy && typeof effect.legacy === 'object') {
     if (!s.legacyPending) s.legacyPending = {};
     const leg = s.legacyPending;
@@ -141,6 +150,10 @@ function applyEffectOnComplete(state, research) {
     }
     if (effect.legacy.merchantFirstWeek) leg.merchantFirstWeek = true;
   }
+}
+
+export function getSchoolUnlockedSpells(state) {
+  return [...(ensureVillageSchoolState(state).unlockedSpells || [])];
 }
 
 export function completeVillageResearchIfReady(state, schoolData, now = Date.now()) {
@@ -170,6 +183,14 @@ export function getVillageSchoolBonuses(state, schoolData) {
     toolDurability: 0,
     merchantChanceBonus: 0,
     extraHarvestSlot: 0,
+    combatHp: 0,
+    combatMp: 0,
+    combatAtk: 0,
+    combatDef: 0,
+    combatHpFlat: 0,
+    combatMpFlat: 0,
+    combatAtkFlat: 0,
+    combatDefFlat: 0,
   };
 
   const ids = [...s.completedSeasonal, ...s.completedPermanent];
@@ -202,6 +223,14 @@ export function getSchoolBonusesFromState(state) {
     toolDurability: 0,
     merchantChanceBonus: 0,
     extraHarvestSlot: 0,
+    combatHp: 0,
+    combatMp: 0,
+    combatAtk: 0,
+    combatDef: 0,
+    combatHpFlat: 0,
+    combatMpFlat: 0,
+    combatAtkFlat: 0,
+    combatDefFlat: 0,
   };
 }
 
@@ -224,6 +253,7 @@ export function extractVillageSchoolForPrestige(state) {
       completedSeasonal: [],
       active: null,
       legacyPending: null,
+      unlockedSpells: [...(s.unlockedSpells || [])],
       seasonFlags: {
         merchantFirstWeek: !!legacy.merchantFirstWeek,
       },
