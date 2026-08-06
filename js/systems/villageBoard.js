@@ -361,6 +361,8 @@ export function noteVillageCombatResult(state, boardData, result) {
   if (result.isDungeon) {
     daily.dungeonClears = (daily.dungeonClears || 0) + 1;
     daily.bossKills = (daily.bossKills || 0) + 1;
+    if (!state.lifetimeStats) state.lifetimeStats = {};
+    state.lifetimeStats.dungeonClears = (state.lifetimeStats.dungeonClears || 0) + 1;
     return;
   }
   if (result.isBoss) {

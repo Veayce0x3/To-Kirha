@@ -5,84 +5,108 @@
       "name": "Yumi",
       "title": "la boulangère",
       "emoji": "🥖",
-      "thanks": "Merci… et régale-toi bien. Le village sent déjà meilleur."
+      "thanks": "Merci… et régale-toi bien. Le village sent déjà meilleur.",
+      "personality": "chaleureuse",
+      "blurb": "Toujours un sourire et une miche pour les nouveaux."
     },
     "kiro": {
       "id": "kiro",
       "name": "Kiro",
       "title": "le sculpteur",
       "emoji": "🪵",
-      "thanks": "Chaque morceau de bois a une histoire. La tienne s’y ajoute."
+      "thanks": "Chaque morceau de bois a une histoire. La tienne s’y ajoute.",
+      "personality": "contemplatif",
+      "blurb": "Parle peu, observe beaucoup — le bois lui suffit."
     },
     "yuto": {
       "id": "yuto",
       "name": "Yuto",
       "title": "le joaillier",
       "emoji": "💎",
-      "thanks": "Les plus belles pierres demandent de la patience… comme toi."
+      "thanks": "Les plus belles pierres demandent de la patience… comme toi.",
+      "personality": "courtois",
+      "blurb": "Poli jusqu’au bout des doigts, exigeant sur le détail."
     },
     "nori": {
       "id": "nori",
       "name": "Nori",
       "title": "le pêcheur",
       "emoji": "🎣",
-      "thanks": "Que les rivières te soient favorables. Reviens quand tu veux."
+      "thanks": "Que les rivières te soient favorables. Reviens quand tu veux.",
+      "personality": "direct",
+      "blurb": "Va droit au fait. La rivière n’attend personne."
     },
     "hana": {
       "id": "hana",
       "name": "Hana",
       "title": "l’herboriste",
       "emoji": "🌿",
-      "thanks": "La nature te le rendra. Je le sens déjà."
+      "thanks": "La nature te le rendra. Je le sens déjà.",
+      "personality": "douce",
+      "blurb": "Voix basse, conseils précis, herbes toujours à portée."
     },
     "nami": {
       "id": "nami",
       "name": "Nami",
       "title": "l’éleveuse",
       "emoji": "🐔",
-      "thanks": "Les animaux te remercient aussi… et moi encore plus."
+      "thanks": "Les animaux te remercient aussi… et moi encore plus.",
+      "personality": "enjouée",
+      "blurb": "Énergie contagieuse — les animaux la suivent."
     },
     "sota": {
       "id": "sota",
       "name": "Sota",
       "title": "le garde",
       "emoji": "🛡️",
-      "thanks": "Le village compte sur toi. Moi aussi."
+      "thanks": "Le village compte sur toi. Moi aussi.",
+      "personality": "franc",
+      "blurb": "Pas de détour : le village d’abord, le reste ensuite."
     },
     "riku": {
       "id": "riku",
       "name": "Riku",
       "title": "le cuisinier de rue",
       "emoji": "🍜",
-      "thanks": "Le fumet te va bien — à demain sur le marché !"
+      "thanks": "Le fumet te va bien — à demain sur le marché !",
+      "personality": "bavard",
+      "blurb": "Cuisine et histoires — souvent en même temps."
     },
     "miko": {
       "id": "miko",
       "name": "Miko",
       "title": "la gardienne du sanctuaire",
       "emoji": "⛩️",
-      "thanks": "Que le cerisier veille sur toi, voyageur."
+      "thanks": "Que le cerisier veille sur toi, voyageur.",
+      "personality": "solennelle",
+      "blurb": "Garde le lien avec le sanctuaire et les anciens rites."
     },
     "taro": {
       "id": "taro",
       "name": "Taro",
       "title": "le marchand",
       "emoji": "📦",
-      "thanks": "Tu m’as sauvé la mise. On se revoit bientôt."
+      "thanks": "Tu m’as sauvé la mise. On se revoit bientôt.",
+      "personality": "malin",
+      "blurb": "Compte vite, sourit large, négocie juste."
     },
     "emi": {
       "id": "emi",
       "name": "Emi",
       "title": "l’apicultrice",
       "emoji": "🍯",
-      "thanks": "Les abeilles bourdonnent pour toi… écoute."
+      "thanks": "Les abeilles bourdonnent pour toi… écoute.",
+      "personality": "rêveuse",
+      "blurb": "Écoute les abeilles comme d’autres écoutent la pluie."
     },
     "haru": {
       "id": "haru",
       "name": "Haru",
       "title": "le charpentier",
       "emoji": "🪚",
-      "thanks": "Solide comme du chêne. Merci, vraiment."
+      "thanks": "Solide comme du chêne. Merci, vraiment.",
+      "personality": "posé",
+      "blurb": "Mesure deux fois, scie une fois."
     }
   },
   "difficulties": {
@@ -129,7 +153,9 @@
       "difficulty": "easy",
       "npcId": "yumi",
       "type": "deliver",
-      "deliver": { "ble": 50 },
+      "deliver": {
+        "ble": 50
+      },
       "message": "Les fours sont encore tièdes de la nuit… mais le grenier, lui, est presque vide. Si tu m’apportes un peu de blé, je pourrai préparer les fournées avant que le village ne se réveille."
     },
     "e_h_frene": {
@@ -138,7 +164,9 @@
       "difficulty": "easy",
       "npcId": "kiro",
       "type": "deliver",
-      "deliver": { "frene": 50 },
+      "deliver": {
+        "frene": 50
+      },
       "message": "J’ai laissé trois sculptures inachevées sur l’établi. Le frêne chante bien sous le ciseau… pourrais-tu m’en ramener un peu avant que la lumière ne change ?"
     },
     "e_h_pierre": {
@@ -147,7 +175,9 @@
       "difficulty": "easy",
       "npcId": "yuto",
       "type": "deliver",
-      "deliver": { "pierre": 50 },
+      "deliver": {
+        "pierre": 50
+      },
       "message": "Une caravane arrive demain. Je veux des bagues simples, solides… mais mon panier de pierre est trop léger. Si tu passes près de la mine, pense à moi."
     },
     "e_h_dorade": {
@@ -156,7 +186,9 @@
       "difficulty": "easy",
       "npcId": "nori",
       "type": "deliver",
-      "deliver": { "dorade": 40 },
+      "deliver": {
+        "dorade": 40
+      },
       "message": "Ce matin, les filets sont revenus trop silencieux. Les habitants attendent du poisson frais pour le marché… quelques belles dorades, et tout le monde souriera."
     },
     "e_h_pissenlit": {
@@ -165,7 +197,9 @@
       "difficulty": "easy",
       "npcId": "hana",
       "type": "deliver",
-      "deliver": { "pissenlit": 40 },
+      "deliver": {
+        "pissenlit": 40
+      },
       "message": "Les pissenlits ont ouvert leurs cœurs au soleil. J’en ai besoin pour une tisane douce… peus-tu m’en cueillir avant que le vent ne les emporte ?"
     },
     "e_h_eau_yumi": {
@@ -174,7 +208,9 @@
       "difficulty": "easy",
       "npcId": "yumi",
       "type": "deliver",
-      "deliver": { "eau": 30 },
+      "deliver": {
+        "eau": 30
+      },
       "message": "La pâte demande de l’eau claire, tirée du puits. Mes seaux sont vides, et les fournées n’attendent pas. Pourrais-tu m’en ramener un peu ?"
     },
     "e_h_crabe": {
@@ -183,7 +219,9 @@
       "difficulty": "easy",
       "npcId": "nori",
       "type": "deliver",
-      "deliver": { "crabe": 25 },
+      "deliver": {
+        "crabe": 25
+      },
       "message": "Le stand de crustacés fait grise mine… Sans crabes, le marché perd sa couleur. Tu en aurais quelques-uns pour moi ?"
     },
     "e_h_fer": {
@@ -192,7 +230,9 @@
       "difficulty": "easy",
       "npcId": "yuto",
       "type": "deliver",
-      "deliver": { "fer": 35 },
+      "deliver": {
+        "fer": 35
+      },
       "message": "Ce soir, une petite fête au bord du chemin. Des bagues de fer, rien de luxueux… juste assez pour briller un peu. Il m’en manque."
     },
     "e_h_ortie": {
@@ -201,7 +241,9 @@
       "difficulty": "easy",
       "npcId": "hana",
       "type": "deliver",
-      "deliver": { "ortie": 30 },
+      "deliver": {
+        "ortie": 30
+      },
       "message": "Les garde-malades toussent depuis la brume. Une tisane d’ortie les soulagerait… si tu veux bien m’en cueillir, avec précaution."
     },
     "e_h_bouleau": {
@@ -210,19 +252,24 @@
       "difficulty": "easy",
       "npcId": "kiro",
       "type": "deliver",
-      "deliver": { "bouleau": 35 },
+      "deliver": {
+        "bouleau": 35
+      },
       "message": "Le bouleau a un grain si fin… parfait pour les détails d’un masque de fête. Tu pourrais m’en apporter un peu ?"
     },
-
     "e_f_oeuf": {
       "id": "e_f_oeuf",
       "pillar": "farm",
       "difficulty": "easy",
       "npcId": "nami",
       "type": "deliver",
-      "deliver": { "oeuf": 20 },
+      "deliver": {
+        "oeuf": 20
+      },
       "message": "Mes poules ont chanté tôt ce matin — elles ont bien travaillé. Passe récupérer leurs œufs avant la tombée de la nuit, d’accord ?",
-      "requires": { "farmBuilding": "chicken_coop" }
+      "requires": {
+        "farmBuilding": "chicken_coop"
+      }
     },
     "e_f_lait": {
       "id": "e_f_lait",
@@ -230,9 +277,13 @@
       "difficulty": "easy",
       "npcId": "nami",
       "type": "deliver",
-      "deliver": { "lait": 15 },
+      "deliver": {
+        "lait": 15
+      },
       "message": "Les réserves de lait diminuent, et les enfants du village vont bientôt frapper à la porte. Un peu de lait frais ferait le bonheur de tous.",
-      "requires": { "farmBuilding": "barn" }
+      "requires": {
+        "farmBuilding": "barn"
+      }
     },
     "e_f_laine": {
       "id": "e_f_laine",
@@ -240,9 +291,13 @@
       "difficulty": "easy",
       "npcId": "nami",
       "type": "deliver",
-      "deliver": { "laine": 15 },
+      "deliver": {
+        "laine": 15
+      },
       "message": "Les moutons portent une laine bien épaisse cette saison. Une bonne tonte leur fera du bien… et tiendra chaud à quelqu’un cet hiver.",
-      "requires": { "farmBuilding": "sheepfold" }
+      "requires": {
+        "farmBuilding": "sheepfold"
+      }
     },
     "e_f_eau": {
       "id": "e_f_eau",
@@ -250,7 +305,9 @@
       "difficulty": "easy",
       "npcId": "yumi",
       "type": "deliver",
-      "deliver": { "eau": 25 },
+      "deliver": {
+        "eau": 25
+      },
       "message": "Avant la fournée, il faut remplir les seaux. Le puits n’attend que toi — et moi, j’attends avec mon tablier déjà fariné."
     },
     "e_f_plume": {
@@ -259,9 +316,13 @@
       "difficulty": "easy",
       "npcId": "nami",
       "type": "deliver",
-      "deliver": { "plume": 12 },
+      "deliver": {
+        "plume": 12
+      },
       "message": "L’auberge veut des coussins tout doux pour les voyageurs. Quelques plumes de mes poules feraient l’affaire… tu m’aides ?",
-      "requires": { "farmBuilding": "chicken_coop" }
+      "requires": {
+        "farmBuilding": "chicken_coop"
+      }
     },
     "e_f_miel": {
       "id": "e_f_miel",
@@ -269,9 +330,13 @@
       "difficulty": "easy",
       "npcId": "emi",
       "type": "deliver",
-      "deliver": { "miel": 10 },
+      "deliver": {
+        "miel": 10
+      },
       "message": "Les ruches ont murmuré toute la matinée. Il y a juste assez de miel pour le thé du temple… si tu veux bien le porter jusqu’à moi.",
-      "requires": { "farmBuilding": "beehive" }
+      "requires": {
+        "farmBuilding": "beehive"
+      }
     },
     "e_f_haru_eau": {
       "id": "e_f_haru_eau",
@@ -279,19 +344,24 @@
       "difficulty": "easy",
       "npcId": "haru",
       "type": "deliver",
-      "deliver": { "eau": 20 },
+      "deliver": {
+        "eau": 20
+      },
       "message": "Le bois se courbe mieux quand il est bien humide. Avant de cintrer cette poutre, j’ai besoin d’eau claire… tu peux m’en apporter ?"
     },
-
     "e_c_onigiri": {
       "id": "e_c_onigiri",
       "pillar": "cooking",
       "difficulty": "easy",
       "npcId": "yumi",
       "type": "deliver",
-      "deliver": { "meal_onigiri": 8 },
+      "deliver": {
+        "meal_onigiri": 8
+      },
       "message": "Les fours sont prêts, et les habitants vont bientôt avoir faim. Avec quelques pains supplémentaires, personne ne manquera de rien aujourd’hui.",
-      "requires": { "craftJob": "baker" }
+      "requires": {
+        "craftJob": "baker"
+      }
     },
     "e_c_poisson": {
       "id": "e_c_poisson",
@@ -299,9 +369,13 @@
       "difficulty": "easy",
       "npcId": "riku",
       "type": "deliver",
-      "deliver": { "meal_poisson": 5 },
+      "deliver": {
+        "meal_poisson": 5
+      },
       "message": "Il y a déjà une file devant mon stand… et moi, je suis à court de plats. Un coup de main en cuisine, et on nourrit tout le monde ensemble.",
-      "requires": { "craftJob": "fishmonger" }
+      "requires": {
+        "craftJob": "fishmonger"
+      }
     },
     "e_c_elixir_menthe": {
       "id": "e_c_elixir_menthe",
@@ -309,9 +383,13 @@
       "difficulty": "easy",
       "npcId": "hana",
       "type": "deliver",
-      "deliver": { "elixir_menthe": 4 },
+      "deliver": {
+        "elixir_menthe": 4
+      },
       "message": "Les sentiers sont durs aujourd’hui — j’ai vu des voyageurs boiter près du pont. Quelques élixirs de menthe les aideraient à continuer.",
-      "requires": { "craftJob": "chemist" }
+      "requires": {
+        "craftJob": "chemist"
+      }
     },
     "e_c_miso": {
       "id": "e_c_miso",
@@ -319,9 +397,13 @@
       "difficulty": "easy",
       "npcId": "miko",
       "type": "deliver",
-      "deliver": { "meal_onigiri": 3 },
+      "deliver": {
+        "meal_onigiri": 3
+      },
       "message": "Des voyageurs fatigués se reposent près du sanctuaire. Une offrande légère — quelques pains — leur rappellerait que le village veille.",
-      "requires": { "craftJob": "baker" }
+      "requires": {
+        "craftJob": "baker"
+      }
     },
     "e_c_gateau": {
       "id": "e_c_gateau",
@@ -329,11 +411,14 @@
       "difficulty": "easy",
       "npcId": "yumi",
       "type": "deliver",
-      "deliver": { "meal_gateau": 5 },
+      "deliver": {
+        "meal_gateau": 5
+      },
       "message": "Les enfants du village ont les yeux brillants près de la vitrine… Un petit goûter, rien de plus. Tu m’aides à leur faire plaisir ?",
-      "requires": { "craftJob": "baker" }
+      "requires": {
+        "craftJob": "baker"
+      }
     },
-
     "e_x_mobs": {
       "id": "e_x_mobs",
       "pillar": "combat",
@@ -342,7 +427,9 @@
       "type": "combat_kills",
       "target": 10,
       "message": "Des créatures rôdent près des sentiers, trop près des lanternes. Va les repousser avant qu’elles ne flairent le village… je compte sur toi.",
-      "requires": { "feature": "combat" }
+      "requires": {
+        "feature": "combat"
+      }
     },
     "e_x_mobs_patrol": {
       "id": "e_x_mobs_patrol",
@@ -352,7 +439,9 @@
       "type": "combat_kills",
       "target": 15,
       "message": "Patrouille du crépuscule. Garde ton arme chaude — les ombres aiment ce moment précis entre jour et nuit.",
-      "requires": { "feature": "combat" }
+      "requires": {
+        "feature": "combat"
+      }
     },
     "e_x_boss": {
       "id": "e_x_boss",
@@ -362,16 +451,19 @@
       "type": "combat_bosses",
       "target": 1,
       "message": "Une ombre plus dense trouble le sanctuaire. Ce n’est pas une simple bête… Affronte un chef de meute, et ramène le calme sous le cerisier.",
-      "requires": { "feature": "combat" }
+      "requires": {
+        "feature": "combat"
+      }
     },
-
     "m_h_ble": {
       "id": "m_h_ble",
       "pillar": "harvest",
       "difficulty": "medium",
       "npcId": "yumi",
       "type": "deliver",
-      "deliver": { "ble": 150 },
+      "deliver": {
+        "ble": 150
+      },
       "message": "Le festival approche, et toute la place sent déjà les épices. Mon grenier doit déborder — sans blé, il n’y aura ni pain ni rires. Tu peux m’aider à remplir les sacs ?"
     },
     "m_h_chene": {
@@ -380,7 +472,9 @@
       "difficulty": "medium",
       "npcId": "kiro",
       "type": "deliver",
-      "deliver": { "chene": 80 },
+      "deliver": {
+        "chene": 80
+      },
       "message": "Je sculpte une statue pour la place — un gardien de chêne, pour que les voyageurs se sentent chez eux. Il me faut du bois noble… beaucoup."
     },
     "m_h_cuivre": {
@@ -389,7 +483,9 @@
       "difficulty": "medium",
       "npcId": "yuto",
       "type": "deliver",
-      "deliver": { "cuivre": 80 },
+      "deliver": {
+        "cuivre": 80
+      },
       "message": "Une caravane demande des bracelets de cuivre pour la route. Mon stock est bas, et le métal n’attend pas. Tu descends à la mine pour moi ?"
     },
     "m_h_saumon": {
@@ -398,7 +494,9 @@
       "difficulty": "medium",
       "npcId": "nori",
       "type": "deliver",
-      "deliver": { "saumon": 80 },
+      "deliver": {
+        "saumon": 80
+      },
       "message": "Le marché veut du saumon — beaucoup de saumon. Les filets doivent briller sur les étals avant midi. Prêt à mouiller ta ligne ?"
     },
     "m_h_menthe_lavande": {
@@ -407,7 +505,10 @@
       "difficulty": "medium",
       "npcId": "hana",
       "type": "deliver",
-      "deliver": { "menthe": 50, "lavande": 40 },
+      "deliver": {
+        "menthe": 50,
+        "lavande": 40
+      },
       "message": "Ce soir, l’infusion du village doit calmer les esprits. Menthe pour la clarté, lavande pour le sommeil… en belle quantité, s’il te plaît."
     },
     "m_h_taro_mix": {
@@ -416,19 +517,26 @@
       "difficulty": "medium",
       "npcId": "taro",
       "type": "deliver",
-      "deliver": { "ble": 40, "frene": 40, "pierre": 40 },
+      "deliver": {
+        "ble": 40,
+        "frene": 40,
+        "pierre": 40
+      },
       "message": "Un acheteur important passe demain à l’aube. Il veut un stock varié — blé, bois, pierre. Aide-moi à ne pas le faire attendre, ou je perds la vente."
     },
-
     "m_f_oeuf": {
       "id": "m_f_oeuf",
       "pillar": "farm",
       "difficulty": "medium",
       "npcId": "nami",
       "type": "deliver",
-      "deliver": { "oeuf": 50 },
+      "deliver": {
+        "oeuf": 50
+      },
       "message": "L’auberge commande une caisse d’œufs pour toute la semaine. Mes poules font ce qu’elles peuvent… mais j’ai besoin de toi pour rassembler la livraison.",
-      "requires": { "farmBuilding": "chicken_coop" }
+      "requires": {
+        "farmBuilding": "chicken_coop"
+      }
     },
     "m_f_lait_plume": {
       "id": "m_f_lait_plume",
@@ -436,9 +544,14 @@
       "difficulty": "medium",
       "npcId": "nami",
       "type": "deliver",
-      "deliver": { "lait": 40, "plume": 20 },
+      "deliver": {
+        "lait": 40,
+        "plume": 20
+      },
       "message": "Lait pour les bols du matin, plumes pour les oreillers des voyageurs… L’auberge veut les deux. Tu m’aides à préparer le panier ?",
-      "requires": { "farmBuilding": "barn" }
+      "requires": {
+        "farmBuilding": "barn"
+      }
     },
     "m_f_laine": {
       "id": "m_f_laine",
@@ -446,9 +559,14 @@
       "difficulty": "medium",
       "npcId": "nami",
       "type": "deliver",
-      "deliver": { "laine": 35, "lait_brebis": 15 },
+      "deliver": {
+        "laine": 35,
+        "lait_brebis": 15
+      },
       "message": "Le marché du textile ouvre bientôt. Laine douce, lait de brebis pour les fromages… mes moutons ont donné, il ne manque que tes bras.",
-      "requires": { "farmBuilding": "sheepfold" }
+      "requires": {
+        "farmBuilding": "sheepfold"
+      }
     },
     "m_f_eau": {
       "id": "m_f_eau",
@@ -456,7 +574,9 @@
       "difficulty": "medium",
       "npcId": "haru",
       "type": "deliver",
-      "deliver": { "eau": 60 },
+      "deliver": {
+        "eau": 60
+      },
       "message": "Grosse journée de chantier près du pont. Les poutres, la sciure, la soif… Il me faut beaucoup d’eau, ou le travail s’arrête."
     },
     "m_f_miel": {
@@ -465,9 +585,13 @@
       "difficulty": "medium",
       "npcId": "emi",
       "type": "deliver",
-      "deliver": { "miel": 25 },
+      "deliver": {
+        "miel": 25
+      },
       "message": "Le temple commande du miel pour les offrandes du soir. Les abeilles ont travaillé — à nous de ne pas les décevoir.",
-      "requires": { "farmBuilding": "beehive" }
+      "requires": {
+        "farmBuilding": "beehive"
+      }
     },
     "m_f_bacon": {
       "id": "m_f_bacon",
@@ -475,20 +599,27 @@
       "difficulty": "medium",
       "npcId": "riku",
       "type": "deliver",
-      "deliver": { "bacon": 30 },
+      "deliver": {
+        "bacon": 30
+      },
       "message": "Mon stand de grillades sent déjà le feu… mais le bacon manque. Sans lui, la file d’attente va râler. Tu m’en ramènes ?",
-      "requires": { "farmBuilding": "pigsty" }
+      "requires": {
+        "farmBuilding": "pigsty"
+      }
     },
-
     "m_c_onigiri": {
       "id": "m_c_onigiri",
       "pillar": "cooking",
       "difficulty": "medium",
       "npcId": "yumi",
       "type": "deliver",
-      "deliver": { "meal_onigiri": 18 },
+      "deliver": {
+        "meal_onigiri": 18
+      },
       "message": "Le conseil veut nourrir la milice ce soir, avant la ronde. Beaucoup de pains, bien chauds. Les fours tournent — aide-moi à tenir le rythme.",
-      "requires": { "craftJob": "baker" }
+      "requires": {
+        "craftJob": "baker"
+      }
     },
     "m_c_sushi": {
       "id": "m_c_sushi",
@@ -496,9 +627,13 @@
       "difficulty": "medium",
       "npcId": "riku",
       "type": "deliver",
-      "deliver": { "meal_sushi": 12 },
+      "deliver": {
+        "meal_sushi": 12
+      },
       "message": "Banquet improvisé sur la place ! On m’a demandé des sushi pour tout le monde… et j’ai besoin de renfort, vite.",
-      "requires": { "craftJob": "fishmonger" }
+      "requires": {
+        "craftJob": "fishmonger"
+      }
     },
     "m_c_elixirs": {
       "id": "m_c_elixirs",
@@ -506,9 +641,14 @@
       "difficulty": "medium",
       "npcId": "hana",
       "type": "deliver",
-      "deliver": { "elixir_menthe": 6, "elixir_ortie": 4 },
+      "deliver": {
+        "elixir_menthe": 6,
+        "elixir_ortie": 4
+      },
       "message": "Les patrouilles partent pour la nuit. Menthe pour l’esprit, ortie pour le corps… Prépare-moi ces élixirs, et ils reviendront entiers.",
-      "requires": { "craftJob": "chemist" }
+      "requires": {
+        "craftJob": "chemist"
+      }
     },
     "m_c_mix": {
       "id": "m_c_mix",
@@ -516,11 +656,15 @@
       "difficulty": "medium",
       "npcId": "miko",
       "type": "deliver",
-      "deliver": { "meal_onigiri": 8, "elixir_menthe": 4 },
+      "deliver": {
+        "meal_onigiri": 8,
+        "elixir_menthe": 4
+      },
       "message": "Offrande mixte pour les voyageurs du sanctuaire : du pain pour la faim, un remède pour la route. Le cerisier te regardera travailler.",
-      "requires": { "craftJob": "baker" }
+      "requires": {
+        "craftJob": "baker"
+      }
     },
-
     "m_x_mobs": {
       "id": "m_x_mobs",
       "pillar": "combat",
@@ -529,7 +673,9 @@
       "type": "combat_kills",
       "target": 35,
       "message": "Les sentiers sont infestés — trop de traces, trop près des maisons. Nettoie la zone. Je veux entendre le silence revenir.",
-      "requires": { "feature": "combat" }
+      "requires": {
+        "feature": "combat"
+      }
     },
     "m_x_boss": {
       "id": "m_x_boss",
@@ -539,7 +685,9 @@
       "type": "combat_bosses",
       "target": 1,
       "message": "Un chef de meute s’approche du village. Si on le laisse faire, d’autres suivront. Élimine-le. Pour nous tous.",
-      "requires": { "feature": "combat" }
+      "requires": {
+        "feature": "combat"
+      }
     },
     "m_x_dungeon": {
       "id": "m_x_dungeon",
@@ -549,16 +697,19 @@
       "type": "combat_dungeons",
       "target": 1,
       "message": "Un donjon du village s’est rempli d’ombres. Purifie-le de bout en bout — que la lumière retrouve chaque salle.",
-      "requires": { "feature": "combat" }
+      "requires": {
+        "feature": "combat"
+      }
     },
-
     "h_h_ble": {
       "id": "h_h_ble",
       "pillar": "harvest",
       "difficulty": "hard",
       "npcId": "yumi",
       "type": "deliver",
-      "deliver": { "ble": 400 },
+      "deliver": {
+        "ble": 400
+      },
       "message": "L’hiver approche dans les conversations… Les réserves doivent tenir des semaines. Le village entier compte sur cette moisson. Remplis les greniers avec moi."
     },
     "h_h_sakura": {
@@ -567,7 +718,9 @@
       "difficulty": "hard",
       "npcId": "kiro",
       "type": "deliver",
-      "deliver": { "sakura": 120 },
+      "deliver": {
+        "sakura": 120
+      },
       "message": "Le portail du sanctuaire doit renaître en bois de sakura. Rien d’autre ne fera l’affaire — c’est le cœur du village. Aide-moi à le sculpter digne."
     },
     "h_h_saphir": {
@@ -576,7 +729,9 @@
       "difficulty": "hard",
       "npcId": "yuto",
       "type": "deliver",
-      "deliver": { "saphir": 60 },
+      "deliver": {
+        "saphir": 60
+      },
       "message": "Une commande noble… et pressée. Des saphirs, pas un de moins. Je tremble un peu — mais avec toi, on y arrivera."
     },
     "h_h_koi": {
@@ -585,7 +740,9 @@
       "difficulty": "hard",
       "npcId": "nori",
       "type": "deliver",
-      "deliver": { "carpe_koi": 80 },
+      "deliver": {
+        "carpe_koi": 80
+      },
       "message": "Le bassin du temple attend des carpes sacrées. Il faut de la patience, du silence… et des prises dignes d’une offrande. Sois patient comme l’eau."
     },
     "h_h_lotus": {
@@ -594,7 +751,9 @@
       "difficulty": "hard",
       "npcId": "hana",
       "type": "deliver",
-      "deliver": { "lotus_sacre": 60 },
+      "deliver": {
+        "lotus_sacre": 60
+      },
       "message": "Les lotus sacrés n’ouvrent que pour ceux qui savent attendre. C’est la préparation la plus délicate de la saison… et j’ai besoin de toi pour la réussir."
     },
     "h_h_haru": {
@@ -603,19 +762,25 @@
       "difficulty": "hard",
       "npcId": "haru",
       "type": "deliver",
-      "deliver": { "chene": 100, "eau": 100 },
+      "deliver": {
+        "chene": 100,
+        "eau": 100
+      },
       "message": "Charpente d’urgence : une poutre a cédé près du marché. Il me faut du chêne, et de l’eau pour travailler sans relâche. Sans lésiner — le toit ne peut pas attendre."
     },
-
     "h_f_oeuf": {
       "id": "h_f_oeuf",
       "pillar": "farm",
       "difficulty": "hard",
       "npcId": "nami",
       "type": "deliver",
-      "deliver": { "oeuf": 120 },
+      "deliver": {
+        "oeuf": 120
+      },
       "message": "C’est le festival des œufs — la place va se remplir de couleurs. La demande est immense… mes poules et moi, on a besoin de toi.",
-      "requires": { "farmBuilding": "chicken_coop" }
+      "requires": {
+        "farmBuilding": "chicken_coop"
+      }
     },
     "h_f_mix": {
       "id": "h_f_mix",
@@ -623,9 +788,15 @@
       "difficulty": "hard",
       "npcId": "nami",
       "type": "deliver",
-      "deliver": { "lait": 80, "laine": 60, "plume": 40 },
+      "deliver": {
+        "lait": 80,
+        "laine": 60,
+        "plume": 40
+      },
       "message": "Le grand marché veut un panier complet de la ferme : lait, laine, plumes. C’est le visage de notre village. Tu m’aides à le préparer ?",
-      "requires": { "farmBuilding": "barn" }
+      "requires": {
+        "farmBuilding": "barn"
+      }
     },
     "h_f_eau": {
       "id": "h_f_eau",
@@ -633,7 +804,9 @@
       "difficulty": "hard",
       "npcId": "yumi",
       "type": "deliver",
-      "deliver": { "eau": 150 },
+      "deliver": {
+        "eau": 150
+      },
       "message": "Tous les fours tournent, jour et nuit. L’eau ne doit jamais manquer — sans elle, le pain s’arrête, et le village avec. Remplis les réserves."
     },
     "h_f_miel": {
@@ -642,20 +815,29 @@
       "difficulty": "hard",
       "npcId": "emi",
       "type": "deliver",
-      "deliver": { "miel": 50 },
+      "deliver": {
+        "miel": 50
+      },
       "message": "Le festival du miel approche. On veut de l’or liquide sur chaque table… Les abeilles ont fait leur part. À nous de faire la nôtre.",
-      "requires": { "farmBuilding": "beehive" }
+      "requires": {
+        "farmBuilding": "beehive"
+      }
     },
-
     "h_c_banquet": {
       "id": "h_c_banquet",
       "pillar": "cooking",
       "difficulty": "hard",
       "npcId": "miko",
       "type": "deliver",
-      "deliver": { "meal_onigiri": 15, "meal_sushi": 10, "elixir_ginseng": 8 },
+      "deliver": {
+        "meal_onigiri": 15,
+        "meal_sushi": 10,
+        "elixir_ginseng": 8
+      },
       "message": "Grand banquet du sanctuaire. Pain, poisson, élixirs — tout ce qui réchauffe le corps et l’esprit. Le village se réunira sous le cerisier… grâce à toi.",
-      "requires": { "craftJob": "baker" }
+      "requires": {
+        "craftJob": "baker"
+      }
     },
     "h_c_pains": {
       "id": "h_c_pains",
@@ -663,9 +845,13 @@
       "difficulty": "hard",
       "npcId": "yumi",
       "type": "deliver",
-      "deliver": { "meal_onigiri": 40 },
+      "deliver": {
+        "meal_onigiri": 40
+      },
       "message": "Fournée de guerre : quarante pains, pas un de moins. La milice part à l’aube, et je refuse qu’ils partent le ventre vide.",
-      "requires": { "craftJob": "baker" }
+      "requires": {
+        "craftJob": "baker"
+      }
     },
     "h_c_elixirs": {
       "id": "h_c_elixirs",
@@ -673,11 +859,15 @@
       "difficulty": "hard",
       "npcId": "hana",
       "type": "deliver",
-      "deliver": { "elixir_ginseng": 12, "elixir_lavande": 8 },
+      "deliver": {
+        "elixir_ginseng": 12,
+        "elixir_lavande": 8
+      },
       "message": "Réserve d’élite pour les gardes du temple. Ginseng pour tenir, lavande pour revenir. Prépare-les avec soin — des vies en dépendent.",
-      "requires": { "craftJob": "chemist" }
+      "requires": {
+        "craftJob": "chemist"
+      }
     },
-
     "h_x_mobs": {
       "id": "h_x_mobs",
       "pillar": "combat",
@@ -686,7 +876,9 @@
       "type": "combat_kills",
       "target": 100,
       "message": "Journée noire. Les créatures affluent. Cent. Le village doit tenir — et toi, tu es notre mur. Ne laisse rien passer.",
-      "requires": { "feature": "combat" }
+      "requires": {
+        "feature": "combat"
+      }
     },
     "h_x_bosses": {
       "id": "h_x_bosses",
@@ -696,7 +888,9 @@
       "type": "combat_bosses",
       "target": 3,
       "message": "Trois chefs. Trois menaces. Pas de quartier — si l’un d’eux survit, les autres reviendront. Fais-le pour ceux qui ne peuvent pas se battre.",
-      "requires": { "feature": "combat" }
+      "requires": {
+        "feature": "combat"
+      }
     },
     "h_x_dungeons": {
       "id": "h_x_dungeons",
@@ -706,14 +900,19 @@
       "type": "combat_dungeons",
       "target": 2,
       "message": "Deux donjons à purifier avant la nuit. Les lanternes du sanctuaire tremblent déjà… Ramène la lumière, salle après salle.",
-      "requires": { "feature": "combat" }
+      "requires": {
+        "feature": "combat"
+      }
     }
   },
   "sakuraWindQuest": {
     "id": "sakura_offering",
     "npcId": "miko",
     "type": "deliver",
-    "deliver": { "ble": 60, "frene": 40 },
+    "deliver": {
+      "ble": 60,
+      "frene": 40
+    },
     "message": "Le Vent des cerisiers ne dure qu’un souffle… Dépose une offrande de blé et de frêne au sanctuaire avant que les pétales ne se posent.",
     "rewardKirhaMin": 280,
     "rewardKirhaMax": 380,

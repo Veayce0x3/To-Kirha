@@ -1,11 +1,13 @@
 # 🌸 TO-KIRHA — Project State v1.7
 
 > État actuel du projet. Voir **`docs/progression-design.md`** pour XP, déblocages et succès.  
-> `saveVersion` : **31** · jeu en ligne : [veayce0x3.github.io/To-Kirha](https://veayce0x3.github.io/To-Kirha/)
+> `saveVersion` : **49** · jeu en ligne : [veayce0x3.github.io/To-Kirha](https://veayce0x3.github.io/To-Kirha/)
 
 ## Vision
 
 Jeu web idle/RPG **zen sakura** : récolte parallèle, progression Paysan → métiers, craft (outils + cuisine), ferme, combat DQ, **succès** et saisons.
+
+**Lore** : village de **To-Kirha** (pas Sakura comme toponyme). Voir `docs/LORE.md` — **Carnet du voyageur** (Monde).
 
 ## Boucle économique (beta)
 

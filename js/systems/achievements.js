@@ -367,7 +367,7 @@ export const ACHIEVEMENT_CATEGORY_LABELS = {
   farm: '🐄 Ferme',
   craft: '🔨 Artisanat',
   combat: '⚔️ Combat',
-  village_sakura: '🌸 Village Sakura',
+  village_sakura: '🌸 Village de To-Kirha',
   petal_forest: '🌿 Forêt des Pétales',
   mist_river: '🌫️ Rivière de Brume',
   jade_mountains: '⛩️ Montagnes de Jade',

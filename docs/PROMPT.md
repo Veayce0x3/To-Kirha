@@ -138,7 +138,7 @@ récolter → vendre → améliorer métiers / slots → craft outils/repas → 
 
 | Zone | Contenu |
 |------|---------|
-| 🌸 Village Sakura | Début · Temple du Cerisier |
+| 🌸 Village de To-Kirha | Début · Temple du Cerisier |
 | 🌿 Forêt des Pétales | Milieu · Tanière des Pétales |
 | 🌫️ Rivière de Brume | Intermédiaire · Sanctuaire de Brume |
 | ⛩️ Montagnes de Jade | Avancé · Grotte de Jade |

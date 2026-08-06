@@ -394,10 +394,17 @@ const MIGRATIONS = {
       }
     }
   },
+  49(state) {
+    if (!state.travelerJournal || typeof state.travelerJournal !== 'object') {
+      state.travelerJournal = { unlocked: [], seenToast: [] };
+    }
+    if (!Array.isArray(state.travelerJournal.unlocked)) state.travelerJournal.unlocked = [];
+    if (!Array.isArray(state.travelerJournal.seenToast)) state.travelerJournal.seenToast = [];
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 48;
+  const target = ctx.balance?.saveVersion ?? 49;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

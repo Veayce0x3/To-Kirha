@@ -944,6 +944,13 @@ export function initUI(game, audio) {
     }
     showToast(els, `🍙 ${mealName} : +${healed} PV (${hp}/${maxHp})`, 'upgrade');
   });
+  on('journalUnlock', ({ entry }) => {
+    if (!entry) return;
+    showToast(els, `📔 Carnet : ${entry.emoji || ''} ${entry.title || 'nouvelle page'}`, 'upgrade');
+  });
+  on('stateChange', () => {
+    game.syncTravelerJournal?.();
+  });
   on('toolRepaired', ({ itemName, toolName, gained, remaining, max }) => {
     showToast(els, `🔧 ${itemName} : ${toolName} +${gained} (${remaining}/${max})`, 'upgrade');
   });

@@ -1,0 +1,103 @@
+{
+  "title": "Carnet du voyageur",
+  "emoji": "📔",
+  "description": "Notes courtes sur le village de To-Kirha. Lecture libre — rien n’est obligatoire.",
+  "entries": {
+    "conseil_accueil": {
+      "id": "conseil_accueil",
+      "order": 10,
+      "title": "Le Conseil",
+      "emoji": "🏛️",
+      "unlock": { "type": "career" },
+      "body": "Le Conseil du village t’accueille sans cérémonie.\n\nTo-Kirha fut prospère. Puis les ateliers se sont tus, les routes se sont fissurées, et les donjons sont retombés dans le silence.\n\nOn ne te demande pas de sauver le monde. Seulement de redonner un peu de vie à ce lieu.\n\nLes Kirha circulent encore — monnaie du village, preuve qu’un souffle reste. À toi de le ranimer."
+    },
+    "premiers_pas": {
+      "id": "premiers_pas",
+      "order": 20,
+      "title": "Ceux qui sont restés",
+      "emoji": "🏘️",
+      "unlock": { "type": "career" },
+      "body": "Ils n’étaient pas nombreux, mais ils étaient là.\n\nBoulangère, pêcheur, garde, gardienne du sanctuaire… Des habitants, pas des fantômes. Autour d’eux, le marché est trop calme. Les voyageurs ne s’arrêtent plus.\n\nTant que tu progresseras, le village se remplira à nouveau — doucement, comme un printemps."
+    },
+    "metier_20": {
+      "id": "metier_20",
+      "order": 30,
+      "title": "La main qui se souvient",
+      "emoji": "🛠️",
+      "unlock": { "type": "jobLevel", "min": 20 },
+      "body": "Un métier à ce niveau, ce n’est plus seulement de l’effort. C’est une mémoire qui revient dans les gestes.\n\nLes anciens disaient que To-Kirha vivait de ses savoir-faire. Aujourd’hui, un de ces fils se retisse.\n\nLe Conseil note ton nom sur un registre poussiéreux. Ce n’est qu’une ligne — mais c’est un début."
+    },
+    "premier_boss": {
+      "id": "premier_boss",
+      "order": 40,
+      "title": "Gardien du silence",
+      "emoji": "⚔️",
+      "unlock": { "type": "bossAny" },
+      "body": "Les donjons ne sont pas des trophées. Ce sont des lieux que le village a oubliés — et qui, parfois, n’ont pas oublié le village.\n\nLe premier gardien tombe. Dans l’air, quelque chose se détend, comme une porte longtemps close.\n\nPourquoi ces lieux se sont-ils refermés ? Le carnet n’a pas encore la réponse."
+    },
+    "premier_donjon": {
+      "id": "premier_donjon",
+      "order": 50,
+      "title": "Sous la pierre",
+      "emoji": "🗝️",
+      "unlock": { "type": "dungeonAny" },
+      "body": "Une clé, une équipe, des salles qui s’enchaînent… Puis la lumière du dehors.\n\nTu rapportes plus que du butin : une preuve que les chemins oubliés peuvent se rouvrir.\n\nAu village, quelqu’un aura entendu parler d’une lumière dans les profondeurs. Les rumeurs, elles aussi, font revenir les gens."
+    },
+    "ecole_recherche": {
+      "id": "ecole_recherche",
+      "order": 60,
+      "title": "Notes sur le banc",
+      "emoji": "🏫",
+      "unlock": { "type": "schoolAny" },
+      "body": "L’École n’enseigne pas seulement des recettes. Elle archive ce que To-Kirha savait faire — et ce qu’elle a perdu.\n\nTa première recherche terminée laisse une trace : une page propre parmi les poussières.\n\nLes savoirs ne demandent pas la gloire. Seulement qu’on les pratique à nouveau."
+    },
+    "marchand_itinerant": {
+      "id": "marchand_itinerant",
+      "order": 70,
+      "title": "Une caravane s’arrête",
+      "emoji": "🧳",
+      "unlock": { "type": "merchantSeen" },
+      "body": "Un visage inconnu sur la place. Des ballots, une promo, une rumeur de routes qui reprennent.\n\nLe marchand itinérant ne reste jamais longtemps. Mais son passage veut dire une chose : To-Kirha redevient un arrêt possible.\n\nLes Kirha changent de main. Le village respire un peu plus fort."
+    },
+    "vent_cerisiers": {
+      "id": "vent_cerisiers",
+      "order": 80,
+      "title": "Vent des cerisiers",
+      "emoji": "🌸",
+      "unlock": { "type": "sakuraWind" },
+      "body": "Un vent rare traverse les toits. Les pétales tournent comme s’ils se souvenaient d’une fête ancienne.\n\nPersonne ne sait vraiment d’où il vient. Les anciens parlaient de saisons qui « répondent » quand le village est en paix.\n\nToi, tu notes seulement ceci : aujourd’hui, To-Kirha a semblé moins vide."
+    },
+    "recette_maitre": {
+      "id": "recette_maitre",
+      "order": 90,
+      "title": "Saveur de maître",
+      "emoji": "👑",
+      "unlock": { "type": "cookbookMaster" },
+      "body": "Il y a les repas qui nourrissent, et ceux qui racontent.\n\nUne recette de maître, c’est un savoir qui a survécu aux années creuses — transmis par l’École, les parchemins, ou la patience.\n\nLe fumet monte. Quelque part, un habitant sourit sans le dire."
+    },
+    "zone_foret": {
+      "id": "zone_foret",
+      "order": 100,
+      "title": "Au-delà des premiers toits",
+      "emoji": "🌿",
+      "unlock": { "type": "zoneUnlocked", "zoneId": "petal_forest" },
+      "body": "Les chemins menant à la Forêt des Pétales n’étaient plus entretenus.\n\nLes rouvrir, c’est accepter que To-Kirha ne soit plus seulement un village replié sur lui-même.\n\nDe nouvelles ressources, de nouveaux dangers — et peut-être, un jour, une réponse sur l’abandon."
+    },
+    "saison_2": {
+      "id": "saison_2",
+      "order": 200,
+      "title": "Saison 2 — Renaissance",
+      "emoji": "🌸",
+      "unlock": { "type": "seasonMin", "min": 2 },
+      "body": "Une saison s’achève. Une autre commence.\n\nTu repars presque nu de biens — mais pas de mémoire. Le carnet reste. Les succès restent. Les bonus aussi.\n\nLes champs reprendront. Les cerisiers fleuriront un peu plus. To-Kirha renaît par cycles, comme elle a toujours su le faire."
+    },
+    "saison_3": {
+      "id": "saison_3",
+      "order": 210,
+      "title": "Saison 3 — Routes",
+      "emoji": "🛤️",
+      "unlock": { "type": "seasonMin", "min": 3 },
+      "body": "Encore un cycle. Les routes commerciales semblent moins peureuses.\n\nOn dit que des voyageurs franchissent à nouveau les portes — pas en foule, mais assez pour que les échoppes murmurent.\n\nLe Conseil n’explique toujours pas l’ancien silence. Il te regarde seulement comme on regarde quelqu’un qui revient."
+    }
+  }
+}

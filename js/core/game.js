@@ -293,6 +293,12 @@ import {
   getCookbookViewModel,
   emptyCookbookState,
 } from '../systems/cookbook.js';
+import {
+  ensureTravelerJournalState,
+  getTravelerJournalViewModel,
+  emptyTravelerJournalState,
+  syncTravelerJournalUnlocks,
+} from '../systems/travelerJournal.js';
 
 const LEGACY_COMBAT_RESOURCES = [
   'spirit_ember', 'petal_gel', 'temple_fragment', 'sakura_core',
@@ -319,7 +325,7 @@ function migrateLegacyCombatResources(state) {
 }
 
 export class Game {
-  constructor(resources, jobs, balance, recipes, aides, equipment, farmData, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, achievements, weaponRoles, villageBoardData = null, villageSchoolData = null) {
+  constructor(resources, jobs, balance, recipes, aides, equipment, farmData, characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, achievements, weaponRoles, villageBoardData = null, villageSchoolData = null, travelerJournalData = null) {
     this.resources = resources;
     this.jobs = jobs;
     this.balance = balance;
@@ -340,6 +346,7 @@ export class Game {
     this.weaponRoles = weaponRoles || {};
     this.villageBoardData = villageBoardData || { npcs: {}, quests: {}, difficulties: {} };
     this.villageSchoolData = villageSchoolData || { branches: {}, researches: {} };
+    this.travelerJournalData = travelerJournalData || { entries: {} };
     this.state = null;
     this.harvestTimers = {};
     this.farmTimers = {};
@@ -424,6 +431,7 @@ export class Game {
       grimoire: { known: [], equipped: [] },
       keyQualities: {},
       cookbook: emptyCookbookState(),
+      travelerJournal: emptyTravelerJournalState(),
       seasonStartedAt: Date.now(),
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
@@ -622,10 +630,12 @@ export class Game {
     if (!this.state.seasonStartedAt) this.state.seasonStartedAt = Date.now();
     refreshSchoolBonusCache(this.state, this.villageSchoolData);
     ensureGrimoireState(this.state);
+    ensureTravelerJournalState(this.state);
     syncKeyQualities(this.state);
     syncGrimoireKnown(this.state, this.combatEquipment.items, getSchoolUnlockedSpells(this.state));
     this.tickVillageSchool();
     this.processQuests();
+    this.syncTravelerJournal();
     emit('stateChange', this.state);
 
     if (offlineResult) {
@@ -725,6 +735,7 @@ export class Game {
     const zone = this.balance.zones[zoneId];
     emit('zoneUnlock', { zoneId, zone, cost: result.cost || 0 });
     this.processQuests();
+    this.syncTravelerJournal();
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
@@ -2347,6 +2358,33 @@ export class Game {
     );
   }
 
+  getTravelerJournalView() {
+    return getTravelerJournalViewModel(this.state, this.travelerJournalData, this.getJournalContext());
+  }
+
+  getJournalContext() {
+    return {
+      recipes: this.recipes,
+      resources: this.resources,
+      balance: this.balance,
+    };
+  }
+
+  syncTravelerJournal() {
+    if (!this.state) return [];
+    const newly = syncTravelerJournalUnlocks(this.state, this.travelerJournalData, this.getJournalContext());
+    if (!newly.length) return [];
+    const book = ensureTravelerJournalState(this.state);
+    for (const id of newly) {
+      if (book.seenToast.includes(id)) continue;
+      book.seenToast.push(id);
+      const entry = this.travelerJournalData?.entries?.[id];
+      if (entry) emit('journalUnlock', { entry });
+    }
+    this.scheduleSave();
+    return newly;
+  }
+
   equipGrimoireSpell(skillId, slotIndex = null) {
     const result = equipSpell(this.state, skillId, slotIndex);
     if (result.ok) {
@@ -2594,6 +2632,7 @@ export class Game {
     refreshSchoolBonusCache(this.state, this.villageSchoolData);
     ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
 
+    this.syncTravelerJournal();
     emit('prestige', { season, prestige: this.state.prestige });
     emit('stateChange', this.state);
     // Sauvegarde immédiate pour gagner le merge cloud (évite de recharger l’ancienne saison)

@@ -118,7 +118,7 @@ export function renderVillage(game, el) {
           <span class="village-quest-npc">${npc?.emoji || '⛩️'}</span>
           <div>
             <strong>${npc?.name || 'Miko'}</strong>
-            <span class="village-quest-title">${npc?.title || 'la gardienne'}</span>
+            <span class="village-quest-title">${npc?.title || 'la gardienne'}${npc?.personality ? ` · <em>${npc.personality}</em>` : ''}</span>
           </div>
           <span class="village-quest-pillar">🌸 Bonus · Vent des cerisiers</span>
         </header>
@@ -163,7 +163,7 @@ export function renderVillage(game, el) {
           <span class="village-quest-npc">${npc?.emoji || '👤'}</span>
           <div>
             <strong>${npc?.name || 'Villageois'}</strong>
-            <span class="village-quest-title">${npc?.title || ''}</span>
+            <span class="village-quest-title">${npc?.title || ''}${npc?.personality ? ` · <em>${npc.personality}</em>` : ''}</span>
           </div>
           <span class="village-quest-pillar">${diff?.emoji || ''} ${diff?.label || ''}${card.isJoker ? ' · Joker' : ''} · ${pillarLabel(q?.pillar)}${weatherBadge ? ` ${weatherBadge}` : ''}</span>
         </header>

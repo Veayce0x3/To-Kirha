@@ -27,6 +27,8 @@ export const NAV_ICONS = {
   world: asset(V, 'kirha_city_transparent.png'),
   achievements: asset(D, 'parchemin ancien transparent.png'),
   missions: asset(D, 'parchemin ancien transparent.png'),
+  traveler_journal: asset(D, 'parchemin ancien transparent.png'),
+  village: asset(V, 'kirha_city_transparent.png'),
   job_lumberjack: asset(B, 'icone_bucheron_transparent.png'),
   job_fisher: asset('metiers/pecheur', 'icone_pecheur_transparent.png'),
   job_miner: asset('metiers/mineur', 'icone_mineur_transparent.png'),

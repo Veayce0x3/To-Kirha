@@ -2,7 +2,7 @@
   "id": "auction_house",
   "name": "Place marchande",
   "emoji": "🏛️",
-  "description": "Place du Village Sakura — achète des biens rares avec tes Kirha.",
+  "description": "Place du village de To-Kirha — achète des biens rares avec tes Kirha.",
   "vendors": {
     "ancient_scroll_vendor": {
       "id": "ancient_scroll_vendor",

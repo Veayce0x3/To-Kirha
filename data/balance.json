@@ -1,8 +1,8 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 48,
-  "appBuildId": "20260806-2230",
+  "saveVersion": 49,
+  "appBuildId": "20260806-2315",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -469,9 +469,9 @@
   "zones": {
     "village_sakura": {
       "id": "village_sakura",
-      "name": "Village Sakura",
+      "name": "Village de To-Kirha",
       "emoji": "🌸",
-      "description": "Point de départ. Temple du Cerisier.",
+      "description": "Point de départ. Quelques habitants sont restés — le reste du village reprend vie avec toi.",
       "dungeon": "temple_sakura",
       "unlocked": true,
       "unlockCost": 0

@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260806-2315",
+      "date": "2026-08-06",
+      "title": "Carnet du voyageur & village de To-Kirha",
+      "highlights": [
+        "Nouveau livre de lore (Monde → Carnet) : pages débloquées par jalons, lecture optionnelle",
+        "Le lieu s’appelle désormais le village de To-Kirha ; intro Conseil à l’arrivée",
+        "PNJ du panneau : traits de personnalité ; le carnet survit aux saisons"
+      ]
+    },
+    {
       "buildId": "20260806-2230",
       "date": "2026-08-06",
       "title": "Cuisine v2 — PM, qualités & Livre",

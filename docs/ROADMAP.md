@@ -54,6 +54,8 @@ Monnaie : **Kirha**. Stack : vanilla JS, HTML, CSS, JSON. Hébergement : **GitHu
 - [ ] Tutoriel adapté au choix carrière
 - [ ] Balancing playtest (cuisine, HDV, fusion, drops solo)
 - [ ] Sets Brume / Lotus · paliers 200+
+- [x] **Carnet du voyageur** (lore optionnel, pages par jalons) — `docs/LORE.md`
+- [ ] Fragments lore École / avant-boss / parchemins (suite)
 
 ### UI & polish (reste)
 

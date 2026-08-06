@@ -1143,6 +1143,61 @@
   color: var(--vert-foret, #2D5A27);
 }
 
+.journal-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.journal-card {
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: rgba(248, 232, 238, 0.55);
+  border: 1px solid rgba(232, 180, 203, 0.45);
+}
+
+.journal-card.locked {
+  opacity: 0.7;
+  background: rgba(74, 55, 40, 0.04);
+}
+
+.journal-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.journal-emoji {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.journal-card strong {
+  color: var(--marron-bois, #4A3728);
+  font-size: 1rem;
+}
+
+.journal-body {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(74, 55, 40, 0.92);
+}
+
+.journal-body p {
+  margin: 0 0 0.55rem;
+}
+
+.journal-body p:last-child {
+  margin-bottom: 0;
+}
+
+.village-quest-title em {
+  font-style: normal;
+  font-weight: 600;
+  color: rgba(155, 89, 182, 0.95);
+}
+
 .combat-tab-panel {
   min-height: 2rem;
 }

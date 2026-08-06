@@ -71,7 +71,7 @@ function renderCareerModal() {
   const welcomeTitle = season > 1 ? `🌸 Saison ${season}` : '🌸 Bienvenue à To-Kirha';
   const welcomeDesc = season > 1
     ? `Nouvelle saison ! Tu repars Paysan avec le Blé. Tes bonus permanents sont conservés (+Kirha / +XP). Choisis ton arme de départ.`
-    : `Tu commences en tant que <strong>Paysan</strong> avec une ligne de production de Blé. Les autres métiers se débloquent en progressant. Le reste s'achète à la Place marchande.`;
+    : `Tu arrives au <strong>village de To-Kirha</strong>, presque vide. Le Conseil te confie de le faire revivre. Tu commences <strong>Paysan</strong> avec le Blé — le reste s’achète à la Place marchande. Ton <strong>Carnet du voyageur</strong> (Monde) se remplira au fil de tes gestes.`;
 
   body.innerHTML = `
     <h2>${welcomeTitle}</h2>
@@ -136,6 +136,7 @@ async function confirmCareerChoice() {
     }
 
     closeCareerModal();
+    gameRef.syncTravelerJournal?.();
     emit('nicknameChange', { name: gameRef.getCharacterDisplayName(), renamed: false });
     emit('navRefresh');
   } catch (err) {

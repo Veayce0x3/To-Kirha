@@ -458,6 +458,9 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     totalHarvests: (state.lifetimeStats?.totalHarvests || 0) + (state.stats?.totalHarvests || 0),
     bossKillsTotal: (state.lifetimeStats?.bossKillsTotal || 0)
       + Object.values(state.bossKills || {}).reduce((a, b) => a + (Number(b) || 0), 0),
+    dungeonClears: (state.lifetimeStats?.dungeonClears || 0)
+      + Object.values(state.dungeonClears || {}).reduce((a, b) => a + (Number(b) || 0), 0)
+      + (Number(state.villageBoard?.dungeonClears) || 0),
     combatFights: (state.lifetimeStats?.combatFights || 0) + (state.stats?.combatFights || 0),
     maxSeasonReached: Math.max(
       Number(state.lifetimeStats?.maxSeasonReached) || 1,
@@ -504,6 +507,12 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
   const preservedCookbook = state.cookbook && typeof state.cookbook === 'object'
     ? { discovered: [...(state.cookbook.discovered || [])] }
     : { discovered: [] };
+  const preservedJournal = state.travelerJournal && typeof state.travelerJournal === 'object'
+    ? {
+      unlocked: [...(state.travelerJournal.unlocked || [])],
+      seenToast: [...(state.travelerJournal.seenToast || [])],
+    }
+    : { unlocked: [], seenToast: [] };
 
   return {
     ...fresh,
@@ -514,6 +523,7 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     villageSchool: schoolExtract.preserved,
     grimoire: preservedGrimoire,
     cookbook: preservedCookbook,
+    travelerJournal: preservedJournal,
     prestige: newPrestige,
     // Boost ×2 : disponible à activer manuellement (pas auto)
     seasonBoost: null,

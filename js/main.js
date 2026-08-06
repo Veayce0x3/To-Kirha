@@ -56,7 +56,7 @@ async function main() {
     resources, jobs, recipes, aides, equipment, farmData,
     characterConfig, combatEquipment, combatZones, enemies, merchant,
     combatSkills, combatResources, companions, achievements, weaponRoles,
-    changelog, villageBoard, villageSchool,
+    changelog, villageBoard, villageSchool, travelerJournal,
   ] = await Promise.all([
     load('resources.json'),
     load('jobs.json'),
@@ -77,6 +77,7 @@ async function main() {
     load('changelog.json').catch(() => ({ entries: [] })),
     load('village_board.json').catch(() => ({ npcs: {}, quests: {}, difficulties: {} })),
     load('village_school.json').catch(() => ({ branches: {}, researches: {} })),
+    load('traveler_journal.json').catch(() => ({ entries: {} })),
   ]);
 
   Object.assign(resources, combatResources);
@@ -86,7 +87,7 @@ async function main() {
   const game = new Game(
     resources, jobs, balance, recipes, aides, equipment, farmData,
     characterConfig, combatEquipment, combatZones, enemies, merchant, combatSkills, companions, achievements,
-    weaponRoles, villageBoard, villageSchool
+    weaponRoles, villageBoard, villageSchool, travelerJournal
   );
   game.changelog = changelog;
 
