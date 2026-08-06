@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 44,
-  "appBuildId": "20260806-2015",
+  "appBuildId": "20260806-2025",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -523,7 +523,7 @@
     "dailyShinyCap": 10,
     "dailyJackpotCap": 1,
     "dailyKirhaCap": 3,
-    "sakuraWindChance": 0.125,
+    "sakuraWindChance": 0.0714,
     "sakuraWindDurationMs": 1200000
   },
   "productionLines": {

@@ -81,8 +81,8 @@ const DEFAULT_CFG = {
   dailyShinyCap: 10,
   dailyJackpotCap: 1,
   dailyKirhaCap: 3,
-  /** Event rare : ~1 jour / 8 · fenêtre 20 min UTC */
-  sakuraWindChance: 0.125,
+  /** Event rare : ~1× / 2 semaines (aléatoire déterministe UTC) */
+  sakuraWindChance: 1 / 14,
   sakuraWindDurationMs: 20 * 60 * 1000,
 };
 
