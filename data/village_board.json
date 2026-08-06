@@ -708,5 +708,16 @@
       "message": "Deux donjons à purifier avant la nuit. Les lanternes du sanctuaire tremblent déjà… Ramène la lumière, salle après salle.",
       "requires": { "feature": "combat" }
     }
+  },
+  "sakuraWindQuest": {
+    "id": "sakura_offering",
+    "npcId": "miko",
+    "type": "deliver",
+    "deliver": { "ble": 60, "frene": 40 },
+    "message": "Le Vent des cerisiers ne dure qu’un souffle… Dépose une offrande de blé et de frêne au sanctuaire avant que les pétales ne se posent.",
+    "rewardKirhaMin": 280,
+    "rewardKirhaMax": 380,
+    "rewardNuggets": 2,
+    "rewardScrolls": 1
   }
 }

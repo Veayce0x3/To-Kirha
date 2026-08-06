@@ -4688,15 +4688,111 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .village-sky-line,
-.village-sky-reset {
+.village-sky-reset,
+.village-sky-tip {
   margin: 0.2rem 0 0;
   font-size: 0.88rem;
   line-height: 1.35;
 }
 
+.village-sky-tip {
+  margin-top: 0.45rem;
+  font-style: italic;
+  color: var(--bois);
+  opacity: 0.92;
+}
+
 .village-sky-reset {
   opacity: 0.75;
   font-size: 0.8rem;
+}
+
+.village-forecast {
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(255, 253, 249, 0.72);
+  border: 1px solid rgba(45, 90, 39, 0.12);
+}
+
+.village-forecast-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.village-forecast-weather {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--vert-foret);
+}
+
+.village-forecast-blurb {
+  margin: 0.3rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.village-forecast-sakura {
+  margin: 0.45rem 0 0;
+  font-size: 0.86rem;
+  color: var(--violet-sakura, #9B59B6);
+}
+
+.village-sakura-banner {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(248, 232, 238, 0.95);
+  border: 1px solid rgba(155, 89, 182, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.village-sakura-banner.active {
+  border-color: rgba(155, 89, 182, 0.55);
+  box-shadow: 0 0 0 2px rgba(232, 145, 176, 0.35);
+}
+
+.village-sakura-banner.past {
+  opacity: 0.7;
+}
+
+.village-sakura-banner strong {
+  color: var(--violet-sakura, #9B59B6);
+}
+
+.village-sakura-banner span {
+  font-size: 0.84rem;
+}
+
+.village-quest-card.weather-linked {
+  border-color: rgba(45, 90, 39, 0.28);
+}
+
+.village-quest-card.sakura {
+  border-color: rgba(155, 89, 182, 0.4);
+  background: linear-gradient(160deg, rgba(248, 232, 238, 0.95), rgba(255, 253, 249, 0.92));
+}
+
+.village-quest-weather {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(228, 240, 223, 0.95);
+  border: 1px solid rgba(45, 90, 39, 0.2);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.harvest-weather-chip.sakura-active {
+  border-color: rgba(155, 89, 182, 0.45);
+  background: rgba(248, 232, 238, 0.95);
 }
 
 .village-sky-pills {

@@ -2,10 +2,28 @@
  * Panneau du village — quêtes quotidiennes (UTC) + tirage seeded.
  */
 
-import { getUtcDateKey } from './harvestEvents.js';
+import {
+  getUtcDateKey,
+  getWeatherForDateKey,
+  getSakuraWindStatus,
+} from './harvestEvents.js';
 import { isFarmBuildingUnlocked, isCraftJobUnlocked, isCombatUnlocked } from './jobUnlock.js';
 
 const PILLARS = ['harvest', 'farm', 'cooking', 'combat'];
+const BOARD_SCHEME = 'mixed_v3';
+
+/** PNJ → métier météo (cohérence soft). */
+const NPC_WEATHER_JOB = {
+  nori: 'fisher',
+  yumi: 'farmer',
+  nami: 'farmer',
+  riku: 'farmer',
+  emi: 'farmer',
+  kiro: 'lumberjack',
+  haru: 'lumberjack',
+  yuto: 'miner',
+  hana: 'alchemist',
+};
 
 function hashStr(s) {
   let h = 2166136261;
@@ -67,13 +85,49 @@ function questsFor(boardData, pillar, difficulty) {
   );
 }
 
-function pickQuest(rng, boardData, { pillar, difficulty, usedIds, usedNpcs, allowNpcReuse }) {
+function questMatchesWeather(quest, weatherJobId, resources) {
+  if (!quest || !weatherJobId) return false;
+  for (const resId of Object.keys(quest.deliver || {})) {
+    if (resources?.[resId]?.job === weatherJobId) return true;
+  }
+  return NPC_WEATHER_JOB[quest.npcId] === weatherJobId;
+}
+
+function pickWeighted(rng, items, weightFn) {
+  if (!items?.length) return null;
+  let total = 0;
+  const weights = items.map((item) => {
+    const w = Math.max(0.01, Number(weightFn(item)) || 1);
+    total += w;
+    return w;
+  });
+  let roll = rng() * total;
+  for (let i = 0; i < items.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) return items[i];
+  }
+  return items[items.length - 1];
+}
+
+function pickQuest(rng, boardData, {
+  pillar,
+  difficulty,
+  usedIds,
+  usedNpcs,
+  allowNpcReuse,
+  weatherJobId = null,
+  resources = null,
+}) {
   let pool = questsFor(boardData, pillar, difficulty).filter((q) => !usedIds.has(q.id));
   if (!allowNpcReuse && usedNpcs?.size) {
     const filtered = pool.filter((q) => !usedNpcs.has(q.npcId));
     if (filtered.length) pool = filtered;
   }
-  return pickOne(rng, pool);
+  if (!pool.length) return null;
+  // Soft bias météo : les quêtes « qui collent » au ciel sont plus probables, sans remplacer le mix
+  return pickWeighted(rng, pool, (q) => (
+    questMatchesWeather(q, weatherJobId, resources) ? 4 : 1
+  ));
 }
 
 /**
@@ -81,9 +135,12 @@ function pickQuest(rng, boardData, { pillar, difficulty, usedIds, usedNpcs, allo
  * - 2 faciles + 2 moyens + 1 difficile
  * - 1 récolte, 1 ferme, 1 cuisine, 1 combat + 1 joker (pilier doublé)
  * - PNJ uniques sur les 4 premières ; joker peut réutiliser un PNJ mais jamais la même quête
+ * - Soft biais météo (cohérence, pas de remplacement)
  */
-export function rollDailyBoard(boardData, dateKey) {
-  const rng = makeRng(hashStr(`village_board_mixed_v2:${dateKey}`));
+export function rollDailyBoard(boardData, dateKey, resources = null) {
+  const weather = getWeatherForDateKey(dateKey);
+  const weatherJobId = weather?.jobId || null;
+  const rng = makeRng(hashStr(`${BOARD_SCHEME}:${dateKey}:${weather?.id || 'sun'}`));
   const difficultySlots = shuffleInPlace(rng, ['easy', 'easy', 'medium', 'medium', 'hard']);
   const pillars = shuffleInPlace(rng, [...PILLARS]);
 
@@ -100,8 +157,9 @@ export function rollDailyBoard(boardData, dateKey) {
       usedIds,
       usedNpcs,
       allowNpcReuse: false,
+      weatherJobId,
+      resources,
     });
-    // Fallback : autre difficulté du même pilier si pool trop restreint
     if (!q) {
       for (const d of ['easy', 'medium', 'hard']) {
         if (d === difficulty) continue;
@@ -111,6 +169,8 @@ export function rollDailyBoard(boardData, dateKey) {
           usedIds,
           usedNpcs,
           allowNpcReuse: false,
+          weatherJobId,
+          resources,
         });
         if (q) break;
       }
@@ -122,9 +182,12 @@ export function rollDailyBoard(boardData, dateKey) {
     }
   }
 
-  // Joker : autre quête (jamais identique), PNJ éventuellement déjà vu
+  // Joker : favorise d’abord le pilier harvest (souvent lié à la météo), puis le reste
   const jokerDiff = difficultySlots[4] || 'medium';
   const jokerPillarOrder = shuffleInPlace(rng, [...PILLARS]);
+  if (weatherJobId) {
+    jokerPillarOrder.sort((a, b) => (a === 'harvest' ? -1 : 0) - (b === 'harvest' ? -1 : 0));
+  }
   let joker = null;
   for (const pillar of jokerPillarOrder) {
     joker = pickQuest(rng, boardData, {
@@ -133,6 +196,8 @@ export function rollDailyBoard(boardData, dateKey) {
       usedIds,
       usedNpcs,
       allowNpcReuse: true,
+      weatherJobId,
+      resources,
     });
     if (joker) break;
   }
@@ -145,6 +210,8 @@ export function rollDailyBoard(boardData, dateKey) {
           usedIds,
           usedNpcs,
           allowNpcReuse: true,
+          weatherJobId,
+          resources,
         });
         if (joker) break;
       }
@@ -156,16 +223,15 @@ export function rollDailyBoard(boardData, dateKey) {
     usedIds.add(joker.id);
   }
 
-  // Bonus 5/5 : mix léger (1 pépite + Kirha moyen)
   const clearEasy = getDifficultyDef(boardData, 'easy');
   const clearMed = getDifficultyDef(boardData, 'medium');
 
   return {
     date: dateKey,
-    scheme: 'mixed_v2',
+    scheme: BOARD_SCHEME,
     difficulty: 'mixed',
+    weatherId: weather?.id || null,
     questIds: picked,
-    // legacy fields (non utilisés pour le turn-in mixte)
     rewardKirha: 0,
     rewardNuggets: 0,
     clearBonusNuggets: Math.max(
@@ -179,8 +245,9 @@ export function rollDailyBoard(boardData, dateKey) {
 function emptyDaily(roll) {
   return {
     date: roll.date,
-    scheme: roll.scheme || 'mixed_v2',
+    scheme: roll.scheme || BOARD_SCHEME,
     difficulty: roll.difficulty || 'mixed',
+    weatherId: roll.weatherId || null,
     questIds: roll.questIds.slice(),
     rewardKirha: roll.rewardKirha,
     rewardNuggets: roll.rewardNuggets,
@@ -198,14 +265,13 @@ function emptyDaily(roll) {
  * Assure l’état journalier (reset UTC).
  * @returns {{ daily: object, rolled: boolean }}
  */
-export function ensureVillageBoardDay(state, boardData, now = Date.now()) {
+export function ensureVillageBoardDay(state, boardData, now = Date.now(), resources = null) {
   const dateKey = getUtcDateKey(now);
   const daily = state.villageBoard;
   const sameDay = daily?.date === dateKey && Array.isArray(daily.questIds);
-  const needsReroll = !sameDay || daily.scheme !== 'mixed_v2';
+  const needsReroll = !sameDay || daily.scheme !== BOARD_SCHEME;
 
   if (sameDay && !needsReroll) {
-    // Migration douce : anciens ids Kenji → Haru
     state.villageBoard.questIds = state.villageBoard.questIds.map((id) => {
       if (id === 'e_f_kenji_eau') return 'e_f_haru_eau';
       if (id === 'h_h_kenji') return 'h_h_haru';
@@ -223,7 +289,7 @@ export function ensureVillageBoardDay(state, boardData, now = Date.now()) {
     }
     return { daily: state.villageBoard, rolled: false };
   }
-  const roll = rollDailyBoard(boardData, dateKey);
+  const roll = rollDailyBoard(boardData, dateKey, resources);
   state.villageBoard = emptyDaily(roll);
   return { daily: state.villageBoard, rolled: true };
 }
@@ -304,9 +370,10 @@ export function noteVillageCombatResult(state, boardData, result) {
   }
 }
 
-function grantRewards(state, kirha, nuggets) {
+function grantRewards(state, kirha, nuggets, scrolls = 0) {
   const k = Math.max(0, Math.floor(Number(kirha) || 0));
   const n = Math.max(0, Math.floor(Number(nuggets) || 0));
+  const s = Math.max(0, Math.floor(Number(scrolls) || 0));
   if (k > 0) {
     state.kirha = (state.kirha || 0) + k;
     if (!state.lifetimeStats) state.lifetimeStats = {};
@@ -317,14 +384,17 @@ function grantRewards(state, kirha, nuggets) {
   if (n > 0) {
     state.inventory.gold_nugget = (state.inventory.gold_nugget || 0) + n;
   }
-  return { kirha: k, nuggets: n };
+  if (s > 0) {
+    state.inventory.ancient_scroll = (state.inventory.ancient_scroll || 0) + s;
+  }
+  return { kirha: k, nuggets: n, scrolls: s };
 }
 
 /**
  * Livre / valide une quête du panneau.
  */
-export function turnInVillageQuest(state, boardData, questId, balance, jobs, farmData) {
-  ensureVillageBoardDay(state, boardData);
+export function turnInVillageQuest(state, boardData, questId, balance, jobs, farmData, resources = null) {
+  ensureVillageBoardDay(state, boardData, Date.now(), resources);
   const daily = state.villageBoard;
   if (!daily.questIds.includes(questId)) {
     return { ok: false, reason: 'Cette quête n’est pas sur le panneau aujourd’hui.' };
@@ -393,8 +463,10 @@ export function turnInVillageQuest(state, boardData, questId, balance, jobs, far
 }
 
 export function getVillageBoardViewModel(state, boardData, balance, jobs, farmData, resources) {
-  ensureVillageBoardDay(state, boardData);
+  ensureVillageBoardDay(state, boardData, Date.now(), resources);
   const daily = state.villageBoard;
+  const weather = getWeatherForDateKey(daily.date || getUtcDateKey());
+  const weatherJobId = weather?.jobId || null;
   const cards = (daily.questIds || []).map((id, idx) => {
     const quest = getQuestDef(boardData, id);
     const npc = getNpc(boardData, quest?.npcId);
@@ -408,6 +480,7 @@ export function getVillageBoardViewModel(state, boardData, balance, jobs, farmDa
     }));
     const diffDef = getDifficultyDef(boardData, quest?.difficulty);
     const isJoker = idx === (daily.questIds?.length || 0) - 1;
+    const weatherLinked = questMatchesWeather(quest, weatherJobId, resources);
     return {
       quest,
       npc,
@@ -417,6 +490,7 @@ export function getVillageBoardViewModel(state, boardData, balance, jobs, farmDa
       deliverParts,
       difficulty: diffDef,
       isJoker,
+      weatherLinked,
       lockHint: locked ? getRequirementHint(quest?.requires, jobs, farmData) : null,
       canTurnIn: !completed && !locked && progress.ready,
     };
@@ -432,12 +506,104 @@ export function getVillageBoardViewModel(state, boardData, balance, jobs, farmDa
   return {
     daily,
     difficulty: { id: 'mixed', label: 'Mixte', emoji: '🎯' },
+    weather,
     mixCounts: counts,
     cards,
     doneCount,
     total: cards.length,
     allDone: doneCount >= cards.length && cards.length > 0,
     claimedClearBonus: !!daily.claimedClearBonus,
+  };
+}
+
+function getSakuraQuestDef(boardData) {
+  return boardData?.sakuraWindQuest || null;
+}
+
+export function getSakuraWindQuestView(state, boardData, balance, resources, now = Date.now()) {
+  const quest = getSakuraQuestDef(boardData);
+  const status = getSakuraWindStatus(now, balance);
+  if (!quest || !status.scheduled) {
+    return { available: false, status, quest: null };
+  }
+
+  if (!state.sakuraWind || state.sakuraWind.date !== status.dateKey) {
+    state.sakuraWind = { date: status.dateKey, completed: false };
+  }
+
+  const completed = !!state.sakuraWind.completed;
+  const progress = getQuestProgress(quest, state, null);
+  const deliverParts = (progress.parts || []).map((p) => ({
+    ...p,
+    name: resources?.[p.resId]?.name || p.resId,
+    emoji: resources?.[p.resId]?.emoji || '',
+  }));
+  const npc = getNpc(boardData, quest.npcId);
+
+  return {
+    available: true,
+    status,
+    quest,
+    npc,
+    completed,
+    progress,
+    deliverParts,
+    canTurnIn: status.active && !completed && progress.ready,
+    rewardHint: {
+      kirhaMin: Number(quest.rewardKirhaMin) || 280,
+      kirhaMax: Number(quest.rewardKirhaMax) || 380,
+      nuggets: Number(quest.rewardNuggets) || 2,
+      scrolls: Number(quest.rewardScrolls) || 1,
+    },
+  };
+}
+
+export function turnInSakuraWindQuest(state, boardData, balance, now = Date.now()) {
+  const view = getSakuraWindQuestView(state, boardData, balance, null, now);
+  const quest = getSakuraQuestDef(boardData);
+  if (!quest) return { ok: false, reason: 'Quête introuvable.' };
+  const status = getSakuraWindStatus(now, balance);
+  if (!status.active) {
+    return { ok: false, reason: 'Le Vent des cerisiers n’est pas actif (fenêtre de 20 min UTC).' };
+  }
+  if (!state.sakuraWind || state.sakuraWind.date !== status.dateKey) {
+    state.sakuraWind = { date: status.dateKey, completed: false };
+  }
+  if (state.sakuraWind.completed) {
+    return { ok: false, reason: 'Offrande déjà déposée aujourd’hui.' };
+  }
+
+  const progress = getQuestProgress(quest, state, null);
+  if (!progress.ready) return { ok: false, reason: 'Objectif pas encore atteint.' };
+
+  for (const [resId, need] of Object.entries(quest.deliver || {})) {
+    const n = Number(need) || 0;
+    if ((state.inventory[resId] || 0) < n) {
+      return { ok: false, reason: 'Ressources insuffisantes.' };
+    }
+  }
+  for (const [resId, need] of Object.entries(quest.deliver || {})) {
+    state.inventory[resId] -= Number(need) || 0;
+    if (state.inventory[resId] <= 0) delete state.inventory[resId];
+  }
+
+  state.sakuraWind.completed = true;
+  const rewardRng = makeRng(hashStr(`${status.dateKey}:sakura_wind:reward`));
+  const kirha = randInt(rewardRng, quest.rewardKirhaMin ?? 280, quest.rewardKirhaMax ?? 380);
+  const rewards = grantRewards(
+    state,
+    kirha,
+    Number(quest.rewardNuggets) || 2,
+    Number(quest.rewardScrolls) || 1
+  );
+  const npc = getNpc(boardData, quest.npcId);
+  return {
+    ok: true,
+    quest,
+    npc,
+    thanks: npc?.thanks || 'Les pétales t’en remercient.',
+    rewards,
+    sakura: true,
   };
 }
 

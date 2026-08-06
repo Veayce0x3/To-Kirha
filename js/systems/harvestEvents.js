@@ -13,6 +13,29 @@ export const WEATHER_META = {
   fog: { id: 'fog', label: 'Brouillard', emoji: '🌫️', jobId: 'lumberjack', discoveryId: 'nest' },
 };
 
+/** Conseils du jour (flavor stratégique, sans contrainte). */
+export const WEATHER_TIPS = {
+  rain: 'Les pêcheurs racontent que les bouteilles dérivent plus souvent jusqu’aux berges aujourd’hui…',
+  snow: 'Sous la neige, la roche craque : les mineurs murmurent que les bourses apparaissent plus facilement.',
+  sun: 'Beau temps sur les champs — les bourses entre les cultures se laissent mieux apercevoir.',
+  wind: 'Le vent soulève les herbes : les alchimistes cherchent d’anciens sacs dans les fourrés.',
+  fog: 'Dans la brume, les nids abandonnés se cachent moins bien entre les branches.',
+};
+
+export const WEATHER_TOMORROW_BLURBS = {
+  rain: 'Les pêcheurs annoncent une journée idéale pour lancer leurs filets.',
+  snow: 'Les mineurs prévoient une journée froide, parfaite pour fendre la roche.',
+  sun: 'Le beau temps sera idéal pour les cultures et le pain du marché.',
+  wind: 'Un vent vif devrait agiter les plantes — journée d’herboriste en vue.',
+  fog: 'La brume s’annonce : les bûcherons parlent déjà de bois bien parfumé.',
+};
+
+export const SAKURA_WIND_META = {
+  id: 'sakura_wind',
+  label: 'Vent des cerisiers',
+  emoji: '🌸',
+};
+
 export const DISCOVERY_META = {
   nest: {
     id: 'nest',
@@ -58,6 +81,9 @@ const DEFAULT_CFG = {
   dailyShinyCap: 10,
   dailyJackpotCap: 1,
   dailyKirhaCap: 3,
+  /** Event rare : ~1 jour / 8 · fenêtre 20 min UTC */
+  sakuraWindChance: 0.125,
+  sakuraWindDurationMs: 20 * 60 * 1000,
 };
 
 function cfg(balance) {
@@ -83,6 +109,129 @@ export function getCurrentWeather(now = Date.now()) {
   const dateKey = getUtcDateKey(now);
   const id = getWeatherIdForDate(dateKey);
   return { dateKey, ...(WEATHER_META[id] || WEATHER_META.sun) };
+}
+
+export function addUtcDays(dateKey, days = 1) {
+  const [y, m, d] = String(dateKey || '').split('-').map(Number);
+  if (!y || !m || !d) return getUtcDateKey();
+  const dt = new Date(Date.UTC(y, m - 1, d + (Number(days) || 0)));
+  return dt.toISOString().slice(0, 10);
+}
+
+export function getWeatherForDateKey(dateKey) {
+  const id = getWeatherIdForDate(dateKey);
+  return { dateKey, ...(WEATHER_META[id] || WEATHER_META.sun) };
+}
+
+export function getTomorrowWeather(now = Date.now()) {
+  return getWeatherForDateKey(addUtcDays(getUtcDateKey(now), 1));
+}
+
+function hashStr(s) {
+  let h = 2166136261;
+  const str = String(s || '');
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function makeRng(seed) {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Event rare déterministe (même fenêtre pour tous).
+ * @returns {{ dateKey, startAt, endAt, durationMs }|null}
+ */
+export function getSakuraWindSchedule(dateKey, balance = null) {
+  const c = cfg(balance);
+  const chance = Number(c.sakuraWindChance);
+  const durationMs = Math.max(60_000, Number(c.sakuraWindDurationMs) || 20 * 60 * 1000);
+  const rng = makeRng(hashStr(`sakura_wind_v1:${dateKey}`));
+  if (rng() >= (Number.isFinite(chance) ? chance : 0.125)) return null;
+
+  const dayStart = Date.parse(`${dateKey}T00:00:00.000Z`);
+  if (!Number.isFinite(dayStart)) return null;
+  const durationMin = Math.ceil(durationMs / 60000);
+  const maxStartMin = Math.max(0, 24 * 60 - durationMin);
+  const startMin = Math.floor(rng() * (maxStartMin + 1));
+  const startAt = dayStart + startMin * 60_000;
+  return {
+    dateKey,
+    startAt,
+    endAt: startAt + durationMs,
+    durationMs,
+  };
+}
+
+export function formatUtcHm(ts) {
+  const d = new Date(ts);
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+}
+
+/**
+ * Statut Vent des cerisiers pour un instant donné.
+ */
+export function getSakuraWindStatus(now = Date.now(), balance = null) {
+  const dateKey = getUtcDateKey(now);
+  const schedule = getSakuraWindSchedule(dateKey, balance);
+  if (!schedule) {
+    return { scheduled: false, active: false, upcoming: false, past: false, schedule: null, dateKey };
+  }
+  const active = now >= schedule.startAt && now < schedule.endAt;
+  const upcoming = now < schedule.startAt;
+  const past = now >= schedule.endAt;
+  return {
+    scheduled: true,
+    active,
+    upcoming,
+    past,
+    schedule,
+    dateKey,
+    startLabel: formatUtcHm(schedule.startAt),
+    endLabel: formatUtcHm(schedule.endAt),
+    msUntilStart: Math.max(0, schedule.startAt - now),
+    msUntilEnd: Math.max(0, schedule.endAt - now),
+  };
+}
+
+/** Vue complète Ciel du jour + demain (+ sakura). */
+export function getWeatherSkyView(now = Date.now(), balance = null) {
+  const today = getCurrentWeather(now);
+  const tomorrow = getTomorrowWeather(now);
+  const sakuraToday = getSakuraWindStatus(now, balance);
+  const sakuraTomorrow = getSakuraWindSchedule(tomorrow.dateKey, balance);
+
+  return {
+    today,
+    tip: WEATHER_TIPS[today.id] || '',
+    tomorrow: {
+      weather: tomorrow,
+      blurb: WEATHER_TOMORROW_BLURBS[tomorrow.id] || '',
+      sakura: sakuraTomorrow
+        ? {
+            ...SAKURA_WIND_META,
+            startLabel: formatUtcHm(sakuraTomorrow.startAt),
+            endLabel: formatUtcHm(sakuraTomorrow.endAt),
+            durationMin: Math.round(sakuraTomorrow.durationMs / 60000),
+          }
+        : null,
+    },
+    sakura: sakuraToday.scheduled
+      ? {
+          ...SAKURA_WIND_META,
+          ...sakuraToday,
+        }
+      : { ...SAKURA_WIND_META, scheduled: false, active: false },
+  };
 }
 
 function randInt(min, max) {

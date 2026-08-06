@@ -95,6 +95,8 @@ import {
   syncHarvestEventsDay,
   getHarvestEventsDailyStatus,
   getCurrentWeather,
+  getWeatherSkyView,
+  getSakuraWindStatus,
   getTotalDiscoveries,
   discardPendingEvent,
   ensureHarvestEventsForJob,
@@ -104,6 +106,8 @@ import {
   getVillageBoardViewModel,
   turnInVillageQuest,
   noteVillageCombatResult,
+  getSakuraWindQuestView,
+  turnInSakuraWindQuest,
 } from '../systems/villageBoard.js';
 import { isCraftJobUnlocked, isCombatUnlocked } from '../systems/jobUnlock.js';
 import {
@@ -376,6 +380,7 @@ export class Game {
       },
       harvestEventsDaily: null,
       villageBoard: null,
+      sakuraWind: null,
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
       playtime: { foregroundMs: 0, backgroundMs: 0 },
@@ -825,7 +830,7 @@ export class Game {
   }
 
   ensureVillageBoardDay() {
-    return ensureVillageBoardDay(this.state, this.villageBoardData);
+    return ensureVillageBoardDay(this.state, this.villageBoardData, Date.now(), this.resources);
   }
 
   getVillageBoardView() {
@@ -846,13 +851,44 @@ export class Game {
       questId,
       this.balance,
       this.jobs,
-      this.farmData
+      this.farmData,
+      this.resources
     );
     if (result.ok) {
       emit('stateChange', this.state);
       this.scheduleSave();
     }
     return result;
+  }
+
+  getWeatherSkyView() {
+    return getWeatherSkyView(Date.now(), this.balance);
+  }
+
+  getSakuraWindQuestView() {
+    return getSakuraWindQuestView(
+      this.state,
+      this.villageBoardData,
+      this.balance,
+      this.resources
+    );
+  }
+
+  turnInSakuraWindQuest() {
+    const result = turnInSakuraWindQuest(
+      this.state,
+      this.villageBoardData,
+      this.balance
+    );
+    if (result.ok) {
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
+    return result;
+  }
+
+  isSakuraWindActive() {
+    return !!getSakuraWindStatus(Date.now(), this.balance)?.active;
   }
 
   setCompanionNickname(companionId, name, isRename = false) {

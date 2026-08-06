@@ -59,6 +59,7 @@ import {
   refreshAuctionHouseLight,
   refreshCharacterCombatPanels,
 } from './views.js';
+import { syncSakuraWindVisual } from './villageView.js';
 import { patchFarmUnitCard } from './productionLineView.js';
 
 export function initUI(game, audio) {
@@ -476,8 +477,13 @@ export function initUI(game, audio) {
     const farming = game.isFarmActive();
     if (harvesting) updateHarvestSlotProgresses(game);
     if (farming) updateFarmSlotProgresses(game);
+    syncSakuraWindVisual(game);
 
-    if (!harvesting && !farming) return;
+    if (!harvesting && !farming) {
+      // Garde un tick léger pour démarrer/arrêter les pétales Vent des cerisiers
+      animTimer = setTimeout(tickActiveUI, 5000);
+      return;
+    }
 
     const now = Date.now();
     if (now - lastNavTickAt >= NAV_TICK_MS) {
@@ -720,6 +726,7 @@ export function initUI(game, audio) {
     const bits = [];
     if (r.kirha) bits.push(`+${r.kirha} 💰`);
     if (r.nuggets) bits.push(`+${r.nuggets} pépite`);
+    if (r.scrolls) bits.push(`+${r.scrolls} 📜`);
     showToast(els, `${name} : ${thanks}${bits.length ? ` · ${bits.join(' · ')}` : ''}`, 'upgrade');
     if (result?.clearBonus) {
       const b = result.clearBonus;
@@ -982,7 +989,8 @@ export function initUI(game, audio) {
     els.whatsNewModal?.setAttribute('aria-hidden', 'true');
   });
   cleanupPullRefreshArtifacts();
-  if (game.isHarvesting() || game.isFarmActive()) tickHarvestUI();
+  syncSakuraWindVisual(game);
+  tickHarvestUI();
 }
 
 function showToast(els, message, type = 'harvest', action = null) {

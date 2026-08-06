@@ -839,6 +839,23 @@ body {
   will-change: transform;
 }
 
+body.sakura-wind-active .sakura-petals {
+  z-index: 2;
+}
+
+body.sakura-wind-active .petal {
+  width: 12px;
+  height: 12px;
+  opacity: 0.55 !important;
+  animation-duration: 10s;
+}
+
+body.sakura-wind-active .petal-event {
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(ellipse, #ffb6d0 0%, #e891b0 55%, transparent 100%);
+}
+
 body.page-hidden .petal,
 body.page-hidden .sakura-petals {
   animation-play-state: paused;
