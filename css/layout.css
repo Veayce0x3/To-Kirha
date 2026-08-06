@@ -746,6 +746,15 @@
   background: #E891B0;
 }
 
+.nav-btn.nav-tm-active:not(.active) {
+  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.45);
+  background: rgba(248, 232, 238, 0.95);
+}
+
+.nav-btn.nav-tm-active:not(.active) .nav-label::after {
+  content: ' 🧳';
+}
+
 .nav-btn.nav-harvest-harvesting:not(.active) {
   background: rgba(62, 107, 58, 0.14);
   color: var(--violet-sakura);
@@ -4740,6 +4749,12 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   margin: 0.45rem 0 0;
   font-size: 0.86rem;
   color: var(--violet-sakura, #9B59B6);
+}
+
+.village-forecast-merchant {
+  margin: 0.45rem 0 0;
+  font-size: 0.86rem;
+  color: var(--vert-foret);
 }
 
 .village-sakura-banner {

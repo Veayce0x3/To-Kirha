@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260806-2040",
+      "date": "2026-08-06",
+      "title": "Marchand itinérant",
+      "highlights": [
+        "Visite rare (~1×/semaine) à la Place marchande : stock thématique + promo",
+        "Il rachète une ressource du jour à +20 % (quota limité)",
+        "Popup une fois + surbrillance nav ; rumeur possible la veille au Village"
+      ]
+    },
+    {
       "buildId": "20260806-2025",
       "date": "2026-08-06",
       "title": "Vent des cerisiers plus rare",

@@ -172,6 +172,158 @@ body.auth-modal-open #career-choice-modal {
   color: #fff;
 }
 
+.hdv-main-tab--traveler {
+  border-color: rgba(155, 89, 182, 0.35);
+}
+
+.hdv-main-tab--traveler.tm-tab-glow:not(.active) {
+  animation: tmTabPulse 1.8s ease-in-out infinite;
+  background: rgba(248, 232, 238, 0.95);
+}
+
+.hdv-main-tab--traveler.active {
+  background: var(--violet-sakura, #9B59B6);
+  border-color: var(--violet-sakura, #9B59B6);
+  color: #fff;
+}
+
+@keyframes tmTabPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0.35); }
+  50% { box-shadow: 0 0 0 4px rgba(155, 89, 182, 0.2); }
+}
+
+.tm-active-hint {
+  color: var(--violet-sakura, #9B59B6);
+  font-weight: 600;
+}
+
+.tm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tm-head {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.tm-emoji {
+  font-size: 2rem;
+}
+
+.tm-head h3 {
+  margin: 0;
+}
+
+.tm-theme {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+}
+
+.tm-dialogue {
+  margin: 0;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.tm-promo {
+  margin: 0;
+  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+  background: rgba(228, 240, 223, 0.9);
+  border: 1px solid rgba(45, 90, 39, 0.2);
+  font-size: 0.9rem;
+}
+
+.tm-offers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.tm-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 253, 249, 0.92);
+  border: 1px solid rgba(45, 90, 39, 0.14);
+}
+
+.tm-offer.promo {
+  border-color: rgba(155, 89, 182, 0.4);
+}
+
+.tm-offer.sold-out {
+  opacity: 0.55;
+}
+
+.tm-offer-main {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.tm-offer-meta {
+  display: block;
+  font-size: 0.82rem;
+  opacity: 0.8;
+}
+
+.tm-offer-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.tm-offer-actions .btn {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.tm-demand {
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: rgba(248, 232, 238, 0.75);
+  border: 1px solid rgba(155, 89, 182, 0.25);
+}
+
+.tm-demand h4 {
+  margin: 0 0 0.35rem;
+}
+
+.tm-demand p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.tm-demand-vs {
+  opacity: 0.75;
+  font-size: 0.82rem;
+}
+
+.tm-demand-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.tm-demand-actions .btn {
+  min-height: 44px;
+}
+
+.tm-offer-res-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .hdv-banner-p2p {
   background: rgba(45, 90, 39, 0.12);
   border-color: rgba(45, 90, 39, 0.35);

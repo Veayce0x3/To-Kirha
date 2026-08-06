@@ -70,6 +70,10 @@ function normalizeCuisineTab(tab) {
 let auctionCategory = '';
 let auctionGroup = 'services';
 let hdvMainMode = 'npc';
+
+export function setAuctionMainMode(mode) {
+  if (mode === 'traveler' || mode === 'npc' || mode === 'sell') hdvMainMode = mode;
+}
 let auctionRootEl = null;
 let combatUi = { step: 'action', menu: 'main', pendingSkill: null, targetMode: null };
 let combatAnimBusy = false;
@@ -3432,6 +3436,100 @@ function mountAuctionSellPanel(game, root) {
   if (totalEl) totalEl.textContent = `Valeur totale : ${formatNumber(total)} 💰`;
 }
 
+function mountTravelingMerchantPanel(game, root) {
+  const area = root.querySelector('#hdv-content-area');
+  if (!area) return;
+  const status = game.getTravelingMerchantStatus?.();
+  if (!status?.active || !status.visit) {
+    area.innerHTML = '<p class="empty-text panel-inner">Le marchand est reparti.</p>';
+    return;
+  }
+  const v = status.visit;
+  const demandRes = v.demand ? game.resources[v.demand.resourceId] : null;
+  const demandHave = v.demand ? (game.state.inventory[v.demand.resourceId] || 0) : 0;
+  const demandUnit = game.getTravelingMerchantDemandUnitPrice?.() || 0;
+  const normalUnit = demandRes ? (Number(demandRes.sellPrice) || 0) : 0;
+
+  const offersHtml = (v.offers || []).map((o) => {
+    const res = game.resources[o.resourceId];
+    const soldOut = o.remaining <= 0;
+    return `
+      <article class="tm-offer${soldOut ? ' sold-out' : ''}${o.promo ? ' promo' : ''}" data-tm-offer="${o.id}">
+        <div class="tm-offer-main">
+          <span class="tm-offer-icon">${renderResourceIcon(res, 'tm-offer-res-icon') || res?.emoji || ''}</span>
+          <div>
+            <strong>${res?.name || o.resourceId}</strong>
+            <span class="tm-offer-meta">${formatNumber(o.unitPrice)} 💰 · stock ${o.remaining}/${o.stock}${o.promo ? ' · promo' : ''}</span>
+          </div>
+        </div>
+        <div class="tm-offer-actions">
+          <button type="button" class="btn btn-craft btn-tm-buy" data-tm-offer="${o.id}" data-qty="1" ${soldOut || game.state.kirha < o.unitPrice ? 'disabled' : ''}>×1</button>
+          <button type="button" class="btn btn-craft btn-tm-buy" data-tm-offer="${o.id}" data-qty="5" ${soldOut || o.remaining < 5 || game.state.kirha < o.unitPrice * 5 ? 'disabled' : ''}>×5</button>
+        </div>
+      </article>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="tm-panel panel-inner">
+      <header class="tm-head">
+        <span class="tm-emoji">🧳</span>
+        <div>
+          <h3>Marchand itinérant</h3>
+          <p class="tm-theme">${v.theme?.emoji || ''} Thème : <strong>${v.theme?.label || ''}</strong></p>
+        </div>
+      </header>
+      <p class="tm-dialogue">« ${v.dialogue || ''} »</p>
+      ${v.promo ? `<p class="tm-promo">Offre spéciale : <strong>${v.promo.label}</strong> −${Math.round(v.promo.pct * 100)} %</p>` : ''}
+      <div class="tm-offers">${offersHtml || '<p class="empty-text">Plus rien en stock.</p>'}</div>
+      ${v.demand && demandRes ? `
+      <section class="tm-demand">
+        <h4>Recherche du jour</h4>
+        <p>Il rachète <strong>${renderResourceIcon(demandRes, 'tm-offer-res-icon') || ''}${demandRes.name}</strong> à <strong>${formatNumber(demandUnit)} 💰</strong>/u
+          <span class="tm-demand-vs">(vente normale ${formatNumber(normalUnit)} 💰 · +20 %)</span></p>
+        <p class="tm-demand-quota">Quota restant : ${v.demandRemaining}/${v.demand.quota} · tu as ${formatNumber(demandHave)}</p>
+        <div class="tm-demand-actions">
+          <button type="button" class="btn btn-craft btn-tm-sell" data-qty="1" ${v.demandRemaining < 1 || demandHave < 1 ? 'disabled' : ''}>Vendre 1</button>
+          <button type="button" class="btn btn-craft btn-tm-sell" data-qty="10" ${v.demandRemaining < 10 || demandHave < 10 ? 'disabled' : ''}>Vendre 10</button>
+          <button type="button" class="btn btn-craft btn-tm-sell" data-qty="max" ${v.demandRemaining < 1 || demandHave < 1 ? 'disabled' : ''}>Vendre max</button>
+        </div>
+      </section>` : ''}
+      <p class="hdv-tip">Présent jusqu’à 00:00 UTC · paiements en Kirha uniquement.</p>
+    </div>
+  `;
+
+  area.querySelectorAll('.btn-tm-buy').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const offerId = btn.getAttribute('data-tm-offer');
+      const qty = Number(btn.getAttribute('data-qty')) || 1;
+      const result = game.buyTravelingMerchant(offerId, qty);
+      if (!result?.ok) {
+        emit('farmBlocked', { message: result?.reason || 'Achat impossible.' });
+        return;
+      }
+      renderAuctionHouse(game, root);
+    });
+  });
+
+  area.querySelectorAll('.btn-tm-sell').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const raw = btn.getAttribute('data-qty');
+      let qty = Number(raw) || 1;
+      if (raw === 'max') {
+        const st = game.getTravelingMerchantStatus();
+        const id = st?.visit?.demand?.resourceId;
+        const have = id ? (game.state.inventory[id] || 0) : 0;
+        qty = Math.min(have, st?.demandRemaining || 0);
+      }
+      const result = game.sellToTravelingMerchant(qty);
+      if (!result?.ok) {
+        emit('farmBlocked', { message: result?.reason || 'Vente impossible.' });
+        return;
+      }
+      renderAuctionHouse(game, root);
+    });
+  });
+}
+
 export function renderAuctionHouse(game, el) {
   auctionRootEl = el;
 
@@ -3440,25 +3538,27 @@ export function renderAuctionHouse(game, el) {
   const nuggetRes = game.resources.gold_nugget;
   const nuggetInfo = game.getGoldNuggetExchangeInfo?.() || null;
   const maintenance = isMaintenanceMode();
-  const modes = online
-    ? [
-      { id: 'npc', label: '📜 Archiviste' },
-      { id: 'sell', label: '💰 Vendre' },
-    ]
-    : [{ id: 'sell', label: '💰 Vendre' }];
-  if (hdvMainMode === 'players' || hdvMainMode === 'test') hdvMainMode = 'npc';
+  const travelerActive = !!game.isTravelingMerchantActive?.();
+  const modes = [];
+  if (travelerActive) modes.push({ id: 'traveler', label: '🧳 Voyageur' });
+  if (online) modes.push({ id: 'npc', label: '📜 Archiviste' });
+  modes.push({ id: 'sell', label: '💰 Vendre' });
+
+  if (hdvMainMode === 'players' || hdvMainMode === 'test') hdvMainMode = travelerActive ? 'traveler' : 'npc';
+  if (hdvMainMode === 'traveler' && !travelerActive) hdvMainMode = online ? 'npc' : 'sell';
   if (!modes.some((m) => m.id === hdvMainMode)) hdvMainMode = modes[0].id;
 
   el.innerHTML = `
     <div class="view-header"><h2>${iconHtml(getNavIcon('auction_house'), 'view-header-icon', 'Place')} Place marchande</h2>
       ${!online ? `<p class="view-desc">${getOnlineBlockReason()} — la vente PNJ reste disponible.</p>` : ''}
+      ${travelerActive ? '<p class="view-desc tm-active-hint">🧳 Un marchand itinérant est de passage aujourd’hui !</p>' : ''}
     </div>
-    <div class="hdv-view hdv-mode-${hdvMainMode}">
+    <div class="hdv-view hdv-mode-${hdvMainMode}${travelerActive ? ' tm-present' : ''}">
       ${maintenance ? '<p class="hdv-banner warn">Maintenance — HDV joueurs et classement limités.</p>' : ''}
       <nav class="hdv-main-tabs" id="hdv-main-tabs" aria-label="Type d\'HDV">
-        ${modes.map((m) => `<button type="button" class="hdv-main-tab hdv-main-tab--${m.id}${hdvMainMode === m.id ? ' active' : ''}" data-hdv-mode="${m.id}">${m.label}</button>`).join('')}
+        ${modes.map((m) => `<button type="button" class="hdv-main-tab hdv-main-tab--${m.id}${hdvMainMode === m.id ? ' active' : ''}${m.id === 'traveler' ? ' tm-tab-glow' : ''}" data-hdv-mode="${m.id}">${m.label}</button>`).join('')}
       </nav>
-      <div class="hdv-sticky"${hdvMainMode === 'sell' ? ' hidden' : ''}>
+      <div class="hdv-sticky"${hdvMainMode === 'sell' || hdvMainMode === 'traveler' ? ' hidden' : ''}>
         <div class="hdv-wallet" id="hdv-wallet">
           <span class="hdv-wallet-item"><strong id="hdv-wallet-kirha">${formatNumber(game.state.kirha || 0)}</strong> 💰</span>
           <span class="hdv-wallet-item"><span id="hdv-wallet-scroll-icon">${renderResourceIcon(scrollRes, 'hdv-wallet-icon')}</span> <strong id="hdv-wallet-scrolls">${game.getScrollCount()}</strong></span>
@@ -3481,7 +3581,9 @@ export function renderAuctionHouse(game, el) {
       </div>
       ${hdvMainMode === 'sell'
     ? ''
-    : '<p class="hdv-tip">Pour vendre tes récoltes aux PNJ, ouvre l’onglet <strong>Vendre</strong>.</p>'}
+    : (hdvMainMode === 'traveler'
+      ? ''
+      : '<p class="hdv-tip">Pour vendre tes récoltes aux PNJ, ouvre l’onglet <strong>Vendre</strong>.</p>')}
     </div>
   `;
 
@@ -3511,6 +3613,11 @@ export function renderAuctionHouse(game, el) {
 
   if (hdvMainMode === 'sell') {
     mountAuctionSellPanel(game, el);
+    return;
+  }
+
+  if (hdvMainMode === 'traveler') {
+    mountTravelingMerchantPanel(game, el);
     return;
   }
 

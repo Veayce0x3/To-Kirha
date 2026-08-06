@@ -58,6 +58,7 @@ import {
   closeDungeonCombatModal,
   refreshAuctionHouseLight,
   refreshCharacterCombatPanels,
+  setAuctionMainMode,
 } from './views.js';
 import { syncSakuraWindVisual } from './villageView.js';
 import { patchFarmUnitCard } from './productionLineView.js';
@@ -115,6 +116,9 @@ export function initUI(game, audio) {
     whatsNewVersion: document.getElementById('whats-new-version'),
     whatsNewBody: document.getElementById('whats-new-body'),
     whatsNewConfirm: document.getElementById('whats-new-confirm'),
+    travelingMerchantModal: document.getElementById('traveling-merchant-modal'),
+    travelingMerchantGoto: document.getElementById('traveling-merchant-goto'),
+    travelingMerchantDismiss: document.getElementById('traveling-merchant-dismiss'),
   };
 
   let lastKirha = game.state.kirha;
@@ -382,6 +386,12 @@ export function initUI(game, audio) {
         const status = game.getFarmBuildingNavStatus(viewDef.building);
         btn.dataset.harvestStatus = status;
         btn.classList.add(`nav-harvest-${status}`);
+      }
+
+      if (vid === 'auction_house') {
+        const tm = !!game.isTravelingMerchantActive?.();
+        btn.classList.toggle('nav-tm-active', tm);
+        if (tm) btn.title = 'Place marchande — Marchand itinérant présent !';
       }
     });
     updateJobSwitcherDockStatus(game);
@@ -719,6 +729,16 @@ export function initUI(game, audio) {
     tickHarvestUI();
     refreshHeader(game.state);
   });
+  on('travelingMerchantBuy', ({ resourceId, quantity, price }) => {
+    const name = game.resources[resourceId]?.name || resourceId;
+    showToast(els, `🧳 +${quantity} ${name} (−${formatNumber(price)} 💰)`, 'upgrade');
+    refreshHeader(game.state);
+  });
+  on('travelingMerchantSell', ({ resourceId, quantity, price }) => {
+    const name = game.resources[resourceId]?.name || resourceId;
+    showToast(els, `🧳 Vendu ${quantity} ${name} (+${formatNumber(price)} 💰)`, 'sell');
+    refreshHeader(game.state);
+  });
   on('villageQuestComplete', (result) => {
     const name = result?.npc?.name || 'Villageois';
     const thanks = result?.thanks || 'Merci !';
@@ -988,8 +1008,36 @@ export function initUI(game, audio) {
     els.whatsNewModal?.classList.remove('active');
     els.whatsNewModal?.setAttribute('aria-hidden', 'true');
   });
+  function closeTravelingMerchantModal() {
+    els.travelingMerchantModal?.classList.remove('active');
+    els.travelingMerchantModal?.setAttribute('aria-hidden', 'true');
+  }
+
+  function maybeShowTravelingMerchantPopup() {
+    const status = game.getTravelingMerchantStatus?.();
+    if (!status?.active || status.popupSeen) return;
+    if (els.whatsNewModal?.classList.contains('active')) return;
+    els.travelingMerchantModal?.classList.add('active');
+    els.travelingMerchantModal?.setAttribute('aria-hidden', 'false');
+  }
+
+  els.travelingMerchantDismiss?.addEventListener('click', () => {
+    game.markTravelingMerchantPopupSeen?.();
+    closeTravelingMerchantModal();
+    updateNavActive();
+  });
+  els.travelingMerchantGoto?.addEventListener('click', () => {
+    game.markTravelingMerchantPopupSeen?.();
+    closeTravelingMerchantModal();
+    setAuctionMainMode('traveler');
+    navigate('auction_house');
+    updateNavActive();
+  });
+
   cleanupPullRefreshArtifacts();
   syncSakuraWindVisual(game);
+  updateNavActive();
+  maybeShowTravelingMerchantPopup();
   tickHarvestUI();
 }
 

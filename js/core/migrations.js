@@ -350,10 +350,14 @@ const MIGRATIONS = {
   44(state) {
     if (!state.villageBoard) state.villageBoard = null;
   },
+  45(state) {
+    if (!state.travelingMerchant) state.travelingMerchant = null;
+    if (!state.sakuraWind) state.sakuraWind = null;
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 44;
+  const target = ctx.balance?.saveVersion ?? 45;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

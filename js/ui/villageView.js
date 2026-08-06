@@ -188,6 +188,9 @@ export function renderVillage(game, el) {
   const tomorrowSakura = tomorrow?.sakura
     ? `<p class="village-forecast-sakura">🌸 Demain aussi : <strong>Vent des cerisiers</strong> ${tomorrow.sakura.startLabel}–${tomorrow.sakura.endLabel} UTC (~${tomorrow.sakura.durationMin} min)</p>`
     : '';
+  const tomorrowMerchant = game.isTravelingMerchantTomorrow?.()
+    ? `<p class="village-forecast-merchant">🧳 Des voyageurs auraient aperçu un <strong>marchand</strong> près du village…</p>`
+    : '';
 
   el.innerHTML = `
     <div class="view-header">
@@ -214,6 +217,7 @@ export function renderVillage(game, el) {
         <p class="village-forecast-weather">${tomorrow?.weather?.emoji || ''} ${tomorrow?.weather?.label || '—'}</p>
         <p class="village-forecast-blurb">${tomorrow?.blurb || ''}</p>
         ${tomorrowSakura}
+        ${tomorrowMerchant}
       </div>
       <div class="village-sky-caps" aria-label="Limites événements récolte">
         <span title="Brillants ressource">✨ ${weatherStatus?.shiny?.used ?? 0}/${weatherStatus?.shiny?.cap ?? 10}</span>

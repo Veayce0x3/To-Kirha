@@ -100,6 +100,8 @@ import {
   getTotalDiscoveries,
   discardPendingEvent,
   ensureHarvestEventsForJob,
+  addUtcDays,
+  getUtcDateKey,
 } from '../systems/harvestEvents.js';
 import {
   ensureVillageBoardDay,
@@ -109,6 +111,14 @@ import {
   getSakuraWindQuestView,
   turnInSakuraWindQuest,
 } from '../systems/villageBoard.js';
+import {
+  getTravelingMerchantStatus,
+  markTravelingMerchantPopupSeen,
+  buyTravelingMerchantOffer,
+  sellToTravelingMerchant,
+  getTravelingMerchantDemandUnitPrice,
+  isTravelingMerchantScheduled,
+} from '../systems/travelingMerchant.js';
 import { isCraftJobUnlocked, isCombatUnlocked } from '../systems/jobUnlock.js';
 import {
   getFarmBuildingProgress as computeFarmBuildingProgress,
@@ -381,6 +391,7 @@ export class Game {
       harvestEventsDaily: null,
       villageBoard: null,
       sakuraWind: null,
+      travelingMerchant: null,
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
       playtime: { foregroundMs: 0, backgroundMs: 0 },
@@ -889,6 +900,61 @@ export class Game {
 
   isSakuraWindActive() {
     return !!getSakuraWindStatus(Date.now(), this.balance)?.active;
+  }
+
+  getTravelingMerchantStatus() {
+    return getTravelingMerchantStatus(this.state, this.resources, this.balance);
+  }
+
+  isTravelingMerchantActive() {
+    return !!this.getTravelingMerchantStatus()?.active;
+  }
+
+  markTravelingMerchantPopupSeen() {
+    markTravelingMerchantPopupSeen(this.state);
+    this.scheduleSave();
+  }
+
+  buyTravelingMerchant(offerId, quantity = 1) {
+    const result = buyTravelingMerchantOffer(
+      this.state,
+      this.resources,
+      this.balance,
+      offerId,
+      quantity
+    );
+    if (result.ok) {
+      emit('travelingMerchantBuy', result);
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
+    return result;
+  }
+
+  sellToTravelingMerchant(quantity) {
+    const result = sellToTravelingMerchant(
+      this.state,
+      this.resources,
+      this.balance,
+      quantity
+    );
+    if (result.ok) {
+      emit('travelingMerchantSell', result);
+      emit('stateChange', this.state);
+      this.scheduleSave();
+    }
+    return result;
+  }
+
+  getTravelingMerchantDemandUnitPrice() {
+    const status = this.getTravelingMerchantStatus();
+    if (!status?.visit?.demand) return 0;
+    const res = this.resources[status.visit.demand.resourceId];
+    return getTravelingMerchantDemandUnitPrice(res, status.visit.demand.bonus);
+  }
+
+  isTravelingMerchantTomorrow() {
+    return isTravelingMerchantScheduled(addUtcDays(getUtcDateKey(), 1), this.balance);
   }
 
   setCompanionNickname(companionId, name, isRename = false) {
