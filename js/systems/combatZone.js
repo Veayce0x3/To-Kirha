@@ -27,6 +27,7 @@ import {
   consumeCombatMealBuffFight,
   DUNGEON_ROOM_HEAL,
   calcMealHealAmount,
+  calcMealMpAmount,
 } from './consumables.js';
 import { wearEquippedCombatGear } from './combatDurability.js';
 import {
@@ -623,15 +624,28 @@ export function useCombatMeal(mealId, state, characterConfig, resources, balance
   if (role === 'companions' && member?.id === 'hero') {
     return { blocked: true, reason: 'Ce plat est pour un équipier' };
   }
-  if (role === 'hero' && member?.id && member.id !== 'hero') {
+  if ((role === 'hero' || role === 'mp') && member?.id && member.id !== 'hero') {
     return { blocked: true, reason: 'Ce plat est pour le héros' };
   }
 
   const mealCheck = canUseMemberMeal(run, memberIndex);
   if (!mealCheck.ok) return { blocked: true, reason: mealCheck.reason };
 
-  const gain = calcMealHealAmount(member?.maxHp || 1, heal.healPct);
-  const result = useMemberMeal(run, memberIndex, gain, heal.label, mealId);
+  let gainHp = 0;
+  let gainMp = 0;
+  if (role === 'mp') {
+    gainMp = calcMealMpAmount(member?.maxMp || 0, heal.mpPct);
+    if (gainMp <= 0 || (member.mp || 0) >= (member.maxMp || 0)) {
+      return { blocked: true, reason: 'PM déjà au maximum' };
+    }
+  } else {
+    gainHp = calcMealHealAmount(member?.maxHp || 1, heal.healPct);
+    if ((member.hp || 0) >= (member.maxHp || 0)) {
+      return { blocked: true, reason: 'PV déjà au maximum' };
+    }
+  }
+
+  const result = useMemberMeal(run, memberIndex, gainHp, heal.label, mealId, gainMp);
   if (!result) return { blocked: true, reason: 'Impossible d\'utiliser ce repas' };
   if (result.blocked) return result;
 

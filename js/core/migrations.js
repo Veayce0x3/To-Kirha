@@ -379,10 +379,25 @@ const MIGRATIONS = {
       state.villageSchool.unlockedSpells = [];
     }
   },
+  48(state, ctx) {
+    if (!state.cookbook || typeof state.cookbook !== 'object') {
+      state.cookbook = { discovered: [] };
+    }
+    if (!Array.isArray(state.cookbook.discovered)) state.cookbook.discovered = [];
+    const recipes = ctx.recipes || {};
+    const cuisineJobs = new Set(['baker', 'fishmonger', 'chemist', 'cook']);
+    const crafted = new Set(state.crafted || []);
+    for (const recipe of Object.values(recipes)) {
+      if (!recipe?.id || !cuisineJobs.has(recipe.craftJob)) continue;
+      if (crafted.has(recipe.id) && !state.cookbook.discovered.includes(recipe.id)) {
+        state.cookbook.discovered.push(recipe.id);
+      }
+    }
+  },
 };
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 47;
+  const target = ctx.balance?.saveVersion ?? 48;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

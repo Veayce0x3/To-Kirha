@@ -263,7 +263,7 @@
     "id": "recipe_poisson",
     "name": "Poisson grillé",
     "emoji": "🐟",
-    "description": "Poissonnier — soin équipiers. Dorade + Blé + Eau.",
+    "description": "Poissonnier — restauration PM. Dorade + Blé + Eau.",
     "kirhaCost": 15,
     "ingredients": {
       "dorade": 3,
@@ -294,7 +294,8 @@
     "repeatable": true,
     "craftJob": "baker",
     "requiredJobLevel": 5,
-    "jobXp": 28
+    "jobXp": 28,
+    "schoolUnlock": "cuisine_unlock_gateau"
   },
   "recipe_festin": {
     "id": "recipe_festin",
@@ -313,7 +314,8 @@
     "repeatable": true,
     "craftJob": "baker",
     "requiredJobLevel": 8,
-    "jobXp": 36
+    "jobXp": 36,
+    "schoolUnlock": "cuisine_unlock_festin"
   },
   "recipe_bento": {
     "id": "recipe_bento",
@@ -333,7 +335,8 @@
     "repeatable": true,
     "craftJob": "baker",
     "requiredJobLevel": 15,
-    "jobXp": 48
+    "jobXp": 48,
+    "schoolUnlock": "cuisine_unlock_bento"
   },
   "recipe_ramen": {
     "id": "recipe_ramen",
@@ -359,7 +362,7 @@
     "id": "recipe_sushi",
     "name": "Plateau sushi",
     "emoji": "🍣",
-    "description": "Poissonnier — soin équipiers.",
+    "description": "Poissonnier — restauration PM.",
     "kirhaCost": 120,
     "ingredients": {
       "saumon": 3,
@@ -372,13 +375,14 @@
     "repeatable": true,
     "craftJob": "fishmonger",
     "requiredJobLevel": 8,
-    "jobXp": 40
+    "jobXp": 40,
+    "schoolUnlock": "fish_unlock_sushi"
   },
   "recipe_tempura": {
     "id": "recipe_tempura",
     "name": "Tempura croustillante",
     "emoji": "🍤",
-    "description": "Poissonnier — soin équipiers.",
+    "description": "Poissonnier — restauration PM.",
     "kirhaCost": 220,
     "ingredients": {
       "crabe": 3,
@@ -392,7 +396,8 @@
     "repeatable": true,
     "craftJob": "fishmonger",
     "requiredJobLevel": 18,
-    "jobXp": 55
+    "jobXp": 55,
+    "schoolUnlock": "fish_unlock_tempura"
   },
   "recipe_udon": {
     "id": "recipe_udon",
@@ -418,7 +423,7 @@
     "id": "recipe_yakitori",
     "name": "Yakitori grillé",
     "emoji": "🍢",
-    "description": "Poissonnier — soin équipiers (nom historique).",
+    "description": "Poissonnier — restauration PM (nom historique).",
     "kirhaCost": 340,
     "ingredients": {
       "calmar": 3,
@@ -518,7 +523,7 @@
     "id": "recipe_teriyaki",
     "name": "Teriyaki d'argent",
     "emoji": "🥩",
-    "description": "Poissonnier — soin équipiers.",
+    "description": "Poissonnier — restauration PM.",
     "kirhaCost": 780,
     "ingredients": {
       "carpe_koi": 3,
@@ -558,7 +563,7 @@
     "id": "recipe_sashimi",
     "name": "Sashimi de raie",
     "emoji": "🐡",
-    "description": "Poissonnier — soin équipiers.",
+    "description": "Poissonnier — restauration PM.",
     "kirhaCost": 520,
     "ingredients": {
       "homard": 3,
@@ -578,7 +583,7 @@
     "id": "recipe_sukiyaki",
     "name": "Sukiyaki royal",
     "emoji": "🥘",
-    "description": "Poissonnier — soin équipiers.",
+    "description": "Poissonnier — restauration PM.",
     "kirhaCost": 720,
     "ingredients": {
       "fugu": 3,
@@ -598,7 +603,7 @@
     "id": "recipe_tonkatsu",
     "name": "Tonkatsu légendaire",
     "emoji": "🥩",
-    "description": "Poissonnier — soin équipiers.",
+    "description": "Poissonnier — restauration PM.",
     "kirhaCost": 920,
     "ingredients": {
       "pieuvre": 3,
@@ -1507,7 +1512,8 @@
     "repeatable": true,
     "craftJob": "chemist",
     "requiredJobLevel": 5,
-    "jobXp": 34
+    "jobXp": 34,
+    "schoolUnlock": "chem_unlock_ortie"
   },
   "recipe_elixir_ginseng": {
     "id": "recipe_elixir_ginseng",
@@ -1526,7 +1532,8 @@
     "repeatable": true,
     "craftJob": "chemist",
     "requiredJobLevel": 15,
-    "jobXp": 48
+    "jobXp": 48,
+    "schoolUnlock": "chem_unlock_ginseng"
   },
   "recipe_elixir_lavande": {
     "id": "recipe_elixir_lavande",

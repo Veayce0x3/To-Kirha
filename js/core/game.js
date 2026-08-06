@@ -266,8 +266,10 @@ import {
   peekMealHeal,
   consumeMealFromInventory,
   calcMealHealAmount,
+  calcMealMpAmount,
   applyCombatMealBuff,
   getMealRole,
+  getMealEffect,
 } from '../systems/consumables.js';
 import {
   STARTER_WEAPON_CHOICES,
@@ -286,6 +288,11 @@ import {
   syncGrimoireKnown,
   ensureGrimoireState,
 } from '../systems/grimoire.js';
+import {
+  ensureCookbookState,
+  getCookbookViewModel,
+  emptyCookbookState,
+} from '../systems/cookbook.js';
 
 const LEGACY_COMBAT_RESOURCES = [
   'spirit_ember', 'petal_gel', 'temple_fragment', 'sakura_core',
@@ -416,6 +423,7 @@ export class Game {
       villageSchool: emptyVillageSchoolState(),
       grimoire: { known: [], equipped: [] },
       keyQualities: {},
+      cookbook: emptyCookbookState(),
       seasonStartedAt: Date.now(),
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
@@ -542,6 +550,7 @@ export class Game {
       balance: this.balance,
       resources: this.resources,
       farmData: this.farmData,
+      recipes: this.recipes,
     });
     if (repairSeasonAccess(merged)) {
       // Métiers réouverts après prestige cassé — armes re-données plus bas si besoin
@@ -1525,6 +1534,28 @@ export class Game {
       return { ok: true, buff: true, label: heal.label };
     }
 
+    if (role === 'mp') {
+      const maxMp = this.getCharacterStats().mp || 0;
+      if (maxMp <= 0) return { ok: false, reason: 'Pas de réserve de PM' };
+      if (!this.state.combatWear) this.state.combatWear = {};
+      if (!this.state.combatWear.solo) this.state.combatWear.solo = {};
+      const stored = this.state.combatWear.solo.hero_mp;
+      const currentMp = stored != null ? stored : maxMp;
+      if (currentMp >= maxMp) {
+        return { ok: false, reason: 'PM déjà au maximum' };
+      }
+      const gain = calcMealMpAmount(maxMp, heal.mpPct);
+      const newMp = Math.min(maxMp, currentMp + gain);
+      this.state.combatWear.solo.hero_mp = newMp;
+      if (!consumeMealFromInventory(this.state, mealId)) {
+        return { ok: false, reason: 'Plus de stock' };
+      }
+      emit('mealUsed', { mealName, restoredMp: newMp - currentMp, mp: newMp, maxMp });
+      emit('stateChange', this.state);
+      this.scheduleSave();
+      return { ok: true, restoredMp: newMp - currentMp, mp: newMp, maxMp };
+    }
+
     if (role === 'companions') {
       const companionIds = Object.keys(this.companions || {}).filter((id) => this.state.companions?.[id]?.unlocked);
       if (!companionIds.length) {
@@ -2302,6 +2333,17 @@ export class Game {
       this.combatSkills,
       this.combatEquipment.items,
       getSchoolUnlockedSpells(this.state)
+    );
+  }
+
+  getCookbookView() {
+    ensureCookbookState(this.state);
+    return getCookbookViewModel(
+      this.state,
+      this.recipes,
+      this.resources,
+      this.balance,
+      getMealEffect
     );
   }
 

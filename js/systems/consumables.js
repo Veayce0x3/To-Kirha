@@ -1,4 +1,4 @@
-/** Repas / élixirs consommables — soin héros, soin équipiers, buffs combat. */
+/** Repas / élixirs — soin PV, restauration PM, buffs combat. */
 
 export const DUNGEON_ROOM_HEAL = 30;
 
@@ -44,6 +44,16 @@ export function getMealHealPct(mealTier, balance) {
   return Math.min(max, base + tierIndex * step);
 }
 
+/** Restauration PM (%) — même courbe que les soins, configurable. */
+export function getMealMpPct(mealTier, balance) {
+  const cfg = balance?.meals || {};
+  const base = cfg.mpPctBase ?? 28;
+  const step = cfg.mpPctStep ?? 5;
+  const max = cfg.mpPctMax ?? 55;
+  const tierIndex = mealTier <= 1 ? 0 : Math.floor(mealTier / 10);
+  return Math.min(max, base + tierIndex * step);
+}
+
 function buffLabel(buff) {
   if (!buff) return 'Buff combat';
   const bits = [];
@@ -70,8 +80,23 @@ export function buildMealEffects(resources, balance) {
         mealTier: tier,
         mealRole: 'buff',
         healPct: 0,
+        mpPct: 0,
         buff,
         label: buffLabel(buff),
+        levelMin: min,
+        levelMax: max,
+      };
+      continue;
+    }
+
+    if (role === 'mp') {
+      const pct = getMealMpPct(tier, balance);
+      effects[id] = {
+        mealTier: tier,
+        mealRole: 'mp',
+        healPct: 0,
+        mpPct: pct,
+        label: `+${pct}% PM`,
         levelMin: min,
         levelMax: max,
       };
@@ -84,6 +109,7 @@ export function buildMealEffects(resources, balance) {
       mealTier: tier,
       mealRole: role,
       healPct: pct,
+      mpPct: 0,
       label: `+${pct}% PV ${who}`,
       levelMin: min,
       levelMax: max,
@@ -153,6 +179,7 @@ export function peekMealHeal(mealId, state, resources, balance, charLevel) {
   return {
     ok: true,
     healPct: effect.healPct || 0,
+    mpPct: effect.mpPct || 0,
     label: effect.label,
     mealTier: effect.mealTier,
     mealRole: effect.mealRole || 'hero',
@@ -169,4 +196,8 @@ export function consumeMealFromInventory(state, mealId) {
 
 export function calcMealHealAmount(maxHp, healPct) {
   return Math.max(1, Math.floor((Number(maxHp) || 1) * (Number(healPct) || 0) / 100));
+}
+
+export function calcMealMpAmount(maxMp, mpPct) {
+  return Math.max(1, Math.floor((Number(maxMp) || 1) * (Number(mpPct) || 0) / 100));
 }

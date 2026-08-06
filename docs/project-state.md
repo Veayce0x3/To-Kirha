@@ -50,7 +50,7 @@ Onboarding (arme) → Paysan seul → déblocages progressifs
 | Récolte (5) | Bûcheron, Pêcheur, Mineur, Paysan, Alchimiste — **2 choisis** |
 | Ferme | Éleveur — 6 bâtiments, **2 choisis** + Puits |
 | Atelier | **Outilleur** (outils) + onglet **🔮 Fusion** (équipement combat) |
-| Cuisine | **Boulanger** (soin héros), **Poissonnier** (soin équipiers), **Chimiste** (élixirs) |
+| Cuisine | **Boulanger** (soin PV héros), **Poissonnier** (restauration PM), **Chimiste** (élixirs) |
 
 - Recettes `combatItem` : **non craftables** — drops combat + fusion uniquement
 - `isAllowedCraftRecipe` : `toolmaker` \| `baker` \| `fishmonger` \| `chemist`
@@ -59,7 +59,9 @@ Onboarding (arme) → Paysan seul → déblocages progressifs
 ## Cuisine (pilier donjon)
 
 - 3 métiers : Boulanger / Poissonnier / Chimiste — recettes sur le tableau de ressources existant
-- Repas par paliers de niveau perso — soin **% PV max** (héros ou équipiers) hors combat / en combat
+- **Livre de Cuisine** : collection des recettes craftées 1× + qualités 🥉→👑
+- Boulanger : soin **% PV** héros · Poissonnier : restauration **% PM** · Chimiste : buffs ATQ/DEF
+- Recettes avancées : recherches École du Village (`schoolUnlock`)
 - Élixirs : buff ATQ/DEF pour N combats (à boire hors combat)
 - Outilleur : pierre à aiguiser / huile + kits cuisine équipables
 - Sans repas → donjon très difficile

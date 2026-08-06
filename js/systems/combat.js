@@ -221,12 +221,23 @@ export function applySavedSoloHp(state, party) {
     if (wear[m.id] != null) {
       m.hp = Math.max(0, Math.min(m.maxHp, wear[m.id]));
     }
+    const mpKey = `${m.id}_mp`;
+    if (wear[mpKey] != null && m.maxMp != null) {
+      m.mp = Math.max(0, Math.min(m.maxMp, wear[mpKey]));
+    }
   }
 }
 
 export function saveSoloHp(state, party) {
   if (!state.combatWear) state.combatWear = {};
-  state.combatWear.solo = Object.fromEntries(party.map((m) => [m.id, m.hp]));
+  const prev = state.combatWear.solo && typeof state.combatWear.solo === 'object'
+    ? { ...state.combatWear.solo }
+    : {};
+  for (const m of party) {
+    prev[m.id] = m.hp;
+    if (m.maxMp != null) prev[`${m.id}_mp`] = m.mp;
+  }
+  state.combatWear.solo = prev;
 }
 
 export function clearSoloHpWear(state) {
@@ -644,23 +655,39 @@ export function canUseMemberMeal(run, memberIndex) {
   return { ok: true, member };
 }
 
-export function useMemberMeal(run, memberIndex, healAmount, mealLabel, mealId) {
+export function useMemberMeal(run, memberIndex, healAmount, mealLabel, mealId, mpAmount = 0) {
   const check = canUseMemberMeal(run, memberIndex);
   if (!check.ok) return { blocked: true, reason: check.reason };
   const member = check.member;
 
-  member.hp = Math.min(member.maxHp, member.hp + healAmount);
+  let healed = 0;
+  let restoredMp = 0;
+  if (healAmount > 0) {
+    const before = member.hp;
+    member.hp = Math.min(member.maxHp, member.hp + healAmount);
+    healed = member.hp - before;
+  }
+  if (mpAmount > 0 && member.maxMp != null) {
+    const before = member.mp || 0;
+    member.mp = Math.min(member.maxMp, before + mpAmount);
+    restoredMp = member.mp - before;
+  }
+
   member.mealUsedThisRound = true;
+  const bits = [];
+  if (healed > 0) bits.push(`+${healed} PV`);
+  if (restoredMp > 0) bits.push(`+${restoredMp} PM`);
   run.combat.log.push({
     type: 'heal',
-    text: `${member.emoji} ${member.name} mange ${mealLabel} : +${healAmount} HP.`,
+    text: `${member.emoji} ${member.name} mange ${mealLabel}${bits.length ? ` : ${bits.join(' · ')}` : ''}.`,
     memberId: member.id,
-    amount: healAmount,
+    amount: healed,
+    mp: restoredMp,
     mealId,
   });
 
   const advance = advanceAfterMemberAction(run);
-  return { enemyDefeated: false, ...advance };
+  return { enemyDefeated: false, healed, restoredMp, ...advance };
 }
 
 function advanceEnemyTurnQueue(run, payload = {}) {

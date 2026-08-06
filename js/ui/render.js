@@ -929,9 +929,13 @@ export function initUI(game, audio) {
   on('farmBlocked', ({ message }) => {
     showToast(els, message || 'Impossible de produire', 'sell');
   });
-  on('mealUsed', ({ mealName, healed, hp, maxHp, buff, label, companions }) => {
+  on('mealUsed', ({ mealName, healed, hp, maxHp, buff, label, companions, restoredMp, mp, maxMp }) => {
     if (buff) {
       showToast(els, `⚗️ ${mealName} : ${label || 'buff actif'}`, 'upgrade');
+      return;
+    }
+    if (restoredMp != null) {
+      showToast(els, `🐟 ${mealName} : +${restoredMp} PM (${mp}/${maxMp})`, 'upgrade');
       return;
     }
     if (companions) {

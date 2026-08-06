@@ -8,6 +8,8 @@ import { initToolDurability, isDurabilityTool, isToolEffectActive, getEffectiveM
 import { addJobXp } from './harvest.js';
 import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBoostMult } from './prestige.js';
 import { GATHERING_JOB_IDS, isGatheringJobUnlocked } from './careerChoice.js';
+import { isResearchCompleted, getResearchDef } from './villageSchool.js';
+import { discoverCookbookRecipe } from './cookbook.js';
 
 export function makeCraftContext(game) {
   return {
@@ -18,6 +20,7 @@ export function makeCraftContext(game) {
     balance: game.balance,
     equipment: game.equipment,
     combatItems: game.combatEquipment?.items || {},
+    villageSchoolData: game.villageSchoolData || null,
   };
 }
 
@@ -94,6 +97,15 @@ export function whyCannotCraft(recipeId, ctx) {
     return `${jobName} Nv.${required} requis (actuel : Nv.${level}).`;
   }
 
+  if (recipe.schoolUnlock) {
+    const schoolData = ctx.villageSchoolData;
+    const researchDef = getResearchDef(schoolData, recipe.schoolUnlock);
+    if (!researchDef || !isResearchCompleted(ctx.state, researchDef)) {
+      const name = researchDef?.name || 'École du Village';
+      return `Recherche requise : ${name}.`;
+    }
+  }
+
   const missing = [];
   for (const [resId, need] of Object.entries(recipe.ingredients || {})) {
     const have = invQty(ctx.state, resId);
@@ -164,6 +176,7 @@ export function performCraft(recipeId, ctx) {
   if (recipe.combatItem) grantCombatItem(ctx.state, recipe.combatItem, ctx.combatItems || {});
 
   applyCraftResult(recipeId, recipe, ctx.state);
+  discoverCookbookRecipe(ctx.state, recipeId);
 
   let levelResult = null;
   const rawJobXp = recipe.jobXp ?? 0;

@@ -1506,7 +1506,7 @@
     "mealTier": 10,
     "requiredCharLevelMin": 10,
     "requiredCharLevelMax": 29,
-    "mealRole": "companions"
+    "mealRole": "mp"
   },
   "meal_gateau": {
     "id": "meal_gateau",
@@ -1571,7 +1571,7 @@
     "mealTier": 60,
     "requiredCharLevelMin": 60,
     "requiredCharLevelMax": 69,
-    "mealRole": "companions"
+    "mealRole": "mp"
   },
   "meal_tempura": {
     "id": "meal_tempura",
@@ -1584,7 +1584,7 @@
     "mealTier": 70,
     "requiredCharLevelMin": 70,
     "requiredCharLevelMax": 79,
-    "mealRole": "companions"
+    "mealRole": "mp"
   },
   "meal_udon": {
     "id": "meal_udon",
@@ -1610,7 +1610,7 @@
     "mealTier": 90,
     "requiredCharLevelMin": 90,
     "requiredCharLevelMax": 99,
-    "mealRole": "companions"
+    "mealRole": "mp"
   },
   "meal_kaiseki": {
     "id": "meal_kaiseki",
@@ -1675,7 +1675,7 @@
     "mealTier": 140,
     "requiredCharLevelMin": 140,
     "requiredCharLevelMax": 149,
-    "mealRole": "companions"
+    "mealRole": "mp"
   },
   "meal_katsu": {
     "id": "meal_katsu",
@@ -1701,7 +1701,7 @@
     "mealTier": 160,
     "requiredCharLevelMin": 160,
     "requiredCharLevelMax": 169,
-    "mealRole": "companions"
+    "mealRole": "mp"
   },
   "meal_sukiyaki": {
     "id": "meal_sukiyaki",
@@ -1714,7 +1714,7 @@
     "mealTier": 170,
     "requiredCharLevelMin": 170,
     "requiredCharLevelMax": 179,
-    "mealRole": "companions"
+    "mealRole": "mp"
   },
   "meal_tonkatsu": {
     "id": "meal_tonkatsu",
@@ -1727,7 +1727,7 @@
     "mealTier": 180,
     "requiredCharLevelMin": 180,
     "requiredCharLevelMax": 189,
-    "mealRole": "companions"
+    "mealRole": "mp"
   },
   "meal_okonomiyaki": {
     "id": "meal_okonomiyaki",

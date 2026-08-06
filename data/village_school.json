@@ -415,6 +415,146 @@
         "unlockSpell": "uni_pierce"
       },
       "effectLabel": "Débloque le sort ⚡ Frappe magique"
+    },
+    "cuisine_unlock_gateau": {
+      "id": "cuisine_unlock_gateau",
+      "branch": "cuisine",
+      "tier": "seasonal",
+      "name": "Recette : Gâteau au miel",
+      "description": "Débloque le Gâteau au miel (Boulanger).",
+      "requires": [
+        "cuisine_fours"
+      ],
+      "kirhaCost": 200,
+      "ingredients": {
+        "ble": 50,
+        "oeuf": 15
+      },
+      "durationMs": 900000,
+      "effect": {
+        "unlockRecipe": "recipe_gateau"
+      },
+      "effectLabel": "Débloque la recette Gâteau au miel"
+    },
+    "cuisine_unlock_festin": {
+      "id": "cuisine_unlock_festin",
+      "branch": "cuisine",
+      "tier": "seasonal",
+      "name": "Recette : Festin du Temple",
+      "description": "Débloque le Festin du Temple.",
+      "requires": [
+        "cuisine_unlock_gateau"
+      ],
+      "kirhaCost": 350,
+      "ingredients": {
+        "orge": 40,
+        "lait": 15
+      },
+      "durationMs": 1200000,
+      "effect": {
+        "unlockRecipe": "recipe_festin"
+      },
+      "effectLabel": "Débloque la recette Festin du Temple"
+    },
+    "cuisine_unlock_bento": {
+      "id": "cuisine_unlock_bento",
+      "branch": "cuisine",
+      "tier": "seasonal",
+      "name": "Recette : Bento",
+      "description": "Débloque le Bento.",
+      "requires": [
+        "cuisine_unlock_festin"
+      ],
+      "kirhaCost": 450,
+      "ingredients": {
+        "ble": 60,
+        "miel": 12
+      },
+      "durationMs": 1500000,
+      "effect": {
+        "unlockRecipe": "recipe_bento"
+      },
+      "effectLabel": "Débloque la recette Bento du voyage"
+    },
+    "fish_unlock_sushi": {
+      "id": "fish_unlock_sushi",
+      "branch": "cuisine",
+      "tier": "seasonal",
+      "name": "Recette : Sushi",
+      "description": "Débloque le Sushi (Poissonnier · PM).",
+      "requires": [
+        "cuisine_fours"
+      ],
+      "kirhaCost": 220,
+      "ingredients": {
+        "dorade": 30,
+        "ble": 20
+      },
+      "durationMs": 900000,
+      "effect": {
+        "unlockRecipe": "recipe_sushi"
+      },
+      "effectLabel": "Débloque la recette Plateau sushi"
+    },
+    "fish_unlock_tempura": {
+      "id": "fish_unlock_tempura",
+      "branch": "cuisine",
+      "tier": "seasonal",
+      "name": "Recette : Tempura",
+      "description": "Débloque le Tempura.",
+      "requires": [
+        "fish_unlock_sushi"
+      ],
+      "kirhaCost": 380,
+      "ingredients": {
+        "dorade": 40,
+        "oeuf": 20
+      },
+      "durationMs": 1400000,
+      "effect": {
+        "unlockRecipe": "recipe_tempura"
+      },
+      "effectLabel": "Débloque la recette Tempura croustillante"
+    },
+    "chem_unlock_ortie": {
+      "id": "chem_unlock_ortie",
+      "branch": "cuisine",
+      "tier": "seasonal",
+      "name": "Recette : Élixir d’Ortie",
+      "description": "Débloque l’Élixir d’Ortie.",
+      "requires": [
+        "cuisine_fours"
+      ],
+      "kirhaCost": 240,
+      "ingredients": {
+        "ortie": 25,
+        "eau": 15
+      },
+      "durationMs": 1000000,
+      "effect": {
+        "unlockRecipe": "recipe_elixir_ortie"
+      },
+      "effectLabel": "Débloque la recette Élixir d'Ortie"
+    },
+    "chem_unlock_ginseng": {
+      "id": "chem_unlock_ginseng",
+      "branch": "cuisine",
+      "tier": "seasonal",
+      "name": "Recette : Élixir de Ginseng",
+      "description": "Débloque l’Élixir de Ginseng.",
+      "requires": [
+        "chem_unlock_ortie"
+      ],
+      "kirhaCost": 500,
+      "ingredients": {
+        "ginseng": 20,
+        "menthe": 20
+      },
+      "durationMs": 1800000,
+      "effect": {
+        "unlockRecipe": "recipe_elixir_ginseng"
+      },
+      "effectLabel": "Débloque la recette Élixir de Ginseng"
     }
   }
 }

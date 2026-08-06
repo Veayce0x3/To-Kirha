@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260806-2230",
+      "date": "2026-08-06",
+      "title": "Cuisine v2 — PM, qualités & Livre",
+      "highlights": [
+        "Poissonnier : plats restaurent les PM (plus les équipiers)",
+        "Qualités de recettes (🥉→👑) + Livre de Cuisine (collection)",
+        "Recettes avancées débloquées via recherches à l’École du Village"
+      ]
+    },
+    {
       "buildId": "20260806-2200",
       "date": "2026-08-06",
       "title": "Combat v2 — PM, grimoire & clés",

@@ -55,7 +55,7 @@ const CHAR_TABS = new Set(['bag', 'gear', 'tools', 'grimoire']);
 let combatTab = 'zones';
 const COMBAT_TABS = new Set(['zones', 'team']);
 let cuisineTab = 'baker';
-const CUISINE_TABS = new Set(['baker', 'fishmonger', 'chemist']);
+const CUISINE_TABS = new Set(['baker', 'fishmonger', 'chemist', 'cookbook']);
 
 function normalizeCharTab(tab) {
   return CHAR_TABS.has(tab) ? tab : 'bag';
@@ -1293,6 +1293,27 @@ function getInventoryMealInfo(game, resourceId) {
   } else if (role === 'buff') {
     canHeal = true;
     actionLabel = 'Boire';
+  } else if (role === 'mp') {
+    actionLabel = 'Restaurer PM';
+    const maxMp = game.getCharacterStats().mp || 0;
+    const storedMp = game.state.combatWear?.solo?.hero_mp;
+    const currentMp = storedMp != null ? storedMp : maxMp;
+    canHeal = maxMp > 0 && currentMp < maxMp;
+    if (maxMp <= 0) disabledReason = 'Pas de réserve de PM.';
+    else if (currentMp >= maxMp) disabledReason = 'PM déjà au maximum.';
+    return {
+      kind: 'mp',
+      effect,
+      maxHp,
+      currentHp,
+      maxMp,
+      currentMp,
+      levelOk,
+      inCombat,
+      canHeal,
+      actionLabel,
+      disabledReason,
+    };
   } else if (role === 'companions') {
     actionLabel = 'Soigner équipiers';
     const companionIds = Object.keys(game.companions || {}).filter((id) => game.state.companions?.[id]?.unlocked);
@@ -3091,7 +3112,7 @@ function renderCuisine(game, el) {
 
   cuisineTab = normalizeCuisineTab(cuisineTab);
   // Si l’onglet n’est pas encore débloqué, retomber sur Boulanger
-  if (cuisineTab !== 'baker' && !isCraftJobUnlocked(cuisineTab, game.state, game.balance)) {
+  if (cuisineTab !== 'baker' && cuisineTab !== 'cookbook' && !isCraftJobUnlocked(cuisineTab, game.state, game.balance)) {
     cuisineTab = 'baker';
   }
 
@@ -3101,11 +3122,11 @@ function renderCuisine(game, el) {
     chemist: game.jobs.chemist,
   };
   const tabMeta = [
-    { id: 'baker', label: 'Boulanger', hint: 'Soins héros', unlock: true },
+    { id: 'baker', label: 'Boulanger', hint: 'Soins héros (PV)', unlock: true },
     {
       id: 'fishmonger',
       label: 'Poissonnier',
-      hint: 'Soins équipiers',
+      hint: 'Restauration PM',
       unlock: isCraftJobUnlocked('fishmonger', game.state, game.balance),
     },
     {
@@ -3114,24 +3135,30 @@ function renderCuisine(game, el) {
       hint: 'Buffs combat',
       unlock: isCraftJobUnlocked('chemist', game.state, game.balance),
     },
+    { id: 'cookbook', label: 'Livre', hint: 'Recettes découvertes', unlock: true },
   ];
+
+  const book = game.getCookbookView?.();
+  const bookHint = book ? ` · Livre ${book.found}/${book.total}` : '';
 
   el.innerHTML = `
     <div class="view-header">
       <h2>${iconHtml(getNavIcon('cuisine'), 'view-header-icon', 'Cuisine')} Cuisine</h2>
-      <p class="view-desc">Trois métiers : pains & soins héros, plats pour équipiers, élixirs de combat. Ressources ferme + récolte du tableau.</p>
+      <p class="view-desc">Boulanger = PV · Poissonnier = PM · Chimiste = buffs. Débloque des recettes via l’École du Village${bookHint}.</p>
     </div>
     <nav class="cuisine-tabs char-tabs" role="tablist" aria-label="Métiers de cuisine">
       ${tabMeta.map((t) => `
         <button type="button" class="char-tab-btn${cuisineTab === t.id ? ' active' : ''}${t.unlock ? '' : ' locked'}"
           data-cuisine-tab="${t.id}" role="tab" ${t.unlock ? '' : 'disabled'}
           title="${t.unlock ? t.hint : (game.balance.jobUnlocks?.[t.id]?.hint || 'Verrouillé')}">
-          ${jobs[t.id]?.emoji || ''} ${t.label}
+          ${t.id === 'cookbook' ? '📖' : (jobs[t.id]?.emoji || '')} ${t.label}
         </button>
       `).join('')}
     </nav>
     <div id="cuisine-content"></div>
   `;
+
+  const content = el.querySelector('#cuisine-content');
 
   el.querySelectorAll('[data-cuisine-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -3140,11 +3167,62 @@ function renderCuisine(game, el) {
       el.querySelectorAll('[data-cuisine-tab]').forEach((b) => {
         b.classList.toggle('active', b.dataset.cuisineTab === cuisineTab);
       });
-      mountCraftWorkshop(game, el.querySelector('#cuisine-content'), cuisineTab);
+      if (cuisineTab === 'cookbook') renderCookbookPanel(game, content);
+      else mountCraftWorkshop(game, content, cuisineTab);
     });
   });
 
-  mountCraftWorkshop(game, el.querySelector('#cuisine-content'), cuisineTab);
+  if (cuisineTab === 'cookbook') renderCookbookPanel(game, content);
+  else mountCraftWorkshop(game, content, cuisineTab);
+}
+
+function renderCookbookPanel(game, el) {
+  const vm = game.getCookbookView?.();
+  if (!vm || !el) {
+    if (el) el.innerHTML = '<p class="view-desc">Livre indisponible.</p>';
+    return;
+  }
+
+  const groups = {};
+  for (const entry of vm.entries) {
+    const jobId = entry.recipe.craftJob;
+    if (!groups[jobId]) groups[jobId] = [];
+    groups[jobId].push(entry);
+  }
+
+  const sections = Object.entries(groups).map(([jobId, entries]) => {
+    const job = vm.jobs[jobId] || { label: jobId, emoji: '🍳' };
+    const cards = entries.map((e) => {
+      if (!e.discovered) {
+        return `
+          <article class="cookbook-card locked">
+            <span class="cookbook-emoji">❓</span>
+            <strong>???</strong>
+            <span class="cookbook-meta">${e.quality.emoji} ${e.quality.label}</span>
+            <p class="cookbook-effect">Pas encore craftée</p>
+          </article>`;
+      }
+      return `
+        <article class="cookbook-card">
+          <span class="cookbook-emoji">${e.recipe.emoji || e.output?.emoji || '🍽️'}</span>
+          <strong>${e.recipe.name}</strong>
+          <span class="cookbook-meta">${e.quality.emoji} ${e.quality.label} · ${job.emoji} ${job.label}</span>
+          <p class="cookbook-effect">${e.effectLabel}</p>
+        </article>`;
+    }).join('');
+    return `
+      <section class="cookbook-section">
+        <h3>${job.emoji} ${job.label}</h3>
+        <div class="cookbook-grid">${cards}</div>
+      </section>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="cookbook-panel">
+      <p class="view-desc">Collectionne les recettes en les craftant au moins une fois. Progression : <strong>${vm.found}/${vm.total}</strong>.</p>
+      ${sections}
+    </div>
+  `;
 }
 
 /* ── Place marchande (mobile-first) ── */
@@ -3749,7 +3827,7 @@ export function renderInventoryGrid(game, container, { filter = 'all', onTotal =
       healBtn.className = `inventory-meal-heal-btn${mealInfo.canHeal ? ' affordable' : ''}`;
       healBtn.textContent = mealInfo.canHeal
         ? (mealInfo.actionLabel || 'Utiliser')
-        : (mealInfo.kind === 'hero' ? 'PV max' : mealInfo.actionLabel || 'Indispo');
+        : (mealInfo.kind === 'hero' ? 'PV max' : mealInfo.kind === 'mp' ? 'PM max' : mealInfo.actionLabel || 'Indispo');
       healBtn.disabled = !mealInfo.canHeal;
       healBtn.title = mealInfo.disabledReason || mealInfo.effect?.label || '';
       healBtn.addEventListener('click', (e) => {
@@ -3837,14 +3915,19 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
     const hpNote = mealInfo.kind === 'hero' && mealInfo.maxHp > 0
       ? ` · PV entraînement : ${mealInfo.currentHp}/${mealInfo.maxHp}`
       : '';
+    const mpNote = mealInfo.kind === 'mp' && mealInfo.maxMp > 0
+      ? ` · PM : ${mealInfo.currentMp}/${mealInfo.maxMp}`
+      : '';
     const kindLabel = mealInfo.kind === 'repair'
       ? 'Entretien'
       : mealInfo.kind === 'buff'
         ? 'Élixir'
-        : mealInfo.kind === 'companions'
-          ? 'Repas équipiers'
-          : 'Repas';
-    compareHtml = `<p class="item-stat-compare">${kindLabel} : ${mealEffect.label}${levelNote}${hpNote}</p>`;
+        : mealInfo.kind === 'mp'
+          ? 'Repas PM'
+          : mealInfo.kind === 'companions'
+            ? 'Repas équipiers'
+            : 'Repas';
+    compareHtml = `<p class="item-stat-compare">${kindLabel} : ${mealEffect.label}${levelNote}${hpNote}${mpNote}</p>`;
   }
 
   const sellActions = notSellable
@@ -4441,7 +4524,7 @@ function renderOutOfCombatHealPanel(game) {
       <div class="combat-heal-head">
         <div>
           <h3>🍱 Préparation hors combat</h3>
-          <p class="view-desc">Soigne le héros / les équipiers, bois un élixir, ou répare un outil avant le prochain combat.</p>
+          <p class="view-desc">Soigne les PV, restaure les PM (poissonnier), bois un élixir, ou répare un outil avant le prochain combat.</p>
         </div>
         <strong class="combat-heal-value${hpState}">❤️ ${currentHp}/${maxHp}</strong>
       </div>

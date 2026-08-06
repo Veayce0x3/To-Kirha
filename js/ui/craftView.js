@@ -6,6 +6,7 @@ import { renderResourceIcon } from '../systems/resourceVisual.js';
 import { getCombatItemPreview, renderCraftDurabilityInfo } from '../systems/equipmentDisplay.js';
 import { isRecipeEquipped } from '../systems/equipment.js';
 import { isDurabilityTool, canUpgradeTool, isToolUpgraded, formatToolUpgradeCost } from '../systems/toolDurability.js';
+import { getRecipeQuality } from '../systems/cookbook.js';
 import { emit } from '../core/events.js';
 import { navigate } from './router.js';
 
@@ -74,6 +75,13 @@ function renderRecipeCard(game, info) {
   const tierBadge = recipe.toolTier
     ? `<span class="craft-tier-badge">Palier ${recipe.toolTier}</span>`
     : '';
+  const outRes = recipe.output ? game.resources[recipe.output] : null;
+  const quality = (craftJob === 'baker' || craftJob === 'fishmonger' || craftJob === 'chemist')
+    ? getRecipeQuality(recipe, outRes)
+    : null;
+  const qualityBadge = quality
+    ? `<span class="craft-quality-badge" title="${quality.label}">${quality.emoji} ${quality.label}</span>`
+    : '';
 
   let equipBtn = '';
   if (owned && !broken && game.equipment.equipable[recipeId] && !isRecipeEquipped(game.state, recipeId)) {
@@ -97,7 +105,7 @@ function renderRecipeCard(game, info) {
 
   return `
     <div class="craft-tile${canClick ? ' affordable' : ''}${locked ? ' locked-res' : ''}${owned ? ' craft-owned' : ''}${broken ? ' craft-broken' : ''}" data-recipe-id="${recipeId}">
-      <div class="tile-name">${recipe.emoji} ${recipe.name}${recipe.repeatable ? ' ♻️' : ''}${tierBadge}</div>
+      <div class="tile-name">${recipe.emoji} ${recipe.name}${recipe.repeatable ? ' ♻️' : ''}${tierBadge}${qualityBadge}</div>
       <p class="tile-stats">${recipe.description || ''}</p>
       ${durabilityHtml}
       ${combatHtml}

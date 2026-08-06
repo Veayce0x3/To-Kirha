@@ -501,6 +501,9 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
       equipped: [...(state.grimoire.equipped || [])].slice(0, 4),
     }
     : { known: [], equipped: [] };
+  const preservedCookbook = state.cookbook && typeof state.cookbook === 'object'
+    ? { discovered: [...(state.cookbook.discovered || [])] }
+    : { discovered: [] };
 
   return {
     ...fresh,
@@ -510,6 +513,7 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     seasonStartedAt: Date.now(),
     villageSchool: schoolExtract.preserved,
     grimoire: preservedGrimoire,
+    cookbook: preservedCookbook,
     prestige: newPrestige,
     // Boost ×2 : disponible à activer manuellement (pas auto)
     seasonBoost: null,

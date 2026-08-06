@@ -1075,6 +1075,74 @@
   cursor: not-allowed;
 }
 
+.craft-quality-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  vertical-align: middle;
+  color: var(--marron-bois, #4A3728);
+  background: rgba(155, 89, 182, 0.12);
+  border: 1px solid rgba(155, 89, 182, 0.22);
+}
+
+.cookbook-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.cookbook-section h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1rem;
+  color: var(--marron-bois, #4A3728);
+}
+
+.cookbook-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.cookbook-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(248, 232, 238, 0.55);
+  border: 1px solid rgba(232, 180, 203, 0.45);
+  min-height: 44px;
+}
+
+.cookbook-card.locked {
+  opacity: 0.72;
+  background: rgba(74, 55, 40, 0.04);
+}
+
+.cookbook-emoji {
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.cookbook-card strong {
+  font-size: 0.92rem;
+  color: var(--marron-bois, #4A3728);
+}
+
+.cookbook-meta {
+  font-size: 0.72rem;
+  color: rgba(74, 55, 40, 0.75);
+}
+
+.cookbook-effect {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--vert-foret, #2D5A27);
+}
+
 .combat-tab-panel {
   min-height: 2rem;
 }
