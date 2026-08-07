@@ -4093,7 +4093,7 @@ export function renderSeason(game, el) {
         ? `<p class="prestige-req prestige-ready">Prêt pour la Saison ${info.nextSeason} !</p>`
         : ''}
 
-      <p class="view-desc season-reset-hint">À la nouvelle saison : métiers / inventaire / ferme / équipe repartent à zéro. Tu <strong>gardes</strong> compte, pseudo, succès, stats de vie, bonus permanents, Livre de Cuisine et <strong>Carnet du voyageur</strong>. Une page du carnet s’ajoute. Départ : ${formatNumber(game.balance.prestige?.seasonStartKirha ?? game.balance.startingKirha ?? 0)} 💰 + boost ×2 à activer quand tu veux (tant que Nv.≤${boostCaps.character}).</p>
+      <p class="view-desc season-reset-hint">À la nouvelle saison : métiers / inventaire / ferme / équipe repartent à zéro. Tu <strong>gardes</strong> compte, pseudo, succès, stats de vie, bonus permanents, Livre de Cuisine, <strong>Carnet</strong> et <strong>Herbier</strong>. Une page du carnet s’ajoute. Départ : ${formatNumber(game.balance.prestige?.seasonStartKirha ?? game.balance.startingKirha ?? 0)} 💰 + boost ×2 à activer quand tu veux (tant que Nv.≤${boostCaps.character}).</p>
       <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
     </div>
   `;

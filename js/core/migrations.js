@@ -405,6 +405,24 @@ const MIGRATIONS = {
   50(state, ctx) {
     repairSaveSystems(state, ctx);
   },
+  51(state, ctx) {
+    if (!state.herbarium || typeof state.herbarium !== 'object') {
+      state.herbarium = { discovered: [], seenToast: [] };
+    }
+    if (!Array.isArray(state.herbarium.discovered)) state.herbarium.discovered = [];
+    if (!Array.isArray(state.herbarium.seenToast)) state.herbarium.seenToast = [];
+    const resources = ctx.resources || {};
+    const inv = state.inventory || {};
+    for (const [id, qty] of Object.entries(inv)) {
+      if (!(Number(qty) > 0)) continue;
+      const res = resources[id];
+      if (!res || res.craftOnly || res.combatOnly || res.merchantOnly) continue;
+      if (!res.farmOnly && !(res.job && !res.notHarvestable) && res.job !== 'breeder') continue;
+      if (!state.herbarium.discovered.includes(id)) {
+        state.herbarium.discovered.push(id);
+      }
+    }
+  },
 };
 
 /** Garantit les blocs systèmes récents même si saveVersion était déjà trop haut. */
@@ -457,11 +475,17 @@ export function repairSaveSystems(state, ctx = {}) {
   if (!Array.isArray(state.travelerJournal.unlocked)) state.travelerJournal.unlocked = [];
   if (!Array.isArray(state.travelerJournal.seenToast)) state.travelerJournal.seenToast = [];
 
+  if (!state.herbarium || typeof state.herbarium !== 'object') {
+    state.herbarium = { discovered: [], seenToast: [] };
+  }
+  if (!Array.isArray(state.herbarium.discovered)) state.herbarium.discovered = [];
+  if (!Array.isArray(state.herbarium.seenToast)) state.herbarium.seenToast = [];
+
   return state;
 }
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 50;
+  const target = ctx.balance?.saveVersion ?? 51;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

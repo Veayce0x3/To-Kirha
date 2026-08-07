@@ -299,6 +299,14 @@ import {
   emptyTravelerJournalState,
   syncTravelerJournalUnlocks,
 } from '../systems/travelerJournal.js';
+import {
+  ensureHerbariumState,
+  emptyHerbariumState,
+  discoverHerbariumResource,
+  backfillHerbariumFromInventory,
+  getHerbariumViewModel,
+  isHerbariumResource,
+} from '../systems/herbarium.js';
 
 const LEGACY_COMBAT_RESOURCES = [
   'spirit_ember', 'petal_gel', 'temple_fragment', 'sakura_core',
@@ -432,6 +440,7 @@ export class Game {
       keyQualities: {},
       cookbook: emptyCookbookState(),
       travelerJournal: emptyTravelerJournalState(),
+      herbarium: emptyHerbariumState(),
       seasonStartedAt: Date.now(),
       settings: getDefaultSettings(),
       lastOnline: Date.now(),
@@ -631,6 +640,8 @@ export class Game {
     refreshSchoolBonusCache(this.state, this.villageSchoolData);
     ensureGrimoireState(this.state);
     ensureTravelerJournalState(this.state);
+    ensureHerbariumState(this.state);
+    backfillHerbariumFromInventory(this.state, this.resources);
     syncKeyQualities(this.state);
     syncGrimoireKnown(this.state, this.combatEquipment.items, getSchoolUnlockedSpells(this.state));
     this.tickVillageSchool();
@@ -1052,6 +1063,7 @@ export class Game {
       quantity
     );
     if (result.ok) {
+      if (result.resourceId) this.noteHerbariumDiscovery(result.resourceId);
       emit('travelingMerchantBuy', result);
       emit('stateChange', this.state);
       this.scheduleSave();
@@ -1348,6 +1360,7 @@ export class Game {
 
     for (const [resId, qty] of Object.entries(outcome.products || {})) {
       this.onHarvestForQuests(resId, qty);
+      this.noteHerbariumDiscovery(resId);
     }
     this.onFarmForAchievements(buildingId, 1);
 
@@ -1864,6 +1877,7 @@ export class Game {
         }
       }
       this.onHarvestForQuests(resourceId, outcome.yield);
+      this.noteHerbariumDiscovery(resourceId);
       this.scheduleProductionTimer('harvest', { jobId, resourceId }, unitIndex, outcome.regrowthDuration);
       emit('harvestComplete', {
         resourceId,
@@ -2436,6 +2450,20 @@ export class Game {
 
   getTravelerJournalView() {
     return getTravelerJournalViewModel(this.state, this.travelerJournalData, this.getJournalContext());
+  }
+
+  getHerbariumView() {
+    ensureHerbariumState(this.state);
+    return getHerbariumViewModel(this.state, this.resources, this.jobs);
+  }
+
+  noteHerbariumDiscovery(resourceId) {
+    if (!resourceId || !this.state) return false;
+    const res = this.resources?.[resourceId];
+    if (!isHerbariumResource(res)) return false;
+    if (!discoverHerbariumResource(this.state, resourceId)) return false;
+    emit('herbariumDiscover', { resourceId, resource: res });
+    return true;
   }
 
   getJournalContext() {

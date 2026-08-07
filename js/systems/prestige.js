@@ -513,6 +513,12 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
       seenToast: [...(state.travelerJournal.seenToast || [])],
     }
     : { unlocked: [], seenToast: [] };
+  const preservedHerbarium = state.herbarium && typeof state.herbarium === 'object'
+    ? {
+      discovered: [...(state.herbarium.discovered || [])],
+      seenToast: [...(state.herbarium.seenToast || [])],
+    }
+    : { discovered: [], seenToast: [] };
 
   return {
     ...fresh,
@@ -524,6 +530,7 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     grimoire: preservedGrimoire,
     cookbook: preservedCookbook,
     travelerJournal: preservedJournal,
+    herbarium: preservedHerbarium,
     prestige: newPrestige,
     // Boost ×2 : disponible à activer manuellement (pas auto)
     seasonBoost: null,

@@ -954,6 +954,10 @@ export function initUI(game, audio) {
       openJournalPageModal(entry);
     }).catch(() => {});
   });
+  on('herbariumDiscover', ({ resource }) => {
+    if (!resource) return;
+    showToast(els, `🌿 Herbier : ${resource.emoji || ''} ${resource.name || 'nouvelle ressource'}`, 'upgrade');
+  });
   document.getElementById('journal-page-modal')?.addEventListener('click', (e) => {
     if (e.target?.id === 'journal-page-modal') {
       import('./travelerJournalView.js').then(({ closeJournalPageModal }) => closeJournalPageModal());

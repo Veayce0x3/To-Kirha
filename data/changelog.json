@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-0905",
+      "date": "2026-08-07",
+      "title": "Herbier — collection des ressources",
+      "highlights": [
+        "Monde → Carnet : onglets Carnet / Herbier",
+        "Herbier : ressources récolte & ferme découvertes (❓ tant que jamais obtenues)",
+        "Filtres par métier · survit aux saisons · toast à la première découverte"
+      ]
+    },
+    {
       "buildId": "20260807-0835",
       "date": "2026-08-07",
       "title": "École onglets, carnet ordonné, admin & grimoire",

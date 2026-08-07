@@ -1283,6 +1283,68 @@
   margin-bottom: 0;
 }
 
+.lore-tabs {
+  margin: 0.5rem 0 0.75rem;
+}
+
+.herbarium-filters {
+  margin: 0.35rem 0 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.herbarium-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.herbarium-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(232, 245, 228, 0.55);
+  border: 1px solid rgba(45, 90, 39, 0.22);
+  min-height: 44px;
+}
+
+.herbarium-card.locked {
+  opacity: 0.72;
+  background: rgba(74, 55, 40, 0.04);
+  border-style: dashed;
+}
+
+.herbarium-emoji {
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.herbarium-res-icon {
+  width: 1.45rem;
+  height: 1.45rem;
+  vertical-align: middle;
+}
+
+.herbarium-card strong {
+  font-size: 0.92rem;
+  color: var(--marron-bois, #4A3728);
+}
+
+.herbarium-meta {
+  font-size: 0.72rem;
+  color: rgba(74, 55, 40, 0.75);
+}
+
+.herbarium-blurb {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(74, 55, 40, 0.85);
+}
+
 .village-quest-title em {
   font-style: normal;
   font-weight: 600;
