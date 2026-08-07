@@ -4,15 +4,20 @@
 
 import { formatResearchDuration } from '../systems/villageSchool.js';
 import { renderResourceIcon } from '../systems/resourceVisual.js';
+import { getView } from './router.js';
 
 let schoolProgressTimer = null;
 let schoolBranchTab = null;
 
-function clearSchoolTimer() {
+export function clearSchoolTimer() {
   if (schoolProgressTimer) {
     clearInterval(schoolProgressTimer);
     schoolProgressTimer = null;
   }
+}
+
+function isSchoolViewMounted(el) {
+  return getView() === 'village_school' && !!el?.isConnected;
 }
 
 function statusLabel(status) {
@@ -341,14 +346,19 @@ export function renderVillageSchool(game, el) {
 
   if (active) {
     schoolProgressTimer = setInterval(() => {
-      if (!el.isConnected) {
+      // el = #view-container : reste connecté après navigation — vérifier la vue active
+      if (!isSchoolViewMounted(el)) {
         clearSchoolTimer();
         return;
       }
       const done = game.tickVillageSchool();
-      if (done?.ok || !el.isConnected) {
+      if (done?.ok) {
         clearSchoolTimer();
-        if (el.isConnected) renderVillageSchool(game, el);
+        if (isSchoolViewMounted(el)) renderVillageSchool(game, el);
+        return;
+      }
+      if (!isSchoolViewMounted(el)) {
+        clearSchoolTimer();
         return;
       }
       const prog = game.getVillageSchoolView?.()?.active;

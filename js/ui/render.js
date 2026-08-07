@@ -38,12 +38,17 @@ import {
   showDungeonResult,
   initSakuraPetals,
   formatNumber,
+  refreshCharToolsIfVisible,
+  refreshCharacterCombatPanels,
+  openDungeonCombatModal,
+  refreshDungeonCombatModal,
+  closeDungeonCombatModal,
+  setAuctionMainMode,
   updateHarvestSlotProgresses,
   updateFarmSlotProgresses,
   patchFarmSlot,
   patchFarmBuildingSlots,
   syncStaleFarmSlots,
-  refreshCharToolsIfVisible,
   patchHarvestSlot,
   flashHarvestSlotReady,
   playHarvestSlotFx,
@@ -53,13 +58,9 @@ import {
   refreshJobViewLight,
   refreshFarmViewLight,
   shouldPartialRefreshOnStateChange,
-  openDungeonCombatModal,
-  refreshDungeonCombatModal,
-  closeDungeonCombatModal,
   refreshAuctionHouseLight,
-  refreshCharacterCombatPanels,
-  setAuctionMainMode,
 } from './views.js';
+import { clearSchoolTimer } from './villageSchoolView.js';
 import { syncSakuraWindVisual } from './villageView.js';
 import { patchFarmUnitCard } from './productionLineView.js';
 
@@ -689,6 +690,7 @@ export function initUI(game, audio) {
   });
 
   on('navigate', () => {
+    clearSchoolTimer();
     refreshView();
     refreshHeader(game.state);
     closeSidebar();
