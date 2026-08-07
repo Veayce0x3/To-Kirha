@@ -1293,6 +1293,53 @@ html[data-theme="dark"] .btn-harvest-compact.affordable:not(:disabled) {
   box-shadow: 0 0 0 2px rgba(143, 212, 138, 0.45);
 }
 
+
+html[data-theme="dark"] .lb-chip {
+  background: var(--surface-2);
+  color: var(--bois);
+  border-color: var(--border-soft);
+}
+
+html[data-theme="dark"] .lb-chip.active {
+  background: var(--btn-primary);
+  color: #0c100e;
+  border-color: var(--btn-primary);
+}
+
+html[data-theme="dark"] .lb-you {
+  background: rgba(106, 173, 98, 0.18);
+  border-color: rgba(143, 212, 138, 0.4);
+}
+
+html[data-theme="dark"] .lb-you-out {
+  background: var(--surface-2);
+  border-color: var(--border-soft);
+}
+
+html[data-theme="dark"] .lb-row {
+  border-bottom-color: var(--border-soft);
+}
+
+html[data-theme="dark"] .lb-row.is-me {
+  background: rgba(106, 173, 98, 0.16);
+}
+
+html[data-theme="dark"] .lb-row-rank,
+html[data-theme="dark"] .lb-you-rank {
+  color: var(--vert-clair);
+}
+
+html[data-theme="dark"] .lb-row-name,
+html[data-theme="dark"] .lb-row-score,
+html[data-theme="dark"] .lb-you-score {
+  color: var(--bois);
+}
+
+html[data-theme="dark"] .lb-row-sub,
+html[data-theme="dark"] .lb-you-meta {
+  color: var(--text-muted);
+}
+
 .btn.affordable:not(:disabled),
 .btn-harvest-compact.affordable:not(:disabled) {
   box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.35);

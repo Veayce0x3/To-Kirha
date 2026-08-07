@@ -1,6 +1,7 @@
 import {
   LEADERBOARD_TABS,
   fetchLeaderboard,
+  formatLeaderboardValue,
   submitLeaderboardSnapshot,
   buildLeaderboardSnapshot,
 } from '../systems/leaderboard.js';
@@ -8,76 +9,70 @@ import { getAuthState, getOnlineBlockReason, canUseOnlineFeatures } from '../cor
 import { showAccountRequiredModal } from './authUi.js';
 import { isLeaderboardEnabled, isMaintenanceMode } from '../systems/gameConfig.js';
 
-let activeSortKey = 'char_level';
+/** @type {string} id d’onglet LEADERBOARD_TABS */
+let activeTabId = 'level';
 
-function fmtNum(n) {
-  return Number(n || 0).toLocaleString('fr-FR');
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-function medalForRank(i) {
+function rankLabel(i) {
   if (i < 0) return '—';
   if (i === 0) return '🥇';
   if (i === 1) return '🥈';
   if (i === 2) return '🥉';
-  return `#${i + 1}`;
+  return String(i + 1);
 }
 
-function emptyHint(sortKey) {
-  switch (sortKey) {
-    case 'total_harvests': return 'Les récoltes de la saison comptent ici — récolte pour monter !';
-    case 'total_discoveries': return 'Trouve des événements Kirha en récolte pour apparaître ici.';
-    case 'boss_kills_total': return 'Vaincs des boss de zone pour apparaître ici.';
-    case 'seasons_completed': return 'Passe une Renaissance pour être classé.';
-    case 'total_earned': return 'Gagne des Kirha (vente, etc.) pour grimper.';
-    case 'max_job_level': return 'Monte tes métiers pour apparaître ici.';
-    default: return 'Joue un peu puis reviens — ton score se synchronise automatiquement.';
+function emptyHint(tabId) {
+  switch (tabId) {
+    case 'harvest': return 'Récolte pour apparaître ici.';
+    case 'discoveries': return 'Trouve des découvertes Kirha en récolte.';
+    case 'combat': return 'Vaincs des boss pour être classé.';
+    case 'seasons': return 'Passe une Renaissance pour apparaître.';
+    case 'fortune': return 'Gagne des Kirha pour grimper.';
+    case 'jobs': return 'Monte tes métiers pour apparaître.';
+    default: return 'Joue un peu, puis actualise.';
   }
 }
 
-function sortLabel(sortKey) {
-  return LEADERBOARD_TABS.find((t) => t.sortKey === sortKey)?.label || 'Niveau';
+/** Score court pour la colonne de droite (lisible d’un coup d’œil). */
+function shortScore(tabId, row) {
+  switch (tabId) {
+    case 'level': return `Nv.${row.char_level || 1}`;
+    case 'jobs': return `Nv.${row.max_job_level || 1}`;
+    case 'fortune': return `${Number(row.total_earned || 0).toLocaleString('fr-FR')} 💰`;
+    case 'seasons': return `${row.seasons_completed || 0}`;
+    case 'harvest': return Number(row.total_harvests || 0).toLocaleString('fr-FR');
+    case 'discoveries': return Number(row.total_discoveries || 0).toLocaleString('fr-FR');
+    case 'combat': return Number(row.boss_kills_total || 0).toLocaleString('fr-FR');
+    default: return formatLeaderboardValue(tabId, row);
+  }
 }
 
-/** Grille de stats style admin — la colonne triée est mise en avant. */
-function statsGridHtml(row, sortKey) {
-  const cells = [
-    { key: 'char_level', label: 'Perso', value: `Nv.${row.char_level || 1}` },
-    { key: 'max_job_level', label: 'Métier', value: `Nv.${row.max_job_level || 1}` },
-    { key: 'season', label: 'Saison', value: `S${row.season || 1}` },
-    { key: 'total_earned', label: 'Fortune', value: `${fmtNum(row.total_earned)} 💰` },
-    { key: 'total_harvests', label: 'Récoltes', value: fmtNum(row.total_harvests) },
-    { key: 'seasons_completed', label: 'Renais.', value: fmtNum(row.seasons_completed) },
-    { key: 'boss_kills_total', label: 'Boss', value: fmtNum(row.boss_kills_total) },
-    { key: 'total_discoveries', label: 'Découv.', value: fmtNum(row.total_discoveries) },
-  ];
-  const always = new Set(['char_level', 'max_job_level', 'season', 'total_earned']);
-  if (sortKey) always.add(sortKey);
-  const shown = cells.filter((c) => always.has(c.key));
-  return `
-    <div class="lb-stats">
-      ${shown.map((c) => `
-        <div class="lb-stat${c.key === sortKey ? ' lb-stat-hl' : ''}">
-          <span class="lb-stat-lbl">${c.label}</span>
-          <strong class="lb-stat-val">${c.value}</strong>
-        </div>
-      `).join('')}
-    </div>
-  `;
+function rowSub(tabId, row) {
+  if (tabId === 'level') return `Saison ${row.season || 1}`;
+  if (tabId === 'jobs') return `Perso Nv.${row.char_level || 1}`;
+  if (tabId === 'fortune') return `En poche ${Number(row.kirha_current || 0).toLocaleString('fr-FR')} 💰`;
+  if (tabId === 'seasons') return `Saison actuelle ${row.season || 1}`;
+  return `Perso Nv.${row.char_level || 1} · S${row.season || 1}`;
 }
 
-function playerCardHtml(row, rankIndex, sortKey, { isMe = false } = {}) {
-  const rank = medalForRank(rankIndex);
+function listRowHtml(row, index, tabId, { isMe = false } = {}) {
+  const name = esc(row.display_name || 'Voyageur');
   return `
-    <article class="lb-card${isMe ? ' me' : ''}${rankIndex >= 0 && rankIndex < 3 ? ' podium' : ''}">
-      <div class="lb-card-top">
-        <span class="lb-card-rank" aria-label="Rang">${rank}</span>
-        <div class="lb-card-identity">
-          <strong class="lb-card-name">${row.display_name || 'Voyageur'}${isMe ? ' · toi' : ''}</strong>
-          <span class="lb-card-sort-hint">Tri : ${sortLabel(sortKey)}</span>
-        </div>
+    <li class="lb-row${isMe ? ' is-me' : ''}${index >= 0 && index < 3 ? ' is-top' : ''}">
+      <span class="lb-row-rank">${rankLabel(index)}</span>
+      <div class="lb-row-main">
+        <span class="lb-row-name">${name}${isMe ? ' <em>(toi)</em>' : ''}</span>
+        <span class="lb-row-sub">${esc(rowSub(tabId, row))}</span>
       </div>
-      ${statsGridHtml(row, sortKey)}
-    </article>
+      <span class="lb-row-score">${esc(shortScore(tabId, row))}</span>
+    </li>
   `;
 }
 
@@ -102,22 +97,37 @@ export async function renderLeaderboard(game, el) {
     return;
   }
 
-  if (!LEADERBOARD_TABS.some((t) => t.sortKey === activeSortKey)) {
-    activeSortKey = 'char_level';
-  }
+  const tabDef = LEADERBOARD_TABS.find((t) => t.id === activeTabId) || LEADERBOARD_TABS[0];
+  activeTabId = tabDef.id;
 
   el.innerHTML = `
-    <div class="view-header">
-      <h2>🏆 Classement</h2>
-      <p class="view-desc">Compare-toi aux autres voyageurs — mêmes infos que le panneau staff, en version joueur.</p>
+    <div class="view-header lb-header">
+      <div class="lb-header-row">
+        <h2>🏆 Classement</h2>
+        <button type="button" class="btn btn-muted btn-sm" id="lb-refresh" title="Actualiser">↻</button>
+      </div>
     </div>
+    <nav class="lb-chips" role="tablist" aria-label="Critère">
+      ${LEADERBOARD_TABS.map((t) => `
+        <button type="button" class="lb-chip${t.id === activeTabId ? ' active' : ''}"
+          data-lb-tab="${t.id}" role="tab" aria-selected="${t.id === activeTabId}">${t.label}</button>
+      `).join('')}
+    </nav>
     <div class="panel-inner leaderboard-panel">
       <p class="lb-loading">Chargement…</p>
     </div>
   `;
 
+  el.querySelector('#lb-refresh')?.addEventListener('click', () => renderLeaderboard(game, el));
+  el.querySelectorAll('[data-lb-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      activeTabId = btn.getAttribute('data-lb-tab') || 'level';
+      renderLeaderboard(game, el);
+    });
+  });
+
   const sync = await submitLeaderboardSnapshot(game.state, game.getCharacterDisplayName());
-  const result = await fetchLeaderboard(activeSortKey, 50, game.state);
+  const result = await fetchLeaderboard(tabDef.sortKey, 50, game.state);
   const auth = getAuthState();
   const mySnap = {
     ...buildLeaderboardSnapshot(game.state),
@@ -130,40 +140,26 @@ export async function renderLeaderboard(game, el) {
   const panel = el.querySelector('.leaderboard-panel');
   if (!panel) return;
 
-  panel.innerHTML = `
-    <div class="lb-toolbar">
-      <label class="lb-sort-label" for="lb-sort">Classer par</label>
-      <select class="auth-input lb-sort-select" id="lb-sort">
-        ${LEADERBOARD_TABS.map((t) => `
-          <option value="${t.sortKey}" ${t.sortKey === activeSortKey ? 'selected' : ''}>${t.label}</option>
-        `).join('')}
-      </select>
-      <button type="button" class="btn btn-muted btn-sm" id="lb-refresh">Actualiser</button>
-    </div>
-
-    <section class="lb-you-section" aria-label="Ton rang">
-      <h3 class="lb-section-title">Toi</h3>
-      ${playerCardHtml(mySnap, myRank >= 0 ? myRank : -1, activeSortKey, { isMe: true })}
-      ${myRank < 0 ? '<p class="view-desc lb-not-ranked">Pas encore dans le top 50 pour ce critère — continue à jouer puis Actualiser.</p>' : ''}
-    </section>
-
-    ${showSyncWarn ? `<p class="auth-error">Sync : ${sync.reason || 'échec'} — joue un peu puis Actualiser.</p>` : ''}
-    ${!result.ok ? `<p class="auth-error">${result.reason || 'Impossible de charger le classement.'}</p>` : ''}
-    ${result.devLocal ? '<p class="view-desc">Mode local — classement solo.</p>' : ''}
-
-    <section class="lb-top-section" aria-label="Top joueurs">
-      <h3 class="lb-section-title">Top ${Math.min(50, rows.length || 50)} · ${sortLabel(activeSortKey)}</h3>
-      <div class="lb-card-list">
-        ${rows.length
-          ? rows.map((row, i) => playerCardHtml(row, i, activeSortKey, { isMe: row.user_id === auth.userId })).join('')
-          : `<p class="leaderboard-empty">${emptyHint(activeSortKey)}</p>`}
+  const youBlock = `
+    <div class="lb-you${myRank >= 0 ? '' : ' lb-you-out'}">
+      <span class="lb-you-rank">${rankLabel(myRank)}</span>
+      <div class="lb-you-main">
+        <strong>${esc(mySnap.display_name)}</strong>
+        <span class="lb-you-meta">${myRank >= 0 ? `Rang ${myRank + 1} · ${tabDef.label}` : `Hors top 50 · ${tabDef.label}`}</span>
       </div>
-    </section>
+      <span class="lb-you-score">${esc(shortScore(activeTabId, mySnap))}</span>
+    </div>
   `;
 
-  panel.querySelector('#lb-sort')?.addEventListener('change', (e) => {
-    activeSortKey = e.target.value || 'char_level';
-    renderLeaderboard(game, el);
-  });
-  panel.querySelector('#lb-refresh')?.addEventListener('click', () => renderLeaderboard(game, el));
+  panel.innerHTML = `
+    ${youBlock}
+    ${showSyncWarn ? `<p class="auth-error">Sync : ${esc(sync.reason || 'échec')}</p>` : ''}
+    ${!result.ok ? `<p class="auth-error">${esc(result.reason || 'Chargement impossible.')}</p>` : ''}
+    ${result.devLocal ? '<p class="view-desc">Mode local.</p>' : ''}
+    <ol class="lb-list">
+      ${rows.length
+        ? rows.map((row, i) => listRowHtml(row, i, activeTabId, { isMe: row.user_id === auth.userId })).join('')
+        : `<li class="lb-empty">${emptyHint(activeTabId)}</li>`}
+    </ol>
+  `;
 }

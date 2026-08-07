@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260807-2115",
+      "date": "2026-08-07",
+      "title": "Classement refondu",
+      "highlights": [
+        "Liste simple : rang · pseudo · score (plus de grilles)",
+        "Chips de critère + bandeau « toi » en haut"
+      ]
+    },
+    {
       "buildId": "20260807-2100",
       "date": "2026-08-07",
       "title": "Mode sombre, classement & config",

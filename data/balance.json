@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 45,
   "saveVersion": 56,
-  "appBuildId": "20260807-2100",
+  "appBuildId": "20260807-2115",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -35,28 +35,48 @@
           "nuggetsMax": 2,
           "scrollChance": 0.08,
           "equipChance": 0.2,
-          "equipRarityWeights": { "common": 75, "uncommon": 22, "rare": 3 }
+          "equipRarityWeights": {
+            "common": 75,
+            "uncommon": 22,
+            "rare": 3
+          }
         },
         "silver": {
           "nuggetsMin": 2,
           "nuggetsMax": 4,
           "scrollChance": 0.18,
           "equipChance": 0.35,
-          "equipRarityWeights": { "common": 45, "uncommon": 40, "rare": 14, "epic": 1 }
+          "equipRarityWeights": {
+            "common": 45,
+            "uncommon": 40,
+            "rare": 14,
+            "epic": 1
+          }
         },
         "gold": {
           "nuggetsMin": 3,
           "nuggetsMax": 6,
           "scrollChance": 0.35,
           "equipChance": 0.55,
-          "equipRarityWeights": { "common": 20, "uncommon": 40, "rare": 30, "epic": 9, "legendary": 1 }
+          "equipRarityWeights": {
+            "common": 20,
+            "uncommon": 40,
+            "rare": 30,
+            "epic": 9,
+            "legendary": 1
+          }
         },
         "mystic": {
           "nuggetsMin": 5,
           "nuggetsMax": 10,
           "scrollChance": 0.55,
           "equipChance": 0.75,
-          "equipRarityWeights": { "uncommon": 25, "rare": 40, "epic": 28, "legendary": 7 }
+          "equipRarityWeights": {
+            "uncommon": 25,
+            "rare": 40,
+            "epic": 28,
+            "legendary": 7
+          }
         }
       }
     },
