@@ -1,8 +1,8 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 51,
-  "appBuildId": "20260807-0905",
+  "saveVersion": 52,
+  "appBuildId": "20260807-0930",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -622,46 +622,33 @@
     },
     "lumberjack": {
       "when": {
-        "jobLevel": {
-          "farmer": 8
-        }
+        "schoolJob": "lumberjack"
       },
-      "hint": "Atteins Paysan Nv.8 pour débloquer le Bûcheron."
+      "hint": "École → Récolte : Sentiers du bûcheron."
     },
     "fisher": {
       "when": {
-        "jobLevel": {
-          "lumberjack": 10,
-          "farmer": 10
-        }
+        "schoolJob": "fisher"
       },
-      "hint": "Monte Bûcheron Nv.10 et Paysan Nv.10 pour le Pêcheur."
+      "hint": "École → Récolte : Voies d’eau."
     },
     "miner": {
       "when": {
-        "jobLevel": {
-          "fisher": 10,
-          "lumberjack": 8
-        }
+        "schoolJob": "miner"
       },
-      "hint": "Monte Pêcheur Nv.10 et Bûcheron Nv.8 pour le Mineur."
+      "hint": "École → Récolte : Veines de pierre."
     },
     "alchemist": {
       "when": {
-        "jobLevel": {
-          "miner": 12,
-          "fisher": 8
-        }
+        "schoolJob": "alchemist"
       },
-      "hint": "Monte Mineur Nv.12 et Pêcheur Nv.8 pour l'Alchimiste."
+      "hint": "École → Récolte : Sentier des herbes."
     },
     "combat": {
       "when": {
-        "jobLevel": {
-          "farmer": 5
-        }
+        "schoolCombat": true
       },
-      "hint": "Atteins Paysan Nv.5 pour débloquer le Combat."
+      "hint": "École → Combat : Première garde."
     },
     "toolmaker": {
       "when": {
@@ -702,129 +689,41 @@
       },
       "hint": "Boulanger Nv.5 pour le Chimiste (élixirs de combat)."
     },
-    "farm": {
-      "well": {
-        "when": {
-          "craftJobUnlocked": "toolmaker"
-        },
-        "hint": "Débloque en même temps que l’Outilleur (Bûcheron Nv.5 + Paysan Nv.6)."
-      },
-      "chicken_coop": {
-        "when": {
-          "jobLevel": {
-            "farmer": 8
-          },
-          "buildingUnlocked": "well"
-        },
-        "hint": "Puits débloqué et Paysan Nv.8 pour le Poulailler."
-      },
-      "barn": {
-        "when": {
-          "jobLevel": {
-            "lumberjack": 8
-          },
-          "buildingLevel": {
-            "chicken_coop": 10
-          }
-        },
-        "hint": "Poulailler Nv.10 et Bûcheron Nv.8 pour l'Étable."
-      },
-      "sheepfold": {
-        "when": {
-          "jobLevel": {
-            "lumberjack": 10,
-            "farmer": 12
-          },
-          "buildingLevel": {
-            "barn": 12
-          }
-        },
-        "hint": "Étable Nv.12, Bûcheron Nv.10 et Paysan Nv.12 pour la Bergerie."
-      },
-      "pigsty": {
-        "when": {
-          "jobLevel": {
-            "miner": 8
-          },
-          "buildingLevel": {
-            "sheepfold": 14
-          }
-        },
-        "hint": "Mineur Nv.8 et Bergerie Nv.14 pour la Porcherie."
-      },
-      "beehive": {
-        "when": {
-          "jobLevel": {
-            "alchemist": 6,
-            "farmer": 16
-          },
-          "buildingLevel": {
-            "pigsty": 16
-          }
-        },
-        "hint": "Alchimiste Nv.6, Porcherie Nv.16 et Paysan Nv.16 pour les Ruches."
-      }
-    },
     "farm_well": {
       "when": {
-        "craftJobUnlocked": "toolmaker"
+        "schoolFarm": "well"
       },
-      "hint": "Débloque en même temps que l’Outilleur (Bûcheron Nv.5 + Paysan Nv.6)."
+      "hint": "École → Élevage : Puits du village."
     },
     "farm_chicken_coop": {
       "when": {
-        "jobLevel": {
-          "farmer": 8
-        },
-        "buildingUnlocked": "well"
+        "schoolFarm": "chicken_coop"
       },
-      "hint": "Puits débloqué et Paysan Nv.8 pour le Poulailler."
+      "hint": "École → Élevage : Poulailler."
     },
     "farm_barn": {
       "when": {
-        "jobLevel": {
-          "lumberjack": 8
-        },
-        "buildingLevel": {
-          "chicken_coop": 10
-        }
+        "schoolFarm": "barn"
       },
-      "hint": "Poulailler Nv.10 et Bûcheron Nv.8 pour l'Étable."
+      "hint": "École → Élevage : Étable."
     },
     "farm_sheepfold": {
       "when": {
-        "jobLevel": {
-          "lumberjack": 10,
-          "farmer": 12
-        },
-        "buildingLevel": {
-          "barn": 12
-        }
+        "schoolFarm": "sheepfold"
       },
-      "hint": "Étable Nv.12, Bûcheron Nv.10 et Paysan Nv.12 pour la Bergerie."
+      "hint": "École → Élevage : Bergerie."
     },
     "farm_pigsty": {
       "when": {
-        "jobLevel": {
-          "miner": 8
-        },
-        "buildingLevel": {
-          "sheepfold": 14
-        }
+        "schoolFarm": "pigsty"
       },
-      "hint": "Mineur Nv.8 et Bergerie Nv.14 pour la Porcherie."
+      "hint": "École → Élevage : Porcherie."
     },
     "farm_beehive": {
       "when": {
-        "jobLevel": {
-          "alchemist": 6,
-          "farmer": 16
-        },
-        "buildingLevel": {
-          "pigsty": 16
-        }
+        "schoolFarm": "beehive"
       },
-      "hint": "Alchimiste Nv.6, Porcherie Nv.16 et Paysan Nv.16 pour les Ruches."
+      "hint": "École → Élevage : Ruches."
     }
   }
 }

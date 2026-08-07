@@ -54,11 +54,46 @@ function meetsCondition(state, condition, balance = null) {
       if (!isCombatUnlocked(state, balance)) return false;
     }
   }
+  if (condition.schoolJob) {
+    const jobs = ensureSchoolUnlockLists(state).unlockedJobs;
+    if (!jobs.includes(condition.schoolJob)) return false;
+  }
+  if (condition.schoolFarm) {
+    const farms = ensureSchoolUnlockLists(state).unlockedFarmBuildings;
+    if (!farms.includes(condition.schoolFarm)) return false;
+  }
+  if (condition.schoolCombat) {
+    if (!ensureSchoolUnlockLists(state).unlockedCombat) return false;
+  }
   return true;
+}
+
+function ensureSchoolUnlockLists(state) {
+  if (!state.villageSchool || typeof state.villageSchool !== 'object') {
+    state.villageSchool = {
+      unlockedJobs: [],
+      unlockedFarmBuildings: [],
+      unlockedCombatZones: [],
+      unlockedCombat: false,
+    };
+  }
+  const s = state.villageSchool;
+  if (!Array.isArray(s.unlockedJobs)) s.unlockedJobs = [];
+  if (!Array.isArray(s.unlockedFarmBuildings)) s.unlockedFarmBuildings = [];
+  if (!Array.isArray(s.unlockedCombatZones)) s.unlockedCombatZones = [];
+  if (typeof s.unlockedCombat !== 'boolean') s.unlockedCombat = false;
+  return s;
 }
 
 export function isJobUnlocked(jobId, state, balance) {
   if (jobId === 'farmer') return true;
+  if (jobId === 'combat') {
+    return !!ensureSchoolUnlockLists(state).unlockedCombat;
+  }
+  // Métiers récolte : déblocage École
+  if (GATHERING_JOB_IDS.includes(jobId) && jobId !== 'farmer') {
+    return ensureSchoolUnlockLists(state).unlockedJobs.includes(jobId);
+  }
   const rules = getJobUnlockRules(balance);
   const rule = rules[jobId];
   if (!rule) return false;
@@ -76,10 +111,15 @@ export function isGatheringJobUnlocked(jobId, state, balance) {
 }
 
 export function isFarmBuildingUnlocked(buildingId, state, balance) {
+  // Feuille de route École (prioritaire)
+  if (ensureSchoolUnlockLists(state).unlockedFarmBuildings.includes(buildingId)) {
+    return true;
+  }
   const rules = getJobUnlockRules(balance);
   const rule = rules[`farm_${buildingId}`] || rules.farm?.[buildingId];
   if (!rule) return false;
   if (rule.always) return true;
+  // Si la règle exige schoolFarm, passe par meetsCondition
   return meetsCondition(state, rule.when, balance);
 }
 
@@ -215,6 +255,43 @@ function buildUnlockGates(rule, state, balance, jobs = {}) {
       progress: buildingProgress,
       ready,
       subGates: buildingGates,
+    });
+  }
+
+  if (when.schoolJob) {
+    const ready = ensureSchoolUnlockLists(state).unlockedJobs.includes(when.schoolJob);
+    gates.push({
+      type: 'school',
+      jobName: 'École du Village',
+      requiredLevel: 1,
+      currentLevel: ready ? 1 : 0,
+      progress: ready ? 1 : 0,
+      ready,
+      label: jobs[when.schoolJob]?.name || when.schoolJob,
+    });
+  }
+  if (when.schoolFarm) {
+    const ready = ensureSchoolUnlockLists(state).unlockedFarmBuildings.includes(when.schoolFarm);
+    gates.push({
+      type: 'school',
+      jobName: 'École du Village',
+      requiredLevel: 1,
+      currentLevel: ready ? 1 : 0,
+      progress: ready ? 1 : 0,
+      ready,
+      label: FARM_BUILDING_LABELS[when.schoolFarm] || when.schoolFarm,
+    });
+  }
+  if (when.schoolCombat) {
+    const ready = !!ensureSchoolUnlockLists(state).unlockedCombat;
+    gates.push({
+      type: 'school',
+      jobName: 'École du Village',
+      requiredLevel: 1,
+      currentLevel: ready ? 1 : 0,
+      progress: ready ? 1 : 0,
+      ready,
+      label: 'Combat',
     });
   }
 

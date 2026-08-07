@@ -155,8 +155,7 @@ export function renderVillageSchool(game, el) {
       <div class="feature-locked-panel school-locked">
         <div class="feature-locked-icon"><span class="nav-emoji" style="font-size:2.5rem">🏫</span></div>
         <h2>École du Village</h2>
-        <p class="feature-locked-badge">🔒 Se débloque avec l’Outilleur</p>
-        <p class="view-desc feature-locked-hint">${vm.unlockHint || 'Débloque l’Outilleur pour ouvrir l’École.'}</p>
+        <p class="view-desc feature-locked-hint">${vm.unlockHint || 'Feuille de route du village.'}</p>
       </div>
     `;
     return;
@@ -209,7 +208,7 @@ export function renderVillageSchool(game, el) {
     <div class="school-view">
       <header class="view-header">
         <h2><span class="nav-emoji">🏫</span> École du Village</h2>
-        <p class="view-desc">Une étude à la fois par branche. Les suivantes se révèlent après la précédente.</p>
+        <p class="view-desc">Feuille de route : métiers, ferme et donjons. Une étude à la fois par branche.</p>
       </header>
       <div class="school-summary panel-inner">
         <span>${vm.seasonalCount} saisonnière(s) · ${vm.permanentCount} permanente(s)</span>

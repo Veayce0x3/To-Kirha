@@ -4334,7 +4334,11 @@ function renderCombatZoneList(game, el, list) {
 
   for (const combatZone of zones) {
     const zone = game.balance.zones[combatZone.zone];
-    const zoneUnlocked = game.isZoneUnlocked(combatZone.zone);
+    const schoolCombatOk = !!game.state?.villageSchool?.unlockedCombat;
+    const schoolZoneOk = combatZone.id === 'village_sakura'
+      ? schoolCombatOk
+      : !!(game.state?.villageSchool?.unlockedCombatZones || []).includes(combatZone.id);
+    const zoneUnlocked = game.isZoneUnlocked(combatZone.zone) && schoolZoneOk;
     const bossKills = game.state.bossKills?.[combatZone.id] || 0;
     const keyCount = game.getDungeonKeyCount(combatZone.id);
     const dungeonCheck = game.canEnterDungeonZone(combatZone.id);
@@ -4356,9 +4360,14 @@ function renderCombatZoneList(game, el, list) {
     ].filter(Boolean).join(' ');
 
     if (!zoneUnlocked) {
+      const schoolLocked = !schoolZoneOk;
       const check = game.canUnlockZone(combatZone.zone);
-      const hint = game.getZoneUnlockHint(combatZone.zone);
-      const reqLines = game.getZoneUnlockRequirementsList(combatZone.zone);
+      const hint = schoolLocked
+        ? (combatZone.id === 'village_sakura'
+          ? 'École → Combat : Première garde.'
+          : 'École → Combat : débloque ce donjon.')
+        : game.getZoneUnlockHint(combatZone.zone);
+      const reqLines = schoolLocked ? [] : game.getZoneUnlockRequirementsList(combatZone.zone);
       const kirhaCost = zone?.unlockRequirements?.kirha ?? zone?.unlockCost ?? 0;
       const reqHtml = reqLines.length
         ? `<ul class="combat-unlock-list">${reqLines.map((l) => `<li>${l}</li>`).join('')}</ul>`
@@ -4369,19 +4378,24 @@ function renderCombatZoneList(game, el, list) {
           <div class="combat-zone-titles">
             <strong class="combat-zone-name">${combatZone.name}</strong>
             <p class="combat-zone-sub">${zone?.emoji || ''} ${zone?.name || ''} · ${recLine}</p>
-            <p class="tile-lock">🔒 Zone verrouillée</p>
+            <p class="tile-lock">🔒 ${schoolLocked ? 'École du Village' : 'Zone verrouillée'}</p>
           </div>
         </div>
         <div class="combat-zone-unlock-panel">
-          <p class="combat-zone-unlock-lead">Débloque cette zone pour accéder au prochain donjon et à l’entraînement.</p>
+          <p class="combat-zone-unlock-lead">${schoolLocked
+            ? 'Termine la recherche correspondante à l’École pour ouvrir ce donjon.'
+            : 'Débloque cette zone pour accéder au prochain donjon et à l’entraînement.'}</p>
           ${reqHtml}
           ${hint ? `<p class="world-unlock-hint">${hint}</p>` : ''}
-          ${!check.ok && check.reason && check.reason !== hint ? `<p class="world-unlock-hint">${check.reason}</p>` : ''}
-          <button type="button" class="btn btn-unlock btn-zone-unlock" ${check.ok ? '' : 'disabled'}>
+          ${!schoolLocked && !check.ok && check.reason && check.reason !== hint ? `<p class="world-unlock-hint">${check.reason}</p>` : ''}
+          ${schoolLocked
+            ? `<button type="button" class="btn btn-muted btn-goto-school">🏫 Aller à l’École</button>`
+            : `<button type="button" class="btn btn-unlock btn-zone-unlock" ${check.ok ? '' : 'disabled'}>
             Débloquer · ${formatNumber(kirhaCost)} 💰
-          </button>
+          </button>`}
         </div>
       `;
+      card.querySelector('.btn-goto-school')?.addEventListener('click', () => navigate('village_school'));
       card.querySelector('.btn-zone-unlock')?.addEventListener('click', () => {
         if (game.unlockZone(combatZone.zone)) renderCombat(game, el);
       });

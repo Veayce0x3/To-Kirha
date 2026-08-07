@@ -1,16 +1,28 @@
 {
   "branches": {
-    "cuisine": {
-      "id": "cuisine",
-      "label": "Cuisine",
-      "emoji": "🍞",
-      "order": 1
+    "recolte": {
+      "id": "recolte",
+      "label": "Récolte",
+      "emoji": "🌾",
+      "order": 0
     },
     "ferme": {
       "id": "ferme",
       "label": "Élevage",
       "emoji": "🐄",
+      "order": 1
+    },
+    "combat": {
+      "id": "combat",
+      "label": "Combat",
+      "emoji": "⚔️",
       "order": 2
+    },
+    "cuisine": {
+      "id": "cuisine",
+      "label": "Cuisine",
+      "emoji": "🍞",
+      "order": 3
     },
     "atelier": {
       "id": "atelier",
@@ -23,15 +35,318 @@
       "label": "Connaissances",
       "emoji": "📜",
       "order": 5
-    },
-    "combat": {
-      "id": "combat",
-      "label": "Combat",
-      "emoji": "⚔️",
-      "order": 3
     }
   },
   "researches": {
+    "roadmap_lumberjack": {
+      "id": "roadmap_lumberjack",
+      "branch": "recolte",
+      "tier": "permanent",
+      "order": 1,
+      "name": "Sentiers du bûcheron",
+      "description": "Le Conseil ouvre les chemins boisés autour du village.",
+      "requires": [],
+      "kirhaCost": 40,
+      "ingredients": {
+        "ble": 20
+      },
+      "durationMs": 180000,
+      "effect": {
+        "unlockGatheringJob": "lumberjack"
+      },
+      "effectLabel": "Débloque le métier Bûcheron"
+    },
+    "roadmap_fisher": {
+      "id": "roadmap_fisher",
+      "branch": "recolte",
+      "tier": "permanent",
+      "order": 2,
+      "name": "Voies d’eau",
+      "description": "Les berges redeviennent accessibles aux filets.",
+      "requires": [
+        "roadmap_lumberjack"
+      ],
+      "kirhaCost": 80,
+      "ingredients": {
+        "ble": 30,
+        "frene": 15
+      },
+      "durationMs": 300000,
+      "effect": {
+        "unlockGatheringJob": "fisher"
+      },
+      "effectLabel": "Débloque le métier Pêcheur"
+    },
+    "roadmap_miner": {
+      "id": "roadmap_miner",
+      "branch": "recolte",
+      "tier": "permanent",
+      "order": 3,
+      "name": "Veines de pierre",
+      "description": "On cartographie les carrières oubliées.",
+      "requires": [
+        "roadmap_fisher"
+      ],
+      "kirhaCost": 120,
+      "ingredients": {
+        "dorade": 20,
+        "frene": 25
+      },
+      "durationMs": 420000,
+      "effect": {
+        "unlockGatheringJob": "miner"
+      },
+      "effectLabel": "Débloque le métier Mineur"
+    },
+    "roadmap_alchemist": {
+      "id": "roadmap_alchemist",
+      "branch": "recolte",
+      "tier": "permanent",
+      "order": 4,
+      "name": "Sentier des herbes",
+      "description": "Les cueilleurs retrouvent les chemins d’alchimie.",
+      "requires": [
+        "roadmap_miner"
+      ],
+      "kirhaCost": 160,
+      "ingredients": {
+        "pierre": 25,
+        "dorade": 15
+      },
+      "durationMs": 480000,
+      "effect": {
+        "unlockGatheringJob": "alchemist"
+      },
+      "effectLabel": "Débloque le métier Alchimiste"
+    },
+    "roadmap_well": {
+      "id": "roadmap_well",
+      "branch": "ferme",
+      "tier": "permanent",
+      "order": 1,
+      "name": "Puits du village",
+      "description": "Sans eau, pas d’élevage. Le puits rouvre la ferme.",
+      "requires": [],
+      "kirhaCost": 35,
+      "ingredients": {
+        "ble": 15
+      },
+      "durationMs": 120000,
+      "effect": {
+        "unlockFarmBuilding": "well"
+      },
+      "effectLabel": "Débloque le Puits"
+    },
+    "roadmap_chicken_coop": {
+      "id": "roadmap_chicken_coop",
+      "branch": "ferme",
+      "tier": "permanent",
+      "order": 2,
+      "name": "Poulailler",
+      "description": "Les premiers animaux reviennent près du puits.",
+      "requires": [
+        "roadmap_well"
+      ],
+      "kirhaCost": 70,
+      "ingredients": {
+        "ble": 25,
+        "eau": 10
+      },
+      "durationMs": 240000,
+      "effect": {
+        "unlockFarmBuilding": "chicken_coop"
+      },
+      "effectLabel": "Débloque le Poulailler"
+    },
+    "roadmap_barn": {
+      "id": "roadmap_barn",
+      "branch": "ferme",
+      "tier": "permanent",
+      "order": 3,
+      "name": "Étable",
+      "description": "Il faut du bois pour abriter le bétail.",
+      "requires": [
+        "roadmap_chicken_coop",
+        "roadmap_lumberjack"
+      ],
+      "kirhaCost": 140,
+      "ingredients": {
+        "frene": 40,
+        "oeuf": 15
+      },
+      "durationMs": 360000,
+      "effect": {
+        "unlockFarmBuilding": "barn"
+      },
+      "effectLabel": "Débloque l’Étable"
+    },
+    "roadmap_sheepfold": {
+      "id": "roadmap_sheepfold",
+      "branch": "ferme",
+      "tier": "permanent",
+      "order": 4,
+      "name": "Bergerie",
+      "description": "La laine reprend sa place dans le village.",
+      "requires": [
+        "roadmap_barn"
+      ],
+      "kirhaCost": 200,
+      "ingredients": {
+        "lait": 20,
+        "frene": 30
+      },
+      "durationMs": 480000,
+      "effect": {
+        "unlockFarmBuilding": "sheepfold"
+      },
+      "effectLabel": "Débloque la Bergerie"
+    },
+    "roadmap_pigsty": {
+      "id": "roadmap_pigsty",
+      "branch": "ferme",
+      "tier": "permanent",
+      "order": 5,
+      "name": "Porcherie",
+      "description": "Les porcs demandent pierre et patience.",
+      "requires": [
+        "roadmap_sheepfold",
+        "roadmap_miner"
+      ],
+      "kirhaCost": 260,
+      "ingredients": {
+        "pierre": 35,
+        "laine": 15
+      },
+      "durationMs": 540000,
+      "effect": {
+        "unlockFarmBuilding": "pigsty"
+      },
+      "effectLabel": "Débloque la Porcherie"
+    },
+    "roadmap_beehive": {
+      "id": "roadmap_beehive",
+      "branch": "ferme",
+      "tier": "permanent",
+      "order": 6,
+      "name": "Ruches",
+      "description": "Le miel revient avec les herbes et le calme.",
+      "requires": [
+        "roadmap_pigsty",
+        "roadmap_alchemist"
+      ],
+      "kirhaCost": 320,
+      "ingredients": {
+        "pissenlit": 25,
+        "bacon": 10
+      },
+      "durationMs": 600000,
+      "effect": {
+        "unlockFarmBuilding": "beehive"
+      },
+      "effectLabel": "Débloque les Ruches"
+    },
+    "roadmap_combat": {
+      "id": "roadmap_combat",
+      "branch": "combat",
+      "tier": "permanent",
+      "order": 1,
+      "name": "Première garde",
+      "description": "Le Conseil autorise l’entraînement au Temple du Cerisier.",
+      "requires": [],
+      "kirhaCost": 50,
+      "ingredients": {
+        "ble": 25
+      },
+      "durationMs": 180000,
+      "effect": {
+        "unlockCombat": true
+      },
+      "effectLabel": "Débloque le Combat (Temple du Cerisier)"
+    },
+    "roadmap_zone_petal_forest": {
+      "id": "roadmap_zone_petal_forest",
+      "branch": "combat",
+      "tier": "permanent",
+      "order": 2,
+      "name": "Tanière des Pétales",
+      "description": "Les gardes cartographient la forêt aux pétales.",
+      "requires": [
+        "roadmap_combat"
+      ],
+      "kirhaCost": 150,
+      "ingredients": {
+        "frene": 30,
+        "pierre": 15
+      },
+      "durationMs": 360000,
+      "effect": {
+        "unlockCombatZone": "petal_forest"
+      },
+      "effectLabel": "Débloque le donjon Tanière des Pétales"
+    },
+    "roadmap_zone_mist_river": {
+      "id": "roadmap_zone_mist_river",
+      "branch": "combat",
+      "tier": "permanent",
+      "order": 3,
+      "name": "Sanctuaire de Brume",
+      "description": "Une brume ancienne se lève sur la rivière.",
+      "requires": [
+        "roadmap_zone_petal_forest"
+      ],
+      "kirhaCost": 280,
+      "ingredients": {
+        "dorade": 30,
+        "jade": 10
+      },
+      "durationMs": 480000,
+      "effect": {
+        "unlockCombatZone": "mist_river"
+      },
+      "effectLabel": "Débloque le donjon Sanctuaire de Brume"
+    },
+    "roadmap_zone_jade_mountains": {
+      "id": "roadmap_zone_jade_mountains",
+      "branch": "combat",
+      "tier": "permanent",
+      "order": 4,
+      "name": "Pics de Jade",
+      "description": "Les montagnes ouvrent leurs sentiers de jade.",
+      "requires": [
+        "roadmap_zone_mist_river"
+      ],
+      "kirhaCost": 400,
+      "ingredients": {
+        "fer": 25,
+        "saphir": 8
+      },
+      "durationMs": 600000,
+      "effect": {
+        "unlockCombatZone": "jade_mountains"
+      },
+      "effectLabel": "Débloque le donjon Pics de Jade"
+    },
+    "roadmap_zone_lotus_sanctuary": {
+      "id": "roadmap_zone_lotus_sanctuary",
+      "branch": "combat",
+      "tier": "permanent",
+      "order": 5,
+      "name": "Hall du Lotus",
+      "description": "Le sanctuaire du lotus se révèle aux plus patients.",
+      "requires": [
+        "roadmap_zone_jade_mountains"
+      ],
+      "kirhaCost": 550,
+      "ingredients": {
+        "ginseng": 20,
+        "ancient_scroll": 5
+      },
+      "durationMs": 720000,
+      "effect": {
+        "unlockCombatZone": "lotus_sanctuary"
+      },
+      "effectLabel": "Débloque le donjon Hall du Lotus"
+    },
     "cuisine_fours": {
       "id": "cuisine_fours",
       "branch": "cuisine",

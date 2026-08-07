@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260807-0930",
+      "date": "2026-08-07",
+      "title": "École = feuille de route du village",
+      "highlights": [
+        "École ouverte dès le début (plus besoin de l’Outilleur)",
+        "Recherches permanentes : métiers récolte, bâtiments ferme, donjons",
+        "Les ressources / plantes restent liées aux niveaux de métier",
+        "Combat & zones : déblocage via l’École (+ Nv. perso pour la difficulté)"
+      ]
+    },
+    {
       "buildId": "20260807-0905",
       "date": "2026-08-07",
       "title": "Herbier — collection des ressources",

@@ -48,6 +48,7 @@ import {
   RARITY_LABELS,
 } from './equipmentRarity.js';
 import { isCraftJobUnlocked } from './jobUnlock.js';
+import { hasSchoolCombatZoneUnlock, hasSchoolCombatUnlock } from './villageSchool.js';
 
 function getDungeonGate(balance) {
   return balance?.combat?.dungeonGate || {};
@@ -77,6 +78,12 @@ export function buildDungeonRooms(combatZone) {
 }
 
 export function canFight(combatZone, state, balance, characterConfig, isBoss = false, monsterIndex = 0) {
+  if (!hasSchoolCombatUnlock(state)) {
+    return { ok: false, reason: 'École → débloque le Combat' };
+  }
+  if (!hasSchoolCombatZoneUnlock(state, combatZone.id)) {
+    return { ok: false, reason: 'École → débloque ce donjon' };
+  }
   if (!isZoneUnlocked(combatZone.zone, state, balance)) {
     return { ok: false, reason: 'Zone verrouillée' };
   }
@@ -184,6 +191,12 @@ export function getDungeonBossKillRequirement(balance) {
 }
 
 export function canEnterDungeon(combatZone, state, balance, characterConfig) {
+  if (!hasSchoolCombatUnlock(state)) {
+    return { ok: false, reason: 'École → débloque le Combat' };
+  }
+  if (!hasSchoolCombatZoneUnlock(state, combatZone.id)) {
+    return { ok: false, reason: 'École → débloque ce donjon' };
+  }
   if (!isZoneUnlocked(combatZone.zone, state, balance)) {
     return { ok: false, reason: 'Zone verrouillée' };
   }

@@ -423,6 +423,91 @@ const MIGRATIONS = {
       }
     }
   },
+  /** École = feuille de route : backfill unlocks pour parties déjà avancées. */
+  52(state, ctx) {
+    if (!state.villageSchool || typeof state.villageSchool !== 'object') {
+      state.villageSchool = {
+        completedSeasonal: [],
+        completedPermanent: [],
+        active: null,
+        legacyPending: null,
+        seasonFlags: {},
+        unlockedSpells: [],
+        unlockedJobs: [],
+        unlockedFarmBuildings: [],
+        unlockedCombatZones: [],
+        unlockedCombat: false,
+      };
+    }
+    const s = state.villageSchool;
+    if (!Array.isArray(s.unlockedJobs)) s.unlockedJobs = [];
+    if (!Array.isArray(s.unlockedFarmBuildings)) s.unlockedFarmBuildings = [];
+    if (!Array.isArray(s.unlockedCombatZones)) s.unlockedCombatZones = [];
+    if (!Array.isArray(s.completedPermanent)) s.completedPermanent = [];
+    if (typeof s.unlockedCombat !== 'boolean') s.unlockedCombat = false;
+
+    const push = (arr, id) => { if (id && !arr.includes(id)) arr.push(id); };
+    const mark = (researchId) => push(s.completedPermanent, researchId);
+    const jl = (jobId) => Number(state.jobs?.[jobId]?.level) || 1;
+    const bl = (bid) => Number(state.farmBuildingMeta?.[bid]?.level) || 0;
+    const hasFarmMeta = (bid) => !!state.farmBuildingMeta?.[bid];
+
+    // Anciennes règles de niveau → unlocks école
+    if (jl('farmer') >= 8 || jl('lumberjack') > 1) {
+      push(s.unlockedJobs, 'lumberjack');
+      mark('roadmap_lumberjack');
+    }
+    if ((jl('lumberjack') >= 10 && jl('farmer') >= 10) || jl('fisher') > 1) {
+      push(s.unlockedJobs, 'fisher');
+      mark('roadmap_fisher');
+    }
+    if ((jl('fisher') >= 10 && jl('lumberjack') >= 8) || jl('miner') > 1) {
+      push(s.unlockedJobs, 'miner');
+      mark('roadmap_miner');
+    }
+    if ((jl('miner') >= 12 && jl('fisher') >= 8) || jl('alchemist') > 1) {
+      push(s.unlockedJobs, 'alchemist');
+      mark('roadmap_alchemist');
+    }
+
+    if (jl('farmer') >= 5 || (state.bossKills && Object.keys(state.bossKills).length)
+      || (Number(state.character?.level) || 1) >= 5) {
+      s.unlockedCombat = true;
+      push(s.unlockedCombatZones, 'village_sakura');
+      mark('roadmap_combat');
+    }
+
+    const charLv = Number(state.character?.level) || 1;
+    const zones = [
+      ['petal_forest', 10, 'roadmap_zone_petal_forest'],
+      ['mist_river', 20, 'roadmap_zone_mist_river'],
+      ['jade_mountains', 25, 'roadmap_zone_jade_mountains'],
+      ['lotus_sanctuary', 35, 'roadmap_zone_lotus_sanctuary'],
+    ];
+    if (!Array.isArray(state.unlockedZones)) state.unlockedZones = [];
+    for (const [zid, need, rid] of zones) {
+      if (charLv >= need || (state.unlockedZones || []).includes(zid) || state.bossKills?.[zid]) {
+        push(s.unlockedCombatZones, zid);
+        push(state.unlockedZones, zid);
+        mark(rid);
+      }
+    }
+
+    const farms = [
+      ['well', 'roadmap_well'],
+      ['chicken_coop', 'roadmap_chicken_coop'],
+      ['barn', 'roadmap_barn'],
+      ['sheepfold', 'roadmap_sheepfold'],
+      ['pigsty', 'roadmap_pigsty'],
+      ['beehive', 'roadmap_beehive'],
+    ];
+    for (const [bid, rid] of farms) {
+      if (hasFarmMeta(bid) || bl(bid) > 0 || (state.purchasedFarmSlots && state.purchasedFarmSlots[bid] != null)) {
+        push(s.unlockedFarmBuildings, bid);
+        mark(rid);
+      }
+    }
+  },
 };
 
 /** Garantit les blocs systèmes récents même si saveVersion était déjà trop haut. */
@@ -441,11 +526,19 @@ export function repairSaveSystems(state, ctx = {}) {
       seasonFlags: {},
       bonuses: {},
       unlockedSpells: [],
+      unlockedJobs: [],
+      unlockedFarmBuildings: [],
+      unlockedCombatZones: [],
+      unlockedCombat: false,
     };
   }
   if (!Array.isArray(state.villageSchool.completedSeasonal)) state.villageSchool.completedSeasonal = [];
   if (!Array.isArray(state.villageSchool.completedPermanent)) state.villageSchool.completedPermanent = [];
   if (!Array.isArray(state.villageSchool.unlockedSpells)) state.villageSchool.unlockedSpells = [];
+  if (!Array.isArray(state.villageSchool.unlockedJobs)) state.villageSchool.unlockedJobs = [];
+  if (!Array.isArray(state.villageSchool.unlockedFarmBuildings)) state.villageSchool.unlockedFarmBuildings = [];
+  if (!Array.isArray(state.villageSchool.unlockedCombatZones)) state.villageSchool.unlockedCombatZones = [];
+  if (typeof state.villageSchool.unlockedCombat !== 'boolean') state.villageSchool.unlockedCombat = false;
   if (!state.seasonStartedAt) state.seasonStartedAt = Date.now();
 
   if (!state.grimoire || typeof state.grimoire !== 'object') {
@@ -481,11 +574,30 @@ export function repairSaveSystems(state, ctx = {}) {
   if (!Array.isArray(state.herbarium.discovered)) state.herbarium.discovered = [];
   if (!Array.isArray(state.herbarium.seenToast)) state.herbarium.seenToast = [];
 
+  if (!state.villageSchool || typeof state.villageSchool !== 'object') {
+    state.villageSchool = {
+      completedSeasonal: [],
+      completedPermanent: [],
+      active: null,
+      legacyPending: null,
+      seasonFlags: {},
+      unlockedSpells: [],
+      unlockedJobs: [],
+      unlockedFarmBuildings: [],
+      unlockedCombatZones: [],
+      unlockedCombat: false,
+    };
+  }
+  if (!Array.isArray(state.villageSchool.unlockedJobs)) state.villageSchool.unlockedJobs = [];
+  if (!Array.isArray(state.villageSchool.unlockedFarmBuildings)) state.villageSchool.unlockedFarmBuildings = [];
+  if (!Array.isArray(state.villageSchool.unlockedCombatZones)) state.villageSchool.unlockedCombatZones = [];
+  if (typeof state.villageSchool.unlockedCombat !== 'boolean') state.villageSchool.unlockedCombat = false;
+
   return state;
 }
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 51;
+  const target = ctx.balance?.saveVersion ?? 52;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

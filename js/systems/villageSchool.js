@@ -1,8 +1,8 @@
 /**
  * École du Village — recherches saisonnières + connaissances permanentes + legs.
+ * Feuille de route : métiers récolte, bâtiments ferme, zones combat.
  */
 
-import { isCraftJobUnlocked } from './jobUnlock.js';
 import { learnSpell } from './grimoire.js';
 
 export function emptyVillageSchoolState() {
@@ -13,6 +13,10 @@ export function emptyVillageSchoolState() {
     legacyPending: null,
     seasonFlags: {},
     unlockedSpells: [],
+    unlockedJobs: [],
+    unlockedFarmBuildings: [],
+    unlockedCombatZones: [],
+    unlockedCombat: false,
   };
 }
 
@@ -24,12 +28,36 @@ export function ensureVillageSchoolState(state) {
   if (!Array.isArray(s.completedSeasonal)) s.completedSeasonal = [];
   if (!Array.isArray(s.completedPermanent)) s.completedPermanent = [];
   if (!Array.isArray(s.unlockedSpells)) s.unlockedSpells = [];
+  if (!Array.isArray(s.unlockedJobs)) s.unlockedJobs = [];
+  if (!Array.isArray(s.unlockedFarmBuildings)) s.unlockedFarmBuildings = [];
+  if (!Array.isArray(s.unlockedCombatZones)) s.unlockedCombatZones = [];
+  if (typeof s.unlockedCombat !== 'boolean') s.unlockedCombat = false;
   if (!s.seasonFlags || typeof s.seasonFlags !== 'object') s.seasonFlags = {};
   return s;
 }
 
-export function isVillageSchoolUnlocked(state, balance) {
-  return isCraftJobUnlocked('toolmaker', state, balance);
+/** Ouverte dès le début (feuille de route). */
+export function isVillageSchoolUnlocked(_state, _balance) {
+  return true;
+}
+
+export function hasSchoolJobUnlock(state, jobId) {
+  return ensureVillageSchoolState(state).unlockedJobs.includes(jobId);
+}
+
+export function hasSchoolFarmUnlock(state, buildingId) {
+  return ensureVillageSchoolState(state).unlockedFarmBuildings.includes(buildingId);
+}
+
+export function hasSchoolCombatUnlock(state) {
+  return !!ensureVillageSchoolState(state).unlockedCombat;
+}
+
+export function hasSchoolCombatZoneUnlock(state, combatZoneId) {
+  const s = ensureVillageSchoolState(state);
+  if (!combatZoneId) return false;
+  if (combatZoneId === 'village_sakura') return !!s.unlockedCombat;
+  return s.unlockedCombatZones.includes(combatZoneId);
 }
 
 export function getResearchDef(schoolData, researchId) {
@@ -105,7 +133,7 @@ function payResearchCost(state, research) {
 
 export function startVillageResearch(state, schoolData, balance, researchId) {
   if (!isVillageSchoolUnlocked(state, balance)) {
-    return { ok: false, reason: 'Débloque l’Outilleur pour ouvrir l’École du Village.' };
+    return { ok: false, reason: 'École du Village indisponible.' };
   }
   const research = getResearchDef(schoolData, researchId);
   if (!research) return { ok: false, reason: 'Recherche inconnue.' };
@@ -126,6 +154,59 @@ export function startVillageResearch(state, schoolData, balance, researchId) {
   return { ok: true, research, active: s.active };
 }
 
+function pushUnique(arr, id) {
+  if (!id || arr.includes(id)) return false;
+  arr.push(id);
+  return true;
+}
+
+/** Applique les effets d’unlock (idempotent). */
+export function applyResearchUnlockEffects(state, research) {
+  const effect = research?.effect || {};
+  const s = ensureVillageSchoolState(state);
+  let changed = false;
+
+  if (effect.unlockGatheringJob) {
+    if (pushUnique(s.unlockedJobs, effect.unlockGatheringJob)) changed = true;
+  }
+  if (effect.unlockFarmBuilding) {
+    if (pushUnique(s.unlockedFarmBuildings, effect.unlockFarmBuilding)) changed = true;
+  }
+  if (effect.unlockCombat) {
+    if (!s.unlockedCombat) {
+      s.unlockedCombat = true;
+      changed = true;
+    }
+    if (pushUnique(s.unlockedCombatZones, 'village_sakura')) changed = true;
+    if (!Array.isArray(state.unlockedZones)) state.unlockedZones = [];
+    if (pushUnique(state.unlockedZones, 'village_sakura')) changed = true;
+  }
+  if (effect.unlockCombatZone) {
+    if (pushUnique(s.unlockedCombatZones, effect.unlockCombatZone)) changed = true;
+    if (!Array.isArray(state.unlockedZones)) state.unlockedZones = [];
+    if (pushUnique(state.unlockedZones, effect.unlockCombatZone)) changed = true;
+  }
+  if (effect.unlockSpell) {
+    const spellId = effect.unlockSpell;
+    if (pushUnique(s.unlockedSpells, spellId)) {
+      learnSpell(state, spellId);
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+/** Rejoue les unlocks des recherches déjà terminées (repair / load). */
+export function syncSchoolUnlocksFromCompleted(state, schoolData) {
+  ensureVillageSchoolState(state);
+  const s = state.villageSchool;
+  const ids = [...(s.completedSeasonal || []), ...(s.completedPermanent || [])];
+  for (const id of ids) {
+    const research = getResearchDef(schoolData, id);
+    if (research) applyResearchUnlockEffects(state, research);
+  }
+}
+
 function applyEffectOnComplete(state, research) {
   const effect = research?.effect || {};
   const s = ensureVillageSchoolState(state);
@@ -136,11 +217,7 @@ function applyEffectOnComplete(state, research) {
     s.completedSeasonal.push(research.id);
   }
 
-  if (effect.unlockSpell) {
-    const spellId = effect.unlockSpell;
-    if (!s.unlockedSpells.includes(spellId)) s.unlockedSpells.push(spellId);
-    learnSpell(state, spellId);
-  }
+  applyResearchUnlockEffects(state, research);
 
   if (effect.legacy && typeof effect.legacy === 'object') {
     if (!s.legacyPending) s.legacyPending = {};
@@ -164,7 +241,6 @@ export function completeVillageResearchIfReady(state, schoolData, now = Date.now
   s.active = null;
   if (!research) return { ok: false, reason: 'Recherche introuvable.' };
   applyEffectOnComplete(state, research);
-  // Caller doit refreshSchoolBonusCache avec schoolData
   return { ok: true, research };
 }
 
@@ -210,7 +286,6 @@ export function getVillageSchoolBonuses(state, schoolData) {
   return bonuses;
 }
 
-/** Lecture cache (après refresh) — utilisable hors schoolData. */
 export function getSchoolBonusesFromState(state) {
   const s = state?.villageSchool;
   const b = s?.bonuses;
@@ -235,13 +310,10 @@ export function getSchoolBonusesFromState(state) {
 }
 
 export function refreshSchoolBonusCache(state, schoolData) {
+  syncSchoolUnlocksFromCompleted(state, schoolData);
   return getVillageSchoolBonuses(state, schoolData);
 }
 
-/**
- * Prépare le wipe saison : conserve permanents + legs, reset saisonnier.
- * @returns {{ preserved: object, legacyKirha: number, seasonFlags: object }}
- */
 export function extractVillageSchoolForPrestige(state) {
   const s = ensureVillageSchoolState(state);
   const legacy = s.legacyPending && typeof s.legacyPending === 'object'
@@ -254,6 +326,10 @@ export function extractVillageSchoolForPrestige(state) {
       active: null,
       legacyPending: null,
       unlockedSpells: [...(s.unlockedSpells || [])],
+      unlockedJobs: [...(s.unlockedJobs || [])],
+      unlockedFarmBuildings: [...(s.unlockedFarmBuildings || [])],
+      unlockedCombatZones: [...(s.unlockedCombatZones || [])],
+      unlockedCombat: !!s.unlockedCombat,
       seasonFlags: {
         merchantFirstWeek: !!legacy.merchantFirstWeek,
       },
@@ -264,6 +340,7 @@ export function extractVillageSchoolForPrestige(state) {
 
 export function getVillageSchoolViewModel(state, schoolData, balance, resources, jobs) {
   ensureVillageSchoolState(state);
+  syncSchoolUnlocksFromCompleted(state, schoolData);
   tickVillageSchool(state, schoolData);
   const unlocked = isVillageSchoolUnlocked(state, balance);
   const bonuses = getVillageSchoolBonuses(state, schoolData);
@@ -275,7 +352,8 @@ export function getVillageSchoolViewModel(state, schoolData, balance, resources,
     .map((branch) => {
       const items = Object.values(schoolData?.researches || {})
         .filter((r) => r.branch === branch.id)
-        .sort((a, b) => String(a.id).localeCompare(String(b.id)))
+        .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)
+          || String(a.id).localeCompare(String(b.id)))
         .map((r) => {
           const status = getResearchStatus(state, r);
           const ingredients = Object.entries(r.ingredients || {}).map(([resId, need]) => ({
@@ -297,7 +375,7 @@ export function getVillageSchoolViewModel(state, schoolData, balance, resources,
 
   return {
     unlocked,
-    unlockHint: balance?.jobUnlocks?.toolmaker?.hint || 'Débloque l’Outilleur.',
+    unlockHint: 'Étudie à l’École pour ouvrir métiers, ferme et donjons.',
     bonuses,
     active: activeProg && activeDef
       ? { ...activeProg, research: activeDef }
