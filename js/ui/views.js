@@ -1355,7 +1355,7 @@ function getInventoryMealInfo(game, resourceId) {
   if (inCombat) {
     disabledReason = 'En combat, utilise le menu Objets.';
   } else if (!levelOk) {
-    disabledReason = `Réservé aux persos niv. ${effect.levelMin}–${effect.levelMax}.`;
+    disabledReason = `Perso Nv.${effect.levelMin}–${effect.levelMax} requis (tu es Nv.${charLevel}).`;
   } else if (role === 'buff') {
     canHeal = true;
     actionLabel = 'Boire';
@@ -3993,9 +3993,7 @@ function openItemModal(game, resourceId, resource, amount, unitPrice, notSellabl
   } else if (notSellable && resource.merchantOnly) {
     compareHtml = '<p class="item-stat-compare">Objet spécial — acheté à la Place marchande. Requis pour de nombreuses fabrications.</p>';
   } else if (mealEffect) {
-    const levelNote = mealInfo.levelOk
-      ? ''
-      : ` · Réservé aux persos niv. ${mealEffect.levelMin}–${mealEffect.levelMax}`;
+    const levelNote = ` · Perso Nv.${mealEffect.levelMin}–${mealEffect.levelMax}${mealInfo.levelOk ? '' : ' (trop bas/haut)'}`;
     const hpNote = mealInfo.kind === 'hero' && mealInfo.maxHp > 0
       ? ` · PV entraînement : ${mealInfo.currentHp}/${mealInfo.maxHp}`
       : '';

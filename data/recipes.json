@@ -262,7 +262,7 @@
     "id": "recipe_poisson",
     "name": "Poisson grillé",
     "emoji": "🐟",
-    "description": "Poissonnier — restauration PM. Dorade + Eau.",
+    "description": "Poissonnier — +PM (Perso Nv.1–29). Dorade + Eau.",
     "kirhaCost": 10,
     "ingredients": {
       "dorade": 2,

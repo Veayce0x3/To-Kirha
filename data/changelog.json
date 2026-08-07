@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1610",
+      "date": "2026-08-07",
+      "title": "Poisson grillé dès Nv.1 + niveaux repas visibles",
+      "highlights": [
+        "Poisson grillé utilisable dès Perso Nv.1 (plus dès Nv.10)",
+        "Effets repas : niveau perso affiché (ex. +PM · Perso Nv.1–29)"
+      ]
+    },
+    {
       "buildId": "20260807-1455",
       "date": "2026-08-07",
       "title": "Combat : XP des monstres du Temple distinctes",

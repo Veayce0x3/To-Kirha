@@ -1502,9 +1502,9 @@
     "sellPrice": 23,
     "craftOnly": true,
     "consumable": true,
-    "description": "Repas équipiers — soin % PV des compagnons",
+    "description": "Repas — restauration PM (niv. perso 1–29)",
     "mealTier": 10,
-    "requiredCharLevelMin": 10,
+    "requiredCharLevelMin": 1,
     "requiredCharLevelMax": 29,
     "mealRole": "mp"
   },

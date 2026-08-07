@@ -82,7 +82,7 @@ export function buildMealEffects(resources, balance) {
         healPct: 0,
         mpPct: 0,
         buff,
-        label: buffLabel(buff),
+        label: `${buffLabel(buff)} · Perso Nv.${min}–${max}`,
         levelMin: min,
         levelMax: max,
       };
@@ -96,7 +96,7 @@ export function buildMealEffects(resources, balance) {
         mealRole: 'mp',
         healPct: 0,
         mpPct: pct,
-        label: `+${pct}% PM`,
+        label: `+${pct}% PM · Perso Nv.${min}–${max}`,
         levelMin: min,
         levelMax: max,
       };
@@ -110,7 +110,7 @@ export function buildMealEffects(resources, balance) {
       mealRole: role,
       healPct: pct,
       mpPct: 0,
-      label: `+${pct}% PV ${who}`,
+      label: `+${pct}% PV ${who} · Perso Nv.${min}–${max}`,
       levelMin: min,
       levelMax: max,
     };
