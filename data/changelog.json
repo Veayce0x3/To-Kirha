@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-2205",
+      "date": "2026-08-07",
+      "title": "Classement : menu déroulant + fiche complète",
+      "highlights": [
+        "Plus de chips : liste déroulante « Qui est 1er selon »",
+        "Chaque joueur montre Perso / Métier / Saison / Fortune (+ critère trié)",
+        "Top 100 listés, scroll dans la liste seulement"
+      ]
+    },
+    {
       "buildId": "20260807-2155",
       "date": "2026-08-07",
       "title": "Classement compact (une page)",

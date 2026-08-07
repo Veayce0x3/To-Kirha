@@ -1,7 +1,6 @@
 import {
   LEADERBOARD_TABS,
   fetchLeaderboard,
-  formatLeaderboardValue,
   submitLeaderboardSnapshot,
   buildLeaderboardSnapshot,
 } from '../systems/leaderboard.js';
@@ -9,11 +8,11 @@ import { getAuthState, getOnlineBlockReason, canUseOnlineFeatures } from '../cor
 import { showAccountRequiredModal } from './authUi.js';
 import { isLeaderboardEnabled, isMaintenanceMode } from '../systems/gameConfig.js';
 
-/** Top affiché — calé pour tenir sur un écran mobile sans scroll inutile. */
-const LB_TOP_N = 12;
+/** Nombre de joueurs listés (le tri change juste l’ordre / qui est 1er). */
+const LB_LIMIT = 100;
 
-/** @type {string} id d’onglet LEADERBOARD_TABS */
-let activeTabId = 'level';
+/** @type {string} sortKey SQL */
+let activeSortKey = 'char_level';
 
 function esc(s) {
   return String(s ?? '')
@@ -21,6 +20,10 @@ function esc(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function fmtNum(n) {
+  return Number(n || 0).toLocaleString('fr-FR');
 }
 
 function rankLabel(i) {
@@ -31,39 +34,55 @@ function rankLabel(i) {
   return String(i + 1);
 }
 
-function emptyHint(tabId) {
-  switch (tabId) {
-    case 'harvest': return 'Récolte pour apparaître ici.';
-    case 'discoveries': return 'Trouve des découvertes Kirha en récolte.';
-    case 'combat': return 'Vaincs des boss pour être classé.';
-    case 'seasons': return 'Passe une Renaissance pour apparaître.';
-    case 'fortune': return 'Gagne des Kirha pour grimper.';
-    case 'jobs': return 'Monte tes métiers pour apparaître.';
+function sortLabel(sortKey) {
+  return LEADERBOARD_TABS.find((t) => t.sortKey === sortKey)?.label || 'Niveau';
+}
+
+function emptyHint(sortKey) {
+  switch (sortKey) {
+    case 'total_harvests': return 'Récolte pour apparaître ici.';
+    case 'total_discoveries': return 'Trouve des découvertes Kirha en récolte.';
+    case 'boss_kills_total': return 'Vaincs des boss pour être classé.';
+    case 'seasons_completed': return 'Passe une Renaissance pour apparaître.';
+    case 'total_earned': return 'Gagne des Kirha pour grimper.';
+    case 'max_job_level': return 'Monte tes métiers pour apparaître.';
     default: return 'Joue un peu, puis actualise.';
   }
 }
 
-/** Score court pour la colonne de droite. */
-function shortScore(tabId, row) {
-  switch (tabId) {
-    case 'level': return `Nv.${row.char_level || 1}`;
-    case 'jobs': return `Nv.${row.max_job_level || 1}`;
-    case 'fortune': return `${Number(row.total_earned || 0).toLocaleString('fr-FR')} 💰`;
-    case 'seasons': return `${row.seasons_completed || 0}`;
-    case 'harvest': return Number(row.total_harvests || 0).toLocaleString('fr-FR');
-    case 'discoveries': return Number(row.total_discoveries || 0).toLocaleString('fr-FR');
-    case 'combat': return Number(row.boss_kills_total || 0).toLocaleString('fr-FR');
-    default: return formatLeaderboardValue(tabId, row);
-  }
+/** Toutes les infos utiles d’un joueur, sur une seule ligne. */
+function statsLine(row, sortKey) {
+  const bits = [
+    { key: 'char_level', text: `Perso Nv.${row.char_level || 1}` },
+    { key: 'max_job_level', text: `Métier Nv.${row.max_job_level || 1}` },
+    { key: 'season', text: `S${row.season || 1}` },
+    { key: 'total_earned', text: `${fmtNum(row.total_earned)} 💰` },
+    { key: 'total_harvests', text: `${fmtNum(row.total_harvests)} récoltes` },
+    { key: 'seasons_completed', text: `${fmtNum(row.seasons_completed)} renais.` },
+    { key: 'boss_kills_total', text: `${fmtNum(row.boss_kills_total)} boss` },
+    { key: 'total_discoveries', text: `${fmtNum(row.total_discoveries)} découv.` },
+  ];
+  // Toujours perso / métier / saison / fortune + critère trié s’il manque
+  const prefer = new Set(['char_level', 'max_job_level', 'season', 'total_earned']);
+  if (sortKey && sortKey !== 'season') prefer.add(sortKey);
+  return bits
+    .filter((b) => prefer.has(b.key))
+    .map((b) => {
+      const hl = b.key === sortKey || (sortKey === 'char_level' && b.key === 'char_level');
+      return `<span class="lb-stat${hl ? ' lb-stat-hl' : ''}">${esc(b.text)}</span>`;
+    })
+    .join('<span class="lb-stat-sep" aria-hidden="true">·</span>');
 }
 
-function listRowHtml(row, index, tabId, { isMe = false } = {}) {
+function listRowHtml(row, index, sortKey, { isMe = false } = {}) {
   const name = esc(row.display_name || 'Voyageur');
   return `
     <li class="lb-row${isMe ? ' is-me' : ''}${index >= 0 && index < 3 ? ' is-top' : ''}">
       <span class="lb-row-rank">${rankLabel(index)}</span>
-      <span class="lb-row-name">${name}${isMe ? ' <em>(toi)</em>' : ''}</span>
-      <span class="lb-row-score">${esc(shortScore(tabId, row))}</span>
+      <div class="lb-row-body">
+        <span class="lb-row-name">${name}${isMe ? ' <em>(toi)</em>' : ''}</span>
+        <div class="lb-row-stats">${statsLine(row, sortKey)}</div>
+      </div>
     </li>
   `;
 }
@@ -89,8 +108,9 @@ export async function renderLeaderboard(game, el) {
     return;
   }
 
-  const tabDef = LEADERBOARD_TABS.find((t) => t.id === activeTabId) || LEADERBOARD_TABS[0];
-  activeTabId = tabDef.id;
+  if (!LEADERBOARD_TABS.some((t) => t.sortKey === activeSortKey)) {
+    activeSortKey = 'char_level';
+  }
 
   el.classList.add('lb-page');
   el.innerHTML = `
@@ -99,12 +119,14 @@ export async function renderLeaderboard(game, el) {
         <h2 class="lb-title">🏆 Classement</h2>
         <button type="button" class="btn btn-muted btn-sm lb-refresh" id="lb-refresh" title="Actualiser" aria-label="Actualiser">↻</button>
       </header>
-      <nav class="lb-chips" role="tablist" aria-label="Critère">
-        ${LEADERBOARD_TABS.map((t) => `
-          <button type="button" class="lb-chip${t.id === activeTabId ? ' active' : ''}"
-            data-lb-tab="${t.id}" role="tab" aria-selected="${t.id === activeTabId}">${t.label}</button>
-        `).join('')}
-      </nav>
+      <div class="lb-sort-bar">
+        <label class="lb-sort-label" for="lb-sort">Qui est 1er selon</label>
+        <select class="auth-input lb-sort-select" id="lb-sort">
+          ${LEADERBOARD_TABS.map((t) => `
+            <option value="${t.sortKey}" ${t.sortKey === activeSortKey ? 'selected' : ''}>${t.label}</option>
+          `).join('')}
+        </select>
+      </div>
       <div class="leaderboard-panel lb-panel-compact">
         <p class="lb-loading">Chargement…</p>
       </div>
@@ -112,15 +134,13 @@ export async function renderLeaderboard(game, el) {
   `;
 
   el.querySelector('#lb-refresh')?.addEventListener('click', () => renderLeaderboard(game, el));
-  el.querySelectorAll('[data-lb-tab]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      activeTabId = btn.getAttribute('data-lb-tab') || 'level';
-      renderLeaderboard(game, el);
-    });
+  el.querySelector('#lb-sort')?.addEventListener('change', (e) => {
+    activeSortKey = e.target.value || 'char_level';
+    renderLeaderboard(game, el);
   });
 
   const sync = await submitLeaderboardSnapshot(game.state, game.getCharacterDisplayName());
-  const result = await fetchLeaderboard(tabDef.sortKey, LB_TOP_N, game.state);
+  const result = await fetchLeaderboard(activeSortKey, LB_LIMIT, game.state);
   const auth = getAuthState();
   const mySnap = {
     ...buildLeaderboardSnapshot(game.state),
@@ -133,19 +153,24 @@ export async function renderLeaderboard(game, el) {
   const panel = el.querySelector('.leaderboard-panel');
   if (!panel) return;
 
+  const criterion = sortLabel(activeSortKey);
+
   panel.innerHTML = `
     <div class="lb-you${myRank >= 0 ? '' : ' lb-you-out'}">
       <span class="lb-you-rank">${rankLabel(myRank)}</span>
-      <strong class="lb-you-name">${esc(mySnap.display_name)}</strong>
-      <span class="lb-you-score">${esc(shortScore(activeTabId, mySnap))}</span>
+      <div class="lb-you-body">
+        <strong class="lb-you-name">${esc(mySnap.display_name)}</strong>
+        <div class="lb-row-stats">${statsLine(mySnap, activeSortKey)}</div>
+      </div>
     </div>
     ${showSyncWarn ? `<p class="auth-error lb-msg">Sync : ${esc(sync.reason || 'échec')}</p>` : ''}
     ${!result.ok ? `<p class="auth-error lb-msg">${esc(result.reason || 'Chargement impossible.')}</p>` : ''}
-    ${myRank < 0 && result.ok ? `<p class="lb-msg">Hors top ${LB_TOP_N} · ${esc(tabDef.label)}</p>` : ''}
-    <ol class="lb-list" aria-label="Top ${LB_TOP_N}">
+    ${myRank < 0 && result.ok ? `<p class="lb-msg">Hors top ${LB_LIMIT} pour « ${esc(criterion)} »</p>` : ''}
+    <p class="lb-msg lb-msg-count">Top ${Math.min(LB_LIMIT, rows.length || LB_LIMIT)} · tri ${esc(criterion)}</p>
+    <ol class="lb-list" aria-label="Classement">
       ${rows.length
-        ? rows.map((row, i) => listRowHtml(row, i, activeTabId, { isMe: row.user_id === auth.userId })).join('')
-        : `<li class="lb-empty">${emptyHint(activeTabId)}</li>`}
+        ? rows.map((row, i) => listRowHtml(row, i, activeSortKey, { isMe: row.user_id === auth.userId })).join('')
+        : `<li class="lb-empty">${emptyHint(activeSortKey)}</li>`}
     </ol>
   `;
 }
