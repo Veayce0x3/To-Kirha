@@ -519,6 +519,7 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     harvests: Number(state.stats?.totalHarvests) || 0,
     nuggetsConsumed: nuggetCost,
     nuggetsCarried: carriedNuggets,
+    endedBy: 'prestige',
   };
   const seasonHistory = [
     ...(Array.isArray(state.seasonHistory) ? state.seasonHistory : []),

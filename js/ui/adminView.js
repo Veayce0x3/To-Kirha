@@ -568,12 +568,28 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
   const careerLabel = careerLabelFromSave(save_summary);
 
   const history = Array.isArray(save_summary?.season_history) ? save_summary.season_history : [];
+  const endLabel = (h) => {
+    if (h?.endedBy === 'manual_reset') return 'Reset Options';
+    if (h?.endedBy === 'prestige') return 'Nouvelle saison';
+    return h?.endedAt ? 'Fin de saison' : '—';
+  };
+  const disc = save_summary?.discoveries && typeof save_summary.discoveries === 'object'
+    ? save_summary.discoveries
+    : {};
+  const discParts = [
+    disc.nest ? `Nid ×${disc.nest}` : null,
+    disc.rock_purse ? `Bourse pierre ×${disc.rock_purse}` : null,
+    disc.field_purse ? `Bourse champ ×${disc.field_purse}` : null,
+    disc.bottle ? `Bouteille ×${disc.bottle}` : null,
+    disc.herb_bag ? `Sac herbes ×${disc.herb_bag}` : null,
+  ].filter(Boolean);
+
   const historyHtml = history.length
     ? `<details class="admin-fold">
-        <summary>Saisons précédentes (${history.length})</summary>
+        <summary>Historique saisons (${history.length})</summary>
         <div class="admin-table-wrap">
           <table class="admin-table admin-table-compact">
-            <thead><tr><th>Saison</th><th>Perso</th><th>Métier max</th><th>Kirha saison</th><th>Vie</th><th>Fin</th></tr></thead>
+            <thead><tr><th>Saison</th><th>Perso</th><th>Métier max</th><th>Kirha saison</th><th>Vie</th><th>Type</th><th>Fin</th></tr></thead>
             <tbody>${history.map((h) => `
               <tr>
                 <td>S${h.season ?? '?'}</td>
@@ -581,7 +597,8 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
                 <td>Nv.${h.maxJobLevel ?? '?'}</td>
                 <td>${fmtNum(h.seasonEarned)}</td>
                 <td>${fmtNum(h.lifetimeEarned)}</td>
-                <td>${h.endedAt ? fmtDate(new Date(h.endedAt).toISOString()) : '—'}</td>
+                <td>${escHtml(endLabel(h))}</td>
+                <td>${h.endedAt ? escHtml(fmtDate(h.endedAt)) : '—'}</td>
               </tr>
             `).join('')}</tbody>
           </table>
@@ -604,16 +621,33 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
         <span class="admin-td-muted">${save_summary?.last_online ? escHtml(fmtDate(save_summary.last_online)) : (save_summary ? 'via save cloud' : '—')}</span>
       </div>
     </div>
-    <p class="admin-meta-line">Inscrit le ${escHtml(fmtDate(profile.created_at))}${profile.email ? ` · ${escHtml(profile.email)}` : ''}</p>
+    <p class="admin-meta-line">Inscrit le ${escHtml(fmtDate(profile.created_at))}${profile.email ? ` · ${escHtml(profile.email)}` : ''}${save_summary?.save_updated_at ? ` · Save cloud ${escHtml(fmtDate(save_summary.save_updated_at))}` : ''}</p>
     ${profile.is_banned ? `<p class="guest-banner warn">Banni · ${escHtml(profile.banned_reason || '—')} · ${escHtml(fmtDate(profile.banned_at))}</p>` : ''}
     ${profile.cheat_flagged ? `<p class="guest-banner warn">Flag triche · ${escHtml(profile.cheat_notes || '—')}</p>` : ''}
+
+    <h5 class="admin-section-title">Progression</h5>
     <div class="admin-detail-grid">
-      <div class="admin-info-card"><span class="admin-info-lbl">Saison actuelle</span><span class="admin-info-val">${save_summary ? `Saison ${save_summary.season || 1}` : '—'}</span><span class="admin-td-muted">${save_summary ? `${Number(save_summary.seasons_completed) || 0} renaissance(s)` : ''}</span></div>
-      <div class="admin-info-card"><span class="admin-info-lbl">Saison max</span><span class="admin-info-val">${save_summary || leaderboard ? `Saison ${maxSeasonFromSave(save_summary, leaderboard)}` : '—'}</span><span class="admin-td-muted">${save_summary?.last_reset_season ? `Dernier reset depuis S${save_summary.last_reset_season}` : ''}</span></div>
-      <div class="admin-info-card"><span class="admin-info-lbl">Resets manuels</span><span class="admin-info-val">${save_summary ? `${Number(save_summary.game_resets) || 0}` : '—'}</span><span class="admin-td-muted">${save_summary?.last_reset_at ? `Dernier : ${escHtml(fmtDate(save_summary.last_reset_at))}` : 'Aucun reset enregistré'}</span></div>
-      <div class="admin-info-card"><span class="admin-info-lbl">Classement</span><span class="admin-info-val">${leaderboard ? `Nv.${leaderboard.char_level} · S${leaderboard.season}` : '—'}</span><span class="admin-td-muted">${leaderboard ? `${fmtNum(leaderboard.total_earned)} 💰 gagnés · ${fmtNum(leaderboard.kirha_current || 0)} en poche` : ''}</span></div>
-      <div class="admin-info-card"><span class="admin-info-lbl">Save cloud</span><span class="admin-info-val">${save_summary ? `${escHtml(save_summary.nickname || '?')} · Nv.${save_summary.char_level}` : 'Aucune'}</span><span class="admin-td-muted">${save_summary ? `${fmtNum(save_summary.kirha)} 💰${save_summary.lifetime_earned != null ? ` · vie ${fmtNum(save_summary.lifetime_earned)}` : ''}` : ''}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Saison actuelle</span><span class="admin-info-val">${save_summary ? `Saison ${save_summary.season || 1}` : '—'}</span><span class="admin-td-muted">${save_summary?.season_started_at ? `Début ${escHtml(fmtDate(save_summary.season_started_at))}` : ''}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Saison max atteinte</span><span class="admin-info-val">${save_summary || leaderboard ? `Saison ${maxSeasonFromSave(save_summary, leaderboard)}` : '—'}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Renaissances</span><span class="admin-info-val">${save_summary ? `${Number(save_summary.seasons_completed) || 0}` : '—'}</span><span class="admin-td-muted">Passages « Nouvelle saison »</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Resets Options</span><span class="admin-info-val">${save_summary ? `${Number(save_summary.game_resets) || 0}` : '—'}</span><span class="admin-td-muted">${save_summary?.last_reset_at ? `Dernier : ${escHtml(fmtDate(save_summary.last_reset_at))}${save_summary.last_reset_season ? ` (depuis S${save_summary.last_reset_season})` : ''}` : 'Aucun reset Options enregistré'}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Perso / métier max</span><span class="admin-info-val">${save_summary ? `Nv.${save_summary.char_level || 1} · métier ${save_summary.max_job_level || 1}` : '—'}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Carrière</span><span class="admin-info-val">${escHtml(careerLabel)}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Kirha en poche</span><span class="admin-info-val">${save_summary ? `${fmtNum(save_summary.kirha)} 💰` : '—'}</span><span class="admin-td-muted">${save_summary ? `Saison ${fmtNum(save_summary.season_earned)} · vie ${fmtNum(save_summary.lifetime_earned)}` : ''}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Pépites / Parchemins</span><span class="admin-info-val">${save_summary ? `${fmtNum(save_summary.gold_nuggets)} · ${fmtNum(save_summary.ancient_scrolls)}` : '—'}</span><span class="admin-td-muted">${save_summary?.nuggets_spent_on_seasons ? `${save_summary.nuggets_spent_on_seasons} consommée(s) aux saisons` : ''}</span></div>
+    </div>
+
+    <h5 class="admin-section-title">Stats de vie</h5>
+    <div class="admin-detail-grid">
+      <div class="admin-info-card"><span class="admin-info-lbl">Récoltes (vie)</span><span class="admin-info-val">${save_summary ? fmtNum(save_summary.lifetime_harvests) : '—'}</span><span class="admin-td-muted">${save_summary ? `dont ${fmtNum(save_summary.season_harvests)} cette saison` : ''}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Combat</span><span class="admin-info-val">${save_summary ? `${fmtNum(save_summary.combat_fights)} combats` : '—'}</span><span class="admin-td-muted">${save_summary ? `${fmtNum(save_summary.boss_kills_total)} boss · ${fmtNum(save_summary.dungeon_clears)} donjons` : ''}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Découvertes Kirha</span><span class="admin-info-val">${save_summary ? fmtNum(save_summary.discoveries_total) : '—'}</span><span class="admin-td-muted">${discParts.length ? escHtml(discParts.join(' · ')) : ''}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Succès</span><span class="admin-info-val">${save_summary ? `${Number(save_summary.achievements_unlocked) || 0}` : '—'}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">École</span><span class="admin-info-val">${save_summary ? `${Number(save_summary.school_permanent) || 0} perm. · ${Number(save_summary.school_seasonal) || 0} sais.` : '—'}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Collections</span><span class="admin-info-val">${save_summary ? `Carnet ${Number(save_summary.journal_pages) || 0} · Cuisine ${Number(save_summary.cookbook_recipes) || 0} · Herbier ${Number(save_summary.herbarium_entries) || 0}` : '—'}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Bonus prestige</span><span class="admin-info-val">${save_summary ? `+${Number(save_summary.prestige_kirha_pct) || 0}% 💰 · +${Number(save_summary.prestige_xp_pct) || 0}% XP · +${Number(save_summary.prestige_job_xp_pct) || 0}% métiers · +${Number(save_summary.prestige_regrowth_pct) || 0}% repousse` : '—'}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Événements</span><span class="admin-info-val">${save_summary ? `${save_summary.traveling_merchant_met ? 'Marchand ✓' : 'Marchand —'} · ${save_summary.sakura_wind_seen ? 'Vent sakura ✓' : 'Vent sakura —'}` : '—'}</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Classement</span><span class="admin-info-val">${leaderboard ? `Nv.${leaderboard.char_level} · S${leaderboard.season}` : '—'}</span><span class="admin-td-muted">${leaderboard ? `${fmtNum(leaderboard.total_earned)} 💰 · ${fmtNum(leaderboard.kirha_current || 0)} en poche` : ''}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Signalements</span><span class="admin-info-val">${reports_against ?? 0} reçus · ${reports_by || 0} envoyés</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Renommage</span><span class="admin-info-val">${profile.free_rename_used ? 'Utilisé' : 'Disponible'}</span></div>
       <div class="admin-info-card admin-info-card-wide">

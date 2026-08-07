@@ -2844,14 +2844,16 @@ export class Game {
       ...historySeasons
     );
     const lifetimeStats = {
+      ...(prev.lifetimeStats && typeof prev.lifetimeStats === 'object' ? prev.lifetimeStats : {}),
       gameResets: (Number(prev.lifetimeStats?.gameResets) || 0) + 1,
       lastResetAt: Date.now(),
       lastResetSeason: prevSeason,
       maxSeasonReached,
       totalEarned: Number(prev.lifetimeStats?.totalEarned) || 0,
-      totalHarvests: 0,
+      // Compteurs de saison : remis à zéro (la vie reste dans seasonsCompleted / discoveries / etc.)
+      totalHarvests: Number(prev.lifetimeStats?.totalHarvests) || 0,
       seasonsCompleted: Number(prev.lifetimeStats?.seasonsCompleted) || 0,
-      combatFights: 0,
+      combatFights: Number(prev.lifetimeStats?.combatFights) || 0,
       discoveries: {
         nest: Number(prev.lifetimeStats?.discoveries?.nest) || 0,
         rock_purse: Number(prev.lifetimeStats?.discoveries?.rock_purse) || 0,

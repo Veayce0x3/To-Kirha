@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1315",
+      "date": "2026-08-07",
+      "title": "Admin : resets + stats de vie",
+      "highlights": [
+        "Fiche joueur : compteur de resets Options (plus bloqué à 0)",
+        "Renaissances / resets séparés + historique saisons typé",
+        "Plus d’infos : récoltes, combat, découvertes, école, collections, bonus prestige"
+      ]
+    },
+    {
       "buildId": "20260807-1115",
       "date": "2026-08-07",
       "title": "Correctif : le jeu ne chargeait plus",

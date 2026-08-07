@@ -115,8 +115,11 @@ async function buildPlayerDetailFallback(userId) {
   const save = saveRow?.save_data || null;
   const jobs = save?.jobs && typeof save.jobs === 'object' ? save.jobs : {};
   const jobs_summary = {};
+  let max_job_level = 1;
   for (const [id, data] of Object.entries(jobs)) {
-    jobs_summary[id] = Number(data?.level) || 1;
+    const lv = Number(data?.level) || 1;
+    jobs_summary[id] = lv;
+    max_job_level = Math.max(max_job_level, lv);
   }
 
   const inventory = save?.inventory && typeof save.inventory === 'object' ? save.inventory : {};
@@ -143,6 +146,13 @@ async function buildPlayerDetailFallback(userId) {
     };
   });
 
+  const history = Array.isArray(save?.seasonHistory) ? save.seasonHistory : [];
+  const manualFromHistory = history.filter((h) => h?.endedBy === 'manual_reset').length;
+  const discoveries = save?.lifetimeStats?.discoveries && typeof save.lifetimeStats.discoveries === 'object'
+    ? save.lifetimeStats.discoveries
+    : {};
+  const discoveries_total = Object.values(discoveries).reduce((a, b) => a + (Number(b) || 0), 0);
+
   return {
     ok: true,
     data: {
@@ -165,8 +175,11 @@ async function buildPlayerDetailFallback(userId) {
         kirha: Number(save.kirha) || 0,
         season: Number(save.season) || 1,
         char_level: Number(save.character?.level) || 1,
+        max_job_level,
         nickname: save.character?.nickname || null,
         last_online: save.lastOnline || null,
+        save_updated_at: saveRow?.updated_at || null,
+        season_started_at: save.seasonStartedAt || null,
         career_confirmed: !!save.careerChoice?.confirmed,
         career_harvest: save.careerChoice?.harvest || null,
         career_farm: save.careerChoice?.farm || null,
@@ -176,10 +189,12 @@ async function buildPlayerDetailFallback(userId) {
         playtime_background_ms: Number(save.playtime?.backgroundMs) || 0,
         lifetime_earned: Number(save.lifetimeStats?.totalEarned) || 0,
         season_earned: Number(save.stats?.totalEarned) || 0,
+        lifetime_harvests: (Number(save.lifetimeStats?.totalHarvests) || 0) + (Number(save.stats?.totalHarvests) || 0),
+        season_harvests: Number(save.stats?.totalHarvests) || 0,
         seasons_completed: Number(save.lifetimeStats?.seasonsCompleted) || 0,
-        season_history: Array.isArray(save.seasonHistory) ? save.seasonHistory : [],
+        season_history: history,
         admin_revision: Number(save.adminRevision) || 0,
-        game_resets: Number(save.lifetimeStats?.gameResets) || 0,
+        game_resets: Math.max(Number(save.lifetimeStats?.gameResets) || 0, manualFromHistory),
         last_reset_at: save.lifetimeStats?.lastResetAt || null,
         last_reset_season: Number(save.lifetimeStats?.lastResetSeason) || null,
         max_season_reached: Math.max(
@@ -187,10 +202,28 @@ async function buildPlayerDetailFallback(userId) {
           Number(save.lifetimeStats?.maxSeasonReached) || 1,
           Number(save.season) || 1,
           Number(save.lifetimeStats?.lastResetSeason) || 1,
-          ...(Array.isArray(save.seasonHistory)
-            ? save.seasonHistory.map((h) => Number(h?.season) || 1)
-            : [1])
+          ...history.map((h) => Number(h?.season) || 1)
         ),
+        boss_kills_total: Number(save.lifetimeStats?.bossKillsTotal) || 0,
+        dungeon_clears: Number(save.lifetimeStats?.dungeonClears) || 0,
+        combat_fights: (Number(save.lifetimeStats?.combatFights) || 0) + (Number(save.stats?.combatFights) || 0),
+        nuggets_spent_on_seasons: Number(save.lifetimeStats?.nuggetsSpentOnSeasons) || 0,
+        gold_nuggets: Number(save.inventory?.gold_nugget) || 0,
+        ancient_scrolls: Number(save.inventory?.ancient_scroll) || 0,
+        discoveries,
+        discoveries_total,
+        achievements_unlocked: Array.isArray(save.achievements?.completed) ? save.achievements.completed.length : 0,
+        school_permanent: Array.isArray(save.villageSchool?.completedPermanent) ? save.villageSchool.completedPermanent.length : 0,
+        school_seasonal: Array.isArray(save.villageSchool?.completedSeasonal) ? save.villageSchool.completedSeasonal.length : 0,
+        journal_pages: Array.isArray(save.travelerJournal?.unlocked) ? save.travelerJournal.unlocked.length : 0,
+        cookbook_recipes: Array.isArray(save.cookbook?.discovered) ? save.cookbook.discovered.length : 0,
+        herbarium_entries: Array.isArray(save.herbarium?.discovered) ? save.herbarium.discovered.length : 0,
+        prestige_kirha_pct: Math.round((Number(save.prestige?.kirhaBonus) || 0) * 100),
+        prestige_xp_pct: Math.round((Number(save.prestige?.xpBonus) || 0) * 100),
+        prestige_job_xp_pct: Math.round((Number(save.prestige?.jobXpBonus) || 0) * 100),
+        prestige_regrowth_pct: Math.round((Number(save.prestige?.regrowthSpeedBonus) || 0) * 100),
+        traveling_merchant_met: !!save.lifetimeStats?.travelingMerchantMet,
+        sakura_wind_seen: !!save.lifetimeStats?.sakuraWindSeen,
       } : null,
       inventory_summary,
       jobs_summary,
