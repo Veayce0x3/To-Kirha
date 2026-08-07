@@ -91,7 +91,7 @@ export function canActivateSeasonBoost(state, balance) {
     return { ok: false, reason: 'Boost déjà utilisé pour cette saison.' };
   }
   if (!state?.seasonBoostPending) {
-    return { ok: false, reason: 'Disponible après une nouvelle saison.' };
+    return { ok: false, reason: 'Boost de démarrage non disponible.' };
   }
   const caps = getSeasonBoostLevelCaps(balance);
   const charLv = Number(state?.character?.level) || 1;

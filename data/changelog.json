@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1320",
+      "date": "2026-08-07",
+      "title": "Boost ×2 aussi au premier départ / reset",
+      "highlights": [
+        "Nouveau joueur : boost de démarrage ×2 (1 h) disponible comme après une saison",
+        "Reset Options : même boost pour relancer plus vite"
+      ]
+    },
+    {
       "buildId": "20260807-1315",
       "date": "2026-08-07",
       "title": "Admin : resets + stats de vie",

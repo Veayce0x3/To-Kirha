@@ -411,7 +411,7 @@ export class Game {
       season: 1,
       prestige: { kirhaBonus: 0, xpBonus: 0, jobXpBonus: 0, regrowthSpeedBonus: 0 },
       seasonBoost: null,
-      seasonBoostPending: false,
+      seasonBoostPending: true,
       seasonBoostUsed: false,
       adminRevision: 0,
       adminPatchedAt: 0,
@@ -2888,6 +2888,10 @@ export class Game {
     this.state.lifetimeStats = lifetimeStats;
     this.state.seasonHistory = seasonHistory.slice(-20);
     this.state.achievements = buildDefaultAchievementState();
+    // Même boost de démarrage qu’une nouvelle saison / nouveau joueur
+    this.state.seasonBoost = null;
+    this.state.seasonBoostPending = true;
+    this.state.seasonBoostUsed = false;
     delete this.state.quests;
     clearAchievementChainFocus();
     if (accountMeta?.mode) {

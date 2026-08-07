@@ -4052,7 +4052,7 @@ export function renderSeason(game, el) {
   } else if (boostGate.ok) {
     boostBanner = `
       <div class="season-boost-banner season-boost-ready">
-        <p>⚡ Boost de relance ×2 (1 h) — active-le quand tu veux, tant que perso ≤ Nv.${boostCaps.character} et métiers ≤ Nv.${boostCaps.jobs}.</p>
+        <p>⚡ Boost de démarrage ×2 (1 h) — active-le quand tu veux, tant que perso ≤ Nv.${boostCaps.character} et métiers ≤ Nv.${boostCaps.jobs}.</p>
         <button type="button" class="btn btn-craft" id="season-boost-activate">Activer le boost ×2</button>
       </div>`;
   } else if (game.state.seasonBoostPending && !game.state.seasonBoostUsed) {
