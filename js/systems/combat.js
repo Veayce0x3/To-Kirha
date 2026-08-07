@@ -51,6 +51,33 @@ export function calcDamage(atk, def, multiplier = 1, ignoreDef = 0) {
   return Math.max(1, Math.floor(atk * multiplier) - effectiveDef);
 }
 
+/** Aperçu d’effet d’un sort/attaque (dégâts ou soin estimés). */
+export function previewSkillEffect(skill, attackerStats, target = null) {
+  if (!skill) return null;
+  if (skill.heal) {
+    const maxHp = Number(target?.maxHp) || Number(attackerStats?.hp) || 0;
+    const amount = Math.max(1, Math.floor(maxHp * (Number(skill.heal.percent) || 0)));
+    return { kind: 'heal', value: amount, label: `+${amount} PV` };
+  }
+  if (skill.damage) {
+    const enemyDef = (Number(target?.def) || 0) + (Number(target?.defBonus) || 0);
+    const dmg = calcDamage(
+      Number(attackerStats?.atk) || 0,
+      enemyDef,
+      Number(skill.damage.multiplier) || 0,
+      Number(skill.damage.ignoreDef) || 0
+    );
+    return { kind: 'damage', value: dmg, label: `~${dmg} dégâts` };
+  }
+  if (skill.effect?.type === 'guard') {
+    return { kind: 'effect', value: skill.effect.defBonus || 0, label: `+${skill.effect.defBonus || 0} DEF` };
+  }
+  if (skill.effect) {
+    return { kind: 'effect', value: 0, label: 'Effet' };
+  }
+  return null;
+}
+
 import { initCombatInstanceDurability, isCombatInstanceBroken } from './combatDurability.js';
 import { normalizeRarity, scaleItemStats, getInstanceRarity } from './equipmentRarity.js';
 

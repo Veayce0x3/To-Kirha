@@ -1,4 +1,4 @@
-import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats, getSkillUsesLeft, getSkillMaxUses, getSkillMpCost } from '../systems/combat.js';
+import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats, getSkillUsesLeft, getSkillMaxUses, getSkillMpCost, calcDamage, previewSkillEffect } from '../systems/combat.js';
 import { getCraftSellBonus, getRecipeRequiredLevel } from '../systems/crafting.js';
 import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, getJobXpBonusPercent, hasSeasonBonus, getSeasonBoostMult, isSeasonBoostActive, canActivateSeasonBoost, getSeasonBoostLevelCaps, getLifetimeRenaissances } from '../systems/prestige.js';
 import { mountCraftWorkshop } from './craftView.js';
@@ -4325,6 +4325,12 @@ function renderCombat(game, el) {
       <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${charPct}%"></div></div>
       <p class="xp-text">${charProg.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${formatNumber(charProg.xp)} / ${formatNumber(charProg.needed)} XP combat`}</p>
       ${soloHp != null && soloHp < stats.hp ? `<p class="skill-header-meta combat-solo-hp-hint">HP entraînement : ❤️ ${soloHp}/${stats.hp}</p>` : ''}
+      ${(() => {
+        const maxMp = stats.mp || 0;
+        const curMp = game.state.combatWear?.solo?.hero_mp;
+        if (maxMp <= 0 || curMp == null || curMp >= maxMp) return '';
+        return `<p class="skill-header-meta combat-solo-hp-hint">PM entraînement : 💙 ${curMp}/${maxMp}</p>`;
+      })()}
     </div>
     ${healPanelHtml}
     <nav class="combat-tabs char-tabs" role="tablist" aria-label="Sections combat">
@@ -4524,7 +4530,11 @@ function renderCombatZoneList(game, el, list) {
       tile.type = 'button';
       tile.className = `combat-foe-tile${!unlockProg.ok ? ' locked' : ''}${fightCheck.ok ? ' ready' : ''}`;
       tile.disabled = !fightCheck.ok;
-      tile.title = fightCheck.reason || unlockProg.reason || `Combattre ${monster.name}`;
+      const enemyStats = game.enemies?.[monster.enemyId] || {};
+      const foeDef = Number(enemyStats.def) || 0;
+      const heroAtk = game.getCharacterStats()?.atk || 0;
+      const estDmg = calcDamage(heroAtk, foeDef, 1);
+      tile.title = fightCheck.reason || unlockProg.reason || `Combattre ${monster.name} · ~${estDmg} dégâts (ATQ×1)`;
 
       let progressLine;
       if (unlockProg.unlockedByDungeon || (index === 0 && unlockProg.ok)) {
@@ -4542,6 +4552,7 @@ function renderCombatZoneList(game, el, list) {
         <span class="combat-foe-emoji">${!unlockProg.ok ? '🔒' : monster.emoji}</span>
         <span class="combat-foe-name">${monster.name}</span>
         <span class="combat-foe-progress">${progressLine}</span>
+        ${unlockProg.ok ? `<span class="combat-foe-dmg">⚔️ ~${estDmg}</span>` : ''}
         ${!unlockProg.ok ? `<span class="combat-foe-bar"><span style="width:${unlockPct}%"></span></span>` : ''}
         <span class="combat-foe-action">${fightCheck.ok ? 'Combattre' : 'Verrouillé'}</span>
       `;
@@ -4556,11 +4567,13 @@ function renderCombatZoneList(game, el, list) {
     const bossFight = game.canStartFight(combatZone.id, true, 0);
     const bossProg = game.getTrainingUnlock(combatZone.id, true, 0);
     const bossSoloKills = game.state.combatKillStats?.[`boss_${boss.enemyId}`] || 0;
+    const bossEnemyStats = game.enemies?.[boss.enemyId] || {};
+    const bossEstDmg = calcDamage(game.getCharacterStats()?.atk || 0, Number(bossEnemyStats.def) || 0, 1);
     const bossTile = document.createElement('button');
     bossTile.type = 'button';
     bossTile.className = `combat-foe-tile combat-foe-boss${!bossProg.ok ? ' locked' : ''}${bossFight.ok ? ' ready' : ''}`;
     bossTile.disabled = !bossFight.ok;
-    bossTile.title = bossFight.reason || bossProg.reason || `Boss ${boss.name}`;
+    bossTile.title = bossFight.reason || bossProg.reason || `Boss ${boss.name} · ~${bossEstDmg} dégâts (ATQ×1)`;
     const bossProgress = bossProg.ok || bossProg.unlockedByDungeon
       ? `Boss · ${bossSoloKills} victoires`
       : `${bossProg.current || 0}/${bossProg.required || 15} vs ${bossProg.prevName || 'dernier monstre'}`;
@@ -4572,6 +4585,7 @@ function renderCombatZoneList(game, el, list) {
       <span class="combat-foe-name">${boss.name}</span>
       <span class="combat-foe-tag">Boss solo</span>
       <span class="combat-foe-progress">${bossProgress}</span>
+      ${bossProg.ok ? `<span class="combat-foe-dmg">⚔️ ~${bossEstDmg}</span>` : ''}
       ${!bossProg.ok ? `<span class="combat-foe-bar"><span style="width:${bossPct}%"></span></span>` : ''}
       <span class="combat-foe-action">${bossFight.ok ? 'Affronter' : 'Verrouillé'}</span>
     `;
@@ -4591,12 +4605,17 @@ function renderOutOfCombatHealPanel(game) {
   const maxHp = stats.hp;
   const currentHp = game.state.combatWear?.solo?.hero ?? maxHp;
   const hpPct = maxHp > 0 ? Math.max(0, Math.min(100, (currentHp / maxHp) * 100)) : 100;
+  const maxMp = stats.mp || 0;
+  const storedMp = game.state.combatWear?.solo?.hero_mp;
+  const currentMp = storedMp != null ? storedMp : maxMp;
+  const mpPct = maxMp > 0 ? Math.max(0, Math.min(100, (currentMp / maxMp) * 100)) : 100;
   const meals = listOwnedMeals(game.state, game.resources, game.balance);
   const repairItems = Object.entries(game.state.inventory || {})
     .filter(([id, qty]) => qty > 0 && Number(game.resources[id]?.toolRepair) > 0)
     .map(([id, qty]) => ({ id, qty, amount: Number(game.resources[id].toolRepair) }));
   const buff = getActiveCombatMealBuff(game.state);
   const hpState = hpPct <= 25 ? ' danger' : hpPct <= 50 ? ' warn' : '';
+  const mpState = mpPct <= 25 ? ' danger' : mpPct <= 50 ? ' warn' : '';
 
   const mealButtons = meals.length
     ? meals.map((meal) => {
@@ -4631,9 +4650,13 @@ function renderOutOfCombatHealPanel(game) {
           <h3>🍱 Préparation hors combat</h3>
           <p class="view-desc">Soigne les PV, restaure les PM (poissonnier), bois un élixir, ou répare un outil avant le prochain combat.</p>
         </div>
-        <strong class="combat-heal-value${hpState}">❤️ ${currentHp}/${maxHp}</strong>
+        <div class="combat-heal-values">
+          <strong class="combat-heal-value${hpState}">❤️ ${currentHp}/${maxHp}</strong>
+          ${maxMp > 0 ? `<strong class="combat-heal-value combat-heal-value-mp${mpState}">💙 ${currentMp}/${maxMp}</strong>` : ''}
+        </div>
       </div>
-      <div class="combat-heal-bar${hpState}"><div class="combat-heal-fill" style="width:${hpPct}%"></div></div>
+      <div class="combat-heal-bar${hpState}" title="Points de vie"><div class="combat-heal-fill" style="width:${hpPct}%"></div></div>
+      ${maxMp > 0 ? `<div class="combat-heal-bar combat-heal-bar-mp${mpState}" title="Points de magie"><div class="combat-heal-fill combat-heal-fill-mp" style="width:${mpPct}%"></div></div>` : ''}
       ${buffBanner}
       <div class="combat-heal-actions">${mealButtons}${repairButtons}</div>
     </section>
@@ -5019,6 +5042,8 @@ function renderDungeonCombatBody(game) {
       <button type="button" class="dq-cmd-btn dq-cmd-wide dq-target-cancel">◀ Annuler</button>
     `;
   } else if (combatUi.menu === 'attack' && canAct) {
+    const focusEnemy = getActiveEnemy(combat) || livingEnemies[0] || null;
+    const atkStats = activeMember?.stats || {};
     commandHtml = `
       <button type="button" class="dq-cmd-btn dq-cmd-back" data-menu="main">◀ Retour</button>
       ${attacks.map((skill) => {
@@ -5031,10 +5056,26 @@ function renderDungeonCombatBody(game) {
         const countLabel = limited ? ` · ${left}/${maxUses}` : '';
         const mpLabel = mpCost > 0 ? ` · 💙${mpCost}` : ' · 0 PM';
         const hint = exhausted ? ' (épuisé)' : (noMp ? ' (PM)' : '');
+        let effectPreview = null;
+        if (skill.heal) {
+          const ally = run.party.find((m) => m.hp > 0) || activeMember;
+          effectPreview = previewSkillEffect(skill, atkStats, ally);
+        } else if (skill.damage && focusEnemy) {
+          effectPreview = previewSkillEffect(skill, atkStats, focusEnemy);
+        } else {
+          effectPreview = previewSkillEffect(skill, atkStats, null);
+        }
+        const effectLabel = effectPreview?.label ? ` · ${effectPreview.label}` : '';
+        const titleBits = [
+          mpCost > 0 ? `${mpCost} PM` : '0 PM',
+          limited ? `${left}/${maxUses}` : null,
+          effectPreview?.label || null,
+          focusEnemy && skill.damage ? `vs ${focusEnemy.name}` : null,
+        ].filter(Boolean).join(' · ');
         return `
-        <button type="button" class="dq-cmd-btn${exhausted || noMp ? '' : ' affordable'}${limited ? ' dq-cmd-limited' : ''}" data-skill="${skill.id}" ${exhausted || noMp ? 'disabled' : ''} title="${mpCost} PM${limited ? ` · ${left}/${maxUses}` : ''}">
+        <button type="button" class="dq-cmd-btn${exhausted || noMp ? '' : ' affordable'}${limited ? ' dq-cmd-limited' : ''}" data-skill="${skill.id}" ${exhausted || noMp ? 'disabled' : ''} title="${titleBits}">
           <span class="dq-cmd-icon">${skill.emoji}</span>
-          <span class="dq-cmd-label">${skill.name}${mpLabel}${countLabel}${hint}</span>
+          <span class="dq-cmd-label">${skill.name}${mpLabel}${effectLabel}${countLabel}${hint}</span>
         </button>`;
       }).join('')}
     `;

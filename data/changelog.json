@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1635",
+      "date": "2026-08-07",
+      "title": "Combat : PM hors combat + aperçu dégâts",
+      "highlights": [
+        "Préparation hors combat : barre PM comme la vie",
+        "Menu Attaquer : dégâts/soins estimés sur chaque sort",
+        "Tuiles monstres : aperçu ~dégâts selon ton ATQ"
+      ]
+    },
+    {
       "buildId": "20260807-1620",
       "date": "2026-08-07",
       "title": "Combat : barre PM + repas plus clairs",

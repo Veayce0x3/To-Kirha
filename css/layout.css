@@ -1610,6 +1610,12 @@
   opacity: 0.7;
 }
 
+.combat-foe-dmg {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #7a3d5c;
+}
+
 .combat-foe-bar {
   display: block;
   width: 100%;
@@ -6511,6 +6517,19 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   color: var(--vert-foret);
 }
 
+.combat-heal-values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.combat-heal-value-mp {
+  background: rgba(74, 125, 255, 0.14);
+  color: #3a5fbf;
+}
+
 .combat-heal-value.warn {
   background: rgba(232, 168, 56, 0.16);
   color: #8A5A10;
@@ -6527,13 +6546,21 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   border-radius: 999px;
   background: rgba(74, 55, 40, 0.14);
   border: 1px solid rgba(74, 55, 40, 0.1);
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.35rem;
 }
 
 .combat-heal-fill {
   height: 100%;
   background: linear-gradient(90deg, #68d66f, #e8c547);
   transition: width 0.25s ease;
+}
+
+.combat-heal-bar-mp {
+  margin-bottom: 0.65rem;
+}
+
+.combat-heal-fill-mp {
+  background: linear-gradient(90deg, #4a7dff, #8ec5ff);
 }
 
 .combat-heal-bar.warn .combat-heal-fill {
