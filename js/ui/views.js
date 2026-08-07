@@ -4939,6 +4939,8 @@ function renderDungeonCombatBody(game) {
 
   const partyHtml = party.map((member, index) => {
     const hpPct = Math.max(0, (member.hp / member.maxHp) * 100);
+    const maxMp = Number(member.maxMp) || 0;
+    const mpPct = maxMp > 0 ? Math.max(0, Math.min(100, ((member.mp || 0) / maxMp) * 100)) : 0;
     const isActive = isPlayerTurn && combat.activeMemberIndex === index && member.hp > 0;
     const isTargetable = targetMode === 'ally' && member.hp > 0;
     const tag = isTargetable ? 'button' : 'div';
@@ -4948,8 +4950,11 @@ function renderDungeonCombatBody(game) {
         <div class="dq-sprite dq-sprite-party" data-member-id="${member.id}" aria-hidden="true">${member.emoji}</div>
         <div class="dq-fighter-name">${member.name}</div>
         <div class="dq-mini-hp${hpStateClass(hpPct)}" aria-hidden="true"><div class="dq-mini-hp-fill" style="width:${hpPct}%"></div></div>
-        <div class="dq-party-hp" aria-label="Points de vie">${member.hp}/${member.maxHp}</div>
-        <div class="dq-party-mp" aria-label="Points de magie">💙 ${member.mp ?? 0}/${member.maxMp ?? 0}</div>
+        <div class="dq-party-hp" aria-label="Points de vie">❤️ ${member.hp}/${member.maxHp}</div>
+        ${maxMp > 0 ? `
+          <div class="dq-mini-mp" aria-hidden="true"><div class="dq-mini-mp-fill" style="width:${mpPct}%"></div></div>
+          <div class="dq-party-mp" aria-label="Points de magie">💙 ${member.mp ?? 0}/${maxMp}</div>
+        ` : ''}
         ${isActive ? '<span class="dq-active-cursor" aria-hidden="true">▶</span>' : ''}
       </${tag}>
     `;
@@ -4977,13 +4982,18 @@ function renderDungeonCombatBody(game) {
 
   const partyStatusHtml = party.map((member) => {
     const hpPct = Math.max(0, (member.hp / member.maxHp) * 100);
+    const maxMp = Number(member.maxMp) || 0;
+    const mpPct = maxMp > 0 ? Math.max(0, Math.min(100, ((member.mp || 0) / maxMp) * 100)) : 0;
     const isActive = isPlayerTurn && activeMember?.id === member.id;
     return `
       <div class="dq-status-chip${member.hp <= 0 ? ' dq-ko' : ''}${isActive ? ' dq-status-active' : ''}">
         <span class="dq-status-name">${member.emoji} ${member.name}</span>
         <div class="dq-status-hp${hpStateClass(hpPct)}"><div class="dq-status-hp-fill" style="width:${hpPct}%"></div></div>
         <span class="dq-status-num">❤️ ${member.hp}/${member.maxHp}</span>
-        <span class="dq-status-num dq-status-mp">💙 ${member.mp ?? 0}/${member.maxMp ?? 0}</span>
+        ${maxMp > 0 ? `
+          <div class="dq-status-mp-bar" aria-hidden="true"><div class="dq-status-mp-fill" style="width:${mpPct}%"></div></div>
+          <span class="dq-status-num dq-status-mp">💙 ${member.mp ?? 0}/${maxMp}</span>
+        ` : ''}
       </div>
     `;
   }).join('');
@@ -5036,9 +5046,12 @@ function renderDungeonCombatBody(game) {
       ${memberAte ? '<p class="dq-cmd-empty">Ce combattant a déjà mangé ce tour.</p>' : ''}
       ${!memberAte && ownedMeals.length ? ownedMeals.map((m) => {
         const res = game.resources[m.id];
-        return `<button type="button" class="dq-cmd-btn dq-cmd-meal affordable" data-meal="${m.id}">
+        const preview = game.checkCombatMealUse?.(m.id) || { ok: false, reason: 'Indisponible' };
+        const usable = !!preview.ok;
+        const hint = usable ? '' : ` — ${preview.reason || 'Indispo'}`;
+        return `<button type="button" class="dq-cmd-btn dq-cmd-meal${usable ? ' affordable' : ''}" data-meal="${m.id}" ${usable ? '' : 'disabled'} title="${preview.reason || m.effect.label}">
           <span class="dq-cmd-icon">${res?.emoji || '🍙'}</span>
-          <span class="dq-cmd-label">${res?.name || m.id} ${m.effect.label} · ×${m.qty}</span>
+          <span class="dq-cmd-label">${res?.name || m.id} · ×${m.qty}${hint}</span>
         </button>`;
       }).join('') : ''}
       ${!memberAte && !ownedMeals.length ? '<p class="dq-cmd-empty">Aucun repas en stock — fabrique-en à la Cuisine.</p>' : ''}
@@ -5140,8 +5153,14 @@ function renderDungeonCombatBody(game) {
 
   body.querySelectorAll('[data-meal]').forEach((btn) => {
     btn.addEventListener('click', () => {
+      const mealId = btn.dataset.meal;
+      const preview = game.checkCombatMealUse?.(mealId);
+      if (preview && !preview.ok) {
+        emit('farmBlocked', { message: preview.reason || 'Repas inutilisable' });
+        return;
+      }
       executeCombatTurn(game, body, () => {
-        const result = game.useCombatMeal(btn.dataset.meal);
+        const result = game.useCombatMeal(mealId);
         if (!result?.ok && result?.reason) {
           emit('farmBlocked', { message: result.reason });
           return null;

@@ -174,6 +174,7 @@ import {
   useCombatSkill as resolveCombatSkill,
   useCombatDefend as resolveCombatDefend,
   useCombatMeal as resolveCombatMeal,
+  checkCombatMealUse,
   abandonCombat as clearCombatEncounter,
   getActiveEncounter,
   getActiveMemberSkills,
@@ -1636,6 +1637,10 @@ export class Game {
 
     emit('stateChange', this.state);
     return { ok: true, ...result };
+  }
+
+  checkCombatMealUse(mealId) {
+    return checkCombatMealUse(mealId, this.state, this.resources, this.balance);
   }
 
   useInventoryMeal(mealId) {

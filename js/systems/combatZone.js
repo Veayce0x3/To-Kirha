@@ -624,39 +624,15 @@ export function useCombatMeal(mealId, state, characterConfig, resources, balance
   const run = state.combatEncounter;
   if (!run?.combat) return null;
 
-  const charLevel = state.character?.level || 1;
+  const check = checkCombatMealUse(mealId, state, resources, balance);
+  if (!check.ok) return { blocked: true, reason: check.reason };
+
   const memberIndex = run.combat.activeMemberIndex;
   const member = run.party[memberIndex];
-  const heal = peekMealHeal(mealId, state, resources, balance, charLevel);
-  if (!heal.ok) return { blocked: true, reason: heal.reason };
-
-  const role = heal.mealRole || 'hero';
-  if (role === 'buff') {
-    return { blocked: true, reason: 'Boire l’élixir hors combat (préparation).' };
-  }
-  if (role === 'companions' && member?.id === 'hero') {
-    return { blocked: true, reason: 'Ce plat est pour un équipier' };
-  }
-  if ((role === 'hero' || role === 'mp') && member?.id && member.id !== 'hero') {
-    return { blocked: true, reason: 'Ce plat est pour le héros' };
-  }
-
-  const mealCheck = canUseMemberMeal(run, memberIndex);
-  if (!mealCheck.ok) return { blocked: true, reason: mealCheck.reason };
-
-  let gainHp = 0;
-  let gainMp = 0;
-  if (role === 'mp') {
-    gainMp = calcMealMpAmount(member?.maxMp || 0, heal.mpPct);
-    if (gainMp <= 0 || (member.mp || 0) >= (member.maxMp || 0)) {
-      return { blocked: true, reason: 'PM déjà au maximum' };
-    }
-  } else {
-    gainHp = calcMealHealAmount(member?.maxHp || 1, heal.healPct);
-    if ((member.hp || 0) >= (member.maxHp || 0)) {
-      return { blocked: true, reason: 'PV déjà au maximum' };
-    }
-  }
+  const role = check.mealRole || 'hero';
+  const gainHp = check.gainHp || 0;
+  const gainMp = check.gainMp || 0;
+  const heal = check.heal;
 
   const result = useMemberMeal(run, memberIndex, gainHp, heal.label, mealId, gainMp);
   if (!result) return { blocked: true, reason: 'Impossible d\'utiliser ce repas' };
@@ -675,17 +651,77 @@ export function useCombatMeal(mealId, state, characterConfig, resources, balance
       phase: 'enemy',
       party: run.party,
       activeMemberIndex: run.combat.activeMemberIndex,
-      healed: gain,
+      healed: gainHp,
+      restoredMp: gainMp,
+      mealRole: role,
+      memberId: member?.id,
     };
   }
 
   return {
     continuing: true,
     nextMember: true,
-    healed: gain,
+    healed: gainHp,
+    restoredMp: gainMp,
+    mealRole: role,
+    memberId: member?.id,
     activeMemberIndex: run.combat.activeMemberIndex,
     party: run.party,
     phase: run.combat.phase,
+  };
+}
+
+/** Vérifie si un repas est utilisable au tour actuel (sans le consommer). */
+export function checkCombatMealUse(mealId, state, resources, balance) {
+  const run = state.combatEncounter;
+  if (!run?.combat) return { ok: false, reason: 'Pas en combat' };
+
+  const charLevel = state.character?.level || 1;
+  const memberIndex = run.combat.activeMemberIndex;
+  const member = run.party[memberIndex];
+  const heal = peekMealHeal(mealId, state, resources, balance, charLevel);
+  if (!heal.ok) return { ok: false, reason: heal.reason, heal: null };
+
+  const role = heal.mealRole || 'hero';
+  if (role === 'buff') {
+    return { ok: false, reason: 'Boire l’élixir hors combat (préparation).', heal, mealRole: role };
+  }
+  if (role === 'companions' && member?.id === 'hero') {
+    return { ok: false, reason: 'Ce plat est pour un équipier', heal, mealRole: role };
+  }
+  if ((role === 'hero' || role === 'mp') && member?.id && member.id !== 'hero') {
+    return { ok: false, reason: 'Ce plat est pour le héros', heal, mealRole: role };
+  }
+
+  const mealCheck = canUseMemberMeal(run, memberIndex);
+  if (!mealCheck.ok) return { ok: false, reason: mealCheck.reason, heal, mealRole: role };
+
+  let gainHp = 0;
+  let gainMp = 0;
+  if (role === 'mp') {
+    gainMp = calcMealMpAmount(member?.maxMp || 0, heal.mpPct);
+    if (gainMp <= 0 || (member.mp || 0) >= (member.maxMp || 0)) {
+      return { ok: false, reason: 'PM déjà au maximum — utilise un sort d’abord', heal, mealRole: role };
+    }
+  } else if (role === 'companions') {
+    gainHp = calcMealHealAmount(member?.maxHp || 1, heal.healPct);
+    if ((member.hp || 0) >= (member.maxHp || 0)) {
+      return { ok: false, reason: 'PV déjà au maximum', heal, mealRole: role };
+    }
+  } else {
+    gainHp = calcMealHealAmount(member?.maxHp || 1, heal.healPct);
+    if ((member.hp || 0) >= (member.maxHp || 0)) {
+      return { ok: false, reason: 'PV déjà au maximum', heal, mealRole: role };
+    }
+  }
+
+  return {
+    ok: true,
+    heal,
+    mealRole: role,
+    gainHp,
+    gainMp,
+    memberIndex,
   };
 }
 

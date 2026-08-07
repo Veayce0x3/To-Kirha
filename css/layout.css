@@ -11191,8 +11191,44 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
 /* ——— Combat v2 : PM / grimoire / clés ——— */
 .dq-party-mp,
 .dq-status-mp {
-  font-size: 0.78rem;
-  opacity: 0.9;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #5b8def;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  line-height: 1.1;
+}
+
+.dq-mini-mp {
+  width: 3.6rem;
+  height: 6px;
+  background: rgba(20, 25, 40, 0.45);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 253, 249, 0.3);
+  margin-top: 2px;
+}
+
+.dq-mini-mp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a7dff, #8ec5ff);
+  transition: width 0.35s ease;
+}
+
+.dq-status-mp-bar {
+  width: 3.2rem;
+  height: 6px;
+  background: rgba(74, 55, 40, 0.18);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.dq-status-mp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a7dff, #8ec5ff);
+}
+
+.dq-cmd-meal:disabled {
+  opacity: 0.55;
 }
 
 .key-quality-picker {

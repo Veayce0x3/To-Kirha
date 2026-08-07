@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1620",
+      "date": "2026-08-07",
+      "title": "Combat : barre PM + repas plus clairs",
+      "highlights": [
+        "Barre de mana visible comme la vie en combat",
+        "Menu Objets : repas inutilisables grisés avec la raison (ex. PM déjà au max)"
+      ]
+    },
+    {
       "buildId": "20260807-1610",
       "date": "2026-08-07",
       "title": "Poisson grillé dès Nv.1 + niveaux repas visibles",
