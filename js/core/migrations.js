@@ -592,6 +592,24 @@ const MIGRATIONS = {
       }
     }
   },
+
+  55(state) {
+    // Emplacements Puits via École — backfill si déjà achetés en Kirha
+    if (!state.villageSchool || typeof state.villageSchool !== 'object') return;
+    const s = state.villageSchool;
+    if (!Array.isArray(s.completedPermanent)) s.completedPermanent = [];
+    const push = (id) => { if (id && !s.completedPermanent.includes(id)) s.completedPermanent.push(id); };
+
+    const wellLine = state.productionLines?.farm?.well?.eau
+      || Object.values(state.productionLines?.farm?.well || {})[0];
+    const units = Math.max(1, Number(wellLine?.units) || 1);
+    if (units >= 2) push('roadmap_well_slot_2');
+    if (units >= 3) push('roadmap_well_slot_3');
+    if (units >= 4) push('roadmap_well_slot_4');
+    if ((s.unlockedFarmBuildings || []).includes('well') || wellLine) {
+      push('roadmap_well');
+    }
+  },
 };
 
 /** Garantit les blocs systèmes récents même si saveVersion était déjà trop haut. */
@@ -693,7 +711,7 @@ export function repairSaveSystems(state, ctx = {}) {
 }
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 54;
+  const target = ctx.balance?.saveVersion ?? 55;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

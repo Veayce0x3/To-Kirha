@@ -23,6 +23,7 @@ import {
 } from '../systems/productionLines.js';
 import { getSlotEventVisual, getEventRevealAnnounceHtml } from '../systems/harvestEvents.js';
 import { buildWeatherMiniChip, bindWeatherMiniChip } from './villageView.js';
+import { navigate } from './router.js';
 import { getHarvestTime, getRegrowthTime } from '../systems/harvest.js';
 import { getHarvestXpForResource } from '../systems/progression.js';
 import { getJobXpBonusPercent } from '../systems/prestige.js';
@@ -1032,13 +1033,24 @@ export function renderFarmProduction(game, el, buildingId) {
     const resource = game.resources[productId];
     const line = game.state.productionLines?.farm?.[buildingId]?.[productId];
     if (!line) continue;
-    const maxUnits = game.getMaxHarvestSlots?.()
-      ?? game.balance.productionLines?.maxUnitsPerResource
-      ?? game.balance.productionLines?.maxUnits
-      ?? 6;
+    const maxUnits = buildingId === 'well'
+      ? (game.getFarmBuildingMaxUnits?.(buildingId) ?? 4)
+      : (game.getMaxHarvestSlots?.()
+        ?? game.balance.productionLines?.maxUnitsPerResource
+        ?? game.balance.productionLines?.maxUnits
+        ?? 6);
     const nextCost = game.getFarmUnitUnlockKirha(buildingId, line.units);
     const canBuy = game.canBuyFarmUnit(buildingId, productId);
     const atCap = line.units >= maxUnits;
+    const wellSchoolHint = buildingId === 'well' && !atCap
+      ? `<div class="production-unlock-panel farm-unit-unlock">
+          <div class="production-unlock-head">
+            <strong>Plus de points d’eau</strong>
+          </div>
+          <p class="production-unlock-desc">Le Puits n’a pas d’XP : les emplacements supplémentaires se débloquent à l’<strong>École → Élevage</strong> (recherches permanentes, à moindre coût).</p>
+          <button type="button" class="btn btn-muted btn-goto-school-well">🏫 Aller à l’École</button>
+        </div>`
+      : '';
 
     const section = document.createElement('div');
     section.className = 'production-line-section';
@@ -1058,7 +1070,9 @@ export function renderFarmProduction(game, el, buildingId) {
         </div>
       </div>
       <div class="slots-grid production-units-grid"></div>
-      ${atCap ? '' : `
+      ${buildingId === 'well'
+        ? wellSchoolHint
+        : (atCap ? '' : `
         <div class="production-unlock-panel farm-unit-unlock">
           <div class="production-unlock-head">
             <strong>Ajouter un point d’eau (${line.units + 1}/${maxUnits})</strong>
@@ -1072,7 +1086,7 @@ export function renderFarmProduction(game, el, buildingId) {
             Débloquer · ${nextCost == null ? '—' : `${formatNumber(nextCost)} 💰`}
           </button>
           <p class="production-unlock-desc">Comme la récolte : jusqu’à ${maxUnits} points d’eau en parallèle.</p>
-        </div>`}`;
+        </div>`)}`;
     const grid = section.querySelector('.production-units-grid');
     for (let i = 0; i < line.units; i++) {
       grid.appendChild(buildFarmUnitCard(game, buildingId, productId, i, building));
@@ -1080,6 +1094,9 @@ export function renderFarmProduction(game, el, buildingId) {
     section.querySelector('.btn-buy-farm-unit')?.addEventListener('click', () => {
       if (!game.buyFarmSlot(buildingId, productId)) return;
       renderFarmProduction(game, el, buildingId);
+    });
+    section.querySelector('.btn-goto-school-well')?.addEventListener('click', () => {
+      navigate('village_school');
     });
     container.appendChild(section);
   }

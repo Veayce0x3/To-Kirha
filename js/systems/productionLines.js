@@ -4,6 +4,7 @@
  */
 
 import { isGatheringJobUnlocked, isFarmBuildingUnlocked } from './jobUnlock.js';
+import { getSchoolWellUnitTarget, WELL_SCHOOL_MAX_UNITS } from './villageSchool.js';
 import { isResourceUnlockedByJob } from './zones.js';
 import { getResourceUnlockJobLevel, getResourceTierIndex } from './progression.js';
 import {
@@ -402,18 +403,35 @@ export function getFarmUnitUnlockKirha(buildingId, unitIndex, balance, farmData)
   return costs[unitIndex] ?? null;
 }
 
+/** Cap d’unités pour un bâtiment ferme (Puits = école, max 4). */
+export function getFarmBuildingMaxUnits(state, balance, buildingId, farmData) {
+  const hardCap = getMaxUnits(balance, state);
+  if (buildingId === 'well') {
+    const schoolCap = getSchoolWellUnitTarget(state);
+    const line = state.productionLines?.farm?.well?.eau
+      || Object.values(state.productionLines?.farm?.well || {})[0];
+    const legacy = Math.max(1, Number(line?.units) || 1);
+    return Math.min(hardCap, Math.max(schoolCap, Math.min(legacy, WELL_SCHOOL_MAX_UNITS)));
+  }
+  return hardCap;
+}
+
 export function canBuyFarmUnit(state, balance, buildingId, productId, farmData) {
+  // Puits : emplacements via l’École uniquement
+  if (buildingId === 'well') return false;
   const line = getFarmLine(state, buildingId, productId);
   if (!line) return false;
-  if (line.units >= getMaxUnits(balance, state)) return false;
+  if (line.units >= getFarmBuildingMaxUnits(state, balance, buildingId, farmData)) return false;
   const kirha = getFarmUnitUnlockKirha(buildingId, line.units, balance, farmData);
   if (kirha == null || (state.kirha || 0) < kirha) return false;
   return true;
 }
 
 export function buyFarmUnit(state, balance, buildingId, productId, farmData) {
+  if (buildingId === 'well') return false;
   const line = getFarmLine(state, buildingId, productId);
-  if (!line || line.units >= getMaxUnits(balance, state)) return false;
+  const maxU = getFarmBuildingMaxUnits(state, balance, buildingId, farmData);
+  if (!line || line.units >= maxU) return false;
   const kirha = getFarmUnitUnlockKirha(buildingId, line.units, balance, farmData);
   if (kirha == null || (state.kirha || 0) < kirha) return false;
   state.kirha -= kirha;
@@ -507,7 +525,11 @@ export function ensureProductionLines(state, resources, farmData, balance) {
 
     for (const productId of Object.keys(building.products || {})) {
       const existing = state.productionLines.farm[buildingId][productId];
-      state.productionLines.farm[buildingId][productId] = normalizeLine(existing || { units: 1 }, existing?.units || 1);
+      let units = existing?.units || 1;
+      if (buildingId === 'well') {
+        units = Math.max(units, getSchoolWellUnitTarget(state));
+      }
+      state.productionLines.farm[buildingId][productId] = normalizeLine(existing || { units: 1 }, units);
     }
   }
 }

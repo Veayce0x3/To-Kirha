@@ -233,7 +233,7 @@ export function syncSchoolUnlocksFromCompleted(state, schoolData) {
   }
 }
 
-function applyEffectOnComplete(state, research) {
+function applyEffectOnComplete(state, research, schoolData) {
   const effect = research?.effect || {};
   const s = ensureVillageSchoolState(state);
 
@@ -253,6 +253,9 @@ function applyEffectOnComplete(state, research) {
     }
     if (effect.legacy.merchantFirstWeek) leg.merchantFirstWeek = true;
   }
+
+  getVillageSchoolBonuses(state, schoolData);
+  syncWellUnitsFromSchool(state);
 }
 
 export function getSchoolUnlockedSpells(state) {
@@ -266,7 +269,7 @@ export function completeVillageResearchIfReady(state, schoolData, now = Date.now
   const s = ensureVillageSchoolState(state);
   s.active = null;
   if (!research) return { ok: false, reason: 'Recherche introuvable.' };
-  applyEffectOnComplete(state, research);
+  applyEffectOnComplete(state, research, schoolData);
   return { ok: true, research };
 }
 
@@ -285,6 +288,7 @@ export function getVillageSchoolBonuses(state, schoolData) {
     toolDurability: 0,
     merchantChanceBonus: 0,
     extraHarvestSlot: 0,
+    extraWellUnits: 0,
     combatHp: 0,
     combatMp: 0,
     combatAtk: 0,
@@ -324,6 +328,7 @@ export function getSchoolBonusesFromState(state) {
     toolDurability: 0,
     merchantChanceBonus: 0,
     extraHarvestSlot: 0,
+    extraWellUnits: 0,
     combatHp: 0,
     combatMp: 0,
     combatAtk: 0,
@@ -335,9 +340,43 @@ export function getSchoolBonusesFromState(state) {
   };
 }
 
+/** Emplacements Puits : 1 de base + bonus école (max 4). */
+export const WELL_SCHOOL_MAX_UNITS = 4;
+
+export function getSchoolWellUnitTarget(state) {
+  const extra = Math.max(0, Math.floor(Number(getSchoolBonusesFromState(state).extraWellUnits) || 0));
+  return Math.min(WELL_SCHOOL_MAX_UNITS, 1 + extra);
+}
+
+/** Aligne la ligne d’eau du puits sur les recherches école (ne réduit jamais un legacy plus haut). */
+export function syncWellUnitsFromSchool(state) {
+  if (!state?.productionLines?.farm) return false;
+  const target = getSchoolWellUnitTarget(state);
+  const lines = state.productionLines.farm.well;
+  if (!lines || typeof lines !== 'object') return false;
+  let changed = false;
+  for (const line of Object.values(lines)) {
+    if (!line || typeof line !== 'object') continue;
+    const current = Math.max(1, Number(line.units) || 1);
+    const want = Math.max(current, target);
+    if (!Array.isArray(line.slots)) line.slots = [];
+    if (want > current) {
+      line.units = want;
+      changed = true;
+    }
+    while (line.slots.length < line.units) {
+      line.slots.push({ active: null });
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 export function refreshSchoolBonusCache(state, schoolData) {
   syncSchoolUnlocksFromCompleted(state, schoolData);
-  return getVillageSchoolBonuses(state, schoolData);
+  const bonuses = getVillageSchoolBonuses(state, schoolData);
+  syncWellUnitsFromSchool(state);
+  return bonuses;
 }
 
 export function extractVillageSchoolForPrestige(state) {

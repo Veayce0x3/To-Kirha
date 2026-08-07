@@ -138,13 +138,85 @@
       "effect": {
         "unlockFarmBuilding": "well"
       },
-      "effectLabel": "Débloque le Puits"
+      "effectLabel": "Débloque le Puits (1 point d’eau)"
+    },
+    "roadmap_well_slot_2": {
+      "id": "roadmap_well_slot_2",
+      "branch": "ferme",
+      "tier": "permanent",
+      "order": 2,
+      "name": "Second point d’eau",
+      "description": "Le Conseil creuse un second regard — plus d’eau pour la ferme et les études.",
+      "requires": [
+        "roadmap_well"
+      ],
+      "kirhaCost": 35,
+      "ingredients": {
+        "ble": 15,
+        "frene": 8,
+        "eau": 10
+      },
+      "durationMs": 60000,
+      "effect": {
+        "permanent": {
+          "extraWellUnits": 1
+        }
+      },
+      "effectLabel": "Permanent : +1 emplacement Puits (2 au total)"
+    },
+    "roadmap_well_slot_3": {
+      "id": "roadmap_well_slot_3",
+      "branch": "ferme",
+      "tier": "permanent",
+      "order": 4,
+      "name": "Troisième point d’eau",
+      "description": "Une troisième source pour alimenter poulaillers et recherches.",
+      "requires": [
+        "roadmap_well_slot_2"
+      ],
+      "kirhaCost": 60,
+      "ingredients": {
+        "ble": 25,
+        "eau": 20,
+        "frene": 12
+      },
+      "durationMs": 90000,
+      "effect": {
+        "permanent": {
+          "extraWellUnits": 1
+        }
+      },
+      "effectLabel": "Permanent : +1 emplacement Puits (3 au total)"
+    },
+    "roadmap_well_slot_4": {
+      "id": "roadmap_well_slot_4",
+      "branch": "ferme",
+      "tier": "permanent",
+      "order": 5,
+      "name": "Quatrième point d’eau",
+      "description": "Le puits du village atteint sa capacité utile pour la saison.",
+      "requires": [
+        "roadmap_well_slot_3"
+      ],
+      "kirhaCost": 90,
+      "ingredients": {
+        "eau": 30,
+        "frene": 15,
+        "pierre": 8
+      },
+      "durationMs": 120000,
+      "effect": {
+        "permanent": {
+          "extraWellUnits": 1
+        }
+      },
+      "effectLabel": "Permanent : +1 emplacement Puits (4 au total, max)"
     },
     "roadmap_chicken_coop": {
       "id": "roadmap_chicken_coop",
       "branch": "ferme",
       "tier": "permanent",
-      "order": 2,
+      "order": 3,
       "name": "Poulailler",
       "description": "Les premiers animaux reviennent près du puits.",
       "requires": [
@@ -165,7 +237,7 @@
       "id": "roadmap_barn",
       "branch": "ferme",
       "tier": "permanent",
-      "order": 3,
+      "order": 6,
       "name": "Étable",
       "description": "Il faut du bois pour abriter le bétail.",
       "requires": [
@@ -187,7 +259,7 @@
       "id": "roadmap_sheepfold",
       "branch": "ferme",
       "tier": "permanent",
-      "order": 4,
+      "order": 7,
       "name": "Bergerie",
       "description": "La laine reprend sa place dans le village.",
       "requires": [
@@ -208,7 +280,7 @@
       "id": "roadmap_pigsty",
       "branch": "ferme",
       "tier": "permanent",
-      "order": 5,
+      "order": 8,
       "name": "Porcherie",
       "description": "Les porcs demandent pierre et patience.",
       "requires": [
@@ -230,7 +302,7 @@
       "id": "roadmap_beehive",
       "branch": "ferme",
       "tier": "permanent",
-      "order": 6,
+      "order": 9,
       "name": "Ruches",
       "description": "Le miel revient avec les herbes et le calme.",
       "requires": [

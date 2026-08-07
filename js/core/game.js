@@ -71,6 +71,7 @@ import {
   canBuyHarvestUnit,
   canBuyFarmUnit as checkCanBuyFarmUnit,
   getFarmUnitUnlockKirha as farmUnitUnlockKirhaCost,
+  getFarmBuildingMaxUnits as computeFarmBuildingMaxUnits,
   getUnitUnlockRequirements,
   getNextProductionUnlock,
   canBuyNextProductionUnlock as checkCanBuyNextProductionUnlock,
@@ -1540,6 +1541,10 @@ export class Game {
 
   canBuyFarmUnit(buildingId, productId) {
     return checkCanBuyFarmUnit(this.state, this.balance, buildingId, productId, this.farmData);
+  }
+
+  getFarmBuildingMaxUnits(buildingId) {
+    return computeFarmBuildingMaxUnits(this.state, this.balance, buildingId, this.farmData);
   }
 
   getFarmUnitUnlockKirha(buildingId, unitIndex) {

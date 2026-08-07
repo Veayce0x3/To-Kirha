@@ -36,6 +36,7 @@ function formatBonusSummary(bonuses) {
   if (bonuses.toolDurability) lines.push(`+${Math.round(bonuses.toolDurability * 100)} % durabilité outils`);
   if (bonuses.merchantChanceBonus) lines.push(`Marchand +${Math.round(bonuses.merchantChanceBonus * 100)} pts`);
   if (bonuses.extraHarvestSlot) lines.push(`+${bonuses.extraHarvestSlot} emplacement récolte`);
+  if (bonuses.extraWellUnits) lines.push(`+${bonuses.extraWellUnits} emplacement(s) Puits`);
   if (bonuses.combatMpFlat) lines.push(`+${bonuses.combatMpFlat} PM`);
   if (bonuses.combatHpFlat) lines.push(`+${bonuses.combatHpFlat} PV`);
   if (bonuses.combatHp) lines.push(`+${Math.round(bonuses.combatHp * 100)} % PV`);
@@ -71,6 +72,7 @@ function isRoadmapUnlockResearch(research) {
     || e.unlockCombatZone
     ||     e.unlockVillageBoard
     || e.unlockCraftJob
+    || (e.permanent && e.permanent.extraWellUnits)
   );
 }
 
