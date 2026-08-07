@@ -6,6 +6,21 @@ import { adoptAdminPatchedFields, getAdminRevision } from './adminPatch.js';
 /** Empêche d’écraser le cloud avant la fusion locale/cloud au démarrage. */
 let cloudSyncReady = true;
 
+/** Bloque les uploads cloud pendant un don admin (évite d’écraser le patch RPC). */
+let adminGrantLockUntil = 0;
+
+export function beginAdminGrantLock(ms = 5000) {
+  adminGrantLockUntil = Date.now() + Math.max(0, Number(ms) || 0);
+}
+
+export function endAdminGrantLock() {
+  adminGrantLockUntil = 0;
+}
+
+export function isAdminGrantLocked() {
+  return Date.now() < adminGrantLockUntil;
+}
+
 /** Rang de saison : une renaissance locale ne doit jamais être écrasée par une vieille save cloud. */
 export function getSeasonRank(state) {
   const seasonsDone = Math.max(0, Number(state?.lifetimeStats?.seasonsCompleted) || 0);
@@ -58,6 +73,19 @@ export async function saveCloudSave(userId, state, balance, { force = false } = 
   if (!cloudSyncReady && !force) return { ok: false, reason: 'Sync cloud en cours.' };
   const { isMaintenanceMode } = await import('../systems/gameConfig.js');
   if (isMaintenanceMode() && !force) return { ok: false, reason: 'Maintenance en cours.' };
+
+  // Pendant un don admin : on adopte le cloud si plus récent, on n’upload pas l’ancien local.
+  if (!force && isAdminGrantLocked()) {
+    const existing = await loadCloudSave(userId);
+    if (existing?.data && getAdminRevision(existing.data) > getAdminRevision(state)) {
+      const adopted = adoptAdminPatchedFields(state, existing.data);
+      if (adopted.changed) {
+        return { ok: true, adoptedAdmin: true, state: adopted.state, deferred: true };
+      }
+    }
+    return { ok: false, reason: 'Don admin en cours — sync reportée.', deferred: true };
+  }
+
   let payload = JSON.parse(JSON.stringify(stripIntegrityMeta(state)));
   if ('speedMode' in payload) delete payload.speedMode;
 

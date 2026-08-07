@@ -678,7 +678,7 @@ function renderCharacter(game, el) {
       <nav class="char-tabs" role="tablist" aria-label="Sections personnage">
         <button type="button" class="char-tab-btn${charTab === 'bag' ? ' active' : ''}" data-tab="bag" role="tab">Sac</button>
         <button type="button" class="char-tab-btn${charTab === 'gear' ? ' active' : ''}" data-tab="gear" role="tab">Équipement</button>
-        <button type="button" class="char-tab-btn${charTab === 'grimoire' ? ' active' : ''}" data-tab="grimoire" role="tab">Grimoire</button>
+        <button type="button" class="char-tab-btn${charTab === 'grimoire' ? ' active' : ''}${!game.getGrimoireView?.()?.slotsUsed ? ' grimoire-tab-empty' : ''}" data-tab="grimoire" role="tab">📖 Grimoire${!game.getGrimoireView?.()?.slotsUsed ? ' · !' : ''}</button>
         <button type="button" class="char-tab-btn${charTab === 'tools' ? ' active' : ''}" data-tab="tools" role="tab">Outils</button>
       </nav>
       <div class="char-tab-panel panel-inner" id="char-tab-panel"></div>
@@ -4265,6 +4265,7 @@ function renderCombat(game, el) {
     <nav class="combat-tabs char-tabs" role="tablist" aria-label="Sections combat">
       <button type="button" class="char-tab-btn${combatTab === 'zones' ? ' active' : ''}" data-combat-tab="zones" role="tab">Zones</button>
       <button type="button" class="char-tab-btn${combatTab === 'team' ? ' active' : ''}" data-combat-tab="team" role="tab">Équipiers</button>
+      <button type="button" class="char-tab-btn" id="goto-grimoire-from-combat" role="tab">📖 Grimoire</button>
     </nav>
     <div id="combat-tab-panel" class="combat-tab-panel"></div>
   `;
@@ -4299,6 +4300,11 @@ function renderCombat(game, el) {
       });
       renderCombatTabPanel(game, el);
     });
+  });
+
+  el.querySelector('#goto-grimoire-from-combat')?.addEventListener('click', () => {
+    charTab = 'grimoire';
+    navigate('character');
   });
 
   renderCombatTabPanel(game, el);

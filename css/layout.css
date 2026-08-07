@@ -10833,8 +10833,47 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
 }
 
 .school-tree-node.status-done {
+  opacity: 0.88;
+  border-color: rgba(45, 90, 39, 0.45);
+  background: rgba(45, 90, 39, 0.08);
+}
+
+.school-node-done .school-card-desc,
+.school-node-done .school-card-cost {
+  display: none;
+}
+
+.school-done-badge {
+  font-weight: 700;
+  color: var(--vert-foret, #2d5a27);
+  margin: 0.15rem 0 0;
+}
+
+.school-branch-tabs {
+  margin: 0.75rem 0 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.school-tab-count {
+  margin-left: 0.25rem;
+  font-size: 0.72rem;
   opacity: 0.75;
-  border-color: rgba(45, 90, 39, 0.35);
+}
+
+.school-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.school-vertical .school-tree-node {
+  width: 100%;
+}
+
+.char-tab-btn.grimoire-tab-empty {
+  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.45);
 }
 
 .school-tree-node.status-available {

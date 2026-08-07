@@ -3,7 +3,7 @@
  */
 
 import { navigate } from './router.js';
-import { on } from '../core/events.js';
+import { on, emit } from '../core/events.js';
 import {
   getProfileRole,
   getAuthState,
@@ -765,36 +765,58 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
 }
 
 function bindPlayerDetailActions(userId, profile, detailEl) {
-  const runAdjust = async (payload, okMsg) => {
-    const r = await adjustPlayerSave(userId, payload);
-    if (!r.ok) {
-      setStatus(r.reason || 'Échec du don.', true);
-      return r;
+  const runAdjust = async (payload, okMsg, triggerBtn = null) => {
+    if (triggerBtn) {
+      triggerBtn.disabled = true;
+      triggerBtn.dataset.busy = '1';
     }
-    setStatus(okMsg);
-    loadPlayerDetail(userId);
-    const selfId = getAuthState()?.userId;
-    if (selfId && selfId === userId && gameRef) {
-      try {
-        const meta = {
-          adminRevision: Number(r.data?.adminRevision) || undefined,
-        };
-        // Applique tout de suite en local (évite course autosave / flush qui écrasait le cloud).
-        if (gameRef.applyAdminGrant) {
-          await gameRef.applyAdminGrant(payload, meta);
-          setStatus(`${okMsg} Appliqué sur ta partie.`);
+    setStatus('Envoi du don…');
+    try {
+      const r = await adjustPlayerSave(userId, payload);
+      if (!r.ok) {
+        setStatus(r.reason || 'Échec du don.', true);
+        emit('uiToast', { message: `❌ ${r.reason || 'Échec du don'}`, type: 'sell' });
+        return r;
+      }
+      const cloudKirha = r.data?.kirha;
+      const rev = r.data?.adminRevision;
+      const selfId = getAuthState()?.userId;
+      const isSelf = !!(selfId && selfId === userId && gameRef);
+
+      if (isSelf && gameRef.applyAdminGrant) {
+        try {
+          await gameRef.applyAdminGrant(payload, {
+            adminRevision: Number(rev) || undefined,
+          });
+          const localKirha = Math.floor(Number(gameRef.state?.kirha) || 0);
+          setStatus(
+            `${okMsg} Appliqué · ${localKirha.toLocaleString('fr-FR')} 💰`
+            + (rev != null ? ` · rev ${rev}` : ''),
+          );
+          emit('uiToast', {
+            message: `🎁 ${okMsg} (${localKirha.toLocaleString('fr-FR')} 💰)`,
+            type: 'upgrade',
+          });
+        } catch (err) {
+          console.warn('[admin] applyAdminGrant', err);
+          setStatus(`${okMsg} Cloud OK — recharge la page si besoin.`);
         }
-        // Aligne ensuite avec le cloud (retries, sans flush écrasant).
-        if (gameRef.pullAdminPatch) {
-          const synced = await gameRef.pullAdminPatch({ retries: 5 });
-          if (synced) setStatus(`${okMsg} Synchronisé.`);
-        }
-      } catch (err) {
-        console.warn('[admin] apply/pull grant', err);
-        setStatus(`${okMsg} Cloud OK — recharge si tu ne vois pas le changement.`);
+      } else {
+        const extra = cloudKirha != null
+          ? ` Cloud : ${Number(cloudKirha).toLocaleString('fr-FR')} 💰`
+          : '';
+        setStatus(`${okMsg}${extra}`);
+        emit('uiToast', { message: `🎁 ${okMsg}`, type: 'upgrade' });
+      }
+
+      await loadPlayerDetail(userId);
+      return r;
+    } finally {
+      if (triggerBtn) {
+        triggerBtn.disabled = false;
+        delete triggerBtn.dataset.busy;
       }
     }
-    return r;
   };
 
   const readPositive = (sel, label) => {
@@ -831,21 +853,22 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     });
   });
 
-  const adjustKirha = async (sign) => {
+  const adjustKirha = async (sign, btn) => {
     const amount = readPositive('#admin-kirha-amount', 'Montant Kirha');
     if (amount == null) return;
     if (sign < 0 && !confirmTake(`${amount.toLocaleString('fr-FR')} 💰`)) return;
     const verb = sign > 0 ? 'Donné' : 'Retiré';
     await runAdjust(
       { kirha_delta: amount * sign },
-      `${verb} ${amount.toLocaleString('fr-FR')} 💰.`
+      `${verb} ${amount.toLocaleString('fr-FR')} 💰.`,
+      btn,
     );
   };
 
-  detailEl.querySelector('#admin-give-kirha')?.addEventListener('click', () => adjustKirha(1));
-  detailEl.querySelector('#admin-take-kirha')?.addEventListener('click', () => adjustKirha(-1));
+  detailEl.querySelector('#admin-give-kirha')?.addEventListener('click', (e) => adjustKirha(1, e.currentTarget));
+  detailEl.querySelector('#admin-take-kirha')?.addEventListener('click', (e) => adjustKirha(-1, e.currentTarget));
 
-  const adjustRes = async (sign) => {
+  const adjustRes = async (sign, btn) => {
     const id = detailEl.querySelector('#admin-res-id')?.value;
     if (!id) {
       setStatus('Choisis une ressource.', true);
@@ -857,23 +880,24 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     const verb = sign > 0 ? 'Donné' : 'Retiré';
     await runAdjust(
       { inventory_deltas: { [id]: qty * sign } },
-      `${verb} ${fmtNum(qty)} × ${resourceLabel(id)}.`
+      `${verb} ${fmtNum(qty)} × ${resourceLabel(id)}.`,
+      btn,
     );
   };
 
-  detailEl.querySelector('#admin-give-res')?.addEventListener('click', () => adjustRes(1));
-  detailEl.querySelector('#admin-take-res')?.addEventListener('click', () => adjustRes(-1));
+  detailEl.querySelector('#admin-give-res')?.addEventListener('click', (e) => adjustRes(1, e.currentTarget));
+  detailEl.querySelector('#admin-take-res')?.addEventListener('click', (e) => adjustRes(-1, e.currentTarget));
 
-  const adjustChar = async (sign) => {
+  const adjustChar = async (sign, btn) => {
     const n = readPositiveInt('#admin-char-levels', 'Nombre de niveaux');
     if (n == null) return;
     if (sign < 0 && !confirmTake(`${n} Nv. perso`)) return;
     const verb = sign > 0 ? 'Ajouté' : 'Retiré';
-    await runAdjust({ char_level_delta: n * sign }, `${verb} ${n} Nv. perso.`);
+    await runAdjust({ char_level_delta: n * sign }, `${verb} ${n} Nv. perso.`, btn);
   };
 
-  detailEl.querySelector('#admin-give-char')?.addEventListener('click', () => adjustChar(1));
-  detailEl.querySelector('#admin-take-char')?.addEventListener('click', () => adjustChar(-1));
+  detailEl.querySelector('#admin-give-char')?.addEventListener('click', (e) => adjustChar(1, e.currentTarget));
+  detailEl.querySelector('#admin-take-char')?.addEventListener('click', (e) => adjustChar(-1, e.currentTarget));
 
   const resolveJobIds = () => {
     const selected = detailEl.querySelector('#admin-job-id')?.value;
@@ -897,7 +921,7 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     return [selected];
   };
 
-  const adjustJobs = async (sign) => {
+  const adjustJobs = async (sign, btn) => {
     const ids = resolveJobIds();
     if (!ids.length) {
       setStatus('Aucun métier.', true);
@@ -909,13 +933,13 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     const job_level_deltas = {};
     ids.forEach((id) => { job_level_deltas[id] = n * sign; });
     const verb = sign > 0 ? 'Ajouté' : 'Retiré';
-    await runAdjust({ job_level_deltas }, `${verb} ${n} Nv. · ${ids.length} métier(s).`);
+    await runAdjust({ job_level_deltas }, `${verb} ${n} Nv. · ${ids.length} métier(s).`, btn);
   };
 
-  detailEl.querySelector('#admin-give-job')?.addEventListener('click', () => adjustJobs(1));
-  detailEl.querySelector('#admin-take-job')?.addEventListener('click', () => adjustJobs(-1));
+  detailEl.querySelector('#admin-give-job')?.addEventListener('click', (e) => adjustJobs(1, e.currentTarget));
+  detailEl.querySelector('#admin-take-job')?.addEventListener('click', (e) => adjustJobs(-1, e.currentTarget));
 
-  const adjustFarm = async (sign) => {
+  const adjustFarm = async (sign, btn) => {
     const ids = resolveFarmIds();
     if (!ids.length) {
       setStatus('Aucun bâtiment.', true);
@@ -927,11 +951,11 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     const farm_level_deltas = {};
     ids.forEach((id) => { farm_level_deltas[id] = n * sign; });
     const verb = sign > 0 ? 'Ajouté' : 'Retiré';
-    await runAdjust({ farm_level_deltas }, `${verb} ${n} Nv. · ${ids.length} bâtiment(s).`);
+    await runAdjust({ farm_level_deltas }, `${verb} ${n} Nv. · ${ids.length} bâtiment(s).`, btn);
   };
 
-  detailEl.querySelector('#admin-give-farm')?.addEventListener('click', () => adjustFarm(1));
-  detailEl.querySelector('#admin-take-farm')?.addEventListener('click', () => adjustFarm(-1));
+  detailEl.querySelector('#admin-give-farm')?.addEventListener('click', (e) => adjustFarm(1, e.currentTarget));
+  detailEl.querySelector('#admin-take-farm')?.addEventListener('click', (e) => adjustFarm(-1, e.currentTarget));
 
   detailEl.querySelector('#admin-clear-inv-all')?.addEventListener('click', async () => {
     if (!confirm('Vider TOUT l’inventaire cloud de ce joueur ?')) return;

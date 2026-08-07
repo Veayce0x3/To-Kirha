@@ -4,6 +4,9 @@
 
 import { getUtcDateKey, addUtcDays } from './harvestEvents.js';
 import { getSchoolBonusesFromState } from './villageSchool.js';
+import { isResourceUnlockedByJob } from './zones.js';
+import { isGatheringJobUnlocked, getUnlockedFarmBuildings } from './careerChoice.js';
+import { isCraftJobUnlocked } from './jobUnlock.js';
 
 const THEMES = {
   mine: {
@@ -155,6 +158,32 @@ function stockFor(kind, rng) {
   return randInt(rng, 8, 24);
 }
 
+/** Ressource que le joueur peut raisonnablement fournir (demande marchand). */
+function isDemandResourceReachable(res, state, resources, balance) {
+  if (!res?.id || !state) return false;
+  if (res.notSellable || res.merchantOnly || res.combatOnly) return false;
+  if (!(Number(res.sellPrice) > 0)) return false;
+
+  if (res.farmOnly) {
+    // Produits ferme : joueur a au moins un bâtiment, ou en possède déjà
+    if ((Number(state.inventory?.[res.id]) || 0) > 0) return true;
+    return getUnlockedFarmBuildings(state, balance).length > 0;
+  }
+  if (res.craftOnly) {
+    const jobId = res.craftJob || res.job;
+    if (jobId && ['baker', 'fishmonger', 'chemist', 'toolmaker'].includes(jobId)) {
+      return isCraftJobUnlocked(jobId, state, balance);
+    }
+    // Repas / élixirs : au moins Cuisine débloquée
+    return isCraftJobUnlocked('baker', state, balance);
+  }
+  if (res.job) {
+    if (!isGatheringJobUnlocked(res.job, state, balance)) return false;
+    return isResourceUnlockedByJob(res, state, resources, balance);
+  }
+  return false;
+}
+
 /**
  * Tirage déterministe : le marchand est-il présent ce jour UTC ?
  * Legs « 1ʳᵉ semaine » : visite garantie le jour UTC du début de saison.
@@ -232,7 +261,7 @@ export function buildTravelingMerchantVisit(dateKey, resources, balance = null, 
     }
   }
 
-  // Demande spéciale : ressource vendable (souvent hors thème pour variété)
+  // Demande spéciale : adaptée à la progression (offres restent hors-prog pour le fun)
   const demandCandidates = Object.values(resources || {}).filter((r) => (
     r?.id
     && !r.notSellable
@@ -240,8 +269,11 @@ export function buildTravelingMerchantVisit(dateKey, resources, balance = null, 
     && !r.combatOnly
     && Number(r.sellPrice) > 0
     && (r.job || r.farmOnly || r.craftOnly)
+    && isDemandResourceReachable(r, state, resources, balance)
   ));
-  const demandRes = pickOne(rng, demandCandidates);
+  const demandRes = pickOne(rng, demandCandidates.length ? demandCandidates : Object.values(resources || {}).filter((r) => (
+    r?.id && !r.notSellable && !r.merchantOnly && !r.combatOnly && Number(r.sellPrice) > 0 && (r.job || r.farmOnly)
+  )));
   const demand = demandRes
     ? {
         resourceId: demandRes.id,

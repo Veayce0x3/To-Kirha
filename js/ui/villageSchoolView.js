@@ -1,11 +1,12 @@
 /**
- * Vue École du Village — arbre de recherches (tech tree).
+ * Vue École du Village — branches en onglets + liste verticale un-par-un.
  */
 
 import { formatResearchDuration } from '../systems/villageSchool.js';
 import { renderResourceIcon } from '../systems/resourceVisual.js';
 
 let schoolProgressTimer = null;
+let schoolBranchTab = null;
 
 function clearSchoolTimer() {
   if (schoolProgressTimer) {
@@ -60,18 +61,57 @@ function researchDepth(research, byId, memo = {}) {
   return memo[research.id];
 }
 
-function isRevealed(status) {
-  return status !== 'locked';
+/** Affiche seulement : terminées (compact), actives, la prochaine disponible, et un fog. */
+function filterBranchItemsForDisplay(items) {
+  const byId = Object.fromEntries(items.map((it) => [it.research.id, it.research]));
+  const depths = {};
+  for (const it of items) researchDepth(it.research, byId, depths);
+
+  const sorted = [...items].sort((a, b) => {
+    const d = (depths[a.research.id] || 0) - (depths[b.research.id] || 0);
+    if (d !== 0) return d;
+    return String(a.research.id).localeCompare(String(b.research.id));
+  });
+
+  const done = sorted.filter((it) => it.status === 'done');
+  const active = sorted.filter((it) => it.status === 'active');
+  const next = sorted.find((it) => (
+    it.status === 'available'
+    || it.status === 'unaffordable'
+    || it.status === 'blocked'
+  ));
+  const fog = !next && !active.length
+    ? sorted.find((it) => it.status === 'locked')
+    : null;
+
+  const out = [...done];
+  if (active.length) out.push(...active);
+  else if (next) out.push(next);
+  else if (fog) out.push(fog);
+  return out;
 }
 
 function renderTreeNode(game, item) {
   const { research, status, ingredients, canStart } = item;
-  if (!isRevealed(status)) {
+
+  if (status === 'locked') {
     return `
       <article class="school-tree-node fog" data-research="${research.id}" title="Termine la recherche précédente pour découvrir celle-ci">
         <span class="school-tree-fog-icon">❓</span>
-        <strong class="school-tree-fog-title">???</strong>
-        <span class="school-tree-fog-hint">Chemin encore brumeux</span>
+        <strong class="school-tree-fog-title">Prochaine étude</strong>
+        <span class="school-tree-fog-hint">Chemin encore brumeux — termine l’étape précédente</span>
+      </article>`;
+  }
+
+  if (status === 'done') {
+    return `
+      <article class="school-tree-node status-done school-node-done" data-research="${research.id}">
+        <header class="school-tree-node-head">
+          <h4>✅ ${research.name}</h4>
+          <span class="school-tier">${research.tier === 'permanent' ? 'Permanent' : 'Saison'}</span>
+        </header>
+        <p class="school-card-effect">${research.effectLabel || 'Bonus actif'}</p>
+        <p class="school-card-meta school-done-badge">Terminée</p>
       </article>`;
   }
 
@@ -122,6 +162,11 @@ export function renderVillageSchool(game, el) {
     return;
   }
 
+  const branches = vm.branches || [];
+  if (!schoolBranchTab || !branches.some((b) => b.branch.id === schoolBranchTab)) {
+    schoolBranchTab = branches[0]?.branch?.id || null;
+  }
+
   const bonusLines = formatBonusSummary(vm.bonuses || {});
   const active = vm.active;
   const pct = active ? Math.round(active.progress * 100) : 0;
@@ -140,44 +185,31 @@ export function renderVillageSchool(game, el) {
       </div>`
     : `
       <div class="school-active idle panel-inner">
-        <span>Aucune recherche en cours — choisis une étude ci-dessous.</span>
+        <span>Aucune recherche en cours — choisis une branche puis une étude.</span>
       </div>`;
 
-  const branchesHtml = (vm.branches || []).map(({ branch, items }) => {
-    const byId = Object.fromEntries(items.map((it) => [it.research.id, it.research]));
-    const depths = {};
-    for (const it of items) researchDepth(it.research, byId, depths);
-    const maxDepth = Math.max(0, ...Object.values(depths));
-    const columns = [];
-    for (let d = 0; d <= maxDepth; d++) {
-      columns.push(items.filter((it) => depths[it.research.id] === d));
-    }
-
-    const colsHtml = columns.map((col, colIdx) => {
-      const nodes = col.map((it) => renderTreeNode(game, it)).join('');
-      const connector = colIdx < columns.length - 1
-        ? '<div class="school-tree-connector" aria-hidden="true"></div>'
-        : '';
-      return `
-        <div class="school-tree-col">
-          ${nodes || '<div class="school-tree-empty"></div>'}
-        </div>
-        ${connector}`;
-    }).join('');
-
+  const tabsHtml = branches.map(({ branch, items }) => {
+    const doneCount = items.filter((it) => it.status === 'done').length;
+    const total = items.length;
+    const activeBranch = schoolBranchTab === branch.id;
     return `
-      <section class="school-branch school-tree-branch">
-        <h3 class="school-branch-title">${branch.emoji || ''} ${branch.label}</h3>
-        <p class="school-tree-legend">Les nœuds ❓ se révèlent quand le précédent est terminé.</p>
-        <div class="school-tree">${colsHtml}</div>
-      </section>`;
+      <button type="button" class="char-tab-btn${activeBranch ? ' active' : ''}"
+        data-school-branch="${branch.id}" role="tab" aria-selected="${activeBranch}">
+        ${branch.emoji || ''} ${branch.label}
+        <span class="school-tab-count">${doneCount}/${total}</span>
+      </button>`;
   }).join('');
+
+  const current = branches.find((b) => b.branch.id === schoolBranchTab) || branches[0];
+  const displayItems = current ? filterBranchItemsForDisplay(current.items) : [];
+  const listHtml = displayItems.map((it) => renderTreeNode(game, it)).join('')
+    || '<p class="view-desc">Aucune recherche dans cette branche.</p>';
 
   el.innerHTML = `
     <div class="school-view">
       <header class="view-header">
         <h2><span class="nav-emoji">🏫</span> École du Village</h2>
-        <p class="view-desc">Arbre de recherches : saison (reset à la Renaissance) et connaissances permanentes. Les legs préparent la saison suivante.</p>
+        <p class="view-desc">Une étude à la fois par branche. Les suivantes se révèlent après la précédente.</p>
       </header>
       <div class="school-summary panel-inner">
         <span>${vm.seasonalCount} saisonnière(s) · ${vm.permanentCount} permanente(s)</span>
@@ -189,9 +221,22 @@ export function renderVillageSchool(game, el) {
           : ''}
       </div>
       ${activeHtml}
-      ${branchesHtml}
+      <nav class="school-branch-tabs char-tabs cuisine-tabs" role="tablist" aria-label="Branches de recherche">
+        ${tabsHtml}
+      </nav>
+      <section class="school-branch school-vertical-list" data-branch="${current?.branch?.id || ''}">
+        <p class="school-tree-legend">Étapes terminées en compact · une seule étude active ou disponible à la fois.</p>
+        <div class="school-vertical">${listHtml}</div>
+      </section>
     </div>
   `;
+
+  el.querySelectorAll('[data-school-branch]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      schoolBranchTab = btn.getAttribute('data-school-branch');
+      renderVillageSchool(game, el);
+    });
+  });
 
   el.querySelectorAll('[data-start]').forEach((btn) => {
     btn.addEventListener('click', () => {

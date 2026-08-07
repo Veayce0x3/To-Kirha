@@ -656,22 +656,25 @@ export class Game {
   }
 
   /** Sauvegarde immédiate (local + cloud) — avant échanges HDV joueur. */
-  async flushSave() {
+  async flushSave({ forceCloud = false } = {}) {
     clearTimeout(this.saveTimer);
     this.state.lastOnline = Date.now();
     await SaveProvider.save(this.state, this.balance);
     if (isRegisteredAccount()) {
       const auth = getAuthState();
-      const result = await saveCloudSave(auth.userId, this.state, this.balance);
+      const result = await saveCloudSave(auth.userId, this.state, this.balance, { force: forceCloud });
       if (result?.adoptedAdmin && result.state) {
         const { applyAdminFieldsToState } = await import('./adminPatch.js');
         if (applyAdminFieldsToState(this.state, result.state)) {
           await SaveProvider.save(this.state, this.balance);
           const { emit } = await import('./events.js');
           emit('adminPatchApplied', { revision: this.state.adminRevision });
+          emit('stateChange', this.state);
         }
       }
-      submitLeaderboardSnapshot(this.state, this.getCharacterDisplayName()).catch(() => {});
+      if (!result?.deferred) {
+        submitLeaderboardSnapshot(this.state, this.getCharacterDisplayName()).catch(() => {});
+      }
     }
   }
 
@@ -681,13 +684,25 @@ export class Game {
    * @param {{ adminRevision?: number }} [meta]
    */
   async applyAdminGrant(payload, meta = {}) {
+    const { beginAdminGrantLock, endAdminGrantLock } = await import('./cloudSave.js');
     const { applyAdminPayloadToState } = await import('./adminPatch.js');
-    if (!applyAdminPayloadToState(this.state, payload, meta)) return false;
-    await SaveProvider.save(this.state, this.balance);
-    const { emit } = await import('./events.js');
-    emit('adminPatchApplied', { revision: this.state.adminRevision });
-    emit('stateChange', this.state);
-    return true;
+    clearTimeout(this.saveTimer);
+    beginAdminGrantLock(6000);
+    try {
+      if (!applyAdminPayloadToState(this.state, payload, meta)) return false;
+      await SaveProvider.save(this.state, this.balance);
+      const { emit } = await import('./events.js');
+      emit('stateChange', this.state);
+      // Laisse le RPC cloud se propager, puis aligne / confirme.
+      await new Promise((r) => setTimeout(r, 350));
+      await this.pullAdminPatch({ retries: 4 });
+      endAdminGrantLock();
+      await this.flushSave();
+      return true;
+    } catch (err) {
+      endAdminGrantLock();
+      throw err;
+    }
   }
 
   /** Vérifie le cloud pour un patch admin (ex. onglet repris). */

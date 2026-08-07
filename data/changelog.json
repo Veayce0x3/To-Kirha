@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "buildId": "20260807-0835",
+      "date": "2026-08-07",
+      "title": "École onglets, carnet ordonné, admin & grimoire",
+      "highlights": [
+        "École : onglets par branche + liste verticale (une étude à la fois, terminées sans coûts)",
+        "Carnet : pages débloquées dans l’ordre",
+        "Admin : dons Kirha/métiers plus fiables (lock sync + toast)",
+        "Marchand : demande adaptée à ta progression (offres restent un peu hors-prog)",
+        "Grimoire : onglet 📖 plus visible + raccourci depuis Combat"
+      ]
+    },
+    {
       "buildId": "20260807-0750",
       "date": "2026-08-07",
       "title": "École timer, Cuisine early, dons admin",

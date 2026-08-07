@@ -107,11 +107,13 @@ export function isJournalUnlockMet(unlock, state, ctx = {}) {
   }
 }
 
-/** Débloque les pages dont les conditions sont remplies. Retourne les ids nouvellement ouverts. */
+/** Débloque les pages dont les conditions sont remplies (dans l’ordre du carnet). Retourne les ids nouvellement ouverts. */
 export function syncTravelerJournalUnlocks(state, journalData, ctx = {}) {
   const book = ensureTravelerJournalState(state);
   const newly = [];
-  const entries = journalData?.entries || {};
+  const entries = Object.values(journalData?.entries || {})
+    .filter((e) => e?.id)
+    .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
 
   // Flags de vie pour conditions volatiles
   if (state.travelingMerchant?.popupSeen) {
@@ -124,10 +126,16 @@ export function syncTravelerJournalUnlocks(state, journalData, ctx = {}) {
     state.lifetimeStats.sakuraWindSeen = true;
   }
 
-  for (const entry of Object.values(entries)) {
-    if (!entry?.id) continue;
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
     if (book.unlocked.includes(entry.id)) continue;
-    if (!isJournalUnlockMet(entry.unlock, state, ctx)) continue;
+
+    // Séquentiel : toutes les pages précédentes doivent déjà être ouvertes
+    const prevOk = entries.slice(0, i).every((p) => book.unlocked.includes(p.id));
+    if (!prevOk) break;
+
+    if (!isJournalUnlockMet(entry.unlock, state, ctx)) break;
+
     book.unlocked.push(entry.id);
     newly.push(entry.id);
   }
@@ -162,6 +170,19 @@ export function getTravelerJournalViewModel(state, journalData, ctx = {}) {
       hint: entry.hint || hintFromUnlock(entry.unlock),
     }))
     .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  // Indice séquentiel : si une page est scellée car la précédente manque
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (e.unlocked) continue;
+    const prev = list[i - 1];
+    if (prev && !prev.unlocked) {
+      e.hint = `Débloque d’abord « ${prev.title || 'la page précédente'} ».`;
+      e.sequentialBlocked = true;
+    } else if (prev && prev.unlocked && !isJournalUnlockMet(e.unlock, state, ctx)) {
+      e.hint = e.hint || hintFromUnlock(e.unlock);
+    }
+  }
 
   const unlockedCount = list.filter((e) => e.unlocked).length;
   return {
