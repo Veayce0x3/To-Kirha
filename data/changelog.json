@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-2235",
+      "date": "2026-08-07",
+      "title": "Classement façon tableau",
+      "highlights": [
+        "Colonnes alignées : Perso / Métier / Saison / Fortune + score du tri",
+        "Bandeau « toi » sticky en haut, liste scrollable en dessous",
+        "Plus de cartes lourdes — lecture rapide comme un vrai classement"
+      ]
+    },
+    {
       "buildId": "20260807-2225",
       "date": "2026-08-07",
       "title": "Dark récolte : plus de fond gris clair",

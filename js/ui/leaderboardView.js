@@ -30,7 +30,7 @@ function rankLabel(i) {
   if (i === 0) return '🥇';
   if (i === 1) return '🥈';
   if (i === 2) return '🥉';
-  return `#${i + 1}`;
+  return String(i + 1);
 }
 
 function sortMeta(sortKey) {
@@ -49,12 +49,11 @@ function emptyHint(sortKey) {
   }
 }
 
-/** Valeur principale du critère de tri (colonne de droite). */
 function primaryScore(sortKey, row) {
   switch (sortKey) {
     case 'char_level': return `Nv.${row.char_level || 1}`;
     case 'max_job_level': return `Nv.${row.max_job_level || 1}`;
-    case 'total_earned': return `${fmtNum(row.total_earned)} 💰`;
+    case 'total_earned': return `${fmtNum(row.total_earned)}`;
     case 'seasons_completed': return `${fmtNum(row.seasons_completed)}`;
     case 'total_harvests': return fmtNum(row.total_harvests);
     case 'total_discoveries': return fmtNum(row.total_discoveries);
@@ -63,52 +62,55 @@ function primaryScore(sortKey, row) {
   }
 }
 
-/**
- * Grille fixe de 4 infos — toujours les mêmes cases, lisible.
- * La case liée au tri est mise en avant.
- */
-function statsGridHtml(row, sortKey) {
-  const cells = [
-    { key: 'char_level', label: 'Perso', value: `Nv.${row.char_level || 1}` },
-    { key: 'max_job_level', label: 'Métier', value: `Nv.${row.max_job_level || 1}` },
-    { key: 'season', label: 'Saison', value: `S${row.season || 1}` },
-    { key: 'total_earned', label: 'Fortune', value: `${fmtNum(row.total_earned)} 💰` },
+function primarySuffix(sortKey) {
+  if (sortKey === 'total_earned') return '💰';
+  return '';
+}
+
+/** Colonnes fixes affichées (hors score de tri). */
+function sideStats(row) {
+  return [
+    { key: 'char_level', short: `Nv.${row.char_level || 1}` },
+    { key: 'max_job_level', short: `Nv.${row.max_job_level || 1}` },
+    { key: 'season', short: `S${row.season || 1}` },
+    { key: 'total_earned', short: `${fmtNum(row.total_earned)}` },
   ];
+}
 
-  // Si le tri n’est pas une des 4 cases, remplace Fortune par le critère
-  const coreKeys = new Set(cells.map((c) => c.key));
-  if (sortKey && !coreKeys.has(sortKey)) {
-    const meta = sortMeta(sortKey);
-    cells[3] = {
-      key: sortKey,
-      label: meta.label,
-      value: primaryScore(sortKey, row),
-    };
-  }
-
+function colsHeadHtml(sortKey) {
+  const scoreLabel = sortMeta(sortKey).label;
   return `
-    <div class="lb-grid" role="group" aria-label="Stats">
-      ${cells.map((c) => `
-        <div class="lb-cell${c.key === sortKey ? ' is-hl' : ''}">
-          <span class="lb-cell-lbl">${esc(c.label)}</span>
-          <span class="lb-cell-val">${esc(c.value)}</span>
-        </div>
-      `).join('')}
+    <div class="lb-cols" aria-hidden="true">
+      <span class="lb-cols-rank">#</span>
+      <span class="lb-cols-name">Joueur</span>
+      <span class="lb-cols-stat${sortKey === 'char_level' ? ' is-hl' : ''}">Perso</span>
+      <span class="lb-cols-stat${sortKey === 'max_job_level' ? ' is-hl' : ''}">Métier</span>
+      <span class="lb-cols-stat">Saison</span>
+      <span class="lb-cols-stat${sortKey === 'total_earned' ? ' is-hl' : ''}">Fortune</span>
+      <span class="lb-cols-score is-hl">${esc(scoreLabel)}</span>
     </div>
   `;
 }
 
-function playerBlockHtml(row, rankIndex, sortKey, { isMe = false, tag = 'li' } = {}) {
+function rowHtml(row, rankIndex, sortKey, { isMe = false, tag = 'li' } = {}) {
   const name = esc(row.display_name || 'Voyageur');
-  const cls = `lb-entry${isMe ? ' is-me' : ''}${rankIndex >= 0 && rankIndex < 3 ? ' is-top' : ''}`;
+  const stats = sideStats(row);
+  const score = primaryScore(sortKey, row);
+  const suffix = primarySuffix(sortKey);
+  const cls = [
+    'lb-row',
+    isMe ? 'is-me' : '',
+    rankIndex >= 0 && rankIndex < 3 ? 'is-top' : '',
+  ].filter(Boolean).join(' ');
+
   return `
     <${tag} class="${cls}">
-      <div class="lb-entry-head">
-        <span class="lb-entry-rank">${rankLabel(rankIndex)}</span>
-        <span class="lb-entry-name">${name}${isMe ? ' <em>toi</em>' : ''}</span>
-        <span class="lb-entry-score">${esc(primaryScore(sortKey, row))}</span>
-      </div>
-      ${statsGridHtml(row, sortKey)}
+      <span class="lb-row-rank">${rankLabel(rankIndex)}</span>
+      <span class="lb-row-name">${name}${isMe ? '<em>toi</em>' : ''}</span>
+      ${stats.map((s) => `
+        <span class="lb-row-stat${s.key === sortKey ? ' is-hl' : ''}" data-col="${s.key}">${esc(s.short)}</span>
+      `).join('')}
+      <span class="lb-row-score">${esc(score)}${suffix ? ` ${suffix}` : ''}</span>
     </${tag}>
   `;
 }
@@ -142,22 +144,22 @@ export async function renderLeaderboard(game, el) {
 
   el.classList.add('lb-page');
   el.innerHTML = `
-    <div class="lb-page-inner">
-      <div class="lb-toolbar">
-        <div class="lb-toolbar-title">
+    <div class="lb-shell">
+      <header class="lb-head">
+        <div class="lb-head-row">
           <h2 class="lb-title">🏆 Classement</h2>
           <button type="button" class="btn btn-muted btn-sm lb-refresh" id="lb-refresh" aria-label="Actualiser">↻</button>
         </div>
-        <label class="lb-sort-wrap">
-          <span class="lb-sort-label">Classer par</span>
+        <label class="lb-sort">
+          <span class="lb-sort-lbl">Classer par</span>
           <select class="auth-input lb-sort-select" id="lb-sort">
             ${LEADERBOARD_TABS.map((t) => `
               <option value="${t.sortKey}" ${t.sortKey === activeSortKey ? 'selected' : ''}>${t.label}</option>
             `).join('')}
           </select>
         </label>
-      </div>
-      <div class="leaderboard-panel lb-panel">
+      </header>
+      <div class="lb-body" id="lb-body">
         <p class="lb-loading">Chargement…</p>
       </div>
     </div>
@@ -179,29 +181,34 @@ export async function renderLeaderboard(game, el) {
   };
   const rows = result.rows || [];
   const myRank = rows.findIndex((r) => r.user_id === auth.userId);
-  const panel = el.querySelector('.leaderboard-panel');
-  if (!panel) return;
+  const body = el.querySelector('#lb-body');
+  if (!body) return;
 
   const errors = [];
   if (!sync.ok && rows.length === 0) errors.push(`Sync : ${sync.reason || 'échec'}`);
   if (!result.ok) errors.push(result.reason || 'Chargement impossible.');
 
-  panel.innerHTML = `
-    <section class="lb-section lb-section-you" aria-label="Ton rang">
-      ${playerBlockHtml(mySnap, myRank, activeSortKey, { isMe: true, tag: 'div' })}
-      ${myRank < 0 && result.ok ? `<p class="lb-hint">Pas encore dans le top ${LB_LIMIT} (« ${esc(meta.label)} »).</p>` : ''}
-    </section>
+  body.innerHTML = `
+    <div class="lb-you-wrap">
+      ${rowHtml(mySnap, myRank, activeSortKey, { isMe: true, tag: 'div' })}
+      ${myRank < 0 && result.ok
+        ? `<p class="lb-hint">Pas encore dans le top ${LB_LIMIT} pour « ${esc(meta.label)} ».</p>`
+        : ''}
+    </div>
     ${errors.map((m) => `<p class="auth-error lb-hint">${esc(m)}</p>`).join('')}
-    <section class="lb-section lb-section-list" aria-label="Top joueurs">
-      <p class="lb-list-caption">Top ${rows.length || LB_LIMIT} · ${esc(meta.label)}</p>
+    <div class="lb-board">
+      <div class="lb-board-top">
+        <p class="lb-board-title">Top ${rows.length || 0}</p>
+        ${colsHeadHtml(activeSortKey)}
+      </div>
       <ol class="lb-list">
         ${rows.length
-          ? rows.map((row, i) => playerBlockHtml(row, i, activeSortKey, {
+          ? rows.map((row, i) => rowHtml(row, i, activeSortKey, {
               isMe: row.user_id === auth.userId,
               tag: 'li',
             })).join('')
           : `<li class="lb-empty">${emptyHint(activeSortKey)}</li>`}
       </ol>
-    </section>
+    </div>
   `;
 }
