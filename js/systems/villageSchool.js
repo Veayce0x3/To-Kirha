@@ -365,7 +365,7 @@ export function syncWellUnitsFromSchool(state) {
       changed = true;
     }
     while (line.slots.length < line.units) {
-      line.slots.push({ active: null });
+      line.slots.push({ active: null, pendingEvent: null });
       changed = true;
     }
   }
