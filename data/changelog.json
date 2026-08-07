@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-2100",
+      "date": "2026-08-07",
+      "title": "Mode sombre, classement & config",
+      "highlights": [
+        "Mode sombre : surfaces plus sombres, moins de zones crème, textes plus lisibles",
+        "Classement joueur : tri type admin + cartes (Perso / Métier / Saison / Fortune…)",
+        "Admin Config : retrait du toggle HDV P2P (n’existe pas dans le jeu)"
+      ]
+    },
+    {
       "buildId": "20260807-2035",
       "date": "2026-08-07",
       "title": "UX : combat, carnet, admin, annonces & début",

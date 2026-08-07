@@ -10722,17 +10722,17 @@ img.inventory-grid-icon,
 
 [data-theme="dark"] .char-equip-slot,
 [data-theme="dark"] .inventory-grid-cell {
-  background: rgba(40, 30, 35, 0.85);
+  background: var(--surface-2, #222836);
 }
 
 [data-theme="dark"] .bag-filter-btn {
-  background: rgba(40, 30, 35, 0.7);
-  color: inherit;
+  background: var(--surface-2, #222836);
+  color: var(--bois, #f3ebe0);
 }
 
 [data-theme="dark"] .bag-filter-btn.active {
-  background: var(--vert-fonce, #2D5A27);
-  color: #fff;
+  background: var(--btn-primary, #6aad62);
+  color: #0c100e;
 }
 
 .modal-career {

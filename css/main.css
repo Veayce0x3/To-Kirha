@@ -1049,90 +1049,174 @@ body.page-hidden .slot-progress-overlay.slot-ring-live {
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --rose-pale: #1a1520;
-  --rose-medium: #2e2436;
-  --vert-foret: #7ec87a;
-  --vert-clair: #9ad892;
+  /* Palette sombre unifiée — plus de crème / blanc cassé */
+  --rose-pale: #0e1016;
+  --rose-medium: #252036;
+  --rose-tres-pale: #141820;
+  --vert-foret: #8fd48a;
+  --vert-clair: #a8e0a2;
   --vert-bambou: #6aad62;
   --vert-bambou-clair: #8bc47f;
-  --vert-bambou-mist: #1c2420;
-  --bois: #f0e6d8;
-  --violet-sakura: #c9a0d4;
-  --violet-clair: #dfc2e8;
-  --violet: #b87fc8;
-  --violet-principal: #b87fc8;
+  --vert-bambou-mist: #152018;
+  --bois: #f3ebe0;
+  --brun-doux: #c8b8a4;
+  --violet-sakura: #d4aee0;
+  --violet-clair: #e2c6ec;
+  --violet: #c99ad6;
+  --violet-principal: #c99ad6;
   --btn-primary: #6aad62;
   --btn-primary-hover: #8bc47f;
-  --blanc: #12141a;
-  --ombre: rgba(0, 0, 0, 0.55);
-  --surface: #1c2030;
-  --surface-2: #242836;
-  --border-soft: rgba(240, 230, 216, 0.12);
+  --blanc: #151820;
+  --ombre: rgba(0, 0, 0, 0.65);
+  --surface: #1a1f2c;
+  --surface-2: #222836;
+  --surface-3: #2a3142;
+  --border-soft: rgba(243, 235, 224, 0.14);
+  --text-muted: rgba(243, 235, 224, 0.72);
 }
 
 html[data-theme="dark"] body {
-  background:
-    radial-gradient(ellipse 120% 80% at 10% -10%, rgba(184, 127, 200, 0.14), transparent 50%),
-    radial-gradient(ellipse 90% 60% at 100% 0%, rgba(106, 173, 98, 0.1), transparent 45%),
-    var(--blanc);
+  background: var(--rose-pale);
   color: var(--bois);
 }
 
 html[data-theme="dark"] .sakura-bg {
-  opacity: 0.08;
+  opacity: 0.05;
+  filter: brightness(0.45) saturate(0.7);
 }
 
+/* Surfaces principales */
 html[data-theme="dark"] .skill-header,
 html[data-theme="dark"] .panel-inner,
 html[data-theme="dark"] .sidebar,
 html[data-theme="dark"] .view-header,
+html[data-theme="dark"] .top-bar,
+html[data-theme="dark"] .bottom-nav,
+html[data-theme="dark"] .quick-bar,
+html[data-theme="dark"] .modal,
+html[data-theme="dark"] .modal-box,
+html[data-theme="dark"] .auth-modal,
+html[data-theme="dark"] .toast,
 html[data-theme="dark"] .char-equip-slot,
 html[data-theme="dark"] .inventory-grid-cell,
 html[data-theme="dark"] .quest-row,
 html[data-theme="dark"] .admin-player-card,
-html[data-theme="dark"] .journal-book {
+html[data-theme="dark"] .admin-stat,
+html[data-theme="dark"] .admin-info-card,
+html[data-theme="dark"] .admin-quick-player,
+html[data-theme="dark"] .admin-table-wrap,
+html[data-theme="dark"] .journal-book,
+html[data-theme="dark"] .journal-card,
+html[data-theme="dark"] .herbarium-card,
+html[data-theme="dark"] .cookbook-card,
+html[data-theme="dark"] .lb-card,
+html[data-theme="dark"] .lb-stat,
+html[data-theme="dark"] .production-line,
+html[data-theme="dark"] .slot-card,
+html[data-theme="dark"] .resource-card,
+html[data-theme="dark"] .hdv-row,
+html[data-theme="dark"] .hdv-sticky,
+html[data-theme="dark"] .hdv-wallet,
+html[data-theme="dark"] .hdv-sheet,
+html[data-theme="dark"] .combat-zone-card,
+html[data-theme="dark"] .combat-heal-panel,
+html[data-theme="dark"] .achievement-category,
+html[data-theme="dark"] .nav-category {
   background: var(--surface);
+  background-color: var(--surface);
   border-color: var(--border-soft);
   color: var(--bois);
 }
 
 html[data-theme="dark"] .sidebar {
-  background: linear-gradient(180deg, #181c28, #141820);
+  background: linear-gradient(180deg, #12151e, #0e1118);
 }
 
+html[data-theme="dark"] .main-content,
+html[data-theme="dark"] .content-scroll,
+html[data-theme="dark"] #view-root,
+html[data-theme="dark"] .app-main {
+  background: var(--rose-pale);
+  color: var(--bois);
+}
+
+/* Boutons / chips */
 html[data-theme="dark"] .nav-btn,
 html[data-theme="dark"] .btn-muted,
+html[data-theme="dark"] .btn:not(.btn-craft):not(.btn-sell-all),
 html[data-theme="dark"] .admin-tab-btn,
-html[data-theme="dark"] .leaderboard-tab,
-html[data-theme="dark"] .char-tab-btn {
+html[data-theme="dark"] .char-tab-btn,
+html[data-theme="dark"] .bag-filter-btn,
+html[data-theme="dark"] .hdv-tab,
+html[data-theme="dark"] .hdv-chip,
+html[data-theme="dark"] .hdv-action-btn,
+html[data-theme="dark"] .cuisine-tab,
+html[data-theme="dark"] .job-nav-btn,
+html[data-theme="dark"] .auth-input,
+html[data-theme="dark"] select.auth-input,
+html[data-theme="dark"] textarea.auth-input,
+html[data-theme="dark"] .lb-sort-select {
   background: var(--surface-2);
+  background-color: var(--surface-2);
   color: var(--bois);
   border-color: var(--border-soft);
 }
 
 html[data-theme="dark"] .nav-btn.active,
 html[data-theme="dark"] .admin-tab-btn.active,
-html[data-theme="dark"] .leaderboard-tab.active,
-html[data-theme="dark"] .char-tab-btn.active {
+html[data-theme="dark"] .char-tab-btn.active,
+html[data-theme="dark"] .bag-filter-btn.active,
+html[data-theme="dark"] .hdv-tab.active,
+html[data-theme="dark"] .hdv-chip.active {
   background: var(--btn-primary);
-  color: #0f1410;
+  background-color: var(--btn-primary);
+  color: #0c100e;
   border-color: var(--btn-primary);
+}
+
+html[data-theme="dark"] .btn-craft,
+html[data-theme="dark"] .btn.affordable:not(:disabled) {
+  color: #0c100e;
+}
+
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] strong,
+html[data-theme="dark"] .lb-card-name,
+html[data-theme="dark"] .lb-stat-val {
+  color: var(--bois);
 }
 
 html[data-theme="dark"] .view-desc,
 html[data-theme="dark"] .admin-td-muted,
-html[data-theme="dark"] .nav-cat-label {
-  color: rgba(240, 230, 216, 0.72);
+html[data-theme="dark"] .nav-cat-label,
+html[data-theme="dark"] .lb-stat-lbl,
+html[data-theme="dark"] .lb-card-sort-hint,
+html[data-theme="dark"] .lb-section-title,
+html[data-theme="dark"] .empty-text,
+html[data-theme="dark"] .quest-desc {
+  color: var(--text-muted);
+}
+
+html[data-theme="dark"] .view-header h2,
+html[data-theme="dark"] .quest-row strong {
+  color: var(--bois);
 }
 
 html[data-theme="dark"] .announcement-banner {
-  background: linear-gradient(90deg, rgba(106, 173, 98, 0.35), rgba(28, 32, 48, 0.98));
+  background: linear-gradient(90deg, rgba(106, 173, 98, 0.4), #1a1f2c);
   color: var(--bois);
-  border-bottom-color: rgba(126, 200, 122, 0.55);
+  border-bottom-color: rgba(143, 212, 138, 0.55);
+}
+
+html[data-theme="dark"] .announcement-banner-body strong {
+  color: #fff;
 }
 
 html[data-theme="dark"] .announcement-dismiss {
-  background: rgba(240, 230, 216, 0.1);
+  background: rgba(243, 235, 224, 0.12);
   color: var(--bois);
 }
 
@@ -1141,21 +1225,72 @@ html[data-theme="dark"] .dq-stat-bar-lg .dq-stat-bar-num {
 }
 
 html[data-theme="dark"] .dq-stat-bar-lg.dq-stat-bar-mp .dq-stat-bar-num {
-  color: #8eb6ff;
+  color: #9ec0ff;
 }
 
 html[data-theme="dark"] .dq-stat-bar-lg .dq-stat-bar-track {
-  background: rgba(0, 0, 0, 0.35);
-  border-color: rgba(240, 230, 216, 0.15);
+  background: rgba(0, 0, 0, 0.45);
+  border-color: var(--border-soft);
 }
 
 html[data-theme="dark"] .journal-book-spine {
   background: linear-gradient(180deg, #c9a0d4, #6aad62);
 }
 
-html[data-theme="dark"] .admin-table-wrap {
-  background: var(--surface);
+html[data-theme="dark"] .journal-book {
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .lb-card.me {
+  background: rgba(106, 173, 98, 0.18);
+  border-color: rgba(143, 212, 138, 0.45);
+}
+
+html[data-theme="dark"] .lb-card.podium:not(.me) {
+  background: var(--surface-2);
+  border-color: rgba(201, 160, 212, 0.35);
+}
+
+html[data-theme="dark"] .lb-stat-hl {
+  background: rgba(106, 173, 98, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(143, 212, 138, 0.35);
+}
+
+html[data-theme="dark"] .lb-card-rank {
+  color: var(--vert-clair);
+}
+
+html[data-theme="dark"] .admin-table th,
+html[data-theme="dark"] .admin-table td {
   border-color: var(--border-soft);
+  color: var(--bois);
+}
+
+html[data-theme="dark"] .admin-tab-btn,
+html[data-theme="dark"] .admin-player-card {
+  background: var(--surface-2);
+}
+
+/* Cartes / lignes encore en blanc dur */
+html[data-theme="dark"] .hdv-chip,
+html[data-theme="dark"] .auction-group-tab,
+html[data-theme="dark"] .auction-vendor-chip,
+html[data-theme="dark"] .key-quality-option,
+html[data-theme="dark"] .school-node,
+html[data-theme="dark"] .village-board-card,
+html[data-theme="dark"] .companion-card,
+html[data-theme="dark"] .craft-recipe-card,
+html[data-theme="dark"] .season-card {
+  background: var(--surface-2) !important;
+  background-color: var(--surface-2) !important;
+  color: var(--bois);
+  border-color: var(--border-soft);
+}
+
+html[data-theme="dark"] .btn.affordable:not(:disabled),
+html[data-theme="dark"] .btn-harvest-compact.affordable:not(:disabled) {
+  box-shadow: 0 0 0 2px rgba(143, 212, 138, 0.45);
 }
 
 .btn.affordable:not(:disabled),

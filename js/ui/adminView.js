@@ -1284,7 +1284,6 @@ async function renderConfig(container) {
   const toggles = [
     { key: 'maintenance_mode', label: 'Mode maintenance', desc: 'Bloque les fonctionnalités online' },
     { key: 'leaderboard_enabled', label: 'Classement actif', desc: 'Autorise les mises à jour classement' },
-    { key: 'market_p2p_enabled', label: 'HDV joueurs actif', desc: 'Autorise le marché P2P' },
     { key: 'reporting_enabled', label: 'Signalements actifs', desc: 'Les joueurs peuvent signaler' },
   ];
 
