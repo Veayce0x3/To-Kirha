@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260807-2255",
+      "date": "2026-08-07",
+      "title": "Classement général",
+      "highlights": [
+        "Nouveau critère « Général » (défaut) : score global niveau + métiers + saisons + fortune + récolte + découvertes + combat",
+        "Les tris par catégorie restent disponibles dans le menu"
+      ]
+    },
+    {
       "buildId": "20260807-2245",
       "date": "2026-08-07",
       "title": "Classement : design cartes + podium",

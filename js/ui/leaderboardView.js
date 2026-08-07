@@ -3,6 +3,7 @@ import {
   fetchLeaderboard,
   submitLeaderboardSnapshot,
   buildLeaderboardSnapshot,
+  computeGeneralScore,
 } from '../systems/leaderboard.js';
 import { getAuthState, getOnlineBlockReason, canUseOnlineFeatures } from '../core/auth.js';
 import { showAccountRequiredModal } from './authUi.js';
@@ -11,7 +12,7 @@ import { isLeaderboardEnabled, isMaintenanceMode } from '../systems/gameConfig.j
 const LB_LIMIT = 100;
 
 /** @type {string} */
-let activeSortKey = 'char_level';
+let activeSortKey = 'general';
 
 function esc(s) {
   return String(s ?? '')
@@ -36,6 +37,7 @@ function sortMeta(sortKey) {
 
 function emptyHint(sortKey) {
   switch (sortKey) {
+    case 'general': return 'Progresse un peu partout, puis actualise.';
     case 'total_harvests': return 'Récolte pour apparaître ici.';
     case 'total_discoveries': return 'Trouve des découvertes Kirha en récolte.';
     case 'boss_kills_total': return 'Vaincs des boss pour être classé.';
@@ -48,6 +50,7 @@ function emptyHint(sortKey) {
 
 function primaryScore(sortKey, row) {
   switch (sortKey) {
+    case 'general': return `${fmtNum(row.general_score ?? computeGeneralScore(row))} pts`;
     case 'char_level': return `Nv.${row.char_level || 1}`;
     case 'max_job_level': return `Nv.${row.max_job_level || 1}`;
     case 'total_earned': return `${fmtNum(row.total_earned)} 💰`;
@@ -55,7 +58,7 @@ function primaryScore(sortKey, row) {
     case 'total_harvests': return `${fmtNum(row.total_harvests)}`;
     case 'total_discoveries': return `${fmtNum(row.total_discoveries)}`;
     case 'boss_kills_total': return `${fmtNum(row.boss_kills_total)}`;
-    default: return `Nv.${row.char_level || 1}`;
+    default: return `${fmtNum(row.general_score ?? computeGeneralScore(row))} pts`;
   }
 }
 
@@ -111,7 +114,7 @@ export async function renderLeaderboard(game, el) {
   }
 
   if (!LEADERBOARD_TABS.some((t) => t.sortKey === activeSortKey)) {
-    activeSortKey = 'char_level';
+    activeSortKey = 'general';
   }
 
   const meta = sortMeta(activeSortKey);
@@ -144,7 +147,7 @@ export async function renderLeaderboard(game, el) {
 
   el.querySelector('#lb-refresh')?.addEventListener('click', () => renderLeaderboard(game, el));
   el.querySelector('#lb-sort')?.addEventListener('change', (e) => {
-    activeSortKey = e.target.value || 'char_level';
+    activeSortKey = e.target.value || 'general';
     renderLeaderboard(game, el);
   });
 
@@ -156,6 +159,7 @@ export async function renderLeaderboard(game, el) {
     display_name: game.getCharacterDisplayName(),
     user_id: auth.userId,
   };
+  mySnap.general_score = computeGeneralScore(mySnap);
   const rows = result.rows || [];
   const myRank = rows.findIndex((r) => r.user_id === auth.userId);
   const main = el.querySelector('#lb-main');

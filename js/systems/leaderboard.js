@@ -9,6 +9,7 @@ import { isLeaderboardEnabled, isMaintenanceMode } from './gameConfig.js';
 import { getTotalDiscoveries } from './harvestEvents.js';
 
 export const LEADERBOARD_TABS = [
+  { id: 'general', label: 'Général', sortKey: 'general', desc: true, clientSort: true },
   { id: 'level', label: 'Niveau', sortKey: 'char_level', desc: true },
   { id: 'jobs', label: 'Métiers', sortKey: 'max_job_level', desc: true },
   { id: 'fortune', label: 'Fortune', sortKey: 'total_earned', desc: true },
@@ -22,6 +23,29 @@ function safeInt(n, fallback = 0) {
   const v = Number(n);
   if (!Number.isFinite(v)) return fallback;
   return Math.floor(v);
+}
+
+/**
+ * Score global (progression complète) — calcul client, pas de colonne DB.
+ * Mélange niveau, métiers, saisons, fortune, récolte, découvertes, combat.
+ */
+export function computeGeneralScore(row) {
+  const n = (v) => Math.max(0, Number(v) || 0);
+  const earned = n(row.total_earned);
+  return Math.floor(
+    n(row.char_level) * 100
+    + n(row.max_job_level) * 80
+    + n(row.seasons_completed) * 900
+    + n(row.season) * 50
+    + Math.sqrt(earned) * 2.5
+    + n(row.total_harvests) * 0.12
+    + n(row.total_discoveries) * 45
+    + n(row.boss_kills_total) * 55
+  );
+}
+
+function withGeneralScore(row) {
+  return { ...row, general_score: computeGeneralScore(row) };
 }
 
 export function buildLeaderboardSnapshot(state) {
@@ -108,26 +132,32 @@ export async function submitLeaderboardSnapshot(state, displayName) {
   return { ok: true };
 }
 
-export async function fetchLeaderboard(sortKey = 'char_level', limit = 50, localState = null) {
+export async function fetchLeaderboard(sortKey = 'general', limit = 50, localState = null) {
   if (!isSupabaseConfigured()) {
     if (DEV_FAKE_ACCOUNT && isRegisteredAccount() && localState) {
       const auth = getAuthState();
-      const snap = buildLeaderboardSnapshot(localState);
-      return {
-        ok: true,
-        rows: [{ user_id: auth.userId, display_name: auth.displayName || 'DevLocal', ...snap }],
-        devLocal: true,
-      };
+      const snap = withGeneralScore({
+        user_id: auth.userId,
+        display_name: auth.displayName || 'DevLocal',
+        ...buildLeaderboardSnapshot(localState),
+      });
+      return { ok: true, rows: [snap], devLocal: true };
     }
     return { ok: false, reason: 'Supabase non configuré.', rows: [] };
   }
+
+  const tab = LEADERBOARD_TABS.find((t) => t.sortKey === sortKey) || LEADERBOARD_TABS[0];
+  const isGeneral = tab.sortKey === 'general' || tab.clientSort;
   const supabase = await getSupabaseClient();
-  let col = LEADERBOARD_TABS.some((t) => t.sortKey === sortKey) ? sortKey : 'char_level';
+
+  // Général : on tire un pool plus large puis on trie côté client
+  const fetchLimit = isGeneral ? Math.max(limit * 3, 200) : limit;
+  let col = isGeneral ? 'char_level' : tab.sortKey;
   let { data, error } = await supabase
     .from('leaderboard_entries')
     .select('*')
     .order(col, { ascending: false })
-    .limit(limit);
+    .limit(fetchLimit);
 
   // Colonne découvertes pas encore migrée → repli sur récoltes
   if (error && col === 'total_discoveries') {
@@ -136,15 +166,22 @@ export async function fetchLeaderboard(sortKey = 'char_level', limit = 50, local
       .from('leaderboard_entries')
       .select('*')
       .order(col, { ascending: false })
-      .limit(limit));
+      .limit(fetchLimit));
   }
 
   if (error) return { ok: false, reason: error.message, rows: [] };
-  return { ok: true, rows: data || [] };
+
+  let rows = (data || []).map(withGeneralScore);
+  if (isGeneral) {
+    rows.sort((a, b) => (b.general_score || 0) - (a.general_score || 0));
+    rows = rows.slice(0, limit);
+  }
+  return { ok: true, rows };
 }
 
 export function formatLeaderboardValue(tabId, row) {
   switch (tabId) {
+    case 'general': return `${Number(row.general_score ?? computeGeneralScore(row)).toLocaleString('fr-FR')} pts`;
     case 'level': return `Perso Nv.${row.char_level} · Saison ${row.season}`;
     case 'jobs': return `Métier max Nv.${row.max_job_level || 1}`;
     case 'fortune': return `${Number(row.total_earned || 0).toLocaleString('fr-FR')} 💰 gagnés`;
