@@ -11774,50 +11774,102 @@ html[data-theme="dark"] .admin-player-sheet {
 }
 
 /* Dark — récolte / menu bas / inventaire qty */
+html[data-theme="dark"] .production-line-section,
+html[data-theme="dark"] .production-line-focused {
+  background: #141820 !important;
+  background-image: none !important;
+  border-color: rgba(243, 235, 224, 0.12) !important;
+  box-shadow: none !important;
+  color: var(--bois, #f3ebe0) !important;
+}
+
+html[data-theme="dark"] .production-line-meta-clear {
+  color: var(--bois, #f3ebe0) !important;
+}
+
+html[data-theme="dark"] .production-line-meta-clear .production-units,
+html[data-theme="dark"] .production-line-meta-clear .production-harvest-time {
+  background: #1a1f2c !important;
+  border-color: rgba(243, 235, 224, 0.12) !important;
+  color: var(--bois, #f3ebe0) !important;
+}
+
+html[data-theme="dark"] .harvest-mini-tuto,
+html[data-theme="dark"] .job-unlock-banner,
+html[data-theme="dark"] .production-unlock-panel,
+html[data-theme="dark"] .production-unlock-option,
+html[data-theme="dark"] .farm-tool-banner {
+  background: #141820 !important;
+  border-color: rgba(243, 235, 224, 0.12) !important;
+  color: var(--bois, #f3ebe0) !important;
+}
+
 html[data-theme="dark"] .harvest-slot,
 html[data-theme="dark"] .harvest-slot.state-available,
 html[data-theme="dark"] .harvest-slot.state-harvesting,
 html[data-theme="dark"] .harvest-slot.state-empty,
-html[data-theme="dark"] .harvest-slot.slot-locked {
-  background: var(--surface-2, #222836) !important;
-  border-color: var(--border-soft, rgba(243, 235, 224, 0.14)) !important;
+html[data-theme="dark"] .harvest-slot.slot-locked,
+html[data-theme="dark"] .harvest-slot.slot-can-harvest,
+html[data-theme="dark"] .harvest-slot.active-harvest {
+  background: #12161e !important;
+  background-image: none !important;
+  border-color: rgba(243, 235, 224, 0.14) !important;
   color: var(--bois, #f3ebe0) !important;
 }
 
 html[data-theme="dark"] .harvest-slot.state-regrowing {
-  background: linear-gradient(135deg, #252036, #1a1f2c) !important;
-  border-color: var(--border-soft) !important;
+  background: #10141c !important;
+  background-image: none !important;
+  border-color: rgba(243, 235, 224, 0.12) !important;
 }
 
 html[data-theme="dark"] .slot-visual,
-html[data-theme="dark"] .production-units-grid .slot-visual {
-  background: rgba(0, 0, 0, 0.35) !important;
-  border-color: var(--border-soft) !important;
+html[data-theme="dark"] .production-units-grid .slot-visual,
+html[data-theme="dark"] .harvest-slot.state-regrowing .slot-visual {
+  background: #0c0f14 !important;
+  border-color: rgba(243, 235, 224, 0.1) !important;
 }
 
 html[data-theme="dark"] .harvest-resource-tab {
-  background: var(--surface-2, #222836) !important;
-  border-color: var(--border-soft) !important;
+  background: #141820 !important;
+  border-color: rgba(243, 235, 224, 0.12) !important;
   color: var(--bois, #f3ebe0) !important;
 }
 
 html[data-theme="dark"] .harvest-resource-tab.active {
-  background: linear-gradient(165deg, #2a3142, #1c2420) !important;
+  background: #1a2420 !important;
+  background-image: none !important;
   border-color: var(--btn-primary, #6aad62) !important;
   box-shadow: none !important;
 }
 
 html[data-theme="dark"] .harvest-tab-name,
+html[data-theme="dark"] .harvest-tab-meta,
 html[data-theme="dark"] .production-stock,
+html[data-theme="dark"] .production-xp,
+html[data-theme="dark"] .production-harvest-time,
+html[data-theme="dark"] .production-units,
 html[data-theme="dark"] .production-line-title,
 html[data-theme="dark"] .production-line-title strong,
-html[data-theme="dark"] .harvest-inv-qty,
-html[data-theme="dark"] .slot-tool-hint {
+html[data-theme="dark"] .production-tool-dur,
+html[data-theme="dark"] .slot-tool-hint,
+html[data-theme="dark"] .slot-timer,
+html[data-theme="dark"] .skill-header-title,
+html[data-theme="dark"] .skill-header-meta {
+  color: var(--bois, #f3ebe0) !important;
+}
+
+html[data-theme="dark"] .slot-progress-track,
+html[data-theme="dark"] .harvest-slot .slot-progress-row .slot-progress-track {
+  background: rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-theme="dark"] .slot-time-footer {
   color: var(--bois, #f3ebe0) !important;
 }
 
 html[data-theme="dark"] .harvest-inv-chip {
-  background: rgba(243, 235, 224, 0.08) !important;
+  background: rgba(243, 235, 224, 0.06) !important;
   color: var(--bois, #f3ebe0) !important;
 }
 
@@ -11825,20 +11877,34 @@ html[data-theme="dark"] .harvest-inv-chip.has-qty {
   background: rgba(106, 173, 98, 0.2) !important;
 }
 
+html[data-theme="dark"] .harvest-inv-qty {
+  color: var(--bois, #f3ebe0) !important;
+}
+
+html[data-theme="dark"] .skill-header {
+  background: #141820 !important;
+  border-color: rgba(243, 235, 224, 0.12) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .xp-bar-container {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
 html[data-theme="dark"] .job-switcher-dock {
-  background: var(--surface, #1a1f2c) !important;
-  border-top-color: var(--border-soft) !important;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35) !important;
+  background: #10141c !important;
+  border-top-color: rgba(243, 235, 224, 0.12) !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.45) !important;
 }
 
 html[data-theme="dark"] .job-switcher-chip {
-  background: var(--surface-2, #222836) !important;
-  border-color: var(--border-soft) !important;
+  background: #141820 !important;
+  border-color: rgba(243, 235, 224, 0.12) !important;
   color: var(--bois, #f3ebe0) !important;
 }
 
 html[data-theme="dark"] .job-switcher-chip.active {
-  background: rgba(106, 173, 98, 0.28) !important;
+  background: rgba(106, 173, 98, 0.22) !important;
   border-color: var(--btn-primary, #6aad62) !important;
   color: var(--bois, #f3ebe0) !important;
 }
@@ -11849,14 +11915,14 @@ html[data-theme="dark"] .job-switcher-level {
 }
 
 html[data-theme="dark"] .inventory-grid-qty {
-  background: rgba(14, 16, 22, 0.92) !important;
+  background: rgba(10, 12, 16, 0.95) !important;
   color: var(--bois, #f3ebe0) !important;
-  border: 1px solid var(--border-soft, rgba(243, 235, 224, 0.2));
+  border: 1px solid rgba(243, 235, 224, 0.18);
 }
 
 html[data-theme="dark"] .inventory-grid-cell {
-  background: var(--surface-2, #222836) !important;
-  border-color: var(--border-soft) !important;
+  background: #141820 !important;
+  border-color: rgba(243, 235, 224, 0.14) !important;
   color: var(--bois, #f3ebe0) !important;
 }
 
@@ -11870,15 +11936,21 @@ html[data-theme="dark"] .inventory-meal-heal-btn {
 }
 
 html[data-theme="dark"] .bag-filter-btn {
-  background: var(--surface-2, #222836) !important;
+  background: #141820 !important;
   color: var(--bois, #f3ebe0) !important;
-  border-color: var(--border-soft) !important;
+  border-color: rgba(243, 235, 224, 0.14) !important;
 }
 
 html[data-theme="dark"] .slot-event-announce-flavor,
 html[data-theme="dark"] .slot-event-announce-kirha,
 html[data-theme="dark"] .slot-event-announce-shiny,
 html[data-theme="dark"] .slot-event-announce-jackpot {
-  background: var(--surface, #1a1f2c) !important;
+  background: #141820 !important;
   color: var(--bois, #f3ebe0) !important;
+}
+
+html[data-theme="dark"] .btn-job-nav.btn-muted {
+  background: #1a1f2c !important;
+  color: var(--bois, #f3ebe0) !important;
+  border-color: rgba(243, 235, 224, 0.14) !important;
 }

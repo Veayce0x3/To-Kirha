@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260807-2225",
+      "date": "2026-08-07",
+      "title": "Dark récolte : plus de fond gris clair",
+      "highlights": [
+        "Section ressource / slots / onglets / méta : fonds sombres (plus de dégradé blanc)",
+        "En-tête métier et barre du bas alignés"
+      ]
+    },
+    {
       "buildId": "20260807-2215",
       "date": "2026-08-07",
       "title": "Classement : affichage carte propre",
