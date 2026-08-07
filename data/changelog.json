@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1455",
+      "date": "2026-08-07",
+      "title": "Combat : XP des monstres du Temple distinctes",
+      "highlights": [
+        "Entraînement Temple : monstre 1/2/3 donnent 2 / 3 / 4 XP (plus d’égalité 2ᵉ = 3ᵉ après le ×0.25)"
+      ]
+    },
+    {
       "buildId": "20260807-1445",
       "date": "2026-08-07",
       "title": "Récolte : choix parallèle emplacement / nouvelle ressource",

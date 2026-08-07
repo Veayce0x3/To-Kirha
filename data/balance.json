@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 56,
-  "appBuildId": "20260807-1445",
+  "appBuildId": "20260807-1455",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -86,6 +86,7 @@
       "mystic": 1200
     },
     "soloXpMultiplier": 0.25,
+    "soloXpNote": "XP solo = floor(charXpReward × 0.25). Garder charXpReward multiple de 4 pour une progression claire (ex. 8/12/16 → 2/3/4).",
     "sellPrices": {
       "common": 25,
       "rare": 75,

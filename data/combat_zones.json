@@ -17,21 +17,21 @@
         "name": "Esprit Lanterne",
         "emoji": "👻",
         "drops": {},
-        "charXpReward": 6
+        "charXpReward": 8
       },
       {
         "enemyId": "petal_slime",
         "name": "Slime Pétale",
         "emoji": "🌸",
         "drops": {},
-        "charXpReward": 8
+        "charXpReward": 12
       },
       {
         "enemyId": "temple_guard",
         "name": "Garde du Temple",
         "emoji": "⛩️",
         "drops": {},
-        "charXpReward": 10
+        "charXpReward": 16
       }
     ],
     "boss": {
