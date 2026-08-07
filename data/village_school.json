@@ -10,25 +10,25 @@
       "id": "ferme",
       "label": "Élevage",
       "emoji": "🐄",
-      "order": 1
+      "order": 2
     },
     "combat": {
       "id": "combat",
       "label": "Combat",
       "emoji": "⚔️",
-      "order": 2
+      "order": 3
     },
     "cuisine": {
       "id": "cuisine",
       "label": "Cuisine",
       "emoji": "🍞",
-      "order": 3
+      "order": 4
     },
     "atelier": {
       "id": "atelier",
       "label": "Atelier",
       "emoji": "🛠️",
-      "order": 4
+      "order": 1
     },
     "village": {
       "id": "village",
@@ -125,11 +125,14 @@
       "tier": "permanent",
       "order": 1,
       "name": "Puits du village",
-      "description": "Sans eau, pas d’élevage. Le puits rouvre la ferme.",
-      "requires": [],
+      "description": "Sans eau, pas d’élevage. Il te faudra un seau à l’Outilleur.",
+      "requires": [
+        "roadmap_toolmaker"
+      ],
       "kirhaCost": 15,
       "ingredients": {
-        "ble": 8
+        "ble": 8,
+        "frene": 5
       },
       "durationMs": 30000,
       "effect": {
@@ -456,14 +459,37 @@
       },
       "effectLabel": "−5 % durée des cycles ferme (cette saison)"
     },
+    "roadmap_toolmaker": {
+      "id": "roadmap_toolmaker",
+      "branch": "atelier",
+      "tier": "permanent",
+      "order": 1,
+      "name": "Atelier de l’Outilleur",
+      "description": "Le Conseil rouvre l’atelier : haches, seaux et paniers peuvent être forgés.",
+      "requires": [
+        "roadmap_lumberjack"
+      ],
+      "kirhaCost": 25,
+      "ingredients": {
+        "ble": 12,
+        "frene": 8
+      },
+      "durationMs": 45000,
+      "effect": {
+        "unlockCraftJob": "toolmaker"
+      },
+      "effectLabel": "Débloque l’Atelier Outilleur (seaux, outils…)"
+    },
     "atelier_notes": {
       "id": "atelier_notes",
       "branch": "atelier",
       "tier": "seasonal",
-      "order": 1,
+      "order": 20,
       "name": "Notes de l’Outilleur",
       "description": "Entretien soigné : les outils tiennent un peu plus longtemps.",
-      "requires": [],
+      "requires": [
+        "roadmap_toolmaker"
+      ],
       "kirhaCost": 45,
       "ingredients": {
         "frene": 15,

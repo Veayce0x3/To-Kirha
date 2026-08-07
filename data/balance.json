@@ -1,8 +1,8 @@
 {
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
-  "saveVersion": 53,
-  "appBuildId": "20260807-1010",
+  "saveVersion": 54,
+  "appBuildId": "20260807-1025",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -657,12 +657,9 @@
     },
     "toolmaker": {
       "when": {
-        "jobLevel": {
-          "lumberjack": 5,
-          "farmer": 6
-        }
+        "schoolCraft": "toolmaker"
       },
-      "hint": "Monte Bûcheron Nv.5 et Paysan Nv.6 pour l'Outilleur."
+      "hint": "École → Atelier : Atelier de l’Outilleur (après Bûcheron)."
     },
     "baker": {
       "when": {

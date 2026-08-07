@@ -548,6 +548,50 @@ const MIGRATIONS = {
       }
     }
   },
+
+  54(state) {
+    // Outilleur via École — backfill pour saves déjà avancées / puits déjà ouvert
+    if (!state.villageSchool || typeof state.villageSchool !== 'object') {
+      state.villageSchool = {
+        completedSeasonal: [],
+        completedPermanent: [],
+        active: null,
+        legacyPending: null,
+        seasonFlags: {},
+        unlockedSpells: [],
+        unlockedJobs: [],
+        unlockedFarmBuildings: [],
+        unlockedCombatZones: [],
+        unlockedCombat: false,
+        unlockedVillageBoard: false,
+        unlockedCraftJobs: [],
+      };
+    }
+    const s = state.villageSchool;
+    if (!Array.isArray(s.unlockedCraftJobs)) s.unlockedCraftJobs = [];
+    if (!Array.isArray(s.completedPermanent)) s.completedPermanent = [];
+    if (!Array.isArray(s.unlockedFarmBuildings)) s.unlockedFarmBuildings = [];
+    if (!Array.isArray(s.unlockedJobs)) s.unlockedJobs = [];
+
+    const push = (arr, id) => { if (id && !arr.includes(id)) arr.push(id); };
+    const jl = (jobId) => Number(state.jobs?.[jobId]?.level) || 1;
+    const craftedTools = (state.crafted || []).some((id) => String(id).startsWith('breeder_') || String(id).includes('axe') || String(id).includes('pick') || String(id).includes('rod') || String(id).includes('tool'));
+    const hasWell = (s.unlockedFarmBuildings || []).includes('well')
+      || !!state.farmBuildingMeta?.well
+      || (state.purchasedFarmSlots && state.purchasedFarmSlots.well != null);
+    const oldGate = jl('lumberjack') >= 5 && jl('farmer') >= 6;
+    const hasLumberjack = (s.unlockedJobs || []).includes('lumberjack') || jl('lumberjack') > 1;
+
+    if (oldGate || craftedTools || hasWell || (s.unlockedCraftJobs || []).includes('toolmaker')) {
+      push(s.unlockedCraftJobs, 'toolmaker');
+      push(s.completedPermanent, 'roadmap_toolmaker');
+      if (hasLumberjack) push(s.completedPermanent, 'roadmap_lumberjack');
+      if (hasWell) {
+        push(s.unlockedFarmBuildings, 'well');
+        push(s.completedPermanent, 'roadmap_well');
+      }
+    }
+  },
 };
 
 /** Garantit les blocs systèmes récents même si saveVersion était déjà trop haut. */
@@ -571,6 +615,7 @@ export function repairSaveSystems(state, ctx = {}) {
       unlockedCombatZones: [],
       unlockedCombat: false,
       unlockedVillageBoard: false,
+      unlockedCraftJobs: [],
     };
   }
   if (!Array.isArray(state.villageSchool.completedSeasonal)) state.villageSchool.completedSeasonal = [];
@@ -579,6 +624,7 @@ export function repairSaveSystems(state, ctx = {}) {
   if (!Array.isArray(state.villageSchool.unlockedJobs)) state.villageSchool.unlockedJobs = [];
   if (!Array.isArray(state.villageSchool.unlockedFarmBuildings)) state.villageSchool.unlockedFarmBuildings = [];
   if (!Array.isArray(state.villageSchool.unlockedCombatZones)) state.villageSchool.unlockedCombatZones = [];
+  if (!Array.isArray(state.villageSchool.unlockedCraftJobs)) state.villageSchool.unlockedCraftJobs = [];
   if (typeof state.villageSchool.unlockedCombat !== 'boolean') state.villageSchool.unlockedCombat = false;
   if (typeof state.villageSchool.unlockedVillageBoard !== 'boolean') {
     state.villageSchool.unlockedVillageBoard = false;
@@ -631,11 +677,13 @@ export function repairSaveSystems(state, ctx = {}) {
       unlockedCombatZones: [],
       unlockedCombat: false,
       unlockedVillageBoard: false,
+      unlockedCraftJobs: [],
     };
   }
   if (!Array.isArray(state.villageSchool.unlockedJobs)) state.villageSchool.unlockedJobs = [];
   if (!Array.isArray(state.villageSchool.unlockedFarmBuildings)) state.villageSchool.unlockedFarmBuildings = [];
   if (!Array.isArray(state.villageSchool.unlockedCombatZones)) state.villageSchool.unlockedCombatZones = [];
+  if (!Array.isArray(state.villageSchool.unlockedCraftJobs)) state.villageSchool.unlockedCraftJobs = [];
   if (typeof state.villageSchool.unlockedCombat !== 'boolean') state.villageSchool.unlockedCombat = false;
   if (typeof state.villageSchool.unlockedVillageBoard !== 'boolean') {
     state.villageSchool.unlockedVillageBoard = false;
@@ -645,7 +693,7 @@ export function repairSaveSystems(state, ctx = {}) {
 }
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 53;
+  const target = ctx.balance?.saveVersion ?? 54;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

@@ -198,8 +198,8 @@ export function initUI(game, audio) {
         emoji: '🏫',
         ready: false,
         progress: 0,
-        hint: game.balance?.jobUnlocks?.toolmaker?.hint || 'Débloque l’Outilleur (Bûcheron Nv.5 + Paysan Nv.6).',
-        gates: [{ type: 'craftJobUnlocked', ready: false, jobName: 'Outilleur' }],
+        hint: game.balance?.jobUnlocks?.toolmaker?.hint || 'École → Atelier : Atelier de l’Outilleur.',
+        gates: [{ type: 'schoolUnlock', ready: false, jobName: 'Outilleur' }],
       };
     }
     const featureByView = { combat: 'combat', workshop: 'toolmaker', cuisine: 'baker' };

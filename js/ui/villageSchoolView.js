@@ -69,7 +69,8 @@ function isRoadmapUnlockResearch(research) {
     || e.unlockFarmBuilding
     || e.unlockCombat
     || e.unlockCombatZone
-    || e.unlockVillageBoard
+    ||     e.unlockVillageBoard
+    || e.unlockCraftJob
   );
 }
 

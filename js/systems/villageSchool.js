@@ -18,6 +18,7 @@ export function emptyVillageSchoolState() {
     unlockedCombatZones: [],
     unlockedCombat: false,
     unlockedVillageBoard: false,
+    unlockedCraftJobs: [],
   };
 }
 
@@ -32,6 +33,7 @@ export function ensureVillageSchoolState(state) {
   if (!Array.isArray(s.unlockedJobs)) s.unlockedJobs = [];
   if (!Array.isArray(s.unlockedFarmBuildings)) s.unlockedFarmBuildings = [];
   if (!Array.isArray(s.unlockedCombatZones)) s.unlockedCombatZones = [];
+  if (!Array.isArray(s.unlockedCraftJobs)) s.unlockedCraftJobs = [];
   if (typeof s.unlockedCombat !== 'boolean') s.unlockedCombat = false;
   if (typeof s.unlockedVillageBoard !== 'boolean') s.unlockedVillageBoard = false;
   if (!s.seasonFlags || typeof s.seasonFlags !== 'object') s.seasonFlags = {};
@@ -65,6 +67,10 @@ export function hasSchoolCombatZoneUnlock(state, combatZoneId) {
 /** Quêtes quotidiennes du Village — déblocage École. */
 export function hasSchoolVillageBoardUnlock(state) {
   return !!ensureVillageSchoolState(state).unlockedVillageBoard;
+}
+
+export function hasSchoolCraftUnlock(state, craftJobId) {
+  return ensureVillageSchoolState(state).unlockedCraftJobs.includes(craftJobId);
 }
 
 export function isVillageBoardUnlocked(state, _balance) {
@@ -202,6 +208,9 @@ export function applyResearchUnlockEffects(state, research) {
       s.unlockedVillageBoard = true;
       changed = true;
     }
+  }
+  if (effect.unlockCraftJob) {
+    if (pushUnique(s.unlockedCraftJobs, effect.unlockCraftJob)) changed = true;
   }
   if (effect.unlockSpell) {
     const spellId = effect.unlockSpell;
@@ -348,6 +357,7 @@ export function extractVillageSchoolForPrestige(state) {
       unlockedCombatZones: [...(s.unlockedCombatZones || [])],
       unlockedCombat: !!s.unlockedCombat,
       unlockedVillageBoard: !!s.unlockedVillageBoard,
+      unlockedCraftJobs: [...(s.unlockedCraftJobs || [])],
       seasonFlags: {
         merchantFirstWeek: !!legacy.merchantFirstWeek,
       },

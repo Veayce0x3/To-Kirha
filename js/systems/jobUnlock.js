@@ -65,6 +65,10 @@ function meetsCondition(state, condition, balance = null) {
   if (condition.schoolCombat) {
     if (!ensureSchoolUnlockLists(state).unlockedCombat) return false;
   }
+  if (condition.schoolCraft) {
+    const crafts = ensureSchoolUnlockLists(state).unlockedCraftJobs;
+    if (!crafts.includes(condition.schoolCraft)) return false;
+  }
   return true;
 }
 
@@ -76,12 +80,14 @@ function ensureSchoolUnlockLists(state) {
       unlockedCombatZones: [],
       unlockedCombat: false,
       unlockedVillageBoard: false,
+      unlockedCraftJobs: [],
     };
   }
   const s = state.villageSchool;
   if (!Array.isArray(s.unlockedJobs)) s.unlockedJobs = [];
   if (!Array.isArray(s.unlockedFarmBuildings)) s.unlockedFarmBuildings = [];
   if (!Array.isArray(s.unlockedCombatZones)) s.unlockedCombatZones = [];
+  if (!Array.isArray(s.unlockedCraftJobs)) s.unlockedCraftJobs = [];
   if (typeof s.unlockedCombat !== 'boolean') s.unlockedCombat = false;
   if (typeof s.unlockedVillageBoard !== 'boolean') s.unlockedVillageBoard = false;
   return s;
@@ -91,6 +97,9 @@ export function isJobUnlocked(jobId, state, balance) {
   if (jobId === 'farmer') return true;
   if (jobId === 'combat') {
     return !!ensureSchoolUnlockLists(state).unlockedCombat;
+  }
+  if (jobId === 'toolmaker') {
+    return ensureSchoolUnlockLists(state).unlockedCraftJobs.includes('toolmaker');
   }
   // Métiers récolte : déblocage École
   if (GATHERING_JOB_IDS.includes(jobId) && jobId !== 'farmer') {
@@ -294,6 +303,18 @@ function buildUnlockGates(rule, state, balance, jobs = {}) {
       progress: ready ? 1 : 0,
       ready,
       label: 'Combat',
+    });
+  }
+  if (when.schoolCraft) {
+    const ready = ensureSchoolUnlockLists(state).unlockedCraftJobs.includes(when.schoolCraft);
+    gates.push({
+      type: 'school',
+      jobName: 'École du Village',
+      requiredLevel: 1,
+      currentLevel: ready ? 1 : 0,
+      progress: ready ? 1 : 0,
+      ready,
+      label: jobs[when.schoolCraft]?.name || when.schoolCraft,
     });
   }
 
