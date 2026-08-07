@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1400",
+      "date": "2026-08-07",
+      "title": "Boost ×2 : bouton Confirmer",
+      "highlights": [
+        "Activer le boost demande une confirmation (Confirmer / Annuler)"
+      ]
+    },
+    {
       "buildId": "20260807-1345",
       "date": "2026-08-07",
       "title": "École : plus de retour forcé en fin de recherche",
