@@ -125,16 +125,67 @@ function filterBranchItemsForDisplay(items) {
   return out;
 }
 
-function renderTreeNode(game, item) {
+/** Catalogue recherches + branches pour libellés de prérequis croisés. */
+function getSchoolCatalog(game) {
+  const data = game.villageSchoolData || {};
+  return {
+    researches: data.researches || {},
+    branches: data.branches || {},
+  };
+}
+
+function isResearchDoneInState(state, researchId) {
+  const s = state?.villageSchool;
+  if (!s || !researchId) return false;
+  return (s.completedPermanent || []).includes(researchId)
+    || (s.completedSeasonal || []).includes(researchId);
+}
+
+/** Prérequis manquants avec nom + onglet (ex. « Sentiers du bûcheron (🌾 Récolte) »). */
+function formatMissingPrereqs(research, game, catalog) {
+  const reqs = research?.requires || [];
+  if (!reqs.length) return [];
+  const lines = [];
+  for (const id of reqs) {
+    if (isResearchDoneInState(game.state, id)) continue;
+    const def = catalog.researches[id];
+    const branch = def ? catalog.branches[def.branch] : null;
+    const name = def?.name || id;
+    const branchBit = branch
+      ? ` (${[branch.emoji, branch.label].filter(Boolean).join(' ')})`
+      : '';
+    lines.push(`${name}${branchBit}`);
+  }
+  return lines;
+}
+
+function renderTreeNode(game, item, catalog) {
   const { research, status, ingredients, canStart } = item;
 
   if (status === 'locked') {
-    const effect = research.effectLabel || 'Suite du chemin';
+    const missing = formatMissingPrereqs(research, game, catalog);
+    const prereqHtml = missing.length
+      ? `<p class="school-prereq">🔒 Prérequis : <strong>${missing.join(' · ')}</strong></p>`
+      : `<p class="school-prereq">🔒 Prérequis : termine l’étude précédente</p>`;
+    const costPreview = [
+      research.kirhaCost ? `${research.kirhaCost} 💰` : null,
+      ...Object.entries(research.ingredients || {}).map(([resId, need]) => {
+        const res = game.resources?.[resId];
+        const icon = res ? renderResourceIcon(res, 'school-ing-icon') : '';
+        return `${icon}${need}`;
+      }),
+    ].filter(Boolean);
     return `
-      <article class="school-tree-node fog" data-research="${research.id}" title="Termine l’étape précédente pour débloquer">
-        <span class="school-tree-fog-icon">🔜</span>
-        <strong class="school-tree-fog-title">${research.name}</strong>
-        <span class="school-tree-fog-hint">${effect} — termine l’étude ci-dessus d’abord</span>
+      <article class="school-tree-node fog status-locked" data-research="${research.id}">
+        <header class="school-tree-node-head">
+          <h4>${research.name}</h4>
+          <span class="school-tier">${research.tier === 'permanent' ? 'Permanent' : 'Saison'}</span>
+        </header>
+        <p class="school-card-effect">${research.effectLabel || 'Suite du chemin'}</p>
+        ${prereqHtml}
+        ${costPreview.length
+          ? `<div class="school-card-cost school-cost-preview">${costPreview.join(' · ')} <span class="school-cost-preview-note">(aperçu)</span></div>`
+          : ''}
       </article>`;
   }
 
@@ -235,15 +286,16 @@ export function renderVillageSchool(game, el) {
   }).join('');
 
   const current = branches.find((b) => b.branch.id === schoolBranchTab) || branches[0];
+  const catalog = getSchoolCatalog(game);
   const displayItems = current ? filterBranchItemsForDisplay(current.items) : [];
-  const listHtml = displayItems.map((it) => renderTreeNode(game, it)).join('')
+  const listHtml = displayItems.map((it) => renderTreeNode(game, it, catalog)).join('')
     || '<p class="view-desc">Aucune recherche dans cette branche.</p>';
 
   el.innerHTML = `
     <div class="school-view">
       <header class="view-header">
         <h2><span class="nav-emoji">🏫</span> École du Village</h2>
-        <p class="view-desc">Feuille de route : métiers, ferme, village et donjons. Une étude à la fois — la suite est annoncée juste en dessous.</p>
+        <p class="view-desc">Feuille de route : métiers, atelier, ferme et donjons. Les prérequis d’autres onglets sont indiqués clairement.</p>
       </header>
       <div class="school-summary panel-inner">
         <span>${vm.seasonalCount} saisonnière(s) · ${vm.permanentCount} permanente(s)</span>

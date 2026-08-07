@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1035",
+      "date": "2026-08-07",
+      "title": "École : prérequis nommés (Atelier / Élevage)",
+      "highlights": [
+        "Recherches verrouillées : prérequis avec nom + onglet (ex. Bûcheron → Récolte)",
+        "Plus de teaser « soon » opaque sur Atelier et Élevage"
+      ]
+    },
+    {
       "buildId": "20260807-1025",
       "date": "2026-08-07",
       "title": "Outilleur via l’École (avant le Puits)",
