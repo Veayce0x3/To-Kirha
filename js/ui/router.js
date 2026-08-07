@@ -124,7 +124,7 @@ export const NAV_CATEGORIES = [
     id: 'gestion',
     label: 'Compte',
     collapsible: true,
-    defaultOpen: false,
+    defaultOpen: true,
     items: ['inventory', 'auction_house', 'leaderboard'],
   },
 ];

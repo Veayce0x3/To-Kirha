@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-2145",
+      "date": "2026-08-07",
+      "title": "Dark : récolte, menu bas, quantités + Compte ouvert",
+      "highlights": [
+        "Slots / onglets ressources et barre métiers du bas en sombre",
+        "Pastilles quantité inventaire lisibles",
+        "Onglet Compte ouvert par défaut dans le menu"
+      ]
+    },
+    {
       "buildId": "20260807-2130",
       "date": "2026-08-07",
       "title": "Mode sombre global (plus que la récolte)",
