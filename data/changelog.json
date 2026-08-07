@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260807-2130",
+      "date": "2026-08-07",
+      "title": "Mode sombre global (plus que la récolte)",
+      "highlights": [
+        "Dark mode appliqué après layout.css (chrome, perso, combat, HDV, village, admin…)",
+        "Les fonds crème hardcodés ne réécrasent plus le thème sombre"
+      ]
+    },
+    {
       "buildId": "20260807-2115",
       "date": "2026-08-07",
       "title": "Classement refondu",

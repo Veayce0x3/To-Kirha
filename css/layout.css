@@ -11570,3 +11570,205 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
 .grimoire-mp {
   font-size: 0.8rem;
 }
+
+
+/* ═══════════════════════════════════════════
+   Mode sombre — patch final (après règles light)
+   layout.css charge après main.css : sans ça,
+   les rgba(255,…) écrasent le thème sombre.
+   ═══════════════════════════════════════════ */
+html[data-theme="dark"] .app-shell,
+html[data-theme="dark"] .main-area,
+html[data-theme="dark"] .content-wrapper,
+html[data-theme="dark"] .view-container {
+  background: var(--rose-pale, #0e1016) !important;
+  color: var(--bois, #f3ebe0) !important;
+}
+
+html[data-theme="dark"] .sidebar,
+html[data-theme="dark"] .top-bar,
+html[data-theme="dark"] .skill-minibar,
+html[data-theme="dark"] .sidebar-footer {
+  background: var(--surface, #1a1f2c) !important;
+  background-color: var(--surface, #1a1f2c) !important;
+  border-color: var(--border-soft, rgba(243, 235, 224, 0.14)) !important;
+  color: var(--bois, #f3ebe0) !important;
+}
+
+html[data-theme="dark"] .sidebar {
+  background: linear-gradient(180deg, #12151e, #0e1118) !important;
+}
+
+html[data-theme="dark"] .panel-inner,
+html[data-theme="dark"] .skill-header,
+html[data-theme="dark"] .view-header,
+html[data-theme="dark"] .nav-btn,
+html[data-theme="dark"] .nav-category,
+html[data-theme="dark"] .top-quick-btn,
+html[data-theme="dark"] .top-scroll-btn,
+html[data-theme="dark"] .quick-btn,
+html[data-theme="dark"] .burger-btn,
+html[data-theme="dark"] .kirha-display,
+html[data-theme="dark"] .season-badge,
+html[data-theme="dark"] .char-sheet,
+html[data-theme="dark"] .char-equip-slot,
+html[data-theme="dark"] .char-stat-chip,
+html[data-theme="dark"] .inventory-grid-cell,
+html[data-theme="dark"] .bag-filter-btn,
+html[data-theme="dark"] .quest-row,
+html[data-theme="dark"] .achievement-category,
+html[data-theme="dark"] .journal-book,
+html[data-theme="dark"] .journal-card,
+html[data-theme="dark"] .herbarium-card,
+html[data-theme="dark"] .cookbook-card,
+html[data-theme="dark"] .combat-zone-card,
+html[data-theme="dark"] .combat-foe-tile,
+html[data-theme="dark"] .combat-heal-panel,
+html[data-theme="dark"] .combat-tab-btn,
+html[data-theme="dark"] .hdv-row,
+html[data-theme="dark"] .hdv-sticky,
+html[data-theme="dark"] .hdv-wallet,
+html[data-theme="dark"] .hdv-tab,
+html[data-theme="dark"] .hdv-chip,
+html[data-theme="dark"] .hdv-sheet,
+html[data-theme="dark"] .hdv-action-btn,
+html[data-theme="dark"] .village-sky,
+html[data-theme="dark"] .village-board-card,
+html[data-theme="dark"] .village-card,
+html[data-theme="dark"] .school-node,
+html[data-theme="dark"] .school-tree-panel,
+html[data-theme="dark"] .companion-card,
+html[data-theme="dark"] .craft-recipe-card,
+html[data-theme="dark"] .craft-job-tab,
+html[data-theme="dark"] .cuisine-tab,
+html[data-theme="dark"] .char-tab-btn,
+html[data-theme="dark"] .season-card,
+html[data-theme="dark"] .options-card,
+html[data-theme="dark"] .options-row,
+html[data-theme="dark"] .modal,
+html[data-theme="dark"] .modal-box,
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .toast,
+html[data-theme="dark"] .job-nav-header,
+html[data-theme="dark"] .job-nav-footer,
+html[data-theme="dark"] .job-switcher,
+html[data-theme="dark"] .production-line,
+html[data-theme="dark"] .slot-card,
+html[data-theme="dark"] .resource-card,
+html[data-theme="dark"] .farm-unit-card,
+html[data-theme="dark"] .farm-info-chip,
+html[data-theme="dark"] .world-zone-card,
+html[data-theme="dark"] .zone-card,
+html[data-theme="dark"] .lb-you,
+html[data-theme="dark"] .lb-chip,
+html[data-theme="dark"] .admin-player-card,
+html[data-theme="dark"] .admin-stat,
+html[data-theme="dark"] .admin-tab-btn,
+html[data-theme="dark"] .admin-table-wrap,
+html[data-theme="dark"] .admin-info-card,
+html[data-theme="dark"] .admin-quick-player,
+html[data-theme="dark"] .auth-input,
+html[data-theme="dark"] .btn-muted,
+html[data-theme="dark"] .key-quality-option {
+  background: var(--surface-2, #222836) !important;
+  background-color: var(--surface-2, #222836) !important;
+  color: var(--bois, #f3ebe0) !important;
+  border-color: var(--border-soft, rgba(243, 235, 224, 0.14)) !important;
+}
+
+html[data-theme="dark"] .panel-inner,
+html[data-theme="dark"] .skill-header,
+html[data-theme="dark"] .view-header,
+html[data-theme="dark"] .combat-heal-panel,
+html[data-theme="dark"] .journal-book {
+  background: var(--surface, #1a1f2c) !important;
+  background-color: var(--surface, #1a1f2c) !important;
+}
+
+html[data-theme="dark"] .nav-btn.active,
+html[data-theme="dark"] .char-tab-btn.active,
+html[data-theme="dark"] .bag-filter-btn.active,
+html[data-theme="dark"] .hdv-tab.active,
+html[data-theme="dark"] .hdv-chip.active,
+html[data-theme="dark"] .craft-job-tab.active,
+html[data-theme="dark"] .cuisine-tab.active,
+html[data-theme="dark"] .combat-tab-btn.active,
+html[data-theme="dark"] .lb-chip.active,
+html[data-theme="dark"] .admin-tab-btn.active {
+  background: var(--btn-primary, #6aad62) !important;
+  background-color: var(--btn-primary, #6aad62) !important;
+  color: #0c100e !important;
+  border-color: var(--btn-primary, #6aad62) !important;
+}
+
+html[data-theme="dark"] .view-title,
+html[data-theme="dark"] .brand-title,
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] strong,
+html[data-theme="dark"] .kirha-amount {
+  color: var(--bois, #f3ebe0) !important;
+}
+
+html[data-theme="dark"] .view-desc,
+html[data-theme="dark"] .top-zone,
+html[data-theme="dark"] .empty-text,
+html[data-theme="dark"] .quest-desc,
+html[data-theme="dark"] .nav-cat-label,
+html[data-theme="dark"] .lb-row-sub,
+html[data-theme="dark"] .admin-td-muted {
+  color: var(--text-muted, rgba(243, 235, 224, 0.72)) !important;
+}
+
+html[data-theme="dark"] .sakura-bg {
+  opacity: 0.04 !important;
+  filter: brightness(0.4) saturate(0.65);
+}
+
+html[data-theme="dark"] .btn:not(.btn-craft):not(.btn-sell-all):not(.affordable) {
+  background: var(--surface-3, #2a3142) !important;
+  color: var(--bois, #f3ebe0) !important;
+  border-color: var(--border-soft) !important;
+}
+
+html[data-theme="dark"] .btn-craft,
+html[data-theme="dark"] .btn.affordable:not(:disabled) {
+  color: #0c100e !important;
+}
+
+html[data-theme="dark"] .modal-overlay,
+html[data-theme="dark"] .sidebar-overlay.active {
+  background: rgba(0, 0, 0, 0.65) !important;
+}
+
+html[data-theme="dark"] .hdv-banner,
+html[data-theme="dark"] .auction-tip,
+html[data-theme="dark"] .hdv-tip {
+  background: var(--surface-2, #222836) !important;
+  color: var(--text-muted) !important;
+}
+
+html[data-theme="dark"] .lb-you {
+  background: rgba(106, 173, 98, 0.2) !important;
+  border-color: rgba(143, 212, 138, 0.4) !important;
+}
+
+html[data-theme="dark"] .lb-row.is-me,
+html[data-theme="dark"] .quest-row.quest-ready {
+  background: rgba(106, 173, 98, 0.14) !important;
+}
+
+html[data-theme="dark"] .production-line,
+html[data-theme="dark"] .slot-card,
+html[data-theme="dark"] .farm-unit-card {
+  background: var(--surface-2, #222836) !important;
+}
+
+html[data-theme="dark"] .char-equip-sheet,
+html[data-theme="dark"] .hdv-sheet,
+html[data-theme="dark"] .admin-player-sheet {
+  background: var(--surface, #1a1f2c) !important;
+  color: var(--bois) !important;
+}

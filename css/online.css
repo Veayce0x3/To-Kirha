@@ -1788,3 +1788,35 @@ body.admin-sheet-open {
   margin: 0.25rem 0 0;
 }
 
+
+/* Mode sombre — patch final online.css (après règles light) */
+html[data-theme="dark"] .leaderboard-panel,
+html[data-theme="dark"] .auth-modal,
+html[data-theme="dark"] .auth-card,
+html[data-theme="dark"] .admin-panel,
+html[data-theme="dark"] .admin-form,
+html[data-theme="dark"] .admin-ann-card,
+html[data-theme="dark"] .admin-config-row,
+html[data-theme="dark"] .admin-mini-row,
+html[data-theme="dark"] .global-banners .announcement-banner {
+  background: var(--surface, #1a1f2c) !important;
+  color: var(--bois, #f3ebe0) !important;
+  border-color: var(--border-soft, rgba(243, 235, 224, 0.14)) !important;
+}
+
+html[data-theme="dark"] .lb-chip,
+html[data-theme="dark"] .admin-tab-btn,
+html[data-theme="dark"] .admin-player-card,
+html[data-theme="dark"] .admin-stat,
+html[data-theme="dark"] .admin-quick-player,
+html[data-theme="dark"] .admin-table-wrap {
+  background: var(--surface-2, #222836) !important;
+  color: var(--bois, #f3ebe0) !important;
+  border-color: var(--border-soft) !important;
+}
+
+html[data-theme="dark"] .lb-chip.active,
+html[data-theme="dark"] .admin-tab-btn.active {
+  background: var(--btn-primary, #6aad62) !important;
+  color: #0c100e !important;
+}
