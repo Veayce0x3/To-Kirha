@@ -140,13 +140,34 @@
       },
       "effectLabel": "Débloque le Puits (1 point d’eau)"
     },
+    "roadmap_chicken_coop": {
+      "id": "roadmap_chicken_coop",
+      "branch": "ferme",
+      "tier": "permanent",
+      "order": 2,
+      "name": "Poulailler",
+      "description": "Les premiers animaux reviennent près du puits. (Choix parallèle aux points d’eau supplémentaires.)",
+      "requires": [
+        "roadmap_well"
+      ],
+      "kirhaCost": 30,
+      "ingredients": {
+        "ble": 15,
+        "eau": 5
+      },
+      "durationMs": 90000,
+      "effect": {
+        "unlockFarmBuilding": "chicken_coop"
+      },
+      "effectLabel": "Débloque le Poulailler"
+    },
     "roadmap_well_slot_2": {
       "id": "roadmap_well_slot_2",
       "branch": "ferme",
       "tier": "permanent",
-      "order": 2,
+      "order": 3,
       "name": "Second point d’eau",
-      "description": "Le Conseil creuse un second regard — plus d’eau pour la ferme et les études.",
+      "description": "Le Conseil creuse un second regard — plus d’eau pour la ferme et les études. Optionnel : le Poulailler ne l’exige pas.",
       "requires": [
         "roadmap_well"
       ],
@@ -211,27 +232,6 @@
         }
       },
       "effectLabel": "Permanent : +1 emplacement Puits (4 au total, max)"
-    },
-    "roadmap_chicken_coop": {
-      "id": "roadmap_chicken_coop",
-      "branch": "ferme",
-      "tier": "permanent",
-      "order": 3,
-      "name": "Poulailler",
-      "description": "Les premiers animaux reviennent près du puits.",
-      "requires": [
-        "roadmap_well"
-      ],
-      "kirhaCost": 30,
-      "ingredients": {
-        "ble": 15,
-        "eau": 5
-      },
-      "durationMs": 90000,
-      "effect": {
-        "unlockFarmBuilding": "chicken_coop"
-      },
-      "effectLabel": "Débloque le Poulailler"
     },
     "roadmap_barn": {
       "id": "roadmap_barn",

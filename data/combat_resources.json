@@ -2,10 +2,12 @@
   "gold_nugget": {
     "id": "gold_nugget",
     "name": "Pépite d'or",
+    "emoji": "🪙",
     "combatOnly": true,
     "notSellable": true,
     "sellPrice": 0,
-    "rarity": "common"
+    "rarity": "common",
+    "description": "Pépite trouvée au combat ou dans les coffres de donjon."
   },
   "key_sakura": {
     "id": "key_sakura",

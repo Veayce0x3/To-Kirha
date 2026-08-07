@@ -1,11 +1,11 @@
 /**
- * Vue Carnet du voyageur + Herbier (collection ressources).
+ * Vue Carnet du voyageur + Herbier (ressources / butin / bestiaire) + Livre de cuisine.
  */
 
 import { iconHtml, getNavIcon } from '../core/assets.js';
 import { renderResourceIcon } from '../systems/resourceVisual.js';
 
-let loreTab = 'journal'; // 'journal' | 'herbarium'
+let loreTab = 'journal'; // 'journal' | 'herbarium' | 'cookbook'
 let herbFilter = 'all';
 
 export function closeJournalPageModal() {
@@ -49,7 +49,7 @@ export function openHarvestDiscoveryModal(discovery, kirhaGain = 0) {
     : (discovery.flavor || 'Vous trouvez quelque chose…');
   openJournalPageModal({
     emoji: '✨',
-    title: discovery.label || 'Découverte',
+    title: discovery.label || discovery.title || 'Découverte',
     body,
   });
 }
@@ -67,7 +67,7 @@ function renderJournalPanel(game, panel) {
         <article class="journal-card locked">
           <span class="journal-emoji">❓</span>
           <strong>Page scellée</strong>
-          <p class="journal-hint">💡 ${e.hint || 'Continue ton aventure pour débloquer cette page.'}</p>
+          <p class="journal-hint">💡 ${e.hint || e.unlockHint || 'Continue ton aventure pour débloquer cette page.'}</p>
         </article>`;
     }
     return `
@@ -128,6 +128,25 @@ function renderHerbariumPanel(game, panel) {
     : vm.entries.filter((e) => e.groupId === herbFilter);
 
   const cards = entries.map((e) => {
+    if (e.kind === 'enemy') {
+      if (!e.discovered) {
+        return `
+          <article class="herbarium-card locked">
+            <span class="herbarium-emoji">❓</span>
+            <strong>???</strong>
+            <span class="herbarium-meta">${e.group.emoji} ${e.group.label}</span>
+            <p class="herbarium-blurb">${e.blurb}</p>
+          </article>`;
+      }
+      return `
+        <article class="herbarium-card${e.isBoss ? ' herbarium-boss' : ''}">
+          <span class="herbarium-emoji">${e.emoji || '👹'}</span>
+          <strong>${e.name}</strong>
+          <span class="herbarium-meta">${e.isBoss ? '👑 Boss' : '👹 Monstre'} · ${e.zoneName}</span>
+          <p class="herbarium-blurb">${e.blurb}</p>
+        </article>`;
+    }
+
     if (!e.discovered) {
       return `
         <article class="herbarium-card locked">
@@ -169,25 +188,85 @@ function renderHerbariumPanel(game, panel) {
   });
 }
 
+function renderCookbookCollectionPanel(game, panel) {
+  const vm = game.getCookbookView?.();
+  if (!vm) {
+    panel.innerHTML = '<p class="view-desc">Livre de cuisine indisponible.</p>';
+    return;
+  }
+
+  const groups = {};
+  for (const entry of vm.entries) {
+    const jobId = entry.recipe.craftJob;
+    if (!groups[jobId]) groups[jobId] = [];
+    groups[jobId].push(entry);
+  }
+
+  const sections = Object.entries(groups).map(([jobId, entries]) => {
+    const job = vm.jobs[jobId] || { label: jobId, emoji: '🍳' };
+    const found = entries.filter((e) => e.discovered).length;
+    const cards = entries.map((e) => {
+      if (!e.discovered) {
+        return `
+          <article class="cookbook-card locked">
+            <span class="cookbook-emoji">❓</span>
+            <strong>???</strong>
+            <span class="cookbook-meta">${e.quality.emoji} ${e.quality.label}</span>
+            <p class="cookbook-effect">Pas encore craftée</p>
+          </article>`;
+      }
+      return `
+        <article class="cookbook-card">
+          <span class="cookbook-emoji">${e.recipe.emoji || e.output?.emoji || '🍽️'}</span>
+          <strong>${e.recipe.name}</strong>
+          <span class="cookbook-meta">${e.quality.emoji} ${e.quality.label} · ${job.emoji} ${job.label}</span>
+          <p class="cookbook-effect">${e.effectLabel}</p>
+        </article>`;
+    }).join('');
+    return `
+      <section class="cookbook-section">
+        <h3>${job.emoji} ${job.label} <span class="school-tab-count">${found}/${entries.length}</span></h3>
+        <div class="cookbook-grid">${cards}</div>
+      </section>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <p class="view-desc">Recettes découvertes en les craftant au moins une fois. Progression : <strong>${vm.found}/${vm.total}</strong>.</p>
+    <div class="cookbook-panel">${sections || '<p class="empty-text">Aucune recette.</p>'}</div>
+  `;
+}
+
+function renderLorePanel(game, panel) {
+  if (loreTab === 'herbarium') renderHerbariumPanel(game, panel);
+  else if (loreTab === 'cookbook') renderCookbookCollectionPanel(game, panel);
+  else renderJournalPanel(game, panel);
+}
+
 export function renderTravelerJournal(game, el) {
   if (!el) return;
-  if (loreTab !== 'journal' && loreTab !== 'herbarium') loreTab = 'journal';
+  if (loreTab !== 'journal' && loreTab !== 'herbarium' && loreTab !== 'cookbook') {
+    loreTab = 'journal';
+  }
 
   const jVm = game.getTravelerJournalView?.();
   const hVm = game.getHerbariumView?.();
+  const cVm = game.getCookbookView?.();
   const jCount = jVm ? `${jVm.unlockedCount}/${jVm.total}` : '';
   const hCount = hVm ? `${hVm.found}/${hVm.total}` : '';
+  const cCount = cVm ? `${cVm.found}/${cVm.total}` : '';
 
   el.innerHTML = `
     <div class="view-header">
-      <h2>${iconHtml(getNavIcon('traveler_journal'), 'view-header-icon', 'Carnet') || '📔'} Carnet & Herbier</h2>
-      <p class="view-desc">Histoire du village et collection des ressources découvertes.</p>
+      <h2>${iconHtml(getNavIcon('traveler_journal'), 'view-header-icon', 'Carnet') || '📔'} Carnet & Collections</h2>
+      <p class="view-desc">Histoire du village, herbier (ressources & bestiaire) et livre de cuisine.</p>
     </div>
-    <nav class="cuisine-tabs char-tabs lore-tabs" role="tablist" aria-label="Carnet et Herbier">
+    <nav class="cuisine-tabs char-tabs lore-tabs" role="tablist" aria-label="Carnet et collections">
       <button type="button" class="char-tab-btn${loreTab === 'journal' ? ' active' : ''}"
         data-lore-tab="journal" role="tab">📔 Carnet${jCount ? ` · ${jCount}` : ''}</button>
       <button type="button" class="char-tab-btn${loreTab === 'herbarium' ? ' active' : ''}"
         data-lore-tab="herbarium" role="tab">🌿 Herbier${hCount ? ` · ${hCount}` : ''}</button>
+      <button type="button" class="char-tab-btn${loreTab === 'cookbook' ? ' active' : ''}"
+        data-lore-tab="cookbook" role="tab">📖 Cuisine${cCount ? ` · ${cCount}` : ''}</button>
     </nav>
     <div id="lore-tab-panel"></div>
   `;
@@ -196,15 +275,14 @@ export function renderTravelerJournal(game, el) {
 
   el.querySelectorAll('[data-lore-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      loreTab = btn.getAttribute('data-lore-tab') === 'herbarium' ? 'herbarium' : 'journal';
+      const tab = btn.getAttribute('data-lore-tab');
+      loreTab = tab === 'herbarium' || tab === 'cookbook' ? tab : 'journal';
       el.querySelectorAll('[data-lore-tab]').forEach((b) => {
         b.classList.toggle('active', b.getAttribute('data-lore-tab') === loreTab);
       });
-      if (loreTab === 'herbarium') renderHerbariumPanel(game, panel);
-      else renderJournalPanel(game, panel);
+      renderLorePanel(game, panel);
     });
   });
 
-  if (loreTab === 'herbarium') renderHerbariumPanel(game, panel);
-  else renderJournalPanel(game, panel);
+  renderLorePanel(game, panel);
 }

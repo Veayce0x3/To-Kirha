@@ -129,6 +129,12 @@ export function evaluateAchievementProgress(achievement, state, recipes) {
       return Math.max(0, Number(state.stats?.combatFights) || 0);
     case 'boss_kill':
       return state.bossKills?.[achievement.combatZoneId] || 0;
+    case 'boss_kills_total':
+      return Object.values(state.bossKills || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+    case 'dungeon_clears':
+      return Object.values(state.dungeonClears || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+    case 'meals_crafted':
+      return Math.max(0, Number(state.stats?.mealsCrafted) || 0);
     case 'job_level':
       return state.jobs?.[achievement.jobId]?.level || 1;
     case 'equip_weapon':
@@ -366,6 +372,7 @@ export const ACHIEVEMENT_CATEGORY_LABELS = {
   harvest: '🌾 Récolte',
   farm: '🐄 Ferme',
   craft: '🔨 Artisanat',
+  cuisine: '🍳 Cuisine',
   combat: '⚔️ Combat',
   village_sakura: '🌸 Village de To-Kirha',
   petal_forest: '🌿 Forêt des Pétales',
@@ -381,7 +388,7 @@ export function getAchievementStatusText(achievement, state, recipes) {
   const target = achievement.target ?? 1;
   if (isAchievementCompleted(state, achievement.id)) return '✓ Terminé';
   if (isAchievementReady(achievement, state, recipes)) return 'À récupérer';
-  if (['harvest_resource', 'farm_building', 'combat_kills', 'boss_kill', 'harvest_total', 'combat_total'].includes(achievement.type)) {
+  if (['harvest_resource', 'farm_building', 'combat_kills', 'boss_kill', 'boss_kills_total', 'dungeon_clears', 'harvest_total', 'combat_total', 'meals_crafted'].includes(achievement.type)) {
     return `${current}/${target}`;
   }
   if (achievement.type === 'job_level') return `Nv.${current}/${target}`;

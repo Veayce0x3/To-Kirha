@@ -68,6 +68,10 @@ function researchDepth(research, byId, memo = {}) {
 }
 
 /** Déblocages feuille de route avant bonus saisonniers (évite « Nichoir » avant « Puits »). */
+function isOptionalWellExpansion(research) {
+  return !!(research?.effect?.permanent?.extraWellUnits);
+}
+
 function isRoadmapUnlockResearch(research) {
   const e = research?.effect || {};
   return !!(
@@ -75,19 +79,26 @@ function isRoadmapUnlockResearch(research) {
     || e.unlockFarmBuilding
     || e.unlockCombat
     || e.unlockCombatZone
-    ||     e.unlockVillageBoard
+    || e.unlockVillageBoard
     || e.unlockCraftJob
-    || (e.permanent && e.permanent.extraWellUnits)
   );
 }
 
 function roadmapPriority(research) {
   if (isRoadmapUnlockResearch(research)) return 0;
-  if (research?.tier === 'permanent') return 1;
-  return 2;
+  // Emplacements Puits optionnels : après les vrais déblocages (ex. Poulailler)
+  if (isOptionalWellExpansion(research)) return 1;
+  if (research?.tier === 'permanent') return 2;
+  return 3;
 }
 
-/** Affiche : terminées, active/prochaine (roadmap d’abord), + teaser nommé de la suite. */
+function isActionableSchoolItem(it) {
+  return it.status === 'available'
+    || it.status === 'unaffordable'
+    || it.status === 'blocked';
+}
+
+/** Affiche : terminées, actives, prochains choix parallèles (ex. Poulailler + 2ᵉ Puits), + teaser. */
 function filterBranchItemsForDisplay(items) {
   const byId = Object.fromEntries(items.map((it) => [it.research.id, it.research]));
   const depths = {};
@@ -107,13 +118,14 @@ function filterBranchItemsForDisplay(items) {
 
   const done = sorted.filter((it) => it.status === 'done');
   const active = sorted.filter((it) => it.status === 'active');
-  const next = sorted.find((it) => (
-    it.status === 'available'
-    || it.status === 'unaffordable'
-    || it.status === 'blocked'
-  ));
+  const actionable = sorted.filter(isActionableSchoolItem);
+  const primaryNext = actionable.filter((it) => !isOptionalWellExpansion(it.research));
+  const wellNext = actionable.filter((it) => isOptionalWellExpansion(it.research));
+  // Choix parallèles : tous les déblocages dispo + le prochain slot Puits (optionnel)
+  const nextBatch = [...primaryNext];
+  if (wellNext[0]) nextBatch.push(wellNext[0]);
 
-  const anchorId = active[0]?.research?.id || next?.research?.id || null;
+  const anchorId = active[0]?.research?.id || nextBatch[0]?.research?.id || null;
   let fog = null;
   if (anchorId) {
     fog = sorted.find((it) => (
@@ -121,14 +133,14 @@ function filterBranchItemsForDisplay(items) {
       && (it.research.requires || []).includes(anchorId)
     )) || null;
   }
-  if (!fog && !next && !active.length) {
+  if (!fog && !nextBatch.length && !active.length) {
     fog = sorted.find((it) => it.status === 'locked') || null;
   }
 
   const out = [...done];
   if (active.length) out.push(...active);
-  else if (next) out.push(next);
-  if (fog) out.push(fog);
+  else if (nextBatch.length) out.push(...nextBatch);
+  if (fog && !out.some((it) => it.research.id === fog.research.id)) out.push(fog);
   return out;
 }
 

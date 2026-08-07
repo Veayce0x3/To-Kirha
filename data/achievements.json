@@ -643,5 +643,401 @@
       "farmAnimalLife": 0.02
     },
     "hintView": "farm_beehive"
+  },
+  "ach_combat_fights_apprentice": {
+    "id": "ach_combat_fights_apprentice",
+    "order": 300,
+    "category": "combat",
+    "tier": "apprentice",
+    "title": "Apprenti combattant",
+    "description": "Gagne 25 combats.",
+    "type": "combat_total",
+    "target": 25,
+    "rewardKirha": 80,
+    "rewardBonus": {
+      "kirha": 0.01
+    },
+    "hintView": "combat"
+  },
+  "ach_combat_fights_disciple": {
+    "id": "ach_combat_fights_disciple",
+    "order": 301,
+    "category": "combat",
+    "tier": "disciple",
+    "title": "Disciple combattant",
+    "description": "Gagne 100 combats.",
+    "type": "combat_total",
+    "target": 100,
+    "requires": {
+      "achievementId": "ach_combat_fights_apprentice"
+    },
+    "rewardKirha": 150,
+    "rewardBonus": {
+      "xp": 0.01
+    },
+    "hintView": "combat"
+  },
+  "ach_combat_fights_master": {
+    "id": "ach_combat_fights_master",
+    "order": 302,
+    "category": "combat",
+    "tier": "master",
+    "title": "Maître combattant",
+    "description": "Gagne 500 combats.",
+    "type": "combat_total",
+    "target": 500,
+    "requires": {
+      "achievementId": "ach_combat_fights_disciple"
+    },
+    "rewardScrolls": 1,
+    "rewardBonus": {
+      "kirha": 0.02
+    },
+    "hintView": "combat"
+  },
+  "ach_combat_boss_apprentice": {
+    "id": "ach_combat_boss_apprentice",
+    "order": 310,
+    "category": "combat",
+    "tier": "apprentice",
+    "title": "Chasseur de boss",
+    "description": "Vaincs 5 boss (tous zones).",
+    "type": "boss_kills_total",
+    "target": 5,
+    "rewardKirha": 100,
+    "hintView": "combat"
+  },
+  "ach_combat_boss_disciple": {
+    "id": "ach_combat_boss_disciple",
+    "order": 311,
+    "category": "combat",
+    "tier": "disciple",
+    "title": "Fléau des gardiens",
+    "description": "Vaincs 25 boss (tous zones).",
+    "type": "boss_kills_total",
+    "target": 25,
+    "requires": {
+      "achievementId": "ach_combat_boss_apprentice"
+    },
+    "rewardKirha": 200,
+    "rewardBonus": {
+      "xp": 0.02
+    },
+    "hintView": "combat"
+  },
+  "ach_combat_boss_master": {
+    "id": "ach_combat_boss_master",
+    "order": 312,
+    "category": "combat",
+    "tier": "master",
+    "title": "Terreur des sanctuaires",
+    "description": "Vaincs 100 boss (tous zones).",
+    "type": "boss_kills_total",
+    "target": 100,
+    "requires": {
+      "achievementId": "ach_combat_boss_disciple"
+    },
+    "rewardNuggets": 1,
+    "rewardBonus": {
+      "kirha": 0.02
+    },
+    "hintView": "combat"
+  },
+  "ach_combat_dungeon_apprentice": {
+    "id": "ach_combat_dungeon_apprentice",
+    "order": 320,
+    "category": "combat",
+    "tier": "apprentice",
+    "title": "Première clé",
+    "description": "Termine 1 donjon.",
+    "type": "dungeon_clears",
+    "target": 1,
+    "rewardKirha": 120,
+    "hintView": "combat"
+  },
+  "ach_combat_dungeon_disciple": {
+    "id": "ach_combat_dungeon_disciple",
+    "order": 321,
+    "category": "combat",
+    "tier": "disciple",
+    "title": "Explorateur de donjons",
+    "description": "Termine 10 donjons.",
+    "type": "dungeon_clears",
+    "target": 10,
+    "requires": {
+      "achievementId": "ach_combat_dungeon_apprentice"
+    },
+    "rewardScrolls": 1,
+    "rewardBonus": {
+      "xp": 0.02
+    },
+    "hintView": "combat"
+  },
+  "ach_combat_dungeon_master": {
+    "id": "ach_combat_dungeon_master",
+    "order": 322,
+    "category": "combat",
+    "tier": "master",
+    "title": "Maître des donjons",
+    "description": "Termine 50 donjons.",
+    "type": "dungeon_clears",
+    "target": 50,
+    "requires": {
+      "achievementId": "ach_combat_dungeon_disciple"
+    },
+    "rewardNuggets": 2,
+    "rewardBonus": {
+      "kirha": 0.02
+    },
+    "hintView": "combat"
+  },
+  "ach_boss_sakura": {
+    "id": "ach_boss_sakura",
+    "order": 330,
+    "category": "village_sakura",
+    "title": "Gardien du Cerisier",
+    "description": "Vaincs le boss du Temple du Cerisier.",
+    "type": "boss_kill",
+    "combatZoneId": "village_sakura",
+    "target": 1,
+    "rewardKirha": 80,
+    "hintView": "combat"
+  },
+  "ach_boss_petal": {
+    "id": "ach_boss_petal",
+    "order": 331,
+    "category": "petal_forest",
+    "title": "Seigneur des Pétales",
+    "description": "Vaincs le boss de la Tanière des Pétales.",
+    "type": "boss_kill",
+    "combatZoneId": "petal_forest",
+    "target": 1,
+    "rewardKirha": 100,
+    "hintView": "combat"
+  },
+  "ach_boss_mist": {
+    "id": "ach_boss_mist",
+    "order": 332,
+    "category": "mist_river",
+    "title": "Brume vaincue",
+    "description": "Vaincs le boss du Sanctuaire de Brume.",
+    "type": "boss_kill",
+    "combatZoneId": "mist_river",
+    "target": 1,
+    "rewardKirha": 120,
+    "hintView": "combat"
+  },
+  "ach_boss_jade": {
+    "id": "ach_boss_jade",
+    "order": 333,
+    "category": "jade_mountains",
+    "title": "Cœur de Jade",
+    "description": "Vaincs le boss de la Grotte de Jade.",
+    "type": "boss_kill",
+    "combatZoneId": "jade_mountains",
+    "target": 1,
+    "rewardKirha": 140,
+    "hintView": "combat"
+  },
+  "ach_cuisine_baker_10": {
+    "id": "ach_cuisine_baker_10",
+    "order": 400,
+    "category": "cuisine",
+    "tier": "apprentice",
+    "title": "Apprenti boulanger",
+    "description": "Atteins Boulanger Nv.10.",
+    "type": "job_level",
+    "jobId": "baker",
+    "target": 10,
+    "rewardKirha": 60,
+    "hintView": "cuisine"
+  },
+  "ach_cuisine_baker_30": {
+    "id": "ach_cuisine_baker_30",
+    "order": 401,
+    "category": "cuisine",
+    "tier": "disciple",
+    "title": "Disciple boulanger",
+    "description": "Atteins Boulanger Nv.30.",
+    "type": "job_level",
+    "jobId": "baker",
+    "target": 30,
+    "requires": {
+      "achievementId": "ach_cuisine_baker_10"
+    },
+    "rewardKirha": 120,
+    "rewardBonus": {
+      "xp": 0.01
+    },
+    "hintView": "cuisine"
+  },
+  "ach_cuisine_baker_50": {
+    "id": "ach_cuisine_baker_50",
+    "order": 402,
+    "category": "cuisine",
+    "tier": "master",
+    "title": "Maître boulanger",
+    "description": "Atteins Boulanger Nv.50.",
+    "type": "job_level",
+    "jobId": "baker",
+    "target": 50,
+    "requires": {
+      "achievementId": "ach_cuisine_baker_30"
+    },
+    "rewardScrolls": 1,
+    "rewardBonus": {
+      "kirha": 0.01
+    },
+    "hintView": "cuisine"
+  },
+  "ach_cuisine_fishmonger_5": {
+    "id": "ach_cuisine_fishmonger_5",
+    "order": 410,
+    "category": "cuisine",
+    "tier": "apprentice",
+    "title": "Apprenti poissonnier",
+    "description": "Atteins Poissonnier Nv.5.",
+    "type": "job_level",
+    "jobId": "fishmonger",
+    "target": 5,
+    "rewardKirha": 60,
+    "hintView": "cuisine"
+  },
+  "ach_cuisine_fishmonger_15": {
+    "id": "ach_cuisine_fishmonger_15",
+    "order": 411,
+    "category": "cuisine",
+    "tier": "disciple",
+    "title": "Disciple poissonnier",
+    "description": "Atteins Poissonnier Nv.15.",
+    "type": "job_level",
+    "jobId": "fishmonger",
+    "target": 15,
+    "requires": {
+      "achievementId": "ach_cuisine_fishmonger_5"
+    },
+    "rewardKirha": 120,
+    "rewardBonus": {
+      "xp": 0.01
+    },
+    "hintView": "cuisine"
+  },
+  "ach_cuisine_fishmonger_30": {
+    "id": "ach_cuisine_fishmonger_30",
+    "order": 412,
+    "category": "cuisine",
+    "tier": "master",
+    "title": "Maître poissonnier",
+    "description": "Atteins Poissonnier Nv.30.",
+    "type": "job_level",
+    "jobId": "fishmonger",
+    "target": 30,
+    "requires": {
+      "achievementId": "ach_cuisine_fishmonger_15"
+    },
+    "rewardScrolls": 1,
+    "rewardBonus": {
+      "kirha": 0.01
+    },
+    "hintView": "cuisine"
+  },
+  "ach_cuisine_chemist_5": {
+    "id": "ach_cuisine_chemist_5",
+    "order": 420,
+    "category": "cuisine",
+    "tier": "apprentice",
+    "title": "Apprenti chimiste",
+    "description": "Atteins Chimiste Nv.5.",
+    "type": "job_level",
+    "jobId": "chemist",
+    "target": 5,
+    "rewardKirha": 60,
+    "hintView": "cuisine"
+  },
+  "ach_cuisine_chemist_15": {
+    "id": "ach_cuisine_chemist_15",
+    "order": 421,
+    "category": "cuisine",
+    "tier": "disciple",
+    "title": "Disciple chimiste",
+    "description": "Atteins Chimiste Nv.15.",
+    "type": "job_level",
+    "jobId": "chemist",
+    "target": 15,
+    "requires": {
+      "achievementId": "ach_cuisine_chemist_5"
+    },
+    "rewardKirha": 120,
+    "rewardBonus": {
+      "xp": 0.01
+    },
+    "hintView": "cuisine"
+  },
+  "ach_cuisine_chemist_30": {
+    "id": "ach_cuisine_chemist_30",
+    "order": 422,
+    "category": "cuisine",
+    "tier": "master",
+    "title": "Maître chimiste",
+    "description": "Atteins Chimiste Nv.30.",
+    "type": "job_level",
+    "jobId": "chemist",
+    "target": 30,
+    "requires": {
+      "achievementId": "ach_cuisine_chemist_15"
+    },
+    "rewardScrolls": 1,
+    "rewardBonus": {
+      "kirha": 0.01
+    },
+    "hintView": "cuisine"
+  },
+  "ach_cuisine_meals_apprentice": {
+    "id": "ach_cuisine_meals_apprentice",
+    "order": 430,
+    "category": "cuisine",
+    "tier": "apprentice",
+    "title": "Cuisine du village",
+    "description": "Craft 50 repas ou élixirs.",
+    "type": "meals_crafted",
+    "target": 50,
+    "rewardKirha": 80,
+    "hintView": "cuisine"
+  },
+  "ach_cuisine_meals_disciple": {
+    "id": "ach_cuisine_meals_disciple",
+    "order": 431,
+    "category": "cuisine",
+    "tier": "disciple",
+    "title": "Fourneau actif",
+    "description": "Craft 250 repas ou élixirs.",
+    "type": "meals_crafted",
+    "target": 250,
+    "requires": {
+      "achievementId": "ach_cuisine_meals_apprentice"
+    },
+    "rewardKirha": 160,
+    "rewardBonus": {
+      "xp": 0.01
+    },
+    "hintView": "cuisine"
+  },
+  "ach_cuisine_meals_master": {
+    "id": "ach_cuisine_meals_master",
+    "order": 432,
+    "category": "cuisine",
+    "tier": "master",
+    "title": "Grand chef de To-Kirha",
+    "description": "Craft 1 000 repas ou élixirs.",
+    "type": "meals_crafted",
+    "target": 1000,
+    "requires": {
+      "achievementId": "ach_cuisine_meals_disciple"
+    },
+    "rewardScrolls": 2,
+    "rewardBonus": {
+      "kirha": 0.02
+    },
+    "hintView": "cuisine"
   }
 }

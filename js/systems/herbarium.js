@@ -1,8 +1,9 @@
 /**
- * Herbier — collection des ressources découvertes (récolte & ferme).
+ * Herbier — collection des ressources découvertes (récolte, ferme, combat)
+ * + bestiaire (monstres / boss vaincus au moins 1×).
  */
 
-const JOB_GROUP_ORDER = ['farmer', 'lumberjack', 'fisher', 'miner', 'alchemist', 'farm'];
+const JOB_GROUP_ORDER = ['farmer', 'lumberjack', 'fisher', 'miner', 'alchemist', 'farm', 'combat', 'bestiary'];
 
 const JOB_GROUP_META = {
   farmer: { id: 'farmer', label: 'Agriculture', emoji: '🌾' },
@@ -11,6 +12,8 @@ const JOB_GROUP_META = {
   miner: { id: 'miner', label: 'Mine', emoji: '⛏️' },
   alchemist: { id: 'alchemist', label: 'Herbes', emoji: '🌿' },
   farm: { id: 'farm', label: 'Ferme', emoji: '🐔' },
+  combat: { id: 'combat', label: 'Butin combat', emoji: '⚔️' },
+  bestiary: { id: 'bestiary', label: 'Bestiaire', emoji: '👹' },
 };
 
 export function emptyHerbariumState() {
@@ -26,14 +29,14 @@ export function ensureHerbariumState(state) {
   return state.herbarium;
 }
 
-/** Ressources éligibles à l’Herbier (pas recettes cuisine / combat / merchant-only). */
+/** Ressources éligibles à l’Herbier (pas recettes cuisine / merchant-only). */
 export function isHerbariumResource(res) {
   if (!res?.id) return false;
-  if (res.craftOnly || res.combatOnly || res.merchantOnly) return false;
+  if (res.craftOnly || res.merchantOnly) return false;
+  if (res.combatOnly) return true;
   if (res.notSellable && !res.farmOnly && !res.job) return false;
   if (res.farmOnly) return true;
   if (res.job && !res.notHarvestable) return true;
-  // Eau / produits ferme parfois notHarvestable + farmOnly déjà couverts
   if (res.job === 'breeder' || res.farmOnly) return true;
   return false;
 }
@@ -55,6 +58,7 @@ export function getHerbariumResources(resources) {
 }
 
 export function getResourceGroupId(res) {
+  if (res?.combatOnly) return 'combat';
   if (res?.farmOnly || res?.job === 'breeder') return 'farm';
   if (res?.job && JOB_GROUP_META[res.job]) return res.job;
   return 'farm';
@@ -91,6 +95,7 @@ export function backfillHerbariumFromInventory(state, resources) {
 
 function blurbFor(res, jobs) {
   if (res.description) return res.description;
+  if (res.combatOnly) return 'Butin obtenu au combat ou en donjon.';
   if (res.farmOnly || res.job === 'breeder') {
     return 'Produit de la ferme du village.';
   }
@@ -99,23 +104,98 @@ function blurbFor(res, jobs) {
   return `Ressource de ${jobName} (Nv.${lv}).`;
 }
 
-export function getHerbariumViewModel(state, resources, jobs) {
+function killKeyForFoe(foe, isBoss) {
+  const enemyId = foe?.enemyId;
+  if (!enemyId) return null;
+  return isBoss ? `boss_${enemyId}` : enemyId;
+}
+
+function isEnemyDiscovered(state, foe, isBoss) {
+  const key = killKeyForFoe(foe, isBoss);
+  if (!key) return false;
+  if ((state.combatKillStats?.[key] || 0) > 0) return true;
+  if (isBoss && foe?.zoneId && (state.bossKills?.[foe.zoneId] || 0) > 0) return true;
+  return false;
+}
+
+/** Entrées bestiaire à partir des zones de combat. */
+export function getBestiaryEntries(state, combatZones) {
+  const entries = [];
+  for (const zone of Object.values(combatZones || {})) {
+    const zoneName = zone.name || zone.id;
+    for (const monster of zone.monsters || []) {
+      const discovered = isEnemyDiscovered(state, monster, false);
+      entries.push({
+        kind: 'enemy',
+        id: `bestiary_${monster.enemyId}`,
+        enemyId: monster.enemyId,
+        name: monster.name || monster.enemyId,
+        emoji: monster.emoji || '👹',
+        isBoss: false,
+        zoneId: zone.id,
+        zoneName,
+        discovered,
+        groupId: 'bestiary',
+        group: JOB_GROUP_META.bestiary,
+        blurb: discovered
+          ? `Monstre de ${zoneName}.`
+          : 'Pas encore rencontré',
+        jobName: zoneName,
+      });
+    }
+    if (zone.boss) {
+      const boss = { ...zone.boss, zoneId: zone.id };
+      const discovered = isEnemyDiscovered(state, boss, true)
+        || (state.bossKills?.[zone.id] || 0) > 0;
+      entries.push({
+        kind: 'enemy',
+        id: `bestiary_boss_${boss.enemyId}`,
+        enemyId: boss.enemyId,
+        name: boss.name || boss.enemyId,
+        emoji: boss.emoji || '👑',
+        isBoss: true,
+        zoneId: zone.id,
+        zoneName,
+        discovered,
+        groupId: 'bestiary',
+        group: JOB_GROUP_META.bestiary,
+        blurb: discovered
+          ? `Boss de ${zoneName}.`
+          : 'Boss pas encore vaincu',
+        jobName: `Boss · ${zoneName}`,
+      });
+    }
+  }
+  return entries.sort((a, b) => {
+    if (a.zoneId !== b.zoneId) return String(a.zoneId).localeCompare(String(b.zoneId));
+    if (a.isBoss !== b.isBoss) return a.isBoss ? 1 : -1;
+    return String(a.name).localeCompare(String(b.name), 'fr');
+  });
+}
+
+export function getHerbariumViewModel(state, resources, jobs, combatZones = null) {
   ensureHerbariumState(state);
   backfillHerbariumFromInventory(state, resources);
 
-  const list = getHerbariumResources(resources).map((res) => {
+  const resourceEntries = getHerbariumResources(resources).map((res) => {
     const groupId = getResourceGroupId(res);
     const group = JOB_GROUP_META[groupId] || JOB_GROUP_META.farm;
     const discovered = isHerbariumDiscovered(state, res.id);
     return {
+      kind: 'resource',
       resource: res,
       discovered,
       groupId,
       group,
       blurb: blurbFor(res, jobs),
-      jobName: jobs?.[res.job]?.name || group.label,
+      jobName: res.combatOnly
+        ? 'Combat'
+        : (jobs?.[res.job]?.name || group.label),
     };
   });
+
+  const bestiaryEntries = combatZones ? getBestiaryEntries(state, combatZones) : [];
+  const list = [...resourceEntries, ...bestiaryEntries];
 
   const found = list.filter((e) => e.discovered).length;
   const groups = JOB_GROUP_ORDER.map((id) => {
@@ -131,7 +211,7 @@ export function getHerbariumViewModel(state, resources, jobs) {
   return {
     title: 'Herbier',
     emoji: '🌿',
-    description: 'Les ressources du village de To-Kirha. Chaque récolte ou produit de ferme s’inscrit ici.',
+    description: 'Ressources du village, butin de combat et créatures rencontrées.',
     entries: list,
     groups,
     found,

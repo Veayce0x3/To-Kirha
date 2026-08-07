@@ -403,6 +403,7 @@ export class Game {
       saveVersion: this.balance.saveVersion || 31,
       aides: {},
       bossKills: {},
+      dungeonClears: {},
       combatKillStats: {},
       combatDaily: null,
       combatEncounter: null,
@@ -518,6 +519,8 @@ export class Game {
       saveVersion: saved.saveVersion ?? 0,
       aides: saved.aides || {},
       bossKills: saved.bossKills || saved.dungeonClears || {},
+      // Si pas de bossKills, dungeonClears était l’ancien nom des kills boss — ne pas le compter comme donjons
+      dungeonClears: saved.bossKills ? (saved.dungeonClears || {}) : {},
       combatKillStats: saved.combatKillStats || {},
       combatDaily: saved.combatDaily || null,
       combatEncounter: null,
@@ -936,11 +939,15 @@ export class Game {
 
   onCombatVictoryHooks(result) {
     const zoneId = result?.zoneId;
-    void zoneId;
     if (!this.state.stats) this.state.stats = {};
     this.state.stats.combatFights = (this.state.stats.combatFights || 0) + 1;
+    if (result?.isDungeon && result?.cleared && zoneId) {
+      if (!this.state.dungeonClears) this.state.dungeonClears = {};
+      this.state.dungeonClears[zoneId] = (this.state.dungeonClears[zoneId] || 0) + 1;
+    }
     consumeCombatMealBuffFight(this.state);
     noteVillageCombatResult(this.state, this.villageBoardData, result);
+    this.syncCombatHerbariumFromInventory();
     this.processAchievements();
   }
 
@@ -2466,7 +2473,7 @@ export class Game {
 
   getHerbariumView() {
     ensureHerbariumState(this.state);
-    return getHerbariumViewModel(this.state, this.resources, this.jobs);
+    return getHerbariumViewModel(this.state, this.resources, this.jobs, this.combatZones);
   }
 
   noteHerbariumDiscovery(resourceId) {
@@ -2476,6 +2483,12 @@ export class Game {
     if (!discoverHerbariumResource(this.state, resourceId)) return false;
     emit('herbariumDiscover', { resourceId, resource: res });
     return true;
+  }
+
+  /** Découvre butin combat déjà en inventaire (clés, pépites…). */
+  syncCombatHerbariumFromInventory() {
+    if (!this.state) return [];
+    return backfillHerbariumFromInventory(this.state, this.resources);
   }
 
   getJournalContext() {

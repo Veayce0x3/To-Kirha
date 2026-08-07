@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1430",
+      "date": "2026-08-07",
+      "title": "École, burger, succès & collections",
+      "highlights": [
+        "École : Poulailler et 2ᵉ Puits proposés en parallèle après le 1er Puits",
+        "Point rose sur le bouton burger quand des succès sont à récupérer",
+        "Nouveaux succès Combat (combats, boss, donjons) et Cuisine (métiers + crafts)",
+        "Herbier : butin combat + bestiaire ; onglet Livre de cuisine dans Carnet & Collections"
+      ]
+    },
+    {
       "buildId": "20260807-1400",
       "date": "2026-08-07",
       "title": "Boost ×2 : bouton Confirmer",

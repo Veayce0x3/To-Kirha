@@ -1347,6 +1347,10 @@
   border-style: dashed;
 }
 
+.herbarium-card.herbarium-boss {
+  border-color: rgba(155, 89, 182, 0.45);
+}
+
 .herbarium-emoji {
   font-size: 1.45rem;
   line-height: 1.2;
@@ -4169,6 +4173,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 /* ── Burger mobile ── */
 .burger-btn {
   display: none;
+  position: relative;
   width: 40px;
   height: 40px;
   border: 1px solid rgba(232, 180, 203, 0.5);
@@ -4178,6 +4183,19 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   cursor: pointer;
   flex-shrink: 0;
   color: var(--violet-sakura);
+}
+
+.burger-btn.burger-achievement-ready::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #E891B0;
+  box-shadow: 0 0 0 2px rgba(232, 145, 176, 0.45);
+  pointer-events: none;
 }
 
 .top-quick-options {

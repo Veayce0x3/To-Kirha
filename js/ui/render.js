@@ -391,6 +391,18 @@ export function initUI(game, audio) {
     const view = getView();
     const claimable = game.getClaimableAchievementCount?.() || 0;
 
+    if (els.burgerBtn) {
+      const ready = claimable > 0;
+      els.burgerBtn.classList.toggle('burger-achievement-ready', ready);
+      if (ready) {
+        els.burgerBtn.title = `Menu — ${claimable} succès à récupérer`;
+        els.burgerBtn.setAttribute('aria-label', `Menu, ${claimable} succès à récupérer`);
+      } else {
+        els.burgerBtn.title = 'Menu';
+        els.burgerBtn.setAttribute('aria-label', 'Menu');
+      }
+    }
+
     document.querySelectorAll('.nav-btn[data-view]').forEach((btn) => {
       const vid = btn.dataset.view;
       btn.classList.toggle('active', vid === view);
