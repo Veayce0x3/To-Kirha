@@ -62,6 +62,60 @@ export function getSeasonBoostRemainingMs(state, now = Date.now()) {
   return Math.max(0, endsAt - now);
 }
 
+/**
+ * Nombre de renaissances (passages « Nouvelle saison ») sur la vie du compte.
+ * Prefer maxSeasonReached − 1 quand seasonsCompleted a été sous-compté (ex. après reset).
+ */
+export function getLifetimeRenaissances(state) {
+  const completed = Math.max(0, Number(state?.lifetimeStats?.seasonsCompleted) || 0);
+  const maxReached = Math.max(1, Number(state?.lifetimeStats?.maxSeasonReached) || 1);
+  const season = Math.max(1, Number(state?.season) || 1);
+  const fromMax = Math.max(0, maxReached - 1);
+  const fromCurrent = Math.max(0, season - 1);
+  let fromHistory = 0;
+  if (Array.isArray(state?.seasonHistory)) {
+    for (const h of state.seasonHistory) {
+      const by = h?.endedBy;
+      if (by === 'prestige' || by == null || by === '') fromHistory += 1;
+    }
+  }
+  return Math.max(completed, fromMax, fromCurrent, fromHistory);
+}
+
+/** Aligne seasonsCompleted / maxSeasonReached si incohérents. */
+export function repairLifetimeRenaissances(state) {
+  if (!state || typeof state !== 'object') return false;
+  if (!state.lifetimeStats || typeof state.lifetimeStats !== 'object') {
+    state.lifetimeStats = {};
+  }
+  const ls = state.lifetimeStats;
+  const season = Math.max(1, Number(state.season) || 1);
+  const historySeasons = Array.isArray(state.seasonHistory)
+    ? state.seasonHistory.map((h) => Math.max(1, Number(h?.season) || 1))
+    : [];
+  const maxReached = Math.max(
+    1,
+    season,
+    Number(ls.maxSeasonReached) || 1,
+    Number(ls.lastResetSeason) || 1,
+    ...historySeasons
+  );
+  const want = getLifetimeRenaissances({
+    ...state,
+    lifetimeStats: { ...ls, maxSeasonReached: maxReached },
+  });
+  let changed = false;
+  if ((Number(ls.maxSeasonReached) || 1) < maxReached) {
+    ls.maxSeasonReached = maxReached;
+    changed = true;
+  }
+  if ((Number(ls.seasonsCompleted) || 0) < want) {
+    ls.seasonsCompleted = want;
+    changed = true;
+  }
+  return changed;
+}
+
 /** ×2 uniquement pendant le boost 1 h ; sinon 1 (les % saison restent séparés). */
 export function getSeasonBoostMult(state) {
   return isSeasonBoostActive(state) ? 2 : 1;

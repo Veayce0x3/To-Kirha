@@ -8,6 +8,7 @@ import { clearProgressionCache } from '../systems/progression.js';
 import { isJobUnlocked } from '../systems/jobUnlock.js';
 import { migrateAchievements } from '../systems/achievements.js';
 import { migrateBreederXpToBuildings } from '../systems/farmProgress.js';
+import { repairLifetimeRenaissances } from '../systems/prestige.js';
 
 /**
  * Remap one-shot inventaire / lignes (anciens ids → liste 10×5).
@@ -610,6 +611,11 @@ const MIGRATIONS = {
       push('roadmap_well');
     }
   },
+
+  56(state) {
+    // Renaissances : seasonsCompleted parfois < maxSeasonReached − 1 (ex. Jayler)
+    repairLifetimeRenaissances(state);
+  },
 };
 
 /** Garantit les blocs systèmes récents même si saveVersion était déjà trop haut. */
@@ -707,11 +713,13 @@ export function repairSaveSystems(state, ctx = {}) {
     state.villageSchool.unlockedVillageBoard = false;
   }
 
+  repairLifetimeRenaissances(state);
+
   return state;
 }
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 55;
+  const target = ctx.balance?.saveVersion ?? 56;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

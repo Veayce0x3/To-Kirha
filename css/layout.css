@@ -144,6 +144,10 @@
   opacity: 0.9;
 }
 
+.char-boost-banner {
+  margin: 0 0 0.75rem;
+}
+
 .prestige-steps {
   list-style: none;
   margin: 0.5rem 0 0.75rem;

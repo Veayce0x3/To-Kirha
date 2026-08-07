@@ -629,7 +629,11 @@ function paintPlayerDetail(userId, data, detailEl, titleEl) {
     <div class="admin-detail-grid">
       <div class="admin-info-card"><span class="admin-info-lbl">Saison actuelle</span><span class="admin-info-val">${save_summary ? `Saison ${save_summary.season || 1}` : '—'}</span><span class="admin-td-muted">${save_summary?.season_started_at ? `Début ${escHtml(fmtDate(save_summary.season_started_at))}` : ''}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Saison max atteinte</span><span class="admin-info-val">${save_summary || leaderboard ? `Saison ${maxSeasonFromSave(save_summary, leaderboard)}` : '—'}</span></div>
-      <div class="admin-info-card"><span class="admin-info-lbl">Renaissances</span><span class="admin-info-val">${save_summary ? `${Number(save_summary.seasons_completed) || 0}` : '—'}</span><span class="admin-td-muted">Passages « Nouvelle saison »</span></div>
+      <div class="admin-info-card"><span class="admin-info-lbl">Renaissances</span><span class="admin-info-val">${save_summary ? `${Math.max(
+        Number(save_summary.seasons_completed) || 0,
+        Math.max(0, (Number(save_summary.max_season_reached) || 1) - 1),
+        Number(save_summary.prestige_from_history) || 0
+      )}` : '—'}</span><span class="admin-td-muted">Passages « Nouvelle saison » (vie)</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Resets Options</span><span class="admin-info-val">${save_summary ? `${Number(save_summary.game_resets) || 0}` : '—'}</span><span class="admin-td-muted">${save_summary?.last_reset_at ? `Dernier : ${escHtml(fmtDate(save_summary.last_reset_at))}${save_summary.last_reset_season ? ` (depuis S${save_summary.last_reset_season})` : ''}` : 'Aucun reset Options enregistré'}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Perso / métier max</span><span class="admin-info-val">${save_summary ? `Nv.${save_summary.char_level || 1} · métier ${save_summary.max_job_level || 1}` : '—'}</span></div>
       <div class="admin-info-card"><span class="admin-info-lbl">Carrière</span><span class="admin-info-val">${escHtml(careerLabel)}</span></div>

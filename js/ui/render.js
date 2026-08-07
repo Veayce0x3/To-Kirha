@@ -1,4 +1,4 @@
-import { getSeasonBonusPercents, hasSeasonBonus, isSeasonBoostActive, getSeasonBoostRemainingMs } from '../systems/prestige.js';
+import { getSeasonBonusPercents, hasSeasonBonus, isSeasonBoostActive, getSeasonBoostRemainingMs, canActivateSeasonBoost } from '../systems/prestige.js';
 import { on } from '../core/events.js';
 import { focusAchievementInChain } from '../systems/achievements.js';
 import { cleanupPullRefreshArtifacts } from './pullRefresh.js';
@@ -487,10 +487,17 @@ export function initUI(game, audio) {
         const mins = Math.max(1, Math.ceil(getSeasonBoostRemainingMs(state) / 60000));
         els.seasonBoostChip.hidden = false;
         els.seasonBoostChip.textContent = `⚡ ×2 · ${mins} min`;
-        els.seasonBoostChip.title = 'Boost temporaire de relance (1 h max) : XP ×2, ventes ×2, repousse ÷2 — puis c’est fini';
+        els.seasonBoostChip.title = 'Boost temporaire actif : XP ×2, ventes ×2, repousse ÷2';
+        els.seasonBoostChip.dataset.boostAction = 'status';
+      } else if (canActivateSeasonBoost(state, game.balance).ok) {
+        els.seasonBoostChip.hidden = false;
+        els.seasonBoostChip.textContent = '⚡ Activer ×2';
+        els.seasonBoostChip.title = 'Activer le boost de démarrage ×2 (1 h)';
+        els.seasonBoostChip.dataset.boostAction = 'activate';
       } else {
         els.seasonBoostChip.hidden = true;
         els.seasonBoostChip.textContent = '';
+        els.seasonBoostChip.dataset.boostAction = '';
       }
     }
 
@@ -621,7 +628,17 @@ export function initUI(game, audio) {
     }
   });
   els.seasonBonusChip?.addEventListener('click', () => navigate('season'));
-  els.seasonBoostChip?.addEventListener('click', () => navigate('season'));
+  els.seasonBoostChip?.addEventListener('click', () => {
+    if (els.seasonBoostChip?.dataset.boostAction === 'activate') {
+      const result = game.activateSeasonBoost();
+      if (result?.ok) {
+        refreshHeader(game.state);
+        refreshView();
+      }
+      return;
+    }
+    navigate('character');
+  });
 
   on('sidebarClose', closeSidebar);
 

@@ -1,6 +1,6 @@
 import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canEquipCombatItem, findCombatItemOwner, getInstanceEffectiveStats, getSkillUsesLeft, getSkillMaxUses, getSkillMpCost } from '../systems/combat.js';
 import { getCraftSellBonus, getRecipeRequiredLevel } from '../systems/crafting.js';
-import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, getJobXpBonusPercent, hasSeasonBonus, getSeasonBoostMult, isSeasonBoostActive, canActivateSeasonBoost, getSeasonBoostLevelCaps } from '../systems/prestige.js';
+import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, getJobXpBonusPercent, hasSeasonBonus, getSeasonBoostMult, isSeasonBoostActive, canActivateSeasonBoost, getSeasonBoostLevelCaps, getLifetimeRenaissances } from '../systems/prestige.js';
 import { mountCraftWorkshop } from './craftView.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
 import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped } from '../systems/equipment.js';
@@ -653,6 +653,22 @@ function renderCharacter(game, el) {
   el.innerHTML = `
     ${renderGuestBanner(game)}
     <div class="char-page">
+      ${(() => {
+        const boostActive = isSeasonBoostActive(game.state);
+        const boostGate = canActivateSeasonBoost(game.state, game.balance);
+        const boostCaps = getSeasonBoostLevelCaps(game.balance);
+        const boostMin = Math.ceil((game.getSeasonBoostRemainingMs?.() || 0) / 60000);
+        if (boostActive) {
+          return `<div class="season-boost-banner char-boost-banner">⚡ Boost ×2 actif (~${boostMin} min) — XP ×2 · ventes ×2 · repousse ÷2</div>`;
+        }
+        if (boostGate.ok) {
+          return `<div class="season-boost-banner season-boost-ready char-boost-banner">
+            <p>⚡ Boost de démarrage ×2 (1 h) — active-le pour démarrer plus vite (perso ≤ Nv.${boostCaps.character}, métiers ≤ Nv.${boostCaps.jobs}).</p>
+            <button type="button" class="btn btn-craft" id="char-boost-activate">Activer le boost ×2</button>
+          </div>`;
+        }
+        return '';
+      })()}
       <div class="prestige-teaser" id="char-prestige-teaser" hidden></div>
       <section class="char-hero panel-inner">
         <div class="char-hero-layout">
@@ -687,6 +703,16 @@ function renderCharacter(game, el) {
 
   renderCharDofusEquipGrid(game, el.querySelector('#char-dofus-equip'));
   renderPrestigeTeaser(game, el.querySelector('#char-prestige-teaser'));
+
+  el.querySelector('#char-boost-activate')?.addEventListener('click', () => {
+    const result = game.activateSeasonBoost();
+    if (!result.ok) {
+      emit('uiToast', { message: result.reason || 'Boost indisponible.', type: 'sell' });
+      return;
+    }
+    emit('uiToast', { message: 'Boost ×2 activé pour 1 h !', type: 'craft' });
+    renderCharacter(game, el);
+  });
 
   el.querySelector('#guest-upgrade-hdv')?.addEventListener('click', () => showAccountRequiredModal(getOnlineBlockReason()));
   el.querySelector('#goto-combat')?.addEventListener('click', () => {
@@ -4034,7 +4060,7 @@ export function renderSeason(game, el) {
   const info = game.getPrestigeInfo();
   const caps = info.caps || game.getSeasonCapPreview();
   const progress = game.getPrestigeProgress();
-  const seasonsDone = game.state.lifetimeStats?.seasonsCompleted || 0;
+  const seasonsDone = getLifetimeRenaissances(game.state);
   const stepsHtml = (progress.steps || []).length
     ? `<ul class="prestige-steps">${progress.steps.map((s) => `
         <li class="${s.done ? 'step-done' : 'step-todo'}">${s.done ? '✓' : '○'} ${s.label}</li>
@@ -4178,6 +4204,8 @@ export function renderOptions(game, el) {
       hint('Partie réinitialisée (local + cloud).');
     }
     await reconcileAuthAfterLocalReset(game);
+    emit('sidebarClose');
+    navigate('character');
     showCareerChoiceIfNeeded(game);
     emit('navRefresh');
   });

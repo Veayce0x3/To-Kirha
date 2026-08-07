@@ -57,6 +57,8 @@ import {
   canActivateSeasonBoost,
   activateSeasonBoost as activateSeasonBoostState,
   getSeasonBoostLevelCaps,
+  getLifetimeRenaissances,
+  repairLifetimeRenaissances,
 } from '../systems/prestige.js';
 import { runSaveMigrations } from './migrations.js';
 import {
@@ -2771,6 +2773,10 @@ export class Game {
     return getSeasonBoostLevelCaps(this.balance);
   }
 
+  getLifetimeRenaissances() {
+    return getLifetimeRenaissances(this.state);
+  }
+
   getPrestigeInfo() {
     return getPrestigePreview(this.state, this.balance, this.quests, this.combatZones);
   }
@@ -2852,7 +2858,7 @@ export class Game {
       totalEarned: Number(prev.lifetimeStats?.totalEarned) || 0,
       // Compteurs de saison : remis à zéro (la vie reste dans seasonsCompleted / discoveries / etc.)
       totalHarvests: Number(prev.lifetimeStats?.totalHarvests) || 0,
-      seasonsCompleted: Number(prev.lifetimeStats?.seasonsCompleted) || 0,
+      seasonsCompleted: getLifetimeRenaissances(prev),
       combatFights: Number(prev.lifetimeStats?.combatFights) || 0,
       discoveries: {
         nest: Number(prev.lifetimeStats?.discoveries?.nest) || 0,

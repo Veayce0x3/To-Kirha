@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1340",
+      "date": "2026-08-07",
+      "title": "Boost visible, reset → Perso, renaissances",
+      "highlights": [
+        "Boost ×2 activable depuis l’écran Perso et le chip en haut",
+        "Après reset Options : retour à l’écran principal (Perso)",
+        "Compteur de renaissances corrigé (ex. Jayler : 2, pas 1)"
+      ]
+    },
+    {
       "buildId": "20260807-1320",
       "date": "2026-08-07",
       "title": "Boost ×2 aussi au premier départ / reset",
