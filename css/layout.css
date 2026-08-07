@@ -5601,6 +5601,19 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   border: 1px dashed rgba(232, 180, 203, 0.65);
 }
 
+.production-unlock-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.production-unlock-option {
+  padding: 0.55rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(248, 232, 238, 0.45);
+  border: 1px solid rgba(232, 180, 203, 0.4);
+}
+
 .production-unlock-head {
   display: flex;
   flex-wrap: wrap;
@@ -5624,8 +5637,13 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   opacity: 0.9;
 }
 
+.production-unlock-level-hint {
+  margin-top: 0.55rem;
+}
+
 .btn-production-unlock {
   width: 100%;
+  min-height: 44px;
 }
 
 .slot-footer {

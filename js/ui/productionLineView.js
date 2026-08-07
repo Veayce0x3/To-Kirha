@@ -589,50 +589,75 @@ function formatUnlockCost(game, preview) {
 
 function buildUnlockPanel(game, jobId) {
   const selectedId = selectedHarvestResourceByJob[jobId] || null;
-  const preview = game.getNextProductionUnlockPreview(jobId, selectedId);
+  const listed = game.getProductionUnlockOptions?.(jobId, selectedId)
+    || { options: [], levelBlocked: null };
+  const { options, levelBlocked } = listed;
   const panel = document.createElement('div');
   panel.className = 'production-unlock-panel';
 
-  if (!preview || preview.kind === 'maxed') {
+  if (!options.length && !levelBlocked) {
     panel.innerHTML = '<p class="empty-text">Toutes les lignes de ce métier sont débloquées.</p>';
     return panel;
   }
 
-  if (preview.kind === 'level_blocked') {
+  if (!options.length && levelBlocked) {
     panel.innerHTML = `
-      <p class="production-unlock-hint">Prochaine ressource : <strong>${preview.resourceName}</strong></p>
-      <button type="button" class="btn btn-upgrade btn-production-unlock" disabled>Débloquer ${preview.resourceName}</button>
-      <p class="empty-text">🔒 ${preview.jobName} Nv.${preview.requiredLevel} requis pour continuer.</p>
+      <p class="production-unlock-hint">Prochaine ressource : <strong>${levelBlocked.resourceName}</strong></p>
+      <button type="button" class="btn btn-upgrade btn-production-unlock" disabled>Débloquer ${levelBlocked.resourceName}</button>
+      <p class="empty-text">🔒 ${levelBlocked.jobName} Nv.${levelBlocked.requiredLevel} requis pour continuer.</p>
     `;
     return panel;
   }
 
-  const canBuy = game.canBuyNextProductionUnlock(jobId, selectedId);
-  const costHtml = formatUnlockCost(game, preview);
-  let label = '';
-  if (preview.kind === 'unit') {
-    label = `Débloquer ${preview.resourceName} (${preview.nextUnits}/${preview.maxUnits})`;
-  } else {
-    label = `Débloquer ${preview.resourceName}`;
-  }
+  const cards = options.map((preview) => {
+    const canBuy = (() => {
+      if (preview.kirha != null && (game.state.kirha || 0) < preview.kirha) return false;
+      if (preview.resources) {
+        for (const [resId, amount] of Object.entries(preview.resources)) {
+          if ((game.state.inventory?.[resId] || 0) < amount) return false;
+        }
+      }
+      return true;
+    })();
+    const costHtml = formatUnlockCost(game, preview);
+    const label = preview.kind === 'unit'
+      ? `+1 ${preview.resourceName} (${preview.nextUnits}/${preview.maxUnits})`
+      : `Débloquer ${preview.resourceName}`;
+    const desc = preview.kind === 'unit'
+      ? `Ajoute une unité de production (max ${preview.maxUnits} par ressource).`
+      : `Ouvre ${preview.resourceName} avec 1 unité (coût en ${preview.prevResourceName}). Tu peux aussi continuer à agrandir ${preview.prevResourceName}.`;
+
+    return `
+      <div class="production-unlock-option" data-unlock-kind="${preview.kind}" data-unlock-resource="${preview.resourceId}">
+        <div class="production-unlock-head">
+          <strong>${preview.kind === 'unit' ? 'Emplacement' : 'Nouvelle ressource'}</strong>
+          <span class="production-unlock-cost">${costHtml || '—'}</span>
+        </div>
+        <button type="button" class="btn btn-upgrade btn-production-unlock"${canBuy ? '' : ' disabled'}>${label}</button>
+        <p class="production-unlock-desc">${desc}</p>
+      </div>`;
+  }).join('');
+
+  const levelHint = levelBlocked
+    ? `<p class="empty-text production-unlock-level-hint">Ensuite : ${levelBlocked.resourceName} (Nv.${levelBlocked.requiredLevel}).</p>`
+    : '';
 
   panel.innerHTML = `
-    <div class="production-unlock-head">
-      <strong>Déblocage</strong>
-      <span class="production-unlock-cost">${costHtml || '—'}</span>
-    </div>
-    <button type="button" class="btn btn-upgrade btn-production-unlock"${canBuy ? '' : ' disabled'}>${label}</button>
-    <p class="production-unlock-desc">${preview.kind === 'unit'
-    ? `Ajoute une unité de production (max ${preview.maxUnits} par ressource).`
-    : `Ouvre la ressource ${preview.resourceName} avec 1 unité (après ${preview.maxUnits || 6}× ${preview.prevResourceName}).`}</p>
+    ${options.length > 1 ? '<p class="production-unlock-hint">Choisis : agrandir cette ressource ou en ouvrir une nouvelle.</p>' : ''}
+    <div class="production-unlock-options">${cards}</div>
+    ${levelHint}
   `;
 
-  panel.querySelector('.btn-production-unlock')?.addEventListener('click', () => {
-    if (game.buyNextProductionUnlock(jobId, selectedId)) {
-      if (preview.resourceId) selectedHarvestResourceByJob[jobId] = preview.resourceId;
-      const container = document.getElementById('view-container');
-      if (container) renderJobProduction(game, container, jobId);
-    }
+  panel.querySelectorAll('.production-unlock-option').forEach((card) => {
+    const kind = card.getAttribute('data-unlock-kind');
+    const resourceId = card.getAttribute('data-unlock-resource');
+    card.querySelector('.btn-production-unlock')?.addEventListener('click', () => {
+      if (game.buyNextProductionUnlock(jobId, selectedId, { kind, resourceId })) {
+        if (kind === 'tier' && resourceId) selectedHarvestResourceByJob[jobId] = resourceId;
+        const container = document.getElementById('view-container');
+        if (container) renderJobProduction(game, container, jobId);
+      }
+    });
   });
 
   return panel;

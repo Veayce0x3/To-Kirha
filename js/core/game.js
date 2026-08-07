@@ -76,6 +76,7 @@ import {
   getFarmBuildingMaxUnits as computeFarmBuildingMaxUnits,
   getUnitUnlockRequirements,
   getNextProductionUnlock,
+  listProductionUnlockOptions,
   canBuyNextProductionUnlock as checkCanBuyNextProductionUnlock,
   buyNextProductionUnlock as applyNextProductionUnlock,
   getUnitProgress,
@@ -1202,13 +1203,19 @@ export class Game {
     return getMaxUnitsPerResource(this.balance, this.state);
   }
 
-  buyNextProductionUnlock(jobId, resourceId = null) {
-    if (!applyNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs, resourceId)) return false;
+  buyNextProductionUnlock(jobId, resourceId = null, choice = null) {
+    if (!applyNextProductionUnlock(this.state, this.balance, this.resources, jobId, this.jobs, resourceId, choice)) {
+      return false;
+    }
     ensureProductionLines(this.state, this.resources, this.farmData, this.balance);
-    emit('lineUnitUnlock', { jobId, resourceId });
+    emit('lineUnitUnlock', { jobId, resourceId: choice?.resourceId || resourceId });
     emit('stateChange', this.state);
     this.scheduleSave();
     return true;
+  }
+
+  getProductionUnlockOptions(jobId, resourceId = null) {
+    return listProductionUnlockOptions(this.state, this.balance, this.resources, jobId, this.jobs, resourceId);
   }
 
   getNextProductionUnlockPreview(jobId, resourceId = null) {

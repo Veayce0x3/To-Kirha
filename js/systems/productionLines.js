@@ -137,9 +137,9 @@ function deductRequirements(state, { kirha, resources }) {
   }
 }
 
-export function getNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId = null) {
+export function listProductionUnlockOptions(state, balance, resources, jobId, jobs, preferredResourceId = null) {
   const tiers = getJobHarvestResources(resources, jobId);
-  if (!tiers.length) return { kind: 'maxed' };
+  if (!tiers.length) return { options: [], levelBlocked: null };
 
   const lines = state.productionLines?.harvest?.[jobId] || {};
   const maxPer = getMaxUnitsPerResource(balance, state);
@@ -162,15 +162,6 @@ export function getNextProductionUnlock(state, balance, resources, jobId, jobs, 
     };
   };
 
-  // Priorité : ressource affichée dans l’onglet (ex. acheter le 6ᵉ slot de Blé).
-  if (preferredResourceId) {
-    const preferred = tiers.find((r) => r.id === preferredResourceId);
-    if (preferred) {
-      const preferredUnit = buildUnitPreview(preferred);
-      if (preferredUnit) return preferredUnit;
-    }
-  }
-
   let currentTierIndex = -1;
   for (let i = tiers.length - 1; i >= 0; i--) {
     if (lines[tiers[i].id]) {
@@ -178,51 +169,105 @@ export function getNextProductionUnlock(state, balance, resources, jobId, jobs, 
       break;
     }
   }
+  if (currentTierIndex < 0) return { options: [], levelBlocked: null };
 
-  if (currentTierIndex < 0) return { kind: 'maxed' };
-
-  const currentResource = tiers[currentTierIndex];
-  const currentUnit = buildUnitPreview(currentResource);
-  if (currentUnit) return currentUnit;
-
-  const nextTierIndex = currentTierIndex + 1;
-  if (nextTierIndex >= tiers.length) return { kind: 'maxed' };
-
-  const nextResource = tiers[nextTierIndex];
-  if (!isResourceUnlockedByJob(nextResource, state, resources, balance)) {
-    return {
-      kind: 'level_blocked',
-      jobId,
-      resourceName: nextResource.name,
-      requiredLevel: getResourceUnlockJobLevel(nextResource, resources, balance),
-      jobName,
-    };
+  const options = [];
+  const preferred = preferredResourceId
+    ? tiers.find((r) => r.id === preferredResourceId)
+    : null;
+  const preferredUnit = preferred ? buildUnitPreview(preferred) : null;
+  if (preferredUnit) {
+    options.push(preferredUnit);
+  } else {
+    const currentUnit = buildUnitPreview(tiers[currentTierIndex]);
+    if (currentUnit) options.push(currentUnit);
   }
 
-  const prevResource = tiers[currentTierIndex];
-  const req = getNewTierUnlockRequirements(jobId, nextResource.id, prevResource.id, nextTierIndex, balance);
-  return {
-    kind: 'tier',
+  let levelBlocked = null;
+  const nextTierIndex = currentTierIndex + 1;
+  if (nextTierIndex < tiers.length) {
+    const nextResource = tiers[nextTierIndex];
+    if (lines[nextResource.id]) {
+      // déjà ouverte
+    } else if (!isResourceUnlockedByJob(nextResource, state, resources, balance)) {
+      levelBlocked = {
+        kind: 'level_blocked',
+        jobId,
+        resourceName: nextResource.name,
+        requiredLevel: getResourceUnlockJobLevel(nextResource, resources, balance),
+        jobName,
+      };
+    } else {
+      const prevResource = tiers[currentTierIndex];
+      const req = getNewTierUnlockRequirements(
+        jobId,
+        nextResource.id,
+        prevResource.id,
+        nextTierIndex,
+        balance
+      );
+      options.push({
+        kind: 'tier',
+        jobId,
+        resourceId: nextResource.id,
+        resourceName: nextResource.name,
+        prevResourceId: prevResource.id,
+        prevResourceName: prevResource.name,
+        maxUnits: maxPer,
+        jobName,
+        ...req,
+      });
+    }
+  }
+
+  return { options, levelBlocked };
+}
+
+/**
+ * Une option (rétrocompat) : unité de l’onglet courant, sinon prochaine ressource, sinon hint niveau.
+ * Les choix parallèles passent par listProductionUnlockOptions.
+ */
+export function getNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId = null) {
+  const { options, levelBlocked } = listProductionUnlockOptions(
+    state,
+    balance,
+    resources,
     jobId,
-    resourceId: nextResource.id,
-    resourceName: nextResource.name,
-    prevResourceId: prevResource.id,
-    prevResourceName: prevResource.name,
-    maxUnits: maxPer,
-    jobName,
-    ...req,
-  };
+    jobs,
+    preferredResourceId
+  );
+  if (preferredResourceId) {
+    const unit = options.find((o) => o.kind === 'unit' && o.resourceId === preferredResourceId);
+    if (unit) return unit;
+  }
+  if (options.length) return options[0];
+  if (levelBlocked) return levelBlocked;
+  return { kind: 'maxed' };
 }
 
 export function canBuyNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId = null) {
-  const preview = getNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId);
-  if (!preview || preview.kind === 'maxed' || preview.kind === 'level_blocked') return false;
-  return canAffordRequirements(state, preview);
+  const { options } = listProductionUnlockOptions(state, balance, resources, jobId, jobs, preferredResourceId);
+  return options.some((o) => canAffordRequirements(state, o));
 }
 
-export function buyNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId = null) {
-  const preview = getNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId);
-  if (!preview || preview.kind === 'maxed' || preview.kind === 'level_blocked') return false;
+export function buyNextProductionUnlock(
+  state,
+  balance,
+  resources,
+  jobId,
+  jobs,
+  preferredResourceId = null,
+  choice = null
+) {
+  const { options } = listProductionUnlockOptions(state, balance, resources, jobId, jobs, preferredResourceId);
+  let preview = null;
+  if (choice?.kind && choice?.resourceId) {
+    preview = options.find((o) => o.kind === choice.kind && o.resourceId === choice.resourceId) || null;
+  } else {
+    preview = getNextProductionUnlock(state, balance, resources, jobId, jobs, preferredResourceId);
+    if (preview?.kind === 'maxed' || preview?.kind === 'level_blocked') preview = null;
+  }
+  if (!preview || (preview.kind !== 'unit' && preview.kind !== 'tier')) return false;
   if (!canAffordRequirements(state, preview)) return false;
 
   if (preview.kind === 'unit') {
