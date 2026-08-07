@@ -925,7 +925,7 @@ export class Game {
   }
 
   getWeatherSkyView() {
-    return getWeatherSkyView(Date.now(), this.balance);
+    return getWeatherSkyView(Date.now(), this.balance, this.state);
   }
 
   getSakuraWindQuestView() {
@@ -951,7 +951,46 @@ export class Game {
   }
 
   isSakuraWindActive() {
-    return !!getSakuraWindStatus(Date.now(), this.balance)?.active;
+    return !!getSakuraWindStatus(Date.now(), this.balance, this.state)?.active;
+  }
+
+  /** Admin / test : active le Vent des cerisiers pour `durationMs` (défaut 20 min). */
+  forceSakuraWindNow(durationMs = 20 * 60 * 1000) {
+    if (!this.state.debugEvents) this.state.debugEvents = {};
+    this.state.debugEvents.forceSakuraWindUntil = Date.now() + Math.max(60_000, Number(durationMs) || 20 * 60_000);
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return { ok: true, until: this.state.debugEvents.forceSakuraWindUntil };
+  }
+
+  clearForcedSakuraWind() {
+    if (this.state.debugEvents) delete this.state.debugEvents.forceSakuraWindUntil;
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return { ok: true };
+  }
+
+  /** Admin / test : force le marchand itinérant pour aujourd’hui (UTC). */
+  forceTravelingMerchantToday() {
+    if (!this.state.debugEvents) this.state.debugEvents = {};
+    const dateKey = getUtcDateKey();
+    this.state.debugEvents.forceTravelingMerchantDate = dateKey;
+    // Reset visit state so popup peut réapparaître
+    if (this.state.travelingMerchant?.date === dateKey) {
+      this.state.travelingMerchant.popupSeen = false;
+    } else {
+      this.state.travelingMerchant = null;
+    }
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return { ok: true, date: dateKey };
+  }
+
+  clearForcedTravelingMerchant() {
+    if (this.state.debugEvents) delete this.state.debugEvents.forceTravelingMerchantDate;
+    emit('stateChange', this.state);
+    this.scheduleSave();
+    return { ok: true };
   }
 
   getTravelingMerchantStatus() {

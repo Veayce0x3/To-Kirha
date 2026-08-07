@@ -134,6 +134,23 @@ export function syncTravelerJournalUnlocks(state, journalData, ctx = {}) {
   return newly;
 }
 
+function hintFromUnlock(unlock) {
+  if (!unlock?.type) return 'Continue ton aventure.';
+  switch (unlock.type) {
+    case 'career': return 'Commence l’aventure (choix d’arme).';
+    case 'jobLevel': return `Atteins le niveau ${unlock.min || 20} dans un métier.`;
+    case 'bossAny': return 'Vaincs un boss en combat.';
+    case 'dungeonAny': return 'Termine un donjon.';
+    case 'schoolAny': return 'Termine une recherche à l’École.';
+    case 'merchantSeen': return 'Rencontre le marchand itinérant.';
+    case 'sakuraWind': return 'Vis un Vent des cerisiers.';
+    case 'cookbookMaster': return 'Crafte une recette de qualité Maître.';
+    case 'zoneUnlocked': return 'Débloque une nouvelle zone monde.';
+    case 'seasonMin': return `Atteins la Saison ${unlock.min || 2}.`;
+    default: return 'Continue ton aventure.';
+  }
+}
+
 export function getTravelerJournalViewModel(state, journalData, ctx = {}) {
   ensureTravelerJournalState(state);
   syncTravelerJournalUnlocks(state, journalData, ctx);
@@ -142,6 +159,7 @@ export function getTravelerJournalViewModel(state, journalData, ctx = {}) {
     .map((entry) => ({
       ...entry,
       unlocked: book.unlocked.includes(entry.id),
+      hint: entry.hint || hintFromUnlock(entry.unlock),
     }))
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 

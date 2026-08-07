@@ -1351,6 +1351,65 @@ async function renderSaves(container) {
   });
 }
 
+function renderDebugEvents(bodyEl) {
+  const game = gameRef;
+  if (!game) {
+    bodyEl.innerHTML = '<p class="admin-error">Jeu non chargé.</p>';
+    return;
+  }
+  const dbg = game.state?.debugEvents || {};
+  const sakuraActive = game.isSakuraWindActive?.();
+  const merchant = game.getTravelingMerchantStatus?.();
+  const sakuraUntil = Number(dbg.forceSakuraWindUntil) || 0;
+  const sakuraLeft = sakuraUntil > Date.now()
+    ? Math.ceil((sakuraUntil - Date.now()) / 60000)
+    : 0;
+
+  bodyEl.innerHTML = `
+    <div class="admin-panel-card">
+      <h3>🌸 Tests événements (local)</h3>
+      <p class="view-desc">Force le Vent des cerisiers ou le marchand itinérant sur <strong>ta</strong> partie pour tester l’UI. Pas d’impact sur les autres joueurs.</p>
+      <div class="admin-events-grid">
+        <section class="admin-event-card">
+          <h4>🌸 Vent des cerisiers</h4>
+          <p>Statut : ${sakuraActive ? '<strong class="ok">ACTIF</strong>' : 'inactif'}${sakuraLeft ? ` · forcé encore ~${sakuraLeft} min` : ''}</p>
+          <div class="admin-event-actions">
+            <button type="button" class="btn btn-craft" id="admin-force-sakura">Activer 20 min</button>
+            <button type="button" class="btn btn-muted" id="admin-clear-sakura">Arrêter</button>
+          </div>
+          <p class="view-desc">Puis ouvre <strong>Monde → Village</strong> pour la bannière / quête Miko.</p>
+        </section>
+        <section class="admin-event-card">
+          <h4>🧳 Marchand itinérant</h4>
+          <p>Statut : ${merchant?.active ? '<strong class="ok">EN VILLE</strong>' : 'absent'}${dbg.forceTravelingMerchantDate ? ` · forcé ${dbg.forceTravelingMerchantDate}` : ''}</p>
+          <div class="admin-event-actions">
+            <button type="button" class="btn btn-craft" id="admin-force-merchant">Faire venir aujourd’hui</button>
+            <button type="button" class="btn btn-muted" id="admin-clear-merchant">Annuler force</button>
+          </div>
+          <p class="view-desc">Va à la <strong>Place marchande</strong> (popup possible au prochain refresh).</p>
+        </section>
+      </div>
+    </div>
+  `;
+
+  bodyEl.querySelector('#admin-force-sakura')?.addEventListener('click', () => {
+    game.forceSakuraWindNow(20 * 60 * 1000);
+    renderDebugEvents(bodyEl);
+  });
+  bodyEl.querySelector('#admin-clear-sakura')?.addEventListener('click', () => {
+    game.clearForcedSakuraWind();
+    renderDebugEvents(bodyEl);
+  });
+  bodyEl.querySelector('#admin-force-merchant')?.addEventListener('click', () => {
+    game.forceTravelingMerchantToday();
+    renderDebugEvents(bodyEl);
+  });
+  bodyEl.querySelector('#admin-clear-merchant')?.addEventListener('click', () => {
+    game.clearForcedTravelingMerchant();
+    renderDebugEvents(bodyEl);
+  });
+}
+
 async function renderAdminPanel(bodyEl) {
   if (!bodyEl) return;
   const role = getProfileRole();
@@ -1362,6 +1421,7 @@ async function renderAdminPanel(bodyEl) {
     case 'players': await renderPlayers(bodyEl); break;
     case 'reports': await renderReports(bodyEl); break;
     case 'leaderboard': await renderLeaderboardAdmin(bodyEl); break;
+    case 'events': renderDebugEvents(bodyEl); break;
     case 'saves': await renderSaves(bodyEl); break;
     case 'announcements': await renderAnnouncements(bodyEl); break;
     case 'config': await renderConfig(bodyEl); break;

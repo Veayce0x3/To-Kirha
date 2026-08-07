@@ -524,7 +524,7 @@ function getSakuraQuestDef(boardData) {
 
 export function getSakuraWindQuestView(state, boardData, balance, resources, now = Date.now()) {
   const quest = getSakuraQuestDef(boardData);
-  const status = getSakuraWindStatus(now, balance);
+  const status = getSakuraWindStatus(now, balance, state);
   if (!quest || !status.scheduled) {
     return { available: false, status, quest: null };
   }
@@ -564,7 +564,7 @@ export function turnInSakuraWindQuest(state, boardData, balance, now = Date.now(
   const view = getSakuraWindQuestView(state, boardData, balance, null, now);
   const quest = getSakuraQuestDef(boardData);
   if (!quest) return { ok: false, reason: 'Quête introuvable.' };
-  const status = getSakuraWindStatus(now, balance);
+  const status = getSakuraWindStatus(now, balance, state);
   if (!status.active) {
     return { ok: false, reason: 'Le Vent des cerisiers n’est pas actif (fenêtre de 20 min UTC).' };
   }

@@ -94,15 +94,52 @@ export function getUtcDateKey(now = Date.now()) {
   return new Date(now).toISOString().slice(0, 10);
 }
 
-/** Hash stable → même météo pour tous à une date UTC donnée. */
-export function getWeatherIdForDate(dateKey) {
+/** Hash stable → météo partagée ; jamais la même que la veille. */
+const WEATHER_CHAIN_BASE = '2020-01-01';
+const weatherIdCache = new Map();
+
+function hashStr(s) {
   let h = 2166136261;
-  const s = String(dateKey || '');
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
+  const str = String(s || '');
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
-  return WEATHER_IDS[Math.abs(h) % WEATHER_IDS.length];
+  return h >>> 0;
+}
+
+export function getWeatherIdForDate(dateKey) {
+  const key = String(dateKey || getUtcDateKey());
+  if (weatherIdCache.has(key)) return weatherIdCache.get(key);
+
+  // Remplit la chaîne depuis la base jusqu’à la date demandée (sans répétition adjacente)
+  let d = WEATHER_CHAIN_BASE;
+  let prev = null;
+  // Si la date est avant la base, calcul direct sans chaîne longue
+  if (key < WEATHER_CHAIN_BASE) {
+    const pool = WEATHER_IDS;
+    const id = pool[hashStr(`weather_v2:${key}`) % pool.length];
+    weatherIdCache.set(key, id);
+    return id;
+  }
+
+  while (true) {
+    if (!weatherIdCache.has(d)) {
+      const pool = prev ? WEATHER_IDS.filter((id) => id !== prev) : [...WEATHER_IDS];
+      const id = pool[hashStr(`weather_v2:${d}`) % pool.length];
+      weatherIdCache.set(d, id);
+    }
+    prev = weatherIdCache.get(d);
+    if (d === key) return prev;
+    const next = addUtcDays(d, 1);
+    if (next <= d) break; // sécurité
+    d = next;
+    // Garde-fou : ne pas boucler infiniment
+    if (weatherIdCache.size > 20000) break;
+  }
+  const fallback = WEATHER_IDS[hashStr(`weather_v2:${key}`) % WEATHER_IDS.length];
+  weatherIdCache.set(key, fallback);
+  return fallback;
 }
 
 export function getCurrentWeather(now = Date.now()) {
@@ -127,16 +164,6 @@ export function getTomorrowWeather(now = Date.now()) {
   return getWeatherForDateKey(addUtcDays(getUtcDateKey(now), 1));
 }
 
-function hashStr(s) {
-  let h = 2166136261;
-  const str = String(s || '');
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
 function makeRng(seed) {
   let t = seed >>> 0;
   return () => {
@@ -149,12 +176,25 @@ function makeRng(seed) {
 
 /**
  * Event rare déterministe (même fenêtre pour tous).
+ * state.debugEvents.forceSakuraWindUntil → force une fenêtre active (admin test).
  * @returns {{ dateKey, startAt, endAt, durationMs }|null}
  */
-export function getSakuraWindSchedule(dateKey, balance = null) {
+export function getSakuraWindSchedule(dateKey, balance = null, state = null) {
   const c = cfg(balance);
+  const durationMs = Math.max(60_000, Number(c.sakuraWindDurationMs) || 20 * 60_000);
+  const forceUntil = Number(state?.debugEvents?.forceSakuraWindUntil) || 0;
+  if (forceUntil > Date.now() && dateKey === getUtcDateKey()) {
+    const startAt = Date.now() - 5_000;
+    return {
+      dateKey,
+      startAt,
+      endAt: forceUntil,
+      durationMs: Math.max(durationMs, forceUntil - startAt),
+      forced: true,
+    };
+  }
+
   const chance = Number(c.sakuraWindChance);
-  const durationMs = Math.max(60_000, Number(c.sakuraWindDurationMs) || 20 * 60 * 1000);
   const rng = makeRng(hashStr(`sakura_wind_v1:${dateKey}`));
   if (rng() >= (Number.isFinite(chance) ? chance : 0.125)) return null;
 
@@ -180,9 +220,9 @@ export function formatUtcHm(ts) {
 /**
  * Statut Vent des cerisiers pour un instant donné.
  */
-export function getSakuraWindStatus(now = Date.now(), balance = null) {
+export function getSakuraWindStatus(now = Date.now(), balance = null, state = null) {
   const dateKey = getUtcDateKey(now);
-  const schedule = getSakuraWindSchedule(dateKey, balance);
+  const schedule = getSakuraWindSchedule(dateKey, balance, state);
   if (!schedule) {
     return { scheduled: false, active: false, upcoming: false, past: false, schedule: null, dateKey };
   }
@@ -196,6 +236,7 @@ export function getSakuraWindStatus(now = Date.now(), balance = null) {
     past,
     schedule,
     dateKey,
+    forced: !!schedule.forced,
     startLabel: formatUtcHm(schedule.startAt),
     endLabel: formatUtcHm(schedule.endAt),
     msUntilStart: Math.max(0, schedule.startAt - now),
@@ -204,11 +245,11 @@ export function getSakuraWindStatus(now = Date.now(), balance = null) {
 }
 
 /** Vue complète Ciel du jour + demain (+ sakura). */
-export function getWeatherSkyView(now = Date.now(), balance = null) {
+export function getWeatherSkyView(now = Date.now(), balance = null, state = null) {
   const today = getCurrentWeather(now);
   const tomorrow = getTomorrowWeather(now);
-  const sakuraToday = getSakuraWindStatus(now, balance);
-  const sakuraTomorrow = getSakuraWindSchedule(tomorrow.dateKey, balance);
+  const sakuraToday = getSakuraWindStatus(now, balance, state);
+  const sakuraTomorrow = getSakuraWindSchedule(tomorrow.dateKey, balance, state);
 
   return {
     today,

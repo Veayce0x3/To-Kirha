@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260807-0720",
+      "date": "2026-08-07",
+      "title": "Arbre École, Carnet modal, météo & tests events",
+      "highlights": [
+        "École : arbre de recherches (nœuds ❓ jusqu’au déblocage)",
+        "Carnet : grande page lisible avec ✕ + indices sur les pages scellées",
+        "Météo : plus jamais deux fois la même d’affilée",
+        "Admin → Événements : forcer Vent des cerisiers / marchand itinérant"
+      ]
+    },
+    {
       "buildId": "20260807-0645",
       "date": "2026-08-07",
       "title": "Réparation save + menus lore",

@@ -1161,6 +1161,79 @@
   background: rgba(74, 55, 40, 0.04);
 }
 
+.journal-card.unlocked {
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.journal-card.unlocked:active {
+  transform: scale(0.99);
+}
+
+.journal-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: var(--vert-foret, #2D5A27);
+  line-height: 1.35;
+}
+
+.journal-card-teaser {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.modal-journal-page {
+  position: relative;
+  max-width: min(520px, 94vw);
+  max-height: min(85vh, 720px);
+  overflow: auto;
+  padding: 1.25rem 1.15rem 1.35rem;
+  text-align: center;
+}
+
+.journal-modal-close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(74, 55, 40, 0.08);
+  color: var(--marron-bois, #4A3728);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.journal-modal-emoji {
+  font-size: 2.4rem;
+  line-height: 1;
+  margin: 0.4rem 0 0.5rem;
+}
+
+.journal-modal-title {
+  margin: 0 0 0.85rem;
+  font-size: 1.35rem;
+  color: var(--marron-bois, #4A3728);
+}
+
+.journal-modal-text {
+  text-align: left;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: rgba(74, 55, 40, 0.92);
+  margin-bottom: 1.1rem;
+}
+
+.journal-modal-text p {
+  margin: 0 0 0.75rem;
+}
+
+.journal-modal-text p:last-child {
+  margin-bottom: 0;
+}
+
 .journal-card-head {
   display: flex;
   align-items: center;
@@ -10644,6 +10717,129 @@ body.career-choice-pending #career-choice-modal.modal-overlay.active {
   margin: 0 0 0.55rem;
   font-size: 1.05rem;
   color: var(--brun-terre, #4a3728);
+}
+
+.school-tree-legend {
+  margin: -0.25rem 0 0.65rem;
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+
+.school-tree {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.school-tree-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 168px;
+  max-width: 200px;
+  flex: 0 0 auto;
+}
+
+.school-tree-connector {
+  width: 18px;
+  flex: 0 0 18px;
+  align-self: center;
+  height: 3px;
+  margin: 0 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(155, 89, 182, 0.45), rgba(45, 90, 39, 0.35));
+}
+
+.school-tree-node {
+  padding: 0.7rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(74, 55, 40, 0.14);
+  min-height: 44px;
+}
+
+.school-tree-node.permanent {
+  border-color: rgba(155, 89, 182, 0.35);
+  background: rgba(155, 89, 182, 0.06);
+}
+
+.school-tree-node.status-done {
+  opacity: 0.75;
+  border-color: rgba(45, 90, 39, 0.35);
+}
+
+.school-tree-node.status-available {
+  box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.28);
+}
+
+.school-tree-node.fog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  text-align: center;
+  min-height: 110px;
+  background: rgba(74, 55, 40, 0.05);
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+.school-tree-fog-icon {
+  font-size: 1.4rem;
+}
+
+.school-tree-fog-title {
+  font-size: 0.95rem;
+  color: var(--marron-bois, #4A3728);
+}
+
+.school-tree-fog-hint {
+  font-size: 0.7rem;
+  opacity: 0.65;
+}
+
+.school-tree-node-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.school-tree-node-head h4 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.admin-events-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.admin-event-card {
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: rgba(248, 232, 238, 0.45);
+  border: 1px solid rgba(232, 180, 203, 0.4);
+}
+
+.admin-event-card h4 {
+  margin: 0 0 0.4rem;
+}
+
+.admin-event-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.55rem 0;
+}
+
+.admin-event-card .ok {
+  color: var(--vert-foret, #2D5A27);
 }
 
 .school-card-list {

@@ -1,5 +1,5 @@
 /**
- * Vue École du Village — recherches saisonnières + connaissances permanentes.
+ * Vue École du Village — arbre de recherches (tech tree).
  */
 
 import { formatResearchDuration } from '../systems/villageSchool.js';
@@ -18,7 +18,7 @@ function statusLabel(status) {
   switch (status) {
     case 'done': return 'Terminée';
     case 'active': return 'En cours';
-    case 'locked': return 'Prérequis';
+    case 'locked': return 'Verrouillée';
     case 'blocked': return 'Une autre recherche est en cours';
     case 'unaffordable': return 'Ressources insuffisantes';
     case 'available': return 'Disponible';
@@ -42,6 +42,64 @@ function formatBonusSummary(bonuses) {
   if (bonuses.combatAtk) lines.push(`+${Math.round(bonuses.combatAtk * 100)} % ATQ`);
   if (bonuses.combatDef) lines.push(`+${Math.round(bonuses.combatDef * 100)} % DEF`);
   return lines;
+}
+
+function researchDepth(research, byId, memo = {}) {
+  if (!research) return 0;
+  if (memo[research.id] != null) return memo[research.id];
+  const reqs = research.requires || [];
+  if (!reqs.length) {
+    memo[research.id] = 0;
+    return 0;
+  }
+  let max = 0;
+  for (const id of reqs) {
+    max = Math.max(max, researchDepth(byId[id], byId, memo));
+  }
+  memo[research.id] = max + 1;
+  return memo[research.id];
+}
+
+function isRevealed(status) {
+  return status !== 'locked';
+}
+
+function renderTreeNode(game, item) {
+  const { research, status, ingredients, canStart } = item;
+  if (!isRevealed(status)) {
+    return `
+      <article class="school-tree-node fog" data-research="${research.id}" title="Termine la recherche précédente pour découvrir celle-ci">
+        <span class="school-tree-fog-icon">❓</span>
+        <strong class="school-tree-fog-title">???</strong>
+        <span class="school-tree-fog-hint">Chemin encore brumeux</span>
+      </article>`;
+  }
+
+  const costParts = [
+    research.kirhaCost ? `${research.kirhaCost} 💰` : null,
+    ...ingredients.map((ing) => {
+      const ok = ing.have >= ing.need;
+      const icon = game.resources[ing.resId]
+        ? renderResourceIcon(game.resources[ing.resId], 'school-ing-icon')
+        : (ing.emoji || '');
+      return `<span class="school-ing${ok ? '' : ' missing'}">${icon}${ing.have}/${ing.need}</span>`;
+    }),
+  ].filter(Boolean);
+
+  return `
+    <article class="school-tree-node status-${status}${research.tier === 'permanent' ? ' permanent' : ''}" data-research="${research.id}">
+      <header class="school-tree-node-head">
+        <h4>${research.name}</h4>
+        <span class="school-tier">${research.tier === 'permanent' ? 'Permanent' : 'Saison'}</span>
+      </header>
+      <p class="school-card-desc">${research.description || ''}</p>
+      <p class="school-card-effect">${research.effectLabel || ''}</p>
+      <p class="school-card-meta">${formatResearchDuration(research.durationMs)} · ${statusLabel(status)}</p>
+      <div class="school-card-cost">${costParts.join(' · ')}</div>
+      ${canStart
+        ? `<button type="button" class="btn btn-craft school-start-btn" data-start="${research.id}">Lancer</button>`
+        : ''}
+    </article>`;
 }
 
 export function renderVillageSchool(game, el) {
@@ -81,38 +139,32 @@ export function renderVillageSchool(game, el) {
       </div>`;
 
   const branchesHtml = (vm.branches || []).map(({ branch, items }) => {
-    const cards = items.map(({ research, status, ingredients, canStart }) => {
-      const costParts = [
-        research.kirhaCost ? `${research.kirhaCost} 💰` : null,
-        ...ingredients.map((ing) => {
-          const ok = ing.have >= ing.need;
-          const icon = game.resources[ing.resId]
-            ? renderResourceIcon(game.resources[ing.resId], 'school-ing-icon')
-            : (ing.emoji || '');
-          return `<span class="school-ing${ok ? '' : ' missing'}">${icon}${ing.have}/${ing.need}</span>`;
-        }),
-      ].filter(Boolean);
+    const byId = Object.fromEntries(items.map((it) => [it.research.id, it.research]));
+    const depths = {};
+    for (const it of items) researchDepth(it.research, byId, depths);
+    const maxDepth = Math.max(0, ...Object.values(depths));
+    const columns = [];
+    for (let d = 0; d <= maxDepth; d++) {
+      columns.push(items.filter((it) => depths[it.research.id] === d));
+    }
 
+    const colsHtml = columns.map((col, colIdx) => {
+      const nodes = col.map((it) => renderTreeNode(game, it)).join('');
+      const connector = colIdx < columns.length - 1
+        ? '<div class="school-tree-connector" aria-hidden="true"></div>'
+        : '';
       return `
-        <article class="school-card status-${status}${research.tier === 'permanent' ? ' permanent' : ''}" data-research="${research.id}">
-          <header class="school-card-head">
-            <h4>${research.name}</h4>
-            <span class="school-tier">${research.tier === 'permanent' ? 'Permanent' : 'Saison'}</span>
-          </header>
-          <p class="school-card-desc">${research.description || ''}</p>
-          <p class="school-card-effect">${research.effectLabel || ''}</p>
-          <p class="school-card-meta">${formatResearchDuration(research.durationMs)} · ${statusLabel(status)}</p>
-          <div class="school-card-cost">${costParts.join(' · ')}</div>
-          ${canStart
-            ? `<button type="button" class="btn btn-craft school-start-btn" data-start="${research.id}">Lancer</button>`
-            : ''}
-        </article>`;
+        <div class="school-tree-col">
+          ${nodes || '<div class="school-tree-empty"></div>'}
+        </div>
+        ${connector}`;
     }).join('');
 
     return `
-      <section class="school-branch">
+      <section class="school-branch school-tree-branch">
         <h3 class="school-branch-title">${branch.emoji || ''} ${branch.label}</h3>
-        <div class="school-card-list">${cards}</div>
+        <p class="school-tree-legend">Les nœuds ❓ se révèlent quand le précédent est terminé.</p>
+        <div class="school-tree">${colsHtml}</div>
       </section>`;
   }).join('');
 
@@ -120,7 +172,7 @@ export function renderVillageSchool(game, el) {
     <div class="school-view">
       <header class="view-header">
         <h2><span class="nav-emoji">🏫</span> École du Village</h2>
-        <p class="view-desc">Recherches de saison (reset à la Renaissance) et connaissances permanentes. Les legs préparent la saison suivante.</p>
+        <p class="view-desc">Arbre de recherches : saison (reset à la Renaissance) et connaissances permanentes. Les legs préparent la saison suivante.</p>
       </header>
       <div class="school-summary panel-inner">
         <span>${vm.seasonalCount} saisonnière(s) · ${vm.permanentCount} permanente(s)</span>
@@ -141,10 +193,11 @@ export function renderVillageSchool(game, el) {
       const id = btn.getAttribute('data-start');
       const result = game.startVillageSchoolResearch(id);
       if (!result?.ok) {
-        // toast via event éventuel ; message local
         btn.textContent = result?.reason || 'Impossible';
         setTimeout(() => { btn.textContent = 'Lancer'; }, 1800);
+        return;
       }
+      renderVillageSchool(game, el);
     });
   });
 

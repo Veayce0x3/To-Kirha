@@ -947,6 +947,14 @@ export function initUI(game, audio) {
   on('journalUnlock', ({ entry }) => {
     if (!entry) return;
     showToast(els, `📔 Carnet : ${entry.emoji || ''} ${entry.title || 'nouvelle page'}`, 'upgrade');
+    import('./travelerJournalView.js').then(({ openJournalPageModal }) => {
+      openJournalPageModal(entry);
+    }).catch(() => {});
+  });
+  document.getElementById('journal-page-modal')?.addEventListener('click', (e) => {
+    if (e.target?.id === 'journal-page-modal') {
+      import('./travelerJournalView.js').then(({ closeJournalPageModal }) => closeJournalPageModal());
+    }
   });
   on('stateChange', () => {
     game.syncTravelerJournal?.();

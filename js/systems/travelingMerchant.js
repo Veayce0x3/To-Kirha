@@ -160,6 +160,7 @@ function stockFor(kind, rng) {
  * Legs « 1ʳᵉ semaine » : visite garantie le jour UTC du début de saison.
  */
 export function rollTravelingMerchantDay(dateKey, balance = null, state = null) {
+  if (state?.debugEvents?.forceTravelingMerchantDate === dateKey) return true;
   if (state?.villageSchool?.seasonFlags?.merchantFirstWeek && state.seasonStartedAt) {
     const startKey = getUtcDateKey(state.seasonStartedAt);
     if (dateKey === startKey) return true;
