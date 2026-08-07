@@ -23,7 +23,6 @@ import {
 } from '../systems/productionLines.js';
 import { getSlotEventVisual, getEventRevealAnnounceHtml } from '../systems/harvestEvents.js';
 import { buildWeatherMiniChip, bindWeatherMiniChip } from './villageView.js';
-import { navigate } from './router.js';
 import { getHarvestTime, getRegrowthTime } from '../systems/harvest.js';
 import { getHarvestXpForResource } from '../systems/progression.js';
 import { getJobXpBonusPercent } from '../systems/prestige.js';

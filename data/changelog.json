@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1115",
+      "date": "2026-08-07",
+      "title": "Correctif : le jeu ne chargeait plus",
+      "highlights": [
+        "Import en double de navigate dans la vue ferme — écran vide corrigé"
+      ]
+    },
+    {
       "buildId": "20260807-1105",
       "date": "2026-08-07",
       "title": "Puits : emplacements via l’École",
