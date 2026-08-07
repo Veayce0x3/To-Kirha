@@ -45,7 +45,7 @@ export function getMaxJobLevel(state) {
   return max;
 }
 
-/** Boost de relance 1 h — activable manuellement en début de saison (≤ Nv.10). */
+/** Boost de démarrage 1 h — activable manuellement en début de partie / saison / reset (≤ Nv.10). */
 export function isSeasonBoostActive(state, now = Date.now()) {
   const endsAt = Number(state?.seasonBoost?.endsAt) || 0;
   if (endsAt <= now) {
