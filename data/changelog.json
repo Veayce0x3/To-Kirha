@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-2215",
+      "date": "2026-08-07",
+      "title": "Classement : affichage carte propre",
+      "highlights": [
+        "Chaque joueur : rang + pseudo + score, puis grille Perso / Métier / Saison / Fortune",
+        "Menu « Classer par » pour choisir qui est 1er",
+        "Top 100, scroll dans la liste"
+      ]
+    },
+    {
       "buildId": "20260807-2205",
       "date": "2026-08-07",
       "title": "Classement : menu déroulant + fiche complète",

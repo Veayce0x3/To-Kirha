@@ -8,10 +8,9 @@ import { getAuthState, getOnlineBlockReason, canUseOnlineFeatures } from '../cor
 import { showAccountRequiredModal } from './authUi.js';
 import { isLeaderboardEnabled, isMaintenanceMode } from '../systems/gameConfig.js';
 
-/** Nombre de joueurs listés (le tri change juste l’ordre / qui est 1er). */
 const LB_LIMIT = 100;
 
-/** @type {string} sortKey SQL */
+/** @type {string} */
 let activeSortKey = 'char_level';
 
 function esc(s) {
@@ -31,11 +30,11 @@ function rankLabel(i) {
   if (i === 0) return '🥇';
   if (i === 1) return '🥈';
   if (i === 2) return '🥉';
-  return String(i + 1);
+  return `#${i + 1}`;
 }
 
-function sortLabel(sortKey) {
-  return LEADERBOARD_TABS.find((t) => t.sortKey === sortKey)?.label || 'Niveau';
+function sortMeta(sortKey) {
+  return LEADERBOARD_TABS.find((t) => t.sortKey === sortKey) || LEADERBOARD_TABS[0];
 }
 
 function emptyHint(sortKey) {
@@ -50,40 +49,67 @@ function emptyHint(sortKey) {
   }
 }
 
-/** Toutes les infos utiles d’un joueur, sur une seule ligne. */
-function statsLine(row, sortKey) {
-  const bits = [
-    { key: 'char_level', text: `Perso Nv.${row.char_level || 1}` },
-    { key: 'max_job_level', text: `Métier Nv.${row.max_job_level || 1}` },
-    { key: 'season', text: `S${row.season || 1}` },
-    { key: 'total_earned', text: `${fmtNum(row.total_earned)} 💰` },
-    { key: 'total_harvests', text: `${fmtNum(row.total_harvests)} récoltes` },
-    { key: 'seasons_completed', text: `${fmtNum(row.seasons_completed)} renais.` },
-    { key: 'boss_kills_total', text: `${fmtNum(row.boss_kills_total)} boss` },
-    { key: 'total_discoveries', text: `${fmtNum(row.total_discoveries)} découv.` },
-  ];
-  // Toujours perso / métier / saison / fortune + critère trié s’il manque
-  const prefer = new Set(['char_level', 'max_job_level', 'season', 'total_earned']);
-  if (sortKey && sortKey !== 'season') prefer.add(sortKey);
-  return bits
-    .filter((b) => prefer.has(b.key))
-    .map((b) => {
-      const hl = b.key === sortKey || (sortKey === 'char_level' && b.key === 'char_level');
-      return `<span class="lb-stat${hl ? ' lb-stat-hl' : ''}">${esc(b.text)}</span>`;
-    })
-    .join('<span class="lb-stat-sep" aria-hidden="true">·</span>');
+/** Valeur principale du critère de tri (colonne de droite). */
+function primaryScore(sortKey, row) {
+  switch (sortKey) {
+    case 'char_level': return `Nv.${row.char_level || 1}`;
+    case 'max_job_level': return `Nv.${row.max_job_level || 1}`;
+    case 'total_earned': return `${fmtNum(row.total_earned)} 💰`;
+    case 'seasons_completed': return `${fmtNum(row.seasons_completed)}`;
+    case 'total_harvests': return fmtNum(row.total_harvests);
+    case 'total_discoveries': return fmtNum(row.total_discoveries);
+    case 'boss_kills_total': return fmtNum(row.boss_kills_total);
+    default: return `Nv.${row.char_level || 1}`;
+  }
 }
 
-function listRowHtml(row, index, sortKey, { isMe = false } = {}) {
-  const name = esc(row.display_name || 'Voyageur');
+/**
+ * Grille fixe de 4 infos — toujours les mêmes cases, lisible.
+ * La case liée au tri est mise en avant.
+ */
+function statsGridHtml(row, sortKey) {
+  const cells = [
+    { key: 'char_level', label: 'Perso', value: `Nv.${row.char_level || 1}` },
+    { key: 'max_job_level', label: 'Métier', value: `Nv.${row.max_job_level || 1}` },
+    { key: 'season', label: 'Saison', value: `S${row.season || 1}` },
+    { key: 'total_earned', label: 'Fortune', value: `${fmtNum(row.total_earned)} 💰` },
+  ];
+
+  // Si le tri n’est pas une des 4 cases, remplace Fortune par le critère
+  const coreKeys = new Set(cells.map((c) => c.key));
+  if (sortKey && !coreKeys.has(sortKey)) {
+    const meta = sortMeta(sortKey);
+    cells[3] = {
+      key: sortKey,
+      label: meta.label,
+      value: primaryScore(sortKey, row),
+    };
+  }
+
   return `
-    <li class="lb-row${isMe ? ' is-me' : ''}${index >= 0 && index < 3 ? ' is-top' : ''}">
-      <span class="lb-row-rank">${rankLabel(index)}</span>
-      <div class="lb-row-body">
-        <span class="lb-row-name">${name}${isMe ? ' <em>(toi)</em>' : ''}</span>
-        <div class="lb-row-stats">${statsLine(row, sortKey)}</div>
+    <div class="lb-grid" role="group" aria-label="Stats">
+      ${cells.map((c) => `
+        <div class="lb-cell${c.key === sortKey ? ' is-hl' : ''}">
+          <span class="lb-cell-lbl">${esc(c.label)}</span>
+          <span class="lb-cell-val">${esc(c.value)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function playerBlockHtml(row, rankIndex, sortKey, { isMe = false, tag = 'li' } = {}) {
+  const name = esc(row.display_name || 'Voyageur');
+  const cls = `lb-entry${isMe ? ' is-me' : ''}${rankIndex >= 0 && rankIndex < 3 ? ' is-top' : ''}`;
+  return `
+    <${tag} class="${cls}">
+      <div class="lb-entry-head">
+        <span class="lb-entry-rank">${rankLabel(rankIndex)}</span>
+        <span class="lb-entry-name">${name}${isMe ? ' <em>toi</em>' : ''}</span>
+        <span class="lb-entry-score">${esc(primaryScore(sortKey, row))}</span>
       </div>
-    </li>
+      ${statsGridHtml(row, sortKey)}
+    </${tag}>
   `;
 }
 
@@ -112,22 +138,26 @@ export async function renderLeaderboard(game, el) {
     activeSortKey = 'char_level';
   }
 
+  const meta = sortMeta(activeSortKey);
+
   el.classList.add('lb-page');
   el.innerHTML = `
     <div class="lb-page-inner">
-      <header class="lb-topbar">
-        <h2 class="lb-title">🏆 Classement</h2>
-        <button type="button" class="btn btn-muted btn-sm lb-refresh" id="lb-refresh" title="Actualiser" aria-label="Actualiser">↻</button>
-      </header>
-      <div class="lb-sort-bar">
-        <label class="lb-sort-label" for="lb-sort">Qui est 1er selon</label>
-        <select class="auth-input lb-sort-select" id="lb-sort">
-          ${LEADERBOARD_TABS.map((t) => `
-            <option value="${t.sortKey}" ${t.sortKey === activeSortKey ? 'selected' : ''}>${t.label}</option>
-          `).join('')}
-        </select>
+      <div class="lb-toolbar">
+        <div class="lb-toolbar-title">
+          <h2 class="lb-title">🏆 Classement</h2>
+          <button type="button" class="btn btn-muted btn-sm lb-refresh" id="lb-refresh" aria-label="Actualiser">↻</button>
+        </div>
+        <label class="lb-sort-wrap">
+          <span class="lb-sort-label">Classer par</span>
+          <select class="auth-input lb-sort-select" id="lb-sort">
+            ${LEADERBOARD_TABS.map((t) => `
+              <option value="${t.sortKey}" ${t.sortKey === activeSortKey ? 'selected' : ''}>${t.label}</option>
+            `).join('')}
+          </select>
+        </label>
       </div>
-      <div class="leaderboard-panel lb-panel-compact">
+      <div class="leaderboard-panel lb-panel">
         <p class="lb-loading">Chargement…</p>
       </div>
     </div>
@@ -149,28 +179,29 @@ export async function renderLeaderboard(game, el) {
   };
   const rows = result.rows || [];
   const myRank = rows.findIndex((r) => r.user_id === auth.userId);
-  const showSyncWarn = !sync.ok && rows.length === 0;
   const panel = el.querySelector('.leaderboard-panel');
   if (!panel) return;
 
-  const criterion = sortLabel(activeSortKey);
+  const errors = [];
+  if (!sync.ok && rows.length === 0) errors.push(`Sync : ${sync.reason || 'échec'}`);
+  if (!result.ok) errors.push(result.reason || 'Chargement impossible.');
 
   panel.innerHTML = `
-    <div class="lb-you${myRank >= 0 ? '' : ' lb-you-out'}">
-      <span class="lb-you-rank">${rankLabel(myRank)}</span>
-      <div class="lb-you-body">
-        <strong class="lb-you-name">${esc(mySnap.display_name)}</strong>
-        <div class="lb-row-stats">${statsLine(mySnap, activeSortKey)}</div>
-      </div>
-    </div>
-    ${showSyncWarn ? `<p class="auth-error lb-msg">Sync : ${esc(sync.reason || 'échec')}</p>` : ''}
-    ${!result.ok ? `<p class="auth-error lb-msg">${esc(result.reason || 'Chargement impossible.')}</p>` : ''}
-    ${myRank < 0 && result.ok ? `<p class="lb-msg">Hors top ${LB_LIMIT} pour « ${esc(criterion)} »</p>` : ''}
-    <p class="lb-msg lb-msg-count">Top ${Math.min(LB_LIMIT, rows.length || LB_LIMIT)} · tri ${esc(criterion)}</p>
-    <ol class="lb-list" aria-label="Classement">
-      ${rows.length
-        ? rows.map((row, i) => listRowHtml(row, i, activeSortKey, { isMe: row.user_id === auth.userId })).join('')
-        : `<li class="lb-empty">${emptyHint(activeSortKey)}</li>`}
-    </ol>
+    <section class="lb-section lb-section-you" aria-label="Ton rang">
+      ${playerBlockHtml(mySnap, myRank, activeSortKey, { isMe: true, tag: 'div' })}
+      ${myRank < 0 && result.ok ? `<p class="lb-hint">Pas encore dans le top ${LB_LIMIT} (« ${esc(meta.label)} »).</p>` : ''}
+    </section>
+    ${errors.map((m) => `<p class="auth-error lb-hint">${esc(m)}</p>`).join('')}
+    <section class="lb-section lb-section-list" aria-label="Top joueurs">
+      <p class="lb-list-caption">Top ${rows.length || LB_LIMIT} · ${esc(meta.label)}</p>
+      <ol class="lb-list">
+        ${rows.length
+          ? rows.map((row, i) => playerBlockHtml(row, i, activeSortKey, {
+              isMe: row.user_id === auth.userId,
+              tag: 'li',
+            })).join('')
+          : `<li class="lb-empty">${emptyHint(activeSortKey)}</li>`}
+      </ol>
+    </section>
   `;
 }
