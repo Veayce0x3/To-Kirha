@@ -1072,6 +1072,10 @@ export function initUI(game, audio) {
     els.travelingMerchantModal?.setAttribute('aria-hidden', 'false');
   }
 
+  on('stateChange', () => {
+    maybeShowTravelingMerchantPopup();
+  });
+
   els.travelingMerchantDismiss?.addEventListener('click', () => {
     game.markTravelingMerchantPopupSeen?.();
     closeTravelingMerchantModal();
