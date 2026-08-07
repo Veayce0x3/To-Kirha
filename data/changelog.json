@@ -1,6 +1,19 @@
 {
   "entries": [
     {
+      "buildId": "20260807-2035",
+      "date": "2026-08-07",
+      "title": "UX : combat, carnet, admin, annonces & début",
+      "highlights": [
+        "Combat : barres PV (vert) / PM (bleu) style DQ avec 30/30",
+        "Carnet : lecture livre feuilletable + lore moins générique (plus de popup)",
+        "Admin : onglets groupés, liste joueurs sans scroll latéral",
+        "Annonces : plus visibles, fermables, refresh auto",
+        "Succès : Récupérer tout seulement si une étape visible est prête",
+        "Mode sombre retravaillé · menu sans légendes vertes · début +20 Kirha & ventes T1/T2"
+      ]
+    },
+    {
       "buildId": "20260807-1635",
       "date": "2026-08-07",
       "title": "Combat : PM hors combat + aperçu dégâts",

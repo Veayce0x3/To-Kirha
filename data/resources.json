@@ -8,7 +8,7 @@
     "requiredJobLevel": 1,
     "baseHarvestTime": 3000,
     "baseYield": 1,
-    "sellPrice": 4,
+    "sellPrice": 5,
     "xpPerHarvest": 10,
     "rarity": "common",
     "visual": {
@@ -35,7 +35,7 @@
     "requiredJobLevel": 20,
     "baseHarvestTime": 3000,
     "baseYield": 1,
-    "sellPrice": 7,
+    "sellPrice": 8,
     "xpPerHarvest": 14,
     "rarity": "common",
     "visual": {
@@ -278,7 +278,7 @@
     "requiredJobLevel": 1,
     "baseHarvestTime": 3000,
     "baseYield": 1,
-    "sellPrice": 4,
+    "sellPrice": 5,
     "xpPerHarvest": 10,
     "rarity": "common",
     "visual": {
@@ -305,7 +305,7 @@
     "requiredJobLevel": 20,
     "baseHarvestTime": 3000,
     "baseYield": 1,
-    "sellPrice": 7,
+    "sellPrice": 8,
     "xpPerHarvest": 14,
     "rarity": "common",
     "visual": {
@@ -548,7 +548,7 @@
     "requiredJobLevel": 1,
     "baseHarvestTime": 3000,
     "baseYield": 1,
-    "sellPrice": 4,
+    "sellPrice": 5,
     "xpPerHarvest": 10,
     "rarity": "common",
     "visual": {
@@ -575,7 +575,7 @@
     "requiredJobLevel": 20,
     "baseHarvestTime": 3000,
     "baseYield": 1,
-    "sellPrice": 7,
+    "sellPrice": 8,
     "xpPerHarvest": 14,
     "rarity": "common",
     "visual": {
@@ -818,7 +818,7 @@
     "requiredJobLevel": 1,
     "baseHarvestTime": 3000,
     "baseYield": 1,
-    "sellPrice": 4,
+    "sellPrice": 5,
     "xpPerHarvest": 10,
     "rarity": "common",
     "visual": {
@@ -845,7 +845,7 @@
     "requiredJobLevel": 20,
     "baseHarvestTime": 3000,
     "baseYield": 1,
-    "sellPrice": 7,
+    "sellPrice": 8,
     "xpPerHarvest": 14,
     "rarity": "common",
     "visual": {
@@ -1088,7 +1088,7 @@
     "requiredJobLevel": 1,
     "baseHarvestTime": 3000,
     "baseYield": 1,
-    "sellPrice": 4,
+    "sellPrice": 5,
     "xpPerHarvest": 10,
     "rarity": "common",
     "visual": {
@@ -1115,7 +1115,7 @@
     "requiredJobLevel": 20,
     "baseHarvestTime": 3000,
     "baseYield": 1,
-    "sellPrice": 7,
+    "sellPrice": 8,
     "xpPerHarvest": 14,
     "rarity": "common",
     "visual": {

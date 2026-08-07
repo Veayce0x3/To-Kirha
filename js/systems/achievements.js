@@ -415,10 +415,14 @@ export function formatAchievementRewardText(achievement) {
 }
 
 export function countClaimableAchievements(achievements, state, recipes) {
-  return Object.values(achievements || {}).filter((a) => {
-    if (!a || a.hidden) return false;
-    return isAchievementReady(a, state, recipes);
-  }).length;
+  // Compte uniquement l’étape affichée de chaque chaîne (ce que voit le joueur).
+  let n = 0;
+  for (const chain of getAchievementChains(achievements)) {
+    const ach = getDisplayedAchievementForChain(chain, state);
+    if (!ach || ach.hidden) continue;
+    if (isAchievementReady(ach, state, recipes)) n += 1;
+  }
+  return n;
 }
 
 export function claimAchievement(id, state, achievements, balance, recipes) {

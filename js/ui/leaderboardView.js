@@ -68,6 +68,7 @@ export async function renderLeaderboard(game, el) {
     <div class="view-header">
       <h2>🏆 Classement</h2>
       <p class="view-desc">Compare-toi aux autres voyageurs · ${tabLabel}</p>
+      <button type="button" class="btn btn-muted btn-sm" id="lb-refresh">Actualiser</button>
     </div>
     <nav class="leaderboard-tabs" role="tablist" aria-label="Critères">
       ${LEADERBOARD_TABS.map((t) => `
@@ -82,7 +83,7 @@ export async function renderLeaderboard(game, el) {
           <p class="view-desc lb-you-score">${myValue}</p>
         </div>
       </div>
-      ${showSyncWarn ? `<p class="auth-error">Sync : ${sync.reason || 'échec'}</p>` : ''}
+      ${showSyncWarn ? `<p class="auth-error">Sync : ${sync.reason || 'échec'} — appuie sur Actualiser après avoir joué un peu.</p>` : ''}
       ${!result.ok ? `<p class="auth-error">${result.reason || 'Impossible de charger le classement.'}</p>` : ''}
       ${result.devLocal ? '<p class="view-desc">Mode local — classement solo.</p>' : ''}
       <ol class="leaderboard-list">
@@ -97,6 +98,7 @@ export async function renderLeaderboard(game, el) {
     </div>
   `;
 
+  el.querySelector('#lb-refresh')?.addEventListener('click', () => renderLeaderboard(game, el));
   el.querySelectorAll('[data-lb-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
       activeLeaderboardTab = btn.dataset.lbTab;

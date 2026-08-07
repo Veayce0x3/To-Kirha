@@ -1,5 +1,6 @@
 /**
  * Vue Carnet du voyageur + Herbier (ressources / butin / bestiaire) + Livre de cuisine.
+ * Le carnet s’affiche comme un livre feuilletable (toutes les pages visibles progressivement).
  */
 
 import { iconHtml, getNavIcon } from '../core/assets.js';
@@ -7,6 +8,12 @@ import { renderResourceIcon } from '../systems/resourceVisual.js';
 
 let loreTab = 'journal'; // 'journal' | 'herbarium' | 'cookbook'
 let herbFilter = 'all';
+let journalPageIndex = 0;
+
+/** Ouvre le carnet sur la dernière page débloquée (après toast unlock). */
+export function focusLatestJournalPage() {
+  journalPageIndex = 9999;
+}
 
 export function closeJournalPageModal() {
   const modal = document.getElementById('journal-page-modal');
@@ -15,6 +22,7 @@ export function closeJournalPageModal() {
   modal.setAttribute('aria-hidden', 'true');
 }
 
+/** Conservé pour découvertes Kirha / contenus ponctuels hors carnet. */
 export function openJournalPageModal(entry) {
   const modal = document.getElementById('journal-page-modal');
   const body = document.getElementById('journal-page-modal-body');
@@ -54,6 +62,13 @@ export function openHarvestDiscoveryModal(discovery, kirhaGain = 0) {
   });
 }
 
+function formatJournalBody(body) {
+  return String(body || '')
+    .split(/\n\n+/)
+    .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+
 function renderJournalPanel(game, panel) {
   const vm = game.getTravelerJournalView?.();
   if (!vm) {
@@ -61,42 +76,76 @@ function renderJournalPanel(game, panel) {
     return;
   }
 
-  const cards = vm.entries.map((e) => {
-    if (!e.unlocked) {
-      return `
-        <article class="journal-card locked">
-          <span class="journal-emoji">❓</span>
-          <strong>Page scellée</strong>
-          <p class="journal-hint">💡 ${e.hint || e.unlockHint || 'Continue ton aventure pour débloquer cette page.'}</p>
-        </article>`;
-    }
-    return `
-      <article class="journal-card unlocked" role="button" tabindex="0" data-journal-open="${e.id}">
-        <header class="journal-card-head">
-          <span class="journal-emoji">${e.emoji || '📔'}</span>
-          <strong>${e.title}</strong>
-        </header>
-        <p class="journal-card-teaser">Touche pour relire</p>
-      </article>`;
-  }).join('');
+  const unlocked = vm.entries.filter((e) => e.unlocked);
+  const locked = vm.entries.filter((e) => !e.unlocked);
+  if (journalPageIndex >= unlocked.length) journalPageIndex = Math.max(0, unlocked.length - 1);
+  if (journalPageIndex < 0) journalPageIndex = 0;
+
+  const page = unlocked[journalPageIndex] || null;
+  const pageNum = unlocked.length ? journalPageIndex + 1 : 0;
+
+  const dots = unlocked.map((e, i) => `
+    <button type="button" class="journal-book-dot${i === journalPageIndex ? ' active' : ''}"
+      data-journal-page="${i}" aria-label="Page ${i + 1} : ${e.title}"
+      aria-current="${i === journalPageIndex ? 'page' : 'false'}"></button>
+  `).join('');
+
+  const sealedPreview = locked.slice(0, 3).map((e) => `
+    <li class="journal-sealed-item">
+      <span aria-hidden="true">❓</span>
+      <span>${e.hint || e.unlockHint || 'Page scellée'}</span>
+    </li>
+  `).join('');
 
   panel.innerHTML = `
     <p class="view-desc">${vm.description} Progression : <strong>${vm.unlockedCount}/${vm.total}</strong>.</p>
-    <div class="journal-panel">${cards}</div>
+    <div class="journal-book" role="region" aria-label="Carnet du voyageur">
+      <div class="journal-book-spine" aria-hidden="true"></div>
+      <div class="journal-book-page">
+        ${page ? `
+          <header class="journal-book-head">
+            <span class="journal-book-emoji">${page.emoji || '📔'}</span>
+            <div>
+              <p class="journal-book-folio">Page ${pageNum} / ${unlocked.length}</p>
+              <h3 class="journal-book-title">${page.title}</h3>
+            </div>
+          </header>
+          <div class="journal-book-text">${formatJournalBody(page.body)}</div>
+        ` : `
+          <p class="journal-book-empty">Aucune page ouverte pour l’instant. Commence l’aventure pour écrire la première.</p>
+        `}
+      </div>
+      <div class="journal-book-nav">
+        <button type="button" class="btn btn-muted journal-book-prev" ${journalPageIndex <= 0 ? 'disabled' : ''} aria-label="Page précédente">‹</button>
+        <div class="journal-book-dots">${dots || '<span class="journal-book-dots-empty">—</span>'}</div>
+        <button type="button" class="btn btn-muted journal-book-next" ${journalPageIndex >= unlocked.length - 1 ? 'disabled' : ''} aria-label="Page suivante">›</button>
+      </div>
+    </div>
+    ${locked.length ? `
+      <section class="journal-sealed">
+        <h4 class="journal-sealed-title">Pages à venir (${locked.length})</h4>
+        <ul class="journal-sealed-list">${sealedPreview}${locked.length > 3 ? `<li class="journal-sealed-item">… et ${locked.length - 3} autres</li>` : ''}</ul>
+      </section>
+    ` : ''}
   `;
 
-  const openById = (id) => {
-    const entry = vm.entries.find((x) => x.id === id && x.unlocked);
-    if (entry) openJournalPageModal(entry);
-  };
-
-  panel.querySelectorAll('[data-journal-open]').forEach((card) => {
-    card.addEventListener('click', () => openById(card.getAttribute('data-journal-open')));
-    card.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter' || ev.key === ' ') {
-        ev.preventDefault();
-        openById(card.getAttribute('data-journal-open'));
-      }
+  const rerender = () => renderJournalPanel(game, panel);
+  panel.querySelector('.journal-book-prev')?.addEventListener('click', () => {
+    if (journalPageIndex > 0) {
+      journalPageIndex -= 1;
+      rerender();
+    }
+  });
+  panel.querySelector('.journal-book-next')?.addEventListener('click', () => {
+    if (journalPageIndex < unlocked.length - 1) {
+      journalPageIndex += 1;
+      rerender();
+    }
+  });
+  panel.querySelectorAll('[data-journal-page]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      journalPageIndex = Number(btn.getAttribute('data-journal-page')) || 0;
+      rerender();
     });
   });
 }

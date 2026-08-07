@@ -1856,13 +1856,20 @@ function renderAchievements(game, el) {
   });
 
   const list = el.querySelector('#achievements-list');
-  const order = ['season_1', 'season_meta', 'harvest', 'farm', 'craft', 'combat'];
+  const order = [
+    'season_1', 'season_meta', 'harvest', 'farm', 'craft', 'cuisine', 'combat',
+    'village_sakura', 'petal_forest', 'mist_river', 'jade_mountains', 'lotus_sanctuary',
+  ];
   const byCat = {};
   for (const chain of chains) {
     (byCat[chain.category] ||= []).push(chain);
   }
+  const orderedCats = [
+    ...order.filter((id) => byCat[id]?.length),
+    ...Object.keys(byCat).filter((id) => !order.includes(id)),
+  ];
 
-  for (const catId of order) {
+  for (const catId of orderedCats) {
     const catChains = byCat[catId];
     if (!catChains?.length) continue;
 
@@ -4600,6 +4607,22 @@ function renderCombatZoneList(game, el, list) {
 }
 
 
+/** Barre PV/PM style DQ/Pokémon : piste colorée + chiffres current/max. */
+function dqStatBarHtml({ kind, current, max, pct, extraClass = '' }) {
+  const safeMax = Math.max(0, Number(max) || 0);
+  const safeCur = Math.max(0, Number(current) || 0);
+  const safePct = Math.max(0, Math.min(100, Number(pct) || 0));
+  const state = safePct <= 25 ? ' danger' : safePct <= 50 ? ' warn' : '';
+  const isMp = kind === 'mp';
+  const label = isMp ? 'Points de magie' : 'Points de vie';
+  return `
+    <div class="dq-stat-bar dq-stat-bar-${isMp ? 'mp' : 'hp'}${isMp ? '' : state}${extraClass ? ` ${extraClass}` : ''}" title="${label}" aria-label="${label} ${safeCur} sur ${safeMax}">
+      <div class="dq-stat-bar-track" aria-hidden="true"><div class="dq-stat-bar-fill" style="width:${safePct}%"></div></div>
+      <span class="dq-stat-bar-num">${safeCur}/${safeMax}</span>
+    </div>
+  `;
+}
+
 function renderOutOfCombatHealPanel(game) {
   const stats = game.getCharacterStats();
   const maxHp = stats.hp;
@@ -4614,8 +4637,6 @@ function renderOutOfCombatHealPanel(game) {
     .filter(([id, qty]) => qty > 0 && Number(game.resources[id]?.toolRepair) > 0)
     .map(([id, qty]) => ({ id, qty, amount: Number(game.resources[id].toolRepair) }));
   const buff = getActiveCombatMealBuff(game.state);
-  const hpState = hpPct <= 25 ? ' danger' : hpPct <= 50 ? ' warn' : '';
-  const mpState = mpPct <= 25 ? ' danger' : mpPct <= 50 ? ' warn' : '';
 
   const mealButtons = meals.length
     ? meals.map((meal) => {
@@ -4650,13 +4671,11 @@ function renderOutOfCombatHealPanel(game) {
           <h3>🍱 Préparation hors combat</h3>
           <p class="view-desc">Soigne les PV, restaure les PM (poissonnier), bois un élixir, ou répare un outil avant le prochain combat.</p>
         </div>
-        <div class="combat-heal-values">
-          <strong class="combat-heal-value${hpState}">❤️ ${currentHp}/${maxHp}</strong>
-          ${maxMp > 0 ? `<strong class="combat-heal-value combat-heal-value-mp${mpState}">💙 ${currentMp}/${maxMp}</strong>` : ''}
-        </div>
       </div>
-      <div class="combat-heal-bar${hpState}" title="Points de vie"><div class="combat-heal-fill" style="width:${hpPct}%"></div></div>
-      ${maxMp > 0 ? `<div class="combat-heal-bar combat-heal-bar-mp${mpState}" title="Points de magie"><div class="combat-heal-fill combat-heal-fill-mp" style="width:${mpPct}%"></div></div>` : ''}
+      <div class="combat-heal-bars">
+        ${dqStatBarHtml({ kind: 'hp', current: currentHp, max: maxHp, pct: hpPct, extraClass: 'dq-stat-bar-lg' })}
+        ${maxMp > 0 ? dqStatBarHtml({ kind: 'mp', current: currentMp, max: maxMp, pct: mpPct, extraClass: 'dq-stat-bar-lg' }) : ''}
+      </div>
       ${buffBanner}
       <div class="combat-heal-actions">${mealButtons}${repairButtons}</div>
     </section>
@@ -4958,7 +4977,6 @@ function renderDungeonCombatBody(game) {
   const soloHpNote = isSoloFight && game.state.combatWear?.solo?.hero != null
     ? ` · HP entraînement : ${game.state.combatWear.solo.hero}`
     : '';
-  const hpStateClass = (pct) => (pct <= 25 ? ' hp-danger' : pct <= 50 ? ' hp-warn' : '');
 
   const partyHtml = party.map((member, index) => {
     const hpPct = Math.max(0, (member.hp / member.maxHp) * 100);
@@ -4972,12 +4990,8 @@ function renderDungeonCombatBody(game) {
         ${isTargetable ? `data-target-id="${member.id}"` : ''}>
         <div class="dq-sprite dq-sprite-party" data-member-id="${member.id}" aria-hidden="true">${member.emoji}</div>
         <div class="dq-fighter-name">${member.name}</div>
-        <div class="dq-mini-hp${hpStateClass(hpPct)}" aria-hidden="true"><div class="dq-mini-hp-fill" style="width:${hpPct}%"></div></div>
-        <div class="dq-party-hp" aria-label="Points de vie">❤️ ${member.hp}/${member.maxHp}</div>
-        ${maxMp > 0 ? `
-          <div class="dq-mini-mp" aria-hidden="true"><div class="dq-mini-mp-fill" style="width:${mpPct}%"></div></div>
-          <div class="dq-party-mp" aria-label="Points de magie">💙 ${member.mp ?? 0}/${maxMp}</div>
-        ` : ''}
+        ${dqStatBarHtml({ kind: 'hp', current: member.hp, max: member.maxHp, pct: hpPct })}
+        ${maxMp > 0 ? dqStatBarHtml({ kind: 'mp', current: member.mp ?? 0, max: maxMp, pct: mpPct }) : ''}
         ${isActive ? '<span class="dq-active-cursor" aria-hidden="true">▶</span>' : ''}
       </${tag}>
     `;
@@ -4996,8 +5010,7 @@ function renderDungeonCombatBody(game) {
         <div class="dq-sprite dq-sprite-enemy${foe.boss ? ' dq-sprite-boss' : ''}" aria-hidden="true">${foe.emoji}</div>
         <div class="dq-enemy-plate">
           <div class="dq-enemy-label">${foe.name}</div>
-          <div class="dq-mini-hp dq-mini-hp-enemy${hpStateClass(hpPct)}" aria-hidden="true"><div class="dq-mini-hp-fill" style="width:${hpPct}%"></div></div>
-          <div class="dq-enemy-hp">${foe.hp}/${foe.maxHp}</div>
+          ${dqStatBarHtml({ kind: 'hp', current: foe.hp, max: foe.maxHp, pct: hpPct, extraClass: 'dq-stat-bar-enemy' })}
         </div>
       </${tag}>
     `;
@@ -5011,12 +5024,8 @@ function renderDungeonCombatBody(game) {
     return `
       <div class="dq-status-chip${member.hp <= 0 ? ' dq-ko' : ''}${isActive ? ' dq-status-active' : ''}">
         <span class="dq-status-name">${member.emoji} ${member.name}</span>
-        <div class="dq-status-hp${hpStateClass(hpPct)}"><div class="dq-status-hp-fill" style="width:${hpPct}%"></div></div>
-        <span class="dq-status-num">❤️ ${member.hp}/${member.maxHp}</span>
-        ${maxMp > 0 ? `
-          <div class="dq-status-mp-bar" aria-hidden="true"><div class="dq-status-mp-fill" style="width:${mpPct}%"></div></div>
-          <span class="dq-status-num dq-status-mp">💙 ${member.mp ?? 0}/${maxMp}</span>
-        ` : ''}
+        ${dqStatBarHtml({ kind: 'hp', current: member.hp, max: member.maxHp, pct: hpPct, extraClass: 'dq-stat-bar-status' })}
+        ${maxMp > 0 ? dqStatBarHtml({ kind: 'mp', current: member.mp ?? 0, max: maxMp, pct: mpPct, extraClass: 'dq-stat-bar-status' }) : ''}
       </div>
     `;
   }).join('');

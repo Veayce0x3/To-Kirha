@@ -1,17 +1,17 @@
 {
   "title": "Carnet du voyageur",
   "emoji": "📔",
-  "description": "Notes courtes sur le village de To-Kirha. Lecture libre — rien n’est obligatoire.",
+  "description": "Tes notes sur To-Kirha. Feuillette comme un livre — rien n’est obligatoire.",
   "entries": {
     "conseil_accueil": {
       "id": "conseil_accueil",
       "order": 10,
-      "title": "Le Conseil",
+      "title": "Accueil au Conseil",
       "emoji": "🏛️",
       "unlock": {
         "type": "career"
       },
-      "body": "Le Conseil du village t’accueille sans cérémonie.\n\nTo-Kirha fut prospère. Puis les ateliers se sont tus, les routes se sont fissurées, et les donjons sont retombés dans le silence.\n\nOn ne te demande pas de sauver le monde. Seulement de redonner un peu de vie à ce lieu.\n\nLes Kirha circulent encore — monnaie du village, preuve qu’un souffle reste. À toi de le ranimer.",
+      "body": "Trois voix sous les poutres de cèdre.\n\nLa doyenne Hanae te tend un registre trop propre pour un village si calme. « On ne te demande pas de miracles. Seulement que les ateliers fument à nouveau. »\n\nÀ côté, le garde Ren pointe la place : échoppes fermées, puits encore bon, cerisiers qui fleurissent comme si de rien n’était.\n\nLes Kirha — pièces du village — cliquettent dans ta poche. Preuve qu’un souffle reste. À toi de le ranimer.",
       "hint": "Commence l’aventure (choix d’arme)."
     },
     "premiers_pas": {
@@ -22,7 +22,7 @@
       "unlock": {
         "type": "career"
       },
-      "body": "Ils n’étaient pas nombreux, mais ils étaient là.\n\nBoulangère, pêcheur, garde, gardienne du sanctuaire… Des habitants, pas des fantômes. Autour d’eux, le marché est trop calme. Les voyageurs ne s’arrêtent plus.\n\nTant que tu progresseras, le village se remplira à nouveau — doucement, comme un printemps.",
+      "body": "Ils n’étaient pas nombreux, mais ils avaient un nom.\n\nMika à la boulangerie (encore tiède le matin). Old Jin sur le quai, qui répare des filets pour personne. Sora, qui garde le petit sanctuaire et parle aux pierres comme à des voisins.\n\nAutour d’eux, le marché est trop calme. Les voyageurs ne s’arrêtent plus.\n\nTant que tu progresseras, le village se remplira — doucement, comme un printemps qui n’ose pas encore crier.",
       "hint": "Commence l’aventure (choix d’arme)."
     },
     "metier_20": {
@@ -34,7 +34,7 @@
         "type": "jobLevel",
         "min": 20
       },
-      "body": "Un métier à ce niveau, ce n’est plus seulement de l’effort. C’est une mémoire qui revient dans les gestes.\n\nLes anciens disaient que To-Kirha vivait de ses savoir-faire. Aujourd’hui, un de ces fils se retisse.\n\nLe Conseil note ton nom sur un registre poussiéreux. Ce n’est qu’une ligne — mais c’est un début.",
+      "body": "Nv.20. Les gestes ne sont plus hésitants : la scie, la faucille ou le filet « savent » où aller.\n\nHanae note ton nom d’une encre brune. Une seule ligne dans un registre poussiéreux — mais c’est la première depuis longtemps.\n\nLes anciens disaient que To-Kirha vivait de ses savoir-faire. Aujourd’hui, un de ces fils se retisse.",
       "hint": "Atteins le niveau 20 dans n’importe quel métier."
     },
     "premier_boss": {
@@ -45,7 +45,7 @@
       "unlock": {
         "type": "bossAny"
       },
-      "body": "Les donjons ne sont pas des trophées. Ce sont des lieux que le village a oubliés — et qui, parfois, n’ont pas oublié le village.\n\nLe premier gardien tombe. Dans l’air, quelque chose se détend, comme une porte longtemps close.\n\nPourquoi ces lieux se sont-ils refermés ? Le carnet n’a pas encore la réponse.",
+      "body": "Les donjons ne sont pas des trophées. Ce sont des pièces que le village a oubliées — et qui, parfois, n’ont pas oublié le village.\n\nLe premier gardien tombe. Dans l’air, quelque chose se détend, comme une porte longtemps close.\n\nRen, plus tard, te demandera seulement : « Tu as vu des marques anciennes ? » Tu noteras : pas encore. Mais le silence a bougé.",
       "hint": "Vaincs un boss en combat (entraînement ou donjon)."
     },
     "premier_donjon": {
@@ -56,7 +56,7 @@
       "unlock": {
         "type": "dungeonAny"
       },
-      "body": "Une clé, une équipe, des salles qui s’enchaînent… Puis la lumière du dehors.\n\nTu rapportes plus que du butin : une preuve que les chemins oubliés peuvent se rouvrir.\n\nAu village, quelqu’un aura entendu parler d’une lumière dans les profondeurs. Les rumeurs, elles aussi, font revenir les gens.",
+      "body": "Une clé. Une équipe. Des salles qui s’enchaînent. Puis la lumière du dehors — trop franche après l’odeur de pierre humide.\n\nTu rapportes plus que du butin : une preuve que les chemins oubliés peuvent se rouvrir.\n\nSur la place, Mika aura déjà entendu parler « d’une lumière dans les profondeurs ». Les rumeurs, elles aussi, font revenir les gens.",
       "hint": "Termine un donjon jusqu’au bout."
     },
     "ecole_recherche": {
@@ -67,7 +67,7 @@
       "unlock": {
         "type": "schoolAny"
       },
-      "body": "L’École n’enseigne pas seulement des recettes. Elle archive ce que To-Kirha savait faire — et ce qu’elle a perdu.\n\nTa première recherche terminée laisse une trace : une page propre parmi les poussières.\n\nLes savoirs ne demandent pas la gloire. Seulement qu’on les pratique à nouveau.",
+      "body": "L’École n’enseigne pas seulement des recettes. Elle archive ce que To-Kirha savait faire — et ce qu’elle a perdu.\n\nTa première recherche terminée laisse une page propre parmi la poussière. Sora sourit sans rien dire ; Old Jin, lui, demande si tu as « trouvé comment on faisait avant ».\n\nLes savoirs ne demandent pas la gloire. Seulement qu’on les pratique à nouveau.",
       "hint": "Termine ta première recherche à l’École (Monde → Recherches)."
     },
     "marchand_itinerant": {
@@ -78,7 +78,7 @@
       "unlock": {
         "type": "merchantSeen"
       },
-      "body": "Un visage inconnu sur la place. Des ballots, une promo, une rumeur de routes qui reprennent.\n\nLe marchand itinérant ne reste jamais longtemps. Mais son passage veut dire une chose : To-Kirha redevient un arrêt possible.\n\nLes Kirha changent de main. Le village respire un peu plus fort.",
+      "body": "Un visage inconnu sur la place. Des ballots, une promo trop parlante, une rumeur de routes qui reprennent.\n\nLe marchand itinérant ne reste jamais longtemps. Mais son passage veut dire une chose : To-Kirha redevient un arrêt possible.\n\nLes Kirha changent de main. Le village respire un peu plus fort.",
       "hint": "Rencontre le marchand itinérant à la Place marchande."
     },
     "vent_cerisiers": {
@@ -89,7 +89,7 @@
       "unlock": {
         "type": "sakuraWind"
       },
-      "body": "Un vent rare traverse les toits. Les pétales tournent comme s’ils se souvenaient d’une fête ancienne.\n\nPersonne ne sait vraiment d’où il vient. Les anciens parlaient de saisons qui « répondent » quand le village est en paix.\n\nToi, tu notes seulement ceci : aujourd’hui, To-Kirha a semblé moins vide.",
+      "body": "Un vent rare traverse les toits. Les pétales tournent comme s’ils se souvenaient d’une fête ancienne.\n\nHanae lève les yeux : « Les saisons répondent, parfois, quand le village est moins peureux. »\n\nTu notes seulement ceci : aujourd’hui, To-Kirha a semblé moins vide.",
       "hint": "Vis un Vent des cerisiers (événement rare, onglet Village)."
     },
     "recette_maitre": {
@@ -100,7 +100,7 @@
       "unlock": {
         "type": "cookbookMaster"
       },
-      "body": "Il y a les repas qui nourrissent, et ceux qui racontent.\n\nUne recette de maître, c’est un savoir qui a survécu aux années creuses — transmis par l’École, les parchemins, ou la patience.\n\nLe fumet monte. Quelque part, un habitant sourit sans le dire.",
+      "body": "Il y a les repas qui nourrissent, et ceux qui racontent.\n\nUne recette de maître, c’est un savoir qui a survécu aux années creuses — transmis par l’École, les parchemins, ou la patience de Mika.\n\nLe fumet monte. Quelque part, un habitant sourit sans le dire.",
       "hint": "Crafte une recette de qualité Maître 👑 à la Cuisine."
     },
     "zone_foret": {
@@ -112,7 +112,7 @@
         "type": "zoneUnlocked",
         "zoneId": "petal_forest"
       },
-      "body": "Les chemins menant à la Forêt des Pétales n’étaient plus entretenus.\n\nLes rouvrir, c’est accepter que To-Kirha ne soit plus seulement un village replié sur lui-même.\n\nDe nouvelles ressources, de nouveaux dangers — et peut-être, un jour, une réponse sur l’abandon.",
+      "body": "Les chemins vers la Forêt des Pétales n’étaient plus entretenus. Les rouvrir, c’est accepter que To-Kirha ne soit plus seulement un village replié sur lui-même.\n\nRen te prévient : « Plus de bois, plus de dangers. Et peut-être une marque de l’ancien silence. »\n\nDe nouvelles ressources. De nouvelles questions. Le carnet a de la place.",
       "hint": "Débloque la Forêt des Pétales (Monde)."
     },
     "saison_2": {
@@ -136,7 +136,7 @@
         "type": "seasonMin",
         "min": 3
       },
-      "body": "Encore un cycle. Les routes commerciales semblent moins peureuses.\n\nOn dit que des voyageurs franchissent à nouveau les portes — pas en foule, mais assez pour que les échoppes murmurent.\n\nLe Conseil n’explique toujours pas l’ancien silence. Il te regarde seulement comme on regarde quelqu’un qui revient.",
+      "body": "Encore un cycle. Les routes commerciales semblent moins peureuses.\n\nOn dit que des voyageurs franchissent à nouveau les portes — pas en foule, mais assez pour que les échoppes murmurent.\n\nLe Conseil n’explique toujours pas l’ancien silence. Hanae te regarde seulement comme on regarde quelqu’un qui revient.",
       "hint": "Atteins la Saison 3."
     }
   }

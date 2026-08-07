@@ -101,6 +101,18 @@ async function main() {
 
   document.documentElement.dataset.theme = game.state.settings?.darkMode ? 'dark' : '';
   audio.updateSettings(game.state.settings);
+
+  // Annonces dès le démarrage (ne pas attendre l’auth / l’UI)
+  const bannerEl = document.getElementById('global-banners');
+  if (bannerEl) {
+    if (isMaintenanceMode()) {
+      bannerEl.classList.remove('hidden');
+      bannerEl.innerHTML = '<div class="announcement-banner kind-maintenance" role="alert"><strong>Maintenance</strong> — Les fonctionnalités online sont temporairement limitées.</div>';
+    } else {
+      mountAnnouncementBanner(bannerEl);
+    }
+  }
+
   initAuthModal(game);
   await showAuthModalIfNeeded(game);
 
@@ -116,16 +128,6 @@ async function main() {
 
   initUI(game, audio);
   emit('navRefresh');
-
-  const bannerEl = document.getElementById('global-banners');
-  if (bannerEl) {
-    if (isMaintenanceMode()) {
-      bannerEl.classList.remove('hidden');
-      bannerEl.innerHTML = '<div class="announcement-banner kind-maintenance" role="alert"><strong>Maintenance</strong> — Les fonctionnalités online sont temporairement limitées.</div>';
-    } else {
-      mountAnnouncementBanner(bannerEl);
-    }
-  }
 
   const { showCareerChoiceIfNeeded } = await import('./ui/careerChoiceUi.js');
   showCareerChoiceIfNeeded(game);

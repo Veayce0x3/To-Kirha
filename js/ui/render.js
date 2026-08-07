@@ -350,15 +350,6 @@ export function initUI(game, audio) {
         if (btn) items.appendChild(btn);
       }
 
-      if (cat.id === 'recolte' || cat.id === 'ferme') {
-        const hint = document.createElement('p');
-        hint.className = 'nav-cat-hint';
-        hint.textContent = cat.id === 'recolte'
-          ? 'Chiffre = niveau du métier · Point coloré = état récolte (prêt, en cours, repousse).'
-          : 'Chiffre = niveau du bâtiment · Point coloré = production en cours.';
-        items.appendChild(hint);
-      }
-
       section.appendChild(items);
       els.sidebarNav.appendChild(section);
     }
@@ -1006,10 +997,8 @@ export function initUI(game, audio) {
   });
   on('journalUnlock', ({ entry }) => {
     if (!entry) return;
-    showToast(els, `📔 Carnet : ${entry.emoji || ''} ${entry.title || 'nouvelle page'}`, 'upgrade');
-    import('./travelerJournalView.js').then(({ openJournalPageModal }) => {
-      openJournalPageModal(entry);
-    }).catch(() => {});
+    showToast(els, `📔 Nouvelle page : ${entry.emoji || ''} ${entry.title || 'Carnet'}`, 'upgrade');
+    import('./travelerJournalView.js').then((m) => m.focusLatestJournalPage?.()).catch(() => {});
   });
   on('herbariumDiscover', ({ resource }) => {
     if (!resource) return;

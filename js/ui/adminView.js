@@ -21,6 +21,7 @@ import {
   ANN_KIND_LABELS,
   canAccessAdminTab,
   getVisibleAdminTabs,
+  getAdminTabGroups,
   fetchDashboard,
   searchPlayers,
   fetchPlayerList,
@@ -339,27 +340,21 @@ function playerStatusChip(r) {
 function playerTableHtml(rows) {
   if (!rows.length) return '<p class="view-desc">Aucun joueur.</p>';
   return `
-    <div class="admin-table-wrap">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Pseudo</th>
-            <th>Rôle</th>
-            <th>Nv.</th>
-            <th>Dernière connexion</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>${rows.map((r) => `
-          <tr class="admin-player-row${r.is_banned ? ' row-banned' : ''}${r.cheat_flagged ? ' row-flagged' : ''}" data-uid="${r.user_id}" tabindex="0">
-            <td class="admin-td-name">${escHtml(r.display_name || '?')}${r.is_banned ? ' ⛔' : ''}${r.cheat_flagged ? ' ⚠️' : ''}</td>
-            <td>${roleBadge(r.role)}</td>
-            <td>${r.char_level || 1}</td>
-            <td class="admin-td-muted" title="${escHtml(fmtDate(r.last_online || r.save_updated_at))}">${escHtml(fmtLastSeen(r))}</td>
-            <td><button type="button" class="btn btn-craft btn-sm admin-view-player" data-uid="${r.user_id}">Fiche</button></td>
-          </tr>
-        `).join('')}</tbody>
-      </table>
+    <div class="admin-player-list">
+      ${rows.map((r) => `
+        <article class="admin-player-card admin-player-row${r.is_banned ? ' row-banned' : ''}${r.cheat_flagged ? ' row-flagged' : ''}" data-uid="${r.user_id}" tabindex="0">
+          <div class="admin-player-card-main">
+            <strong class="admin-player-card-name">${escHtml(r.display_name || '?')}</strong>
+            <div class="admin-player-card-meta">
+              ${roleBadge(r.role)}
+              <span class="admin-chip-level">Nv.${r.char_level || 1}</span>
+              ${playerStatusChip(r)}
+            </div>
+            <span class="admin-td-muted" title="${escHtml(fmtDate(r.last_online || r.save_updated_at))}">${escHtml(fmtLastSeen(r))}</span>
+          </div>
+          <button type="button" class="btn btn-craft btn-sm admin-view-player" data-uid="${r.user_id}">Fiche</button>
+        </article>
+      `).join('')}
     </div>
   `;
 }
@@ -1554,6 +1549,7 @@ function paintAdmin(game, el) {
   }
   const role = getProfileRole();
   const tabs = getVisibleAdminTabs(role);
+  const groups = getAdminTabGroups(role);
 
   if (!tabs.length) {
     el.innerHTML = `
@@ -1573,14 +1569,21 @@ function paintAdmin(game, el) {
       <p class="view-desc">${roleBadge(role)} · panneau staff</p>
     </div>
     <p id="admin-status" class="admin-status${statusMsg ? (statusMsg.includes('refusé') || statusMsg.includes('erreur') ? ' error' : ' ok') : ''}">${statusMsg || ''}</p>
-    <nav class="admin-tabs" role="tablist">
-      ${tabs.map((t) => `
-        <button type="button" class="admin-tab-btn${t.id === activeTab ? ' active' : ''}" data-tab="${t.id}" role="tab">
-          <span class="admin-tab-icon" aria-hidden="true">${t.icon}</span>
-          <span class="admin-tab-label">${t.label}</span>
-        </button>
+    <div class="admin-nav-groups">
+      ${groups.map((g) => `
+        <section class="admin-nav-group" aria-label="${g.label}">
+          <p class="admin-nav-group-label">${g.label}</p>
+          <nav class="admin-tabs" role="tablist">
+            ${g.tabs.map((t) => `
+              <button type="button" class="admin-tab-btn${t.id === activeTab ? ' active' : ''}" data-tab="${t.id}" role="tab">
+                <span class="admin-tab-icon" aria-hidden="true">${t.icon}</span>
+                <span class="admin-tab-label">${t.label}</span>
+              </button>
+            `).join('')}
+          </nav>
+        </section>
       `).join('')}
-    </nav>
+    </div>
     <div class="panel-inner admin-panel" id="admin-panel-body"></div>
   `;
 
@@ -1589,7 +1592,7 @@ function paintAdmin(game, el) {
   el.querySelectorAll('.admin-tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       activeTab = btn.dataset.tab;
-      el.querySelectorAll('.admin-tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
+      el.querySelectorAll('.admin-tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === activeTab));
       renderAdminPanel(bodyEl);
     });
   });

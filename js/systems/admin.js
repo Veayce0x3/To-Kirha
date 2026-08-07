@@ -46,16 +46,22 @@ function denyIfNotStaff() {
 }
 
 export const ADMIN_TABS = [
-  { id: 'dashboard', label: 'Dashboard', icon: '📊', minRole: 'moderator' },
-  { id: 'players', label: 'Joueurs', icon: '👥', minRole: 'moderator' },
-  { id: 'events', label: 'Événements', icon: '🌸', minRole: 'admin' },
-  { id: 'reports', label: 'Signalements', icon: '🚩', minRole: 'moderator' },
-  { id: 'leaderboard', label: 'Classement', icon: '🏆', minRole: 'moderator' },
-  { id: 'saves', label: 'Saves', icon: '💾', minRole: 'admin' },
-  { id: 'announcements', label: 'Annonces', icon: '📢', minRole: 'admin' },
-  { id: 'config', label: 'Config', icon: '⚙️', minRole: 'admin' },
-  { id: 'logs', label: 'Journal', icon: '📜', minRole: 'moderator' },
+  { id: 'dashboard', label: 'Accueil', icon: '📊', minRole: 'moderator', group: 'main' },
+  { id: 'players', label: 'Joueurs', icon: '👥', minRole: 'moderator', group: 'main' },
+  { id: 'reports', label: 'Signalements', icon: '🚩', minRole: 'moderator', group: 'mod' },
+  { id: 'leaderboard', label: 'Classement', icon: '🏆', minRole: 'moderator', group: 'mod' },
+  { id: 'announcements', label: 'Annonces', icon: '📢', minRole: 'admin', group: 'ops' },
+  { id: 'config', label: 'Config', icon: '⚙️', minRole: 'admin', group: 'ops' },
+  { id: 'logs', label: 'Journal', icon: '📜', minRole: 'moderator', group: 'ops' },
+  { id: 'saves', label: 'Saves', icon: '💾', minRole: 'admin', group: 'ops' },
+  { id: 'events', label: 'Debug', icon: '🌸', minRole: 'admin', group: 'ops' },
 ];
+
+const ADMIN_GROUP_LABELS = {
+  main: 'Principal',
+  mod: 'Modération',
+  ops: 'Ops',
+};
 
 const ROLE_RANK = { player: 0, moderator: 1, admin: 2, superadmin: 3 };
 
@@ -67,6 +73,16 @@ export function canAccessAdminTab(tabId, role) {
 
 export function getVisibleAdminTabs(role) {
   return ADMIN_TABS.filter((t) => canAccessAdminTab(t.id, role));
+}
+
+export function getAdminTabGroups(role) {
+  const tabs = getVisibleAdminTabs(role);
+  const groups = [];
+  for (const key of ['main', 'mod', 'ops']) {
+    const items = tabs.filter((t) => (t.group || 'ops') === key);
+    if (items.length) groups.push({ id: key, label: ADMIN_GROUP_LABELS[key] || key, tabs: items });
+  }
+  return groups;
 }
 
 export function canAccessAdminPanel() {
