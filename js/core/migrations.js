@@ -401,15 +401,74 @@ const MIGRATIONS = {
     if (!Array.isArray(state.travelerJournal.unlocked)) state.travelerJournal.unlocked = [];
     if (!Array.isArray(state.travelerJournal.seenToast)) state.travelerJournal.seenToast = [];
   },
+  /** Répare les saves dont saveVersion a sauté sans appliquer les migrations (JS en cache). */
+  50(state, ctx) {
+    repairSaveSystems(state, ctx);
+  },
 };
 
+/** Garantit les blocs systèmes récents même si saveVersion était déjà trop haut. */
+export function repairSaveSystems(state, ctx = {}) {
+  if (!state || typeof state !== 'object') return state;
+
+  if (!state.travelingMerchant) state.travelingMerchant = null;
+  if (!state.sakuraWind) state.sakuraWind = null;
+
+  if (!state.villageSchool || typeof state.villageSchool !== 'object') {
+    state.villageSchool = {
+      completedSeasonal: [],
+      completedPermanent: [],
+      active: null,
+      legacyPending: null,
+      seasonFlags: {},
+      bonuses: {},
+      unlockedSpells: [],
+    };
+  }
+  if (!Array.isArray(state.villageSchool.completedSeasonal)) state.villageSchool.completedSeasonal = [];
+  if (!Array.isArray(state.villageSchool.completedPermanent)) state.villageSchool.completedPermanent = [];
+  if (!Array.isArray(state.villageSchool.unlockedSpells)) state.villageSchool.unlockedSpells = [];
+  if (!state.seasonStartedAt) state.seasonStartedAt = Date.now();
+
+  if (!state.grimoire || typeof state.grimoire !== 'object') {
+    state.grimoire = { known: [], equipped: [] };
+  }
+  if (!Array.isArray(state.grimoire.known)) state.grimoire.known = [];
+  if (!Array.isArray(state.grimoire.equipped)) state.grimoire.equipped = [];
+  if (!state.keyQualities) state.keyQualities = {};
+
+  if (!state.cookbook || typeof state.cookbook !== 'object') {
+    state.cookbook = { discovered: [] };
+  }
+  if (!Array.isArray(state.cookbook.discovered)) state.cookbook.discovered = [];
+  const recipes = ctx.recipes || {};
+  const cuisineJobs = new Set(['baker', 'fishmonger', 'chemist', 'cook']);
+  const crafted = new Set(state.crafted || []);
+  for (const recipe of Object.values(recipes)) {
+    if (!recipe?.id || !cuisineJobs.has(recipe.craftJob)) continue;
+    if (crafted.has(recipe.id) && !state.cookbook.discovered.includes(recipe.id)) {
+      state.cookbook.discovered.push(recipe.id);
+    }
+  }
+
+  if (!state.travelerJournal || typeof state.travelerJournal !== 'object') {
+    state.travelerJournal = { unlocked: [], seenToast: [] };
+  }
+  if (!Array.isArray(state.travelerJournal.unlocked)) state.travelerJournal.unlocked = [];
+  if (!Array.isArray(state.travelerJournal.seenToast)) state.travelerJournal.seenToast = [];
+
+  return state;
+}
+
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 49;
+  const target = ctx.balance?.saveVersion ?? 50;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;
     MIGRATIONS[version]?.(state, ctx);
     state.saveVersion = version;
   }
+  // Ceinture : toujours réparer (saveVersion déjà haut sans les champs)
+  repairSaveSystems(state, ctx);
   return state;
 }

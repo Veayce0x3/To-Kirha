@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-0645",
+      "date": "2026-08-07",
+      "title": "Réparation save + menus lore",
+      "highlights": [
+        "Répare les saves où École / Carnet / Grimoire manquaient (version sautée)",
+        "Menu Monde : Recherches (École) + Carnet du voyageur plus visibles",
+        "Village : bloc « Prévisions — demain » clarifié"
+      ]
+    },
+    {
       "buildId": "20260806-2315",
       "date": "2026-08-06",
       "title": "Carnet du voyageur & village de To-Kirha",

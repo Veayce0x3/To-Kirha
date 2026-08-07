@@ -213,9 +213,9 @@ export function renderVillage(game, el) {
       </div>
       ${sakuraBannerHtml}
       <div class="village-forecast">
-        <h4 class="village-forecast-title">Demain</h4>
+        <h4 class="village-forecast-title">🔮 Prévisions — demain</h4>
         <p class="village-forecast-weather">${tomorrow?.weather?.emoji || ''} ${tomorrow?.weather?.label || '—'}</p>
-        <p class="village-forecast-blurb">${tomorrow?.blurb || ''}</p>
+        <p class="village-forecast-blurb">${tomorrow?.blurb || 'Reviens demain pour un nouveau ciel et d’éventuels événements.'}</p>
         ${tomorrowSakura}
         ${tomorrowMerchant}
       </div>

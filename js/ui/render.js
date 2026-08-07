@@ -181,11 +181,11 @@ export function initUI(game, audio) {
       return {
         featureId: 'village_school',
         viewId: 'village_school',
-        label: 'École',
+        label: 'Recherches',
         emoji: '🏫',
         ready: false,
         progress: 0,
-        hint: game.balance?.jobUnlocks?.toolmaker?.hint || 'Débloque l’Outilleur.',
+        hint: game.balance?.jobUnlocks?.toolmaker?.hint || 'Débloque l’Outilleur (Bûcheron Nv.5 + Paysan Nv.6).',
         gates: [{ type: 'craftJobUnlocked', ready: false, jobName: 'Outilleur' }],
       };
     }
