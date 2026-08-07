@@ -653,6 +653,7 @@ export function initUI(game, audio) {
       ${capLine}
       <div class="prestige-gain-row">✅ Conservé : compte, pseudo, succès, stats de vie, bonus %</div>
       <div class="prestige-gain-row">🔄 Remis à zéro : métiers, inventaire, ferme, équipe</div>
+      <div class="prestige-gain-row">✨ Pépites requises consommées · surplus conservé</div>
       <div class="prestige-gain-row">💰 Départ saison : ${info.seasonStartKirha} 💰</div>
       <div class="prestige-gain-row">⚡ Boost ×2 (1 h) à activer quand tu veux (tant que Nv.≤10)</div>
       <div class="prestige-gain-row">💰 Kirha : +${info.nextBonuses.kirha.toFixed(0)}% total (+${info.gainBonuses.kirha.toFixed(0)}%/saison)</div>
@@ -747,6 +748,13 @@ export function initUI(game, audio) {
       kirhaGain,
       discoveryId,
     });
+    if (discoveryId && harvestEvent?.type === 'kirha') {
+      import('./travelerJournalView.js').then(({ openHarvestDiscoveryModal }) => {
+        import('../systems/harvestEvents.js').then(({ DISCOVERY_META }) => {
+          openHarvestDiscoveryModal(DISCOVERY_META[discoveryId], kirhaGain);
+        });
+      }).catch(() => {});
+    }
     if (levelResult) {
       const job = game.jobs[levelResult.jobId];
       const resource = game.resources[resourceId];

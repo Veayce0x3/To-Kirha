@@ -621,14 +621,10 @@ export function getSlotEventVisual(slot) {
   return null;
 }
 
-/** Overlay texte pendant la révélation (reste affiché ~8 s). */
+/** Overlay chiffre pendant la révélation (~3,5 s). Flavor Kirha → modal page. */
 export function getEventRevealAnnounceHtml(reveal, now = Date.now()) {
   if (!reveal?.type) return '';
-  const elapsed = now - (Number(reveal.startedAt) || now);
   if (reveal.type === 'kirha') {
-    if (elapsed < 3200) {
-      return `<div class="slot-event-announce slot-event-announce-flavor">${reveal.flavor || 'Découverte !'}</div>`;
-    }
     const kirha = Math.max(0, Math.floor(Number(reveal.kirhaGain) || 0));
     if (kirha <= 0) return '';
     return `<div class="slot-event-announce slot-event-announce-kirha">+${kirha} 💰</div>`;

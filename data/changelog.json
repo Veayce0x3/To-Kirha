@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-1010",
+      "date": "2026-08-07",
+      "title": "Events plus courts + pépites pour la saison",
+      "highlights": [
+        "Bonus +N sur l’emplacement : affichage plus court (~3,5 s)",
+        "Découverte Kirha (nid, bourse…) : modal pleine page avec ✕ (comme le Carnet)",
+        "Passage de saison : consomme 5 / 10 / 15 / 20 pépites (surplus conservé)"
+      ]
+    },
+    {
       "buildId": "20260807-0955",
       "date": "2026-08-07",
       "title": "Météo : events seulement sur le métier du ciel",

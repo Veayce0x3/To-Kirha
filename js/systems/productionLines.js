@@ -649,11 +649,12 @@ export function completeHarvestUnit(state, resources, jobs, balance, jobId, reso
     const reveal = eventResult.event
       ? {
           type: eventResult.event.type,
-          flavor: eventResult.event.flavor || null,
+          flavor: null,
           yieldAmount: eventResult.yieldOverride != null ? yield_ : null,
           kirhaGain: eventResult.kirhaGain || 0,
+          discoveryId: eventResult.discoveryId || null,
           startedAt: Date.now(),
-          until: Date.now() + 8000,
+          until: Date.now() + 3500,
         }
       : null;
     slot.active = {

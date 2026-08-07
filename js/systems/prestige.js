@@ -26,6 +26,9 @@ function getPrestigeReqForSeason(balance, season) {
     minJobLevel: has('minJobLevel')
       ? (override.minJobLevel || 0)
       : (base.minJobLevel || 0),
+    minNuggetsConsume: has('minNuggetsConsume')
+      ? Math.max(0, Number(override.minNuggetsConsume) || 0)
+      : Math.max(0, Number(base.minNuggetsConsume) || 0),
     bonusesPerSeason: base.bonusesPerSeason,
     seasonStartKirha: base.seasonStartKirha,
     levelCaps: base.levelCaps,
@@ -242,6 +245,14 @@ export function getPrestigeBlockers(state, balance, achievements = {}, combatZon
     blockers.push(`${((req.minTotalEarned || 0) - seasonEarned).toLocaleString('fr-FR')} 💰 à gagner encore cette saison`);
   }
 
+  const needNuggets = Math.max(0, Number(req.minNuggetsConsume) || 0);
+  if (needNuggets > 0) {
+    const have = Number(state.inventory?.gold_nugget) || 0;
+    if (have < needNuggets) {
+      blockers.push(`Pépites : ${have}/${needNuggets} (consommées au passage de saison)`);
+    }
+  }
+
   for (const [zoneId, min] of Object.entries(req.minBossKills || {})) {
     const kills = state.bossKills?.[zoneId] || 0;
     if (kills < min) {
@@ -352,6 +363,17 @@ export function getPrestigeProgress(state, balance, achievements = {}, combatZon
     });
   }
 
+  const needNuggets = Math.max(0, Number(req.minNuggetsConsume) || 0);
+  if (needNuggets > 0) {
+    const have = Number(state.inventory?.gold_nugget) || 0;
+    steps.push({
+      id: 'nuggets',
+      label: `Pépites ${have}/${needNuggets} (consommées au passage)`,
+      done: have >= needNuggets,
+      progress: Math.min(1, have / needNuggets),
+    });
+  }
+
   for (const [zoneId, min] of Object.entries(req.minBossKills || {})) {
     const kills = state.bossKills?.[zoneId] || 0;
     const cz = combatZones[zoneId];
@@ -440,9 +462,13 @@ export function getPrestigePreview(state, balance, achievements = {}, combatZone
 export function applyPrestige(state, balance, getFreshState, achievements = {}, combatZones = {}) {
   if (!canPrestige(state, balance, achievements, combatZones)) return false;
 
-  const req = balance.prestige;
-  const bonuses = req.bonusesPerSeason;
+  const req = getPrestigeReqForSeason(balance, state.season || 1);
+  const bonuses = balance.prestige?.bonusesPerSeason || req.bonusesPerSeason;
   const current = state.prestige || {};
+
+  const nuggetCost = Math.max(0, Number(req.minNuggetsConsume) || 0);
+  const haveNuggets = Number(state.inventory?.gold_nugget) || 0;
+  const carriedNuggets = Math.max(0, haveNuggets - nuggetCost);
 
   const newPrestige = {
     kirhaBonus: (current.kirhaBonus || 0) + (bonuses.kirhaMultiplier || 0),
@@ -450,6 +476,8 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     jobXpBonus: (current.jobXpBonus || 0) + (bonuses.jobXpMultiplier || 0),
     regrowthSpeedBonus: (current.regrowthSpeedBonus || 0) + (bonuses.regrowthSpeed || 0),
   };
+
+  const season = (state.season || 1) + 1;
 
   const lifetimeStats = {
     ...state.lifetimeStats,
@@ -462,14 +490,13 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
       + Object.values(state.dungeonClears || {}).reduce((a, b) => a + (Number(b) || 0), 0)
       + (Number(state.villageBoard?.dungeonClears) || 0),
     combatFights: (state.lifetimeStats?.combatFights || 0) + (state.stats?.combatFights || 0),
+    nuggetsSpentOnSeasons: (Number(state.lifetimeStats?.nuggetsSpentOnSeasons) || 0) + nuggetCost,
     maxSeasonReached: Math.max(
       Number(state.lifetimeStats?.maxSeasonReached) || 1,
       Number(state.season) || 1,
       season
     ),
   };
-
-  const season = (state.season || 1) + 1;
   const settings = state.settings || getDefaultSettings();
   const preservedAchievements = state.achievements || state.quests;
 
@@ -490,6 +517,8 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     lifetimeEarned: Number(state.lifetimeStats?.totalEarned) || 0,
     kirha: Number(state.kirha) || 0,
     harvests: Number(state.stats?.totalHarvests) || 0,
+    nuggetsConsumed: nuggetCost,
+    nuggetsCarried: carriedNuggets,
   };
   const seasonHistory = [
     ...(Array.isArray(state.seasonHistory) ? state.seasonHistory : []),
@@ -555,7 +584,10 @@ export function applyPrestige(state, balance, getFreshState, achievements = {}, 
     // Rechoix d’arme pour la nouvelle saison (parcours métier) — le compte reste
     careerChoice: null,
     // Wipe explicite (évite fuites via mergeState / cloud)
-    inventory: typeof fresh.inventory === 'object' ? { ...fresh.inventory } : {},
+    inventory: {
+      ...(typeof fresh.inventory === 'object' ? { ...fresh.inventory } : {}),
+      ...(carriedNuggets > 0 ? { gold_nugget: carriedNuggets } : {}),
+    },
     jobs: typeof fresh.jobs === 'object' ? JSON.parse(JSON.stringify(fresh.jobs)) : {},
     crafted: [],
     toolDurability: {},

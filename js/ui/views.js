@@ -4086,14 +4086,14 @@ export function renderSeason(game, el) {
       </div>
 
       <h3 class="admin-section-title">Prérequis Saison ${info.nextSeason} (${progress.total} objectifs)</h3>
-      <p class="view-desc">${progress.completed}/${progress.total} remplis — perso, métiers, Kirha de la saison, donjon</p>
+      <p class="view-desc">${progress.completed}/${progress.total} remplis — perso, métiers, Kirha, pépites, donjon</p>
       <div class="xp-bar-container prestige-teaser-bar"><div class="xp-bar" style="width:${progress.percent}%"></div></div>
       ${stepsHtml}
       ${info.canDo
         ? `<p class="prestige-req prestige-ready">Prêt pour la Saison ${info.nextSeason} !</p>`
         : ''}
 
-      <p class="view-desc season-reset-hint">À la nouvelle saison : métiers / inventaire / ferme / équipe repartent à zéro. Tu <strong>gardes</strong> compte, pseudo, succès, stats de vie, bonus permanents, Livre de Cuisine, <strong>Carnet</strong> et <strong>Herbier</strong>. Une page du carnet s’ajoute. Départ : ${formatNumber(game.balance.prestige?.seasonStartKirha ?? game.balance.startingKirha ?? 0)} 💰 + boost ×2 à activer quand tu veux (tant que Nv.≤${boostCaps.character}).</p>
+      <p class="view-desc season-reset-hint">À la nouvelle saison : métiers / inventaire / ferme / équipe repartent à zéro. Les <strong>pépites requises sont consommées</strong> ; le surplus est conservé. Tu <strong>gardes</strong> compte, pseudo, succès, stats de vie, bonus permanents, Livre de Cuisine, <strong>Carnet</strong> et <strong>Herbier</strong>. Une page du carnet s’ajoute. Départ : ${formatNumber(game.balance.prestige?.seasonStartKirha ?? game.balance.startingKirha ?? 0)} 💰 + boost ×2 à activer quand tu veux (tant que Nv.≤${boostCaps.character}).</p>
       <button class="btn btn-prestige" id="prestige-btn" type="button" ${info.canDo ? '' : 'disabled'}>Commencer la Saison ${info.nextSeason}</button>
     </div>
   `;

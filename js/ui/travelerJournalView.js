@@ -40,6 +40,20 @@ export function openJournalPageModal(entry) {
   modal.setAttribute('aria-hidden', 'false');
 }
 
+/** Découverte Kirha météo — même modal que le carnet, fermable ✕. */
+export function openHarvestDiscoveryModal(discovery, kirhaGain = 0) {
+  if (!discovery) return;
+  const gain = Math.max(0, Math.floor(Number(kirhaGain) || 0));
+  const body = gain > 0
+    ? `${discovery.flavor || 'Vous trouvez quelque chose…'}\n\n+${gain} 💰`
+    : (discovery.flavor || 'Vous trouvez quelque chose…');
+  openJournalPageModal({
+    emoji: '✨',
+    title: discovery.label || 'Découverte',
+    body,
+  });
+}
+
 function renderJournalPanel(game, panel) {
   const vm = game.getTravelerJournalView?.();
   if (!vm) {

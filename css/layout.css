@@ -5403,7 +5403,7 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   border-radius: 12px;
   border: 2px solid rgba(45, 90, 39, 0.25);
   box-shadow: 0 6px 18px rgba(74, 55, 40, 0.16);
-  animation: slotEventAnnounceIn 0.55s ease-out both, slotEventAnnounceHold 2.8s ease-in-out both;
+  animation: slotEventAnnounceIn 0.45s ease-out both, slotEventAnnounceHold 1.8s ease-in-out both;
 }
 
 .slot-event-announce-jackpot {
@@ -5438,8 +5438,8 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 @keyframes slotEventAnnounceHold {
-  0%, 70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  0%, 65% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -60%) scale(0.92); }
 }
 
 @media (prefers-reduced-motion: reduce) {

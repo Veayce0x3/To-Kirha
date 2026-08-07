@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 53,
-  "appBuildId": "20260807-0955",
+  "appBuildId": "20260807-1010",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -347,6 +347,7 @@
     "minTotalEarned": 0,
     "requiredZones": [],
     "minBossKills": {},
+    "minNuggetsConsume": 20,
     "requireQuestsChapter": null,
     "requireAtSeasonCap": false,
     "seasonBoostMs": 3600000,
@@ -357,6 +358,7 @@
         "minCharacterLevel": 10,
         "minJobLevel": 20,
         "minTotalEarned": 30000,
+        "minNuggetsConsume": 5,
         "requiredZones": [],
         "minBossKills": {
           "village_sakura": 1
@@ -369,6 +371,7 @@
         "minCharacterLevel": 30,
         "minJobLevel": 40,
         "minTotalEarned": 60000,
+        "minNuggetsConsume": 10,
         "requiredZones": [],
         "minBossKills": {
           "mist_river": 1
@@ -381,6 +384,7 @@
         "minCharacterLevel": 50,
         "minJobLevel": 60,
         "minTotalEarned": 100000,
+        "minNuggetsConsume": 15,
         "requiredZones": [],
         "minBossKills": {
           "jade_mountains": 1
@@ -393,6 +397,7 @@
         "minCharacterLevel": 70,
         "minJobLevel": 80,
         "minTotalEarned": 150000,
+        "minNuggetsConsume": 20,
         "requiredZones": [],
         "minBossKills": {
           "lotus_sanctuary": 1
