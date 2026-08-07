@@ -217,7 +217,7 @@ export function renderVillage(game, el) {
           <span class="village-sky-emoji">${w?.emoji || '☀️'}</span>
           <div>
             <h3 class="village-sky-title">${w?.label || 'Météo'}</h3>
-            <p class="village-sky-line">Découvertes Kirha : <strong>${jobName}</strong>${discovery ? ` · « ${discovery.label} »` : ''}</p>
+            <p class="village-sky-line">Events récolte (✨ brillants &amp; 💰 Kirha) : <strong>${jobName}</strong>${discovery ? ` · « ${discovery.label} »` : ''}</p>
             ${sky?.tip ? `<p class="village-sky-tip">${sky.tip}</p>` : ''}
             <p class="village-sky-reset">Prochain ciel dans ${resetLabel}</p>
           </div>
@@ -290,7 +290,7 @@ export function buildWeatherMiniChip(game) {
   const jobName = game.jobs[w.jobId]?.name || '';
   const sakuraOn = game.isSakuraWindActive?.();
   return `
-    <button type="button" class="harvest-weather-chip${sakuraOn ? ' sakura-active' : ''}" id="goto-village-weather" title="Voir le Village">
+    <button type="button" class="harvest-weather-chip${sakuraOn ? ' sakura-active' : ''}" id="goto-village-weather" title="Events du jour sur ${jobName || 'ce métier'} — voir le Village">
       <span>${sakuraOn ? '🌸' : w.emoji}</span>
       <span>${sakuraOn ? 'Vent des cerisiers' : w.label}</span>
       <span class="harvest-weather-chip-job">${jobName}</span>

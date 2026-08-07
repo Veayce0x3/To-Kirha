@@ -397,15 +397,17 @@ export function getHarvestEventsDailyStatus(state, balance, now = Date.now()) {
 }
 
 function canRollAnything(daily, c, weather, jobId) {
+  // Option B : tous les events (brillants, jackpot, Kirha) uniquement sur le métier du ciel.
+  if (weather.jobId !== jobId) return false;
   const shinyLeft = c.dailyShinyCap - (daily.shinyUsed || 0) - (daily.shinyPending || 0);
   const jackpotLeft = c.dailyJackpotCap - (daily.jackpotUsed || 0) - (daily.jackpotPending || 0);
   const kirhaLeft = c.dailyKirhaCap - (daily.kirhaUsed || 0) - (daily.kirhaPending || 0);
-  const kirhaOk = kirhaLeft > 0 && weather.jobId === jobId;
-  return shinyLeft > 0 || jackpotLeft > 0 || kirhaOk;
+  return shinyLeft > 0 || jackpotLeft > 0 || kirhaLeft > 0;
 }
 
 /**
  * Tire un événement pour un emplacement libre (prêt). Compte en pending.
+ * Brillants / jackpot / Kirha : uniquement le métier de la météo du jour.
  * @returns {object|null} pendingEvent
  */
 export function rollPendingHarvestEvent(state, balance, jobId, now = Date.now()) {
@@ -419,8 +421,8 @@ export function rollPendingHarvestEvent(state, balance, jobId, now = Date.now())
   const jackpotLeft = c.dailyJackpotCap - (daily.jackpotUsed || 0) - (daily.jackpotPending || 0);
   const kirhaLeft = c.dailyKirhaCap - (daily.kirhaUsed || 0) - (daily.kirhaPending || 0);
 
-  // 1) Découverte Kirha (météo = métier)
-  if (kirhaLeft > 0 && weather.jobId === jobId && Math.random() < c.kirhaChance) {
+  // 1) Découverte Kirha
+  if (kirhaLeft > 0 && Math.random() < c.kirhaChance) {
     const amount = randInt(c.kirhaMin, c.kirhaMax);
     const discoveryId = weather.discoveryId;
     const meta = DISCOVERY_META[discoveryId];
