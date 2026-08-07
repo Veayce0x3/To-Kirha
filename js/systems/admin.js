@@ -48,9 +48,9 @@ function denyIfNotStaff() {
 export const ADMIN_TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: '📊', minRole: 'moderator' },
   { id: 'players', label: 'Joueurs', icon: '👥', minRole: 'moderator' },
+  { id: 'events', label: 'Événements', icon: '🌸', minRole: 'admin' },
   { id: 'reports', label: 'Signalements', icon: '🚩', minRole: 'moderator' },
   { id: 'leaderboard', label: 'Classement', icon: '🏆', minRole: 'moderator' },
-  { id: 'events', label: 'Événements', icon: '🌸', minRole: 'admin' },
   { id: 'saves', label: 'Saves', icon: '💾', minRole: 'admin' },
   { id: 'announcements', label: 'Annonces', icon: '📢', minRole: 'admin' },
   { id: 'config', label: 'Config', icon: '⚙️', minRole: 'admin' },

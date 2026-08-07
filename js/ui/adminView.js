@@ -774,18 +774,24 @@ function bindPlayerDetailActions(userId, profile, detailEl) {
     setStatus(okMsg);
     loadPlayerDetail(userId);
     const selfId = getAuthState()?.userId;
-    if (selfId && selfId === userId && gameRef?.pullAdminPatch) {
+    if (selfId && selfId === userId && gameRef) {
       try {
-        const applied = await gameRef.pullAdminPatch();
-        if (applied) {
+        const meta = {
+          adminRevision: Number(r.data?.adminRevision) || undefined,
+        };
+        // Applique tout de suite en local (évite course autosave / flush qui écrasait le cloud).
+        if (gameRef.applyAdminGrant) {
+          await gameRef.applyAdminGrant(payload, meta);
           setStatus(`${okMsg} Appliqué sur ta partie.`);
-        } else {
-          await gameRef.flushSave?.();
-          const again = await gameRef.pullAdminPatch();
-          if (again) setStatus(`${okMsg} Appliqué sur ta partie.`);
+        }
+        // Aligne ensuite avec le cloud (retries, sans flush écrasant).
+        if (gameRef.pullAdminPatch) {
+          const synced = await gameRef.pullAdminPatch({ retries: 5 });
+          if (synced) setStatus(`${okMsg} Synchronisé.`);
         }
       } catch (err) {
-        console.warn('[admin] pullAdminPatch', err);
+        console.warn('[admin] apply/pull grant', err);
+        setStatus(`${okMsg} Cloud OK — recharge si tu ne vois pas le changement.`);
       }
     }
     return r;

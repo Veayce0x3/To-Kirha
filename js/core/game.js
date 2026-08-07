@@ -675,20 +675,42 @@ export class Game {
     }
   }
 
-  /** Vérifie le cloud pour un patch admin (ex. onglet repris). */
-  async pullAdminPatch() {
-    if (!isRegisteredAccount()) return false;
-    const auth = getAuthState();
-    const { pullAdminPatchIfNeeded } = await import('./cloudSave.js');
-    const result = await pullAdminPatchIfNeeded(auth.userId, this.state, this.balance);
-    if (!result.changed || !result.state) return false;
-    const { applyAdminFieldsToState } = await import('./adminPatch.js');
-    if (!applyAdminFieldsToState(this.state, result.state)) return false;
+  /**
+   * Applique un don admin localement (feedback immédiat).
+   * @param {object} payload
+   * @param {{ adminRevision?: number }} [meta]
+   */
+  async applyAdminGrant(payload, meta = {}) {
+    const { applyAdminPayloadToState } = await import('./adminPatch.js');
+    if (!applyAdminPayloadToState(this.state, payload, meta)) return false;
     await SaveProvider.save(this.state, this.balance);
     const { emit } = await import('./events.js');
     emit('adminPatchApplied', { revision: this.state.adminRevision });
     emit('stateChange', this.state);
     return true;
+  }
+
+  /** Vérifie le cloud pour un patch admin (ex. onglet repris). */
+  async pullAdminPatch({ retries = 1 } = {}) {
+    if (!isRegisteredAccount()) return false;
+    const auth = getAuthState();
+    const { pullAdminPatchIfNeeded } = await import('./cloudSave.js');
+    const { applyAdminFieldsToState } = await import('./adminPatch.js');
+    const attempts = Math.max(1, Math.floor(Number(retries) || 1));
+    for (let i = 0; i < attempts; i++) {
+      if (i > 0) {
+        await new Promise((r) => setTimeout(r, 200 * i));
+      }
+      const result = await pullAdminPatchIfNeeded(auth.userId, this.state, this.balance);
+      if (!result.changed || !result.state) continue;
+      if (!applyAdminFieldsToState(this.state, result.state)) continue;
+      await SaveProvider.save(this.state, this.balance);
+      const { emit } = await import('./events.js');
+      emit('adminPatchApplied', { revision: this.state.adminRevision });
+      emit('stateChange', this.state);
+      return true;
+    }
+    return false;
   }
 
   canImportSave() {

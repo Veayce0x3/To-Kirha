@@ -715,6 +715,9 @@ export function initUI(game, audio) {
     refreshHeader(game.state);
     refreshView();
   });
+  on('uiToast', ({ message, type } = {}) => {
+    if (message) showToast(els, message, type || 'harvest');
+  });
   on('harvestStart', ({ jobId, unitIndex, slotIndex, resourceId }) => {
     patchHarvestSlot(game, jobId, unitIndex ?? slotIndex, resourceId);
     playHarvestSlotFx(jobId, unitIndex ?? slotIndex, resourceId, 'start');

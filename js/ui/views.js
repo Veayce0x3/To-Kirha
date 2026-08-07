@@ -3130,12 +3130,14 @@ function renderCuisine(game, el) {
       label: 'Poissonnier',
       hint: 'Restauration PM',
       unlock: isCraftJobUnlocked('fishmonger', game.state, game.balance),
+      lockHint: game.balance.jobUnlocks?.fishmonger?.hint || 'Boulanger Nv.3 pour le Poissonnier.',
     },
     {
       id: 'chemist',
       label: 'Chimiste',
       hint: 'Buffs combat',
       unlock: isCraftJobUnlocked('chemist', game.state, game.balance),
+      lockHint: game.balance.jobUnlocks?.chemist?.hint || 'Boulanger Nv.5 pour le Chimiste.',
     },
     { id: 'cookbook', label: 'Livre', hint: 'Recettes découvertes', unlock: true },
   ];
@@ -3151,21 +3153,37 @@ function renderCuisine(game, el) {
     <nav class="cuisine-tabs char-tabs" role="tablist" aria-label="Métiers de cuisine">
       ${tabMeta.map((t) => `
         <button type="button" class="char-tab-btn${cuisineTab === t.id ? ' active' : ''}${t.unlock ? '' : ' locked'}"
-          data-cuisine-tab="${t.id}" role="tab" ${t.unlock ? '' : 'disabled'}
-          title="${t.unlock ? t.hint : (game.balance.jobUnlocks?.[t.id]?.hint || 'Verrouillé')}">
+          data-cuisine-tab="${t.id}" role="tab" aria-disabled="${t.unlock ? 'false' : 'true'}"
+          title="${t.unlock ? t.hint : (t.lockHint || 'Verrouillé')}">
           ${t.id === 'cookbook' ? '📖' : (jobs[t.id]?.emoji || '')} ${t.label}
         </button>
       `).join('')}
     </nav>
+    <p class="cuisine-unlock-hint" id="cuisine-unlock-hint" hidden></p>
     <div id="cuisine-content"></div>
   `;
 
   const content = el.querySelector('#cuisine-content');
+  const unlockHintEl = el.querySelector('#cuisine-unlock-hint');
 
   el.querySelectorAll('[data-cuisine-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      if (btn.disabled) return;
-      cuisineTab = normalizeCuisineTab(btn.dataset.cuisineTab);
+      const tabId = normalizeCuisineTab(btn.dataset.cuisineTab);
+      const meta = tabMeta.find((t) => t.id === tabId);
+      if (meta && !meta.unlock) {
+        const msg = meta.lockHint || 'Métier encore verrouillé.';
+        if (unlockHintEl) {
+          unlockHintEl.hidden = false;
+          unlockHintEl.textContent = `🔒 ${msg}`;
+        }
+        emit('uiToast', { message: `🔒 ${msg}`, type: 'sell' });
+        return;
+      }
+      if (unlockHintEl) {
+        unlockHintEl.hidden = true;
+        unlockHintEl.textContent = '';
+      }
+      cuisineTab = tabId;
       el.querySelectorAll('[data-cuisine-tab]').forEach((b) => {
         b.classList.toggle('active', b.dataset.cuisineTab === cuisineTab);
       });

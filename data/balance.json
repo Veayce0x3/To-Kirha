@@ -2,7 +2,7 @@
   "upgradeCostMultiplier": 1.15,
   "startingKirha": 25,
   "saveVersion": 50,
-  "appBuildId": "20260807-0725",
+  "appBuildId": "20260807-0750",
   "testerStartupRefresh": false,
   "betaMode": false,
   "achievementsEnabled": true,
@@ -688,19 +688,19 @@
       "when": {
         "craftJobUnlocked": "baker",
         "jobLevel": {
-          "baker": 5
+          "baker": 3
         }
       },
-      "hint": "Boulanger Nv.5 pour le Poissonnier (soins équipiers)."
+      "hint": "Boulanger Nv.3 pour le Poissonnier (restauration PM)."
     },
     "chemist": {
       "when": {
         "craftJobUnlocked": "baker",
         "jobLevel": {
-          "baker": 8
+          "baker": 5
         }
       },
-      "hint": "Boulanger Nv.8 pour le Chimiste (élixirs de combat)."
+      "hint": "Boulanger Nv.5 pour le Chimiste (élixirs de combat)."
     },
     "farm": {
       "well": {

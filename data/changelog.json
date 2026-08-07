@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260807-0750",
+      "date": "2026-08-07",
+      "title": "École timer, Cuisine early, dons admin",
+      "highlights": [
+        "École : compte à rebours sticky plus visible pendant une recherche",
+        "Cuisine : toast/indice si Poissonnier/Chimiste verrouillés ; déblocages Boulanger Nv.3 / Nv.5",
+        "Recettes early allégées (Onigiri, Poisson grillé, Menthe, Gâteau)",
+        "Admin : dons appliqués tout de suite en local (plus d’écrasement cloud au flush)"
+      ]
+    },
+    {
       "buildId": "20260807-0725",
       "date": "2026-08-07",
       "title": "Arbre École, Carnet modal, météo & tests events",

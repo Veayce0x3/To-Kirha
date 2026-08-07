@@ -245,11 +245,10 @@
     "id": "recipe_onigiri",
     "name": "Onigiri",
     "emoji": "🍙",
-    "description": "Boulanger — soin héros. Blé + Œuf + Eau.",
-    "kirhaCost": 8,
+    "description": "Boulanger — soin héros. Blé + Eau.",
+    "kirhaCost": 5,
     "ingredients": {
-      "ble": 4,
-      "oeuf": 1,
+      "ble": 2,
       "eau": 1
     },
     "output": "meal_onigiri",
@@ -263,11 +262,10 @@
     "id": "recipe_poisson",
     "name": "Poisson grillé",
     "emoji": "🐟",
-    "description": "Poissonnier — restauration PM. Dorade + Blé + Eau.",
-    "kirhaCost": 15,
+    "description": "Poissonnier — restauration PM. Dorade + Eau.",
+    "kirhaCost": 10,
     "ingredients": {
-      "dorade": 3,
-      "ble": 2,
+      "dorade": 2,
       "eau": 1
     },
     "output": "meal_poisson",
@@ -282,10 +280,10 @@
     "name": "Gâteau au miel",
     "emoji": "🍰",
     "description": "Boulanger — soin héros. Blé + Œuf + Miel.",
-    "kirhaCost": 40,
+    "kirhaCost": 25,
     "ingredients": {
-      "ble": 6,
-      "oeuf": 2,
+      "ble": 4,
+      "oeuf": 1,
       "miel": 1,
       "meal_onigiri": 1
     },
@@ -1482,12 +1480,11 @@
     "id": "recipe_elixir_menthe",
     "name": "Élixir de Menthe",
     "emoji": "🌿",
-    "description": "Chimiste — +ATK combat (court). Pissenlit + Eau + Miel.",
-    "kirhaCost": 25,
+    "description": "Chimiste — +ATK combat (court). Pissenlit + Eau.",
+    "kirhaCost": 15,
     "ingredients": {
-      "pissenlit": 4,
-      "eau": 2,
-      "miel": 1
+      "pissenlit": 2,
+      "eau": 1
     },
     "output": "elixir_menthe",
     "outputAmount": 1,

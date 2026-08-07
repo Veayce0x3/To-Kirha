@@ -124,14 +124,19 @@ export function renderVillageSchool(game, el) {
 
   const bonusLines = formatBonusSummary(vm.bonuses || {});
   const active = vm.active;
+  const pct = active ? Math.round(active.progress * 100) : 0;
   const activeHtml = active
     ? `
-      <div class="school-active panel-inner">
-        <strong>📖 ${active.research.name}</strong>
-        <div class="xp-bar-container school-progress-bar" aria-label="Progression recherche">
-          <div class="xp-bar" style="width:${Math.round(active.progress * 100)}%"></div>
+      <div class="school-active school-timer-banner panel-inner" role="status" aria-live="polite">
+        <div class="school-timer-head">
+          <strong class="school-timer-title">📖 Recherche en cours</strong>
+          <span class="school-timer-countdown" data-school-countdown>${formatResearchDuration(active.remainingMs)}</span>
         </div>
-        <span class="school-active-eta">${formatResearchDuration(active.remainingMs)} restantes</span>
+        <p class="school-timer-name">${active.research.name}</p>
+        <div class="xp-bar-container school-progress-bar" aria-label="Progression recherche">
+          <div class="xp-bar" style="width:${pct}%"></div>
+        </div>
+        <span class="school-active-eta">${pct}&nbsp;% · <span data-school-eta>${formatResearchDuration(active.remainingMs)} restantes</span></span>
       </div>`
     : `
       <div class="school-active idle panel-inner">
@@ -215,9 +220,15 @@ export function renderVillageSchool(game, el) {
       }
       const prog = game.getVillageSchoolView?.()?.active;
       const bar = el.querySelector('.school-progress-bar .xp-bar');
-      const eta = el.querySelector('.school-active-eta');
-      if (prog && bar) bar.style.width = `${Math.round(prog.progress * 100)}%`;
-      if (prog && eta) eta.textContent = `${formatResearchDuration(prog.remainingMs)} restantes`;
+      const etaWrap = el.querySelector('.school-active-eta');
+      const countdown = el.querySelector('[data-school-countdown]');
+      const p = prog ? Math.round(prog.progress * 100) : 0;
+      const rem = prog ? formatResearchDuration(prog.remainingMs) : '';
+      if (prog && bar) bar.style.width = `${p}%`;
+      if (prog && countdown) countdown.textContent = rem;
+      if (prog && etaWrap) {
+        etaWrap.innerHTML = `${p}&nbsp;% · <span data-school-eta>${rem} restantes</span>`;
+      }
     }, 1000);
   }
 }
