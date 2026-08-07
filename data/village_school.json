@@ -46,11 +46,11 @@
       "name": "Sentiers du bûcheron",
       "description": "Le Conseil ouvre les chemins boisés autour du village.",
       "requires": [],
-      "kirhaCost": 40,
+      "kirhaCost": 20,
       "ingredients": {
-        "ble": 20
+        "ble": 10
       },
-      "durationMs": 180000,
+      "durationMs": 45000,
       "effect": {
         "unlockGatheringJob": "lumberjack"
       },
@@ -127,11 +127,11 @@
       "name": "Puits du village",
       "description": "Sans eau, pas d’élevage. Le puits rouvre la ferme.",
       "requires": [],
-      "kirhaCost": 35,
+      "kirhaCost": 15,
       "ingredients": {
-        "ble": 15
+        "ble": 8
       },
-      "durationMs": 120000,
+      "durationMs": 30000,
       "effect": {
         "unlockFarmBuilding": "well"
       },
@@ -147,12 +147,12 @@
       "requires": [
         "roadmap_well"
       ],
-      "kirhaCost": 70,
+      "kirhaCost": 30,
       "ingredients": {
-        "ble": 25,
-        "eau": 10
+        "ble": 15,
+        "eau": 5
       },
-      "durationMs": 240000,
+      "durationMs": 90000,
       "effect": {
         "unlockFarmBuilding": "chicken_coop"
       },
@@ -253,11 +253,11 @@
       "name": "Première garde",
       "description": "Le Conseil autorise l’entraînement au Temple du Cerisier.",
       "requires": [],
-      "kirhaCost": 50,
+      "kirhaCost": 20,
       "ingredients": {
-        "ble": 25
+        "ble": 12
       },
-      "durationMs": 180000,
+      "durationMs": 45000,
       "effect": {
         "unlockCombat": true
       },
@@ -351,15 +351,15 @@
       "id": "cuisine_fours",
       "branch": "cuisine",
       "tier": "seasonal",
+      "order": 1,
       "name": "Fours du village",
       "description": "Les fournées nourrissent mieux les apprentis cuisiniers.",
       "requires": [],
-      "kirhaCost": 120,
+      "kirhaCost": 40,
       "ingredients": {
-        "ble": 40,
-        "eau": 10
+        "ble": 20
       },
-      "durationMs": 600000,
+      "durationMs": 120000,
       "effect": {
         "seasonBonuses": {
           "cuisineJobXp": 0.08
@@ -415,9 +415,12 @@
       "id": "ferme_nichoir",
       "branch": "ferme",
       "tier": "seasonal",
+      "order": 20,
       "name": "Nichoir amélioré",
       "description": "Les animaux apprennent plus vite sous un meilleur abri.",
-      "requires": [],
+      "requires": [
+        "roadmap_well"
+      ],
       "kirhaCost": 150,
       "ingredients": {
         "frene": 30,
@@ -457,15 +460,16 @@
       "id": "atelier_notes",
       "branch": "atelier",
       "tier": "seasonal",
+      "order": 1,
       "name": "Notes de l’Outilleur",
       "description": "Entretien soigné : les outils tiennent un peu plus longtemps.",
       "requires": [],
-      "kirhaCost": 200,
+      "kirhaCost": 45,
       "ingredients": {
-        "frene": 40,
-        "pierre": 20
+        "frene": 15,
+        "ble": 15
       },
-      "durationMs": 1200000,
+      "durationMs": 120000,
       "effect": {
         "seasonBonuses": {
           "toolDurability": 0.1
@@ -496,13 +500,34 @@
       },
       "effectLabel": "Legs : +80 💰 et marchand garanti la 1ʳᵉ semaine (saison suivante)"
     },
+    "roadmap_village_board": {
+      "id": "roadmap_village_board",
+      "branch": "village",
+      "tier": "permanent",
+      "order": 1,
+      "name": "Conseil du village",
+      "description": "Les habitants affichent leurs besoins du jour sur le panneau communal.",
+      "requires": [],
+      "kirhaCost": 15,
+      "ingredients": {
+        "ble": 10
+      },
+      "durationMs": 30000,
+      "effect": {
+        "unlockVillageBoard": true
+      },
+      "effectLabel": "Débloque le Village et les quêtes quotidiennes"
+    },
     "knowledge_routes": {
       "id": "knowledge_routes",
       "branch": "village",
       "tier": "permanent",
+      "order": 2,
       "name": "Routes commerciales",
       "description": "Les caravanes croisent plus souvent le village — pour toujours.",
-      "requires": [],
+      "requires": [
+        "roadmap_village_board"
+      ],
       "kirhaCost": 900,
       "ingredients": {
         "ble": 120,
@@ -521,6 +546,7 @@
       "id": "knowledge_warehouse",
       "branch": "village",
       "tier": "permanent",
+      "order": 3,
       "name": "Entrepôt du village",
       "description": "Un emplacement de récolte supplémentaire, durable.",
       "requires": [

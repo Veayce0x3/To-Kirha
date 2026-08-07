@@ -61,13 +61,37 @@ function researchDepth(research, byId, memo = {}) {
   return memo[research.id];
 }
 
-/** Affiche seulement : terminées (compact), actives, la prochaine disponible, et un fog. */
+/** Déblocages feuille de route avant bonus saisonniers (évite « Nichoir » avant « Puits »). */
+function isRoadmapUnlockResearch(research) {
+  const e = research?.effect || {};
+  return !!(
+    e.unlockGatheringJob
+    || e.unlockFarmBuilding
+    || e.unlockCombat
+    || e.unlockCombatZone
+    || e.unlockVillageBoard
+  );
+}
+
+function roadmapPriority(research) {
+  if (isRoadmapUnlockResearch(research)) return 0;
+  if (research?.tier === 'permanent') return 1;
+  return 2;
+}
+
+/** Affiche : terminées, active/prochaine (roadmap d’abord), + teaser nommé de la suite. */
 function filterBranchItemsForDisplay(items) {
   const byId = Object.fromEntries(items.map((it) => [it.research.id, it.research]));
   const depths = {};
   for (const it of items) researchDepth(it.research, byId, depths);
 
   const sorted = [...items].sort((a, b) => {
+    const pa = roadmapPriority(a.research);
+    const pb = roadmapPriority(b.research);
+    if (pa !== pb) return pa - pb;
+    const oa = Number(a.research.order) || 999;
+    const ob = Number(b.research.order) || 999;
+    if (oa !== ob) return oa - ob;
     const d = (depths[a.research.id] || 0) - (depths[b.research.id] || 0);
     if (d !== 0) return d;
     return String(a.research.id).localeCompare(String(b.research.id));
@@ -80,14 +104,23 @@ function filterBranchItemsForDisplay(items) {
     || it.status === 'unaffordable'
     || it.status === 'blocked'
   ));
-  const fog = !next && !active.length
-    ? sorted.find((it) => it.status === 'locked')
-    : null;
+
+  const anchorId = active[0]?.research?.id || next?.research?.id || null;
+  let fog = null;
+  if (anchorId) {
+    fog = sorted.find((it) => (
+      it.status === 'locked'
+      && (it.research.requires || []).includes(anchorId)
+    )) || null;
+  }
+  if (!fog && !next && !active.length) {
+    fog = sorted.find((it) => it.status === 'locked') || null;
+  }
 
   const out = [...done];
   if (active.length) out.push(...active);
   else if (next) out.push(next);
-  else if (fog) out.push(fog);
+  if (fog) out.push(fog);
   return out;
 }
 
@@ -95,11 +128,12 @@ function renderTreeNode(game, item) {
   const { research, status, ingredients, canStart } = item;
 
   if (status === 'locked') {
+    const effect = research.effectLabel || 'Suite du chemin';
     return `
-      <article class="school-tree-node fog" data-research="${research.id}" title="Termine la recherche précédente pour découvrir celle-ci">
-        <span class="school-tree-fog-icon">❓</span>
-        <strong class="school-tree-fog-title">Prochaine étude</strong>
-        <span class="school-tree-fog-hint">Chemin encore brumeux — termine l’étape précédente</span>
+      <article class="school-tree-node fog" data-research="${research.id}" title="Termine l’étape précédente pour débloquer">
+        <span class="school-tree-fog-icon">🔜</span>
+        <strong class="school-tree-fog-title">${research.name}</strong>
+        <span class="school-tree-fog-hint">${effect} — termine l’étude ci-dessus d’abord</span>
       </article>`;
   }
 
@@ -208,7 +242,7 @@ export function renderVillageSchool(game, el) {
     <div class="school-view">
       <header class="view-header">
         <h2><span class="nav-emoji">🏫</span> École du Village</h2>
-        <p class="view-desc">Feuille de route : métiers, ferme et donjons. Une étude à la fois par branche.</p>
+        <p class="view-desc">Feuille de route : métiers, ferme, village et donjons. Une étude à la fois — la suite est annoncée juste en dessous.</p>
       </header>
       <div class="school-summary panel-inner">
         <span>${vm.seasonalCount} saisonnière(s) · ${vm.permanentCount} permanente(s)</span>

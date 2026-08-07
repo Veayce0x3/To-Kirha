@@ -54,6 +54,19 @@ function formatMsShort(ms) {
 }
 
 export function renderVillage(game, el) {
+  if (!game.isVillageBoardUnlocked?.()) {
+    el.innerHTML = `
+      <div class="feature-locked-panel">
+        <div class="feature-locked-icon"><span class="nav-emoji" style="font-size:2.5rem">🏘️</span></div>
+        <h2>Village</h2>
+        <p class="view-desc feature-locked-hint">Termine <strong>Conseil du village</strong> à l’École (onglet Connaissances) pour ouvrir les quêtes quotidiennes.</p>
+        <button type="button" class="btn btn-primary" id="goto-school-village">🏫 Aller à l’École</button>
+      </div>
+    `;
+    el.querySelector('#goto-school-village')?.addEventListener('click', () => navigate('village_school'));
+    return;
+  }
+
   game.ensureVillageBoardDay?.();
   syncSakuraWindVisual?.(game);
 

@@ -508,6 +508,46 @@ const MIGRATIONS = {
       }
     }
   },
+
+  53(state) {
+    // Village (quêtes) désormais via École — conserve l’accès pour les saves déjà avancées
+    if (!state.villageSchool || typeof state.villageSchool !== 'object') {
+      state.villageSchool = {
+        completedSeasonal: [],
+        completedPermanent: [],
+        active: null,
+        legacyPending: null,
+        seasonFlags: {},
+        unlockedSpells: [],
+        unlockedJobs: [],
+        unlockedFarmBuildings: [],
+        unlockedCombatZones: [],
+        unlockedCombat: false,
+        unlockedVillageBoard: false,
+      };
+    }
+    const s = state.villageSchool;
+    if (typeof s.unlockedVillageBoard !== 'boolean') s.unlockedVillageBoard = false;
+    if (!Array.isArray(s.completedPermanent)) s.completedPermanent = [];
+
+    const alreadyPlayed = !!(
+      state.villageBoard
+      || (Number(state.season) || 1) > 1
+      || (s.completedPermanent || []).length > 0
+      || (s.unlockedJobs || []).length > 0
+      || (s.unlockedFarmBuildings || []).length > 0
+      || s.unlockedCombat
+      || (Number(state.jobs?.farmer?.level) || 1) > 1
+      || (Number(state.character?.level) || 1) > 1
+      || Object.keys(state.inventory || {}).some((id) => id !== 'ble' && (Number(state.inventory[id]) || 0) > 0)
+    );
+    if (alreadyPlayed || s.unlockedVillageBoard) {
+      s.unlockedVillageBoard = true;
+      if (!s.completedPermanent.includes('roadmap_village_board')) {
+        s.completedPermanent.push('roadmap_village_board');
+      }
+    }
+  },
 };
 
 /** Garantit les blocs systèmes récents même si saveVersion était déjà trop haut. */
@@ -530,6 +570,7 @@ export function repairSaveSystems(state, ctx = {}) {
       unlockedFarmBuildings: [],
       unlockedCombatZones: [],
       unlockedCombat: false,
+      unlockedVillageBoard: false,
     };
   }
   if (!Array.isArray(state.villageSchool.completedSeasonal)) state.villageSchool.completedSeasonal = [];
@@ -539,6 +580,9 @@ export function repairSaveSystems(state, ctx = {}) {
   if (!Array.isArray(state.villageSchool.unlockedFarmBuildings)) state.villageSchool.unlockedFarmBuildings = [];
   if (!Array.isArray(state.villageSchool.unlockedCombatZones)) state.villageSchool.unlockedCombatZones = [];
   if (typeof state.villageSchool.unlockedCombat !== 'boolean') state.villageSchool.unlockedCombat = false;
+  if (typeof state.villageSchool.unlockedVillageBoard !== 'boolean') {
+    state.villageSchool.unlockedVillageBoard = false;
+  }
   if (!state.seasonStartedAt) state.seasonStartedAt = Date.now();
 
   if (!state.grimoire || typeof state.grimoire !== 'object') {
@@ -586,18 +630,22 @@ export function repairSaveSystems(state, ctx = {}) {
       unlockedFarmBuildings: [],
       unlockedCombatZones: [],
       unlockedCombat: false,
+      unlockedVillageBoard: false,
     };
   }
   if (!Array.isArray(state.villageSchool.unlockedJobs)) state.villageSchool.unlockedJobs = [];
   if (!Array.isArray(state.villageSchool.unlockedFarmBuildings)) state.villageSchool.unlockedFarmBuildings = [];
   if (!Array.isArray(state.villageSchool.unlockedCombatZones)) state.villageSchool.unlockedCombatZones = [];
   if (typeof state.villageSchool.unlockedCombat !== 'boolean') state.villageSchool.unlockedCombat = false;
+  if (typeof state.villageSchool.unlockedVillageBoard !== 'boolean') {
+    state.villageSchool.unlockedVillageBoard = false;
+  }
 
   return state;
 }
 
 export function runSaveMigrations(state, ctx) {
-  const target = ctx.balance?.saveVersion ?? 52;
+  const target = ctx.balance?.saveVersion ?? 53;
   let version = state.saveVersion ?? 0;
   while (version < target) {
     version += 1;

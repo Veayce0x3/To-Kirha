@@ -75,6 +75,7 @@ function ensureSchoolUnlockLists(state) {
       unlockedFarmBuildings: [],
       unlockedCombatZones: [],
       unlockedCombat: false,
+      unlockedVillageBoard: false,
     };
   }
   const s = state.villageSchool;
@@ -82,6 +83,7 @@ function ensureSchoolUnlockLists(state) {
   if (!Array.isArray(s.unlockedFarmBuildings)) s.unlockedFarmBuildings = [];
   if (!Array.isArray(s.unlockedCombatZones)) s.unlockedCombatZones = [];
   if (typeof s.unlockedCombat !== 'boolean') s.unlockedCombat = false;
+  if (typeof s.unlockedVillageBoard !== 'boolean') s.unlockedVillageBoard = false;
   return s;
 }
 
@@ -422,17 +424,12 @@ export function getFarmBuildingUnlockProgress(buildingId, state, balance, jobs =
 }
 
 export function getNextFarmBuildingUnlock(state, balance, jobs = {}) {
-  const candidates = FARM_BUILDING_IDS
-    .map((id) => getFarmBuildingUnlockProgress(id, state, balance, jobs))
-    .filter(Boolean)
-    .sort((a, b) => {
-      const readyDiff = Number(!!b.ready) - Number(!!a.ready);
-      if (readyDiff) return readyDiff;
-      const progDiff = (b.progress || 0) - (a.progress || 0);
-      if (progDiff) return progDiff;
-      return (a.label || '').localeCompare(b.label || '', 'fr');
-    });
-  return candidates[0] || null;
+  // Ordre de progression ferme (Puits → Poulailler → …), pas alphabétique.
+  for (const id of FARM_BUILDING_IDS) {
+    const progress = getFarmBuildingUnlockProgress(id, state, balance, jobs);
+    if (progress) return progress;
+  }
+  return null;
 }
 
 /** Entrées nav Ferme : bâtiments débloqués + prochain bâtiment verrouillé. */

@@ -17,6 +17,7 @@ export function emptyVillageSchoolState() {
     unlockedFarmBuildings: [],
     unlockedCombatZones: [],
     unlockedCombat: false,
+    unlockedVillageBoard: false,
   };
 }
 
@@ -32,6 +33,7 @@ export function ensureVillageSchoolState(state) {
   if (!Array.isArray(s.unlockedFarmBuildings)) s.unlockedFarmBuildings = [];
   if (!Array.isArray(s.unlockedCombatZones)) s.unlockedCombatZones = [];
   if (typeof s.unlockedCombat !== 'boolean') s.unlockedCombat = false;
+  if (typeof s.unlockedVillageBoard !== 'boolean') s.unlockedVillageBoard = false;
   if (!s.seasonFlags || typeof s.seasonFlags !== 'object') s.seasonFlags = {};
   return s;
 }
@@ -58,6 +60,15 @@ export function hasSchoolCombatZoneUnlock(state, combatZoneId) {
   if (!combatZoneId) return false;
   if (combatZoneId === 'village_sakura') return !!s.unlockedCombat;
   return s.unlockedCombatZones.includes(combatZoneId);
+}
+
+/** Quêtes quotidiennes du Village — déblocage École. */
+export function hasSchoolVillageBoardUnlock(state) {
+  return !!ensureVillageSchoolState(state).unlockedVillageBoard;
+}
+
+export function isVillageBoardUnlocked(state, _balance) {
+  return hasSchoolVillageBoardUnlock(state);
 }
 
 export function getResearchDef(schoolData, researchId) {
@@ -185,6 +196,12 @@ export function applyResearchUnlockEffects(state, research) {
     if (pushUnique(s.unlockedCombatZones, effect.unlockCombatZone)) changed = true;
     if (!Array.isArray(state.unlockedZones)) state.unlockedZones = [];
     if (pushUnique(state.unlockedZones, effect.unlockCombatZone)) changed = true;
+  }
+  if (effect.unlockVillageBoard) {
+    if (!s.unlockedVillageBoard) {
+      s.unlockedVillageBoard = true;
+      changed = true;
+    }
   }
   if (effect.unlockSpell) {
     const spellId = effect.unlockSpell;
@@ -330,6 +347,7 @@ export function extractVillageSchoolForPrestige(state) {
       unlockedFarmBuildings: [...(s.unlockedFarmBuildings || [])],
       unlockedCombatZones: [...(s.unlockedCombatZones || [])],
       unlockedCombat: !!s.unlockedCombat,
+      unlockedVillageBoard: !!s.unlockedVillageBoard,
       seasonFlags: {
         merchantFirstWeek: !!legacy.merchantFirstWeek,
       },

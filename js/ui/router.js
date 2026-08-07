@@ -231,8 +231,11 @@ export function getNavCategories(state = null, balance = null, jobs = null) {
   return NAV_CATEGORIES.map((cat) => {
     if (cat.id === 'recolte') return { ...cat, items: harvestItems };
     if (cat.id === 'ferme') return { ...cat, items: farmItems };
-    if (cat.id === 'monde' && !achievementsOn) {
-      return { ...cat, items: cat.items.filter((id) => id !== 'achievements') };
+    if (cat.id === 'monde') {
+      let items = cat.items;
+      if (!achievementsOn) items = items.filter((id) => id !== 'achievements');
+      // Village verrouillé : on garde l’entrée pour l’UI locked (render.js)
+      return { ...cat, items };
     }
     return cat;
   }).filter((cat) => cat.items?.length !== 0 || !cat.collapsible);

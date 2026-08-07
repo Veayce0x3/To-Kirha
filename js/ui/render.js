@@ -176,6 +176,19 @@ export function initUI(game, audio) {
   }
 
   function getLockedFeatureNavEntry(viewId) {
+    if (viewId === 'village') {
+      if (game.isVillageBoardUnlocked?.()) return null;
+      return {
+        featureId: 'village_board',
+        viewId: 'village',
+        label: 'Village',
+        emoji: '🏘️',
+        ready: false,
+        progress: 0,
+        hint: 'École → Connaissances : Conseil du village.',
+        gates: [{ type: 'schoolUnlock', ready: false, jobName: 'Conseil du village' }],
+      };
+    }
     if (viewId === 'village_school') {
       if (game.isVillageSchoolUnlocked?.()) return null;
       return {
@@ -224,6 +237,9 @@ export function initUI(game, audio) {
       }
       if (pending.type === 'craftJobUnlocked') {
         return pending.jobName || 'Outilleur';
+      }
+      if (pending.type === 'schoolUnlock') {
+        return pending.jobName || 'École du Village';
       }
     }
     const gateName = game.jobs[entry.gateJob]?.name || entry.gateJob;
@@ -782,6 +798,7 @@ export function initUI(game, audio) {
     showToast(els, `🏫 ${name} terminée !`, 'upgrade');
     audio.playSfx('ready');
     refreshHeader(game.state);
+    buildNav();
   });
   on('villageSchoolStart', (result) => {
     const name = result?.research?.name || 'Recherche';

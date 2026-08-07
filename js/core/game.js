@@ -124,6 +124,7 @@ import {
   ensureVillageSchoolState,
   emptyVillageSchoolState,
   isVillageSchoolUnlocked,
+  isVillageBoardUnlocked,
   startVillageResearch,
   tickVillageSchool,
   refreshSchoolBonusCache,
@@ -1099,6 +1100,10 @@ export class Game {
 
   isVillageSchoolUnlocked() {
     return isVillageSchoolUnlocked(this.state, this.balance);
+  }
+
+  isVillageBoardUnlocked() {
+    return isVillageBoardUnlocked(this.state, this.balance);
   }
 
   getVillageSchoolView() {
