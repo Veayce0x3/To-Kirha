@@ -148,6 +148,32 @@
   margin: 0 0 0.75rem;
 }
 
+.season-boost-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.season-boost-confirm-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.season-boost-confirm-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.season-boost-confirm-row .btn {
+  min-height: 44px;
+}
+
 .prestige-steps {
   list-style: none;
   margin: 0.5rem 0 0.75rem;

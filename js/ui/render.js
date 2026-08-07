@@ -631,6 +631,7 @@ export function initUI(game, audio) {
   els.seasonBonusChip?.addEventListener('click', () => navigate('season'));
   els.seasonBoostChip?.addEventListener('click', () => {
     if (els.seasonBoostChip?.dataset.boostAction === 'activate') {
+      if (!confirm('Activer le boost ×2 pour 1 heure ?\n(Une seule fois — Confirmer pour lancer.)')) return;
       const result = game.activateSeasonBoost();
       if (result?.ok) {
         refreshHeader(game.state);

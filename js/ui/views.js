@@ -109,6 +109,44 @@ function renderSeasonBonusPills(state) {
   `;
 }
 
+/** Étape Confirmer / Annuler avant d’activer le boost ×2. */
+function bindSeasonBoostConfirm(game, root, {
+  actionsId,
+  activateId,
+  confirmId,
+  cancelId,
+  onActivated,
+}) {
+  const showActivate = () => {
+    const box = root.querySelector(`#${actionsId}`);
+    if (!box) return;
+    box.innerHTML = `<button type="button" class="btn btn-craft" id="${activateId}">Activer le boost ×2</button>`;
+    box.querySelector(`#${activateId}`)?.addEventListener('click', showConfirm);
+  };
+  const showConfirm = () => {
+    const box = root.querySelector(`#${actionsId}`);
+    if (!box) return;
+    box.innerHTML = `
+      <p class="season-boost-confirm-hint">Lancer 1 h de ×2 maintenant ? (une seule fois)</p>
+      <div class="season-boost-confirm-row">
+        <button type="button" class="btn btn-craft" id="${confirmId}">Confirmer</button>
+        <button type="button" class="btn btn-muted" id="${cancelId}">Annuler</button>
+      </div>`;
+    box.querySelector(`#${confirmId}`)?.addEventListener('click', () => {
+      const result = game.activateSeasonBoost();
+      if (!result?.ok) {
+        emit('uiToast', { message: result?.reason || 'Boost indisponible.', type: 'sell' });
+        showActivate();
+        return;
+      }
+      emit('uiToast', { message: 'Boost ×2 activé pour 1 h !', type: 'craft' });
+      onActivated?.();
+    });
+    box.querySelector(`#${cancelId}`)?.addEventListener('click', showActivate);
+  };
+  root.querySelector(`#${activateId}`)?.addEventListener('click', showConfirm);
+}
+
 function renderAllBonusesPanel(state) {
   const season = getSeasonBonusPercents(state);
   const ach = getAchievementBonuses(state);
@@ -664,7 +702,9 @@ function renderCharacter(game, el) {
         if (boostGate.ok) {
           return `<div class="season-boost-banner season-boost-ready char-boost-banner">
             <p>⚡ Boost de démarrage ×2 (1 h) — active-le pour démarrer plus vite (perso ≤ Nv.${boostCaps.character}, métiers ≤ Nv.${boostCaps.jobs}).</p>
-            <button type="button" class="btn btn-craft" id="char-boost-activate">Activer le boost ×2</button>
+            <div class="season-boost-actions" id="char-boost-actions">
+              <button type="button" class="btn btn-craft" id="char-boost-activate">Activer le boost ×2</button>
+            </div>
           </div>`;
         }
         return '';
@@ -704,14 +744,12 @@ function renderCharacter(game, el) {
   renderCharDofusEquipGrid(game, el.querySelector('#char-dofus-equip'));
   renderPrestigeTeaser(game, el.querySelector('#char-prestige-teaser'));
 
-  el.querySelector('#char-boost-activate')?.addEventListener('click', () => {
-    const result = game.activateSeasonBoost();
-    if (!result.ok) {
-      emit('uiToast', { message: result.reason || 'Boost indisponible.', type: 'sell' });
-      return;
-    }
-    emit('uiToast', { message: 'Boost ×2 activé pour 1 h !', type: 'craft' });
-    renderCharacter(game, el);
+  bindSeasonBoostConfirm(game, el, {
+    actionsId: 'char-boost-actions',
+    activateId: 'char-boost-activate',
+    confirmId: 'char-boost-confirm',
+    cancelId: 'char-boost-cancel',
+    onActivated: () => renderCharacter(game, el),
   });
 
   el.querySelector('#guest-upgrade-hdv')?.addEventListener('click', () => showAccountRequiredModal(getOnlineBlockReason()));
@@ -4079,7 +4117,9 @@ export function renderSeason(game, el) {
     boostBanner = `
       <div class="season-boost-banner season-boost-ready">
         <p>⚡ Boost de démarrage ×2 (1 h) — active-le quand tu veux, tant que perso ≤ Nv.${boostCaps.character} et métiers ≤ Nv.${boostCaps.jobs}.</p>
-        <button type="button" class="btn btn-craft" id="season-boost-activate">Activer le boost ×2</button>
+        <div class="season-boost-actions" id="season-boost-actions">
+          <button type="button" class="btn btn-craft" id="season-boost-activate">Activer le boost ×2</button>
+        </div>
       </div>`;
   } else if (game.state.seasonBoostPending && !game.state.seasonBoostUsed) {
     boostBanner = `<p class="season-boost-banner season-boost-locked">${boostGate.reason || 'Boost indisponible.'}</p>`;
@@ -4125,13 +4165,12 @@ export function renderSeason(game, el) {
   `;
 
   el.querySelector('#prestige-btn')?.addEventListener('click', () => emitPrestigeModal());
-  el.querySelector('#season-boost-activate')?.addEventListener('click', () => {
-    const result = game.activateSeasonBoost();
-    if (!result?.ok) {
-      emit('farmBlocked', { message: result?.reason || 'Boost indisponible.' });
-      return;
-    }
-    renderSeason(game, el);
+  bindSeasonBoostConfirm(game, el, {
+    actionsId: 'season-boost-actions',
+    activateId: 'season-boost-activate',
+    confirmId: 'season-boost-confirm',
+    cancelId: 'season-boost-cancel',
+    onActivated: () => renderSeason(game, el),
   });
 }
 
