@@ -399,7 +399,7 @@ body.auth-modal-open #career-choice-modal {
   padding: 1rem 0;
 }
 
-/* ── Classement joueur (table alignée) ── */
+/* ── Classement joueur (cartes + podium) ── */
 .lb-page {
   display: flex;
   flex-direction: column;
@@ -407,309 +407,362 @@ body.auth-modal-open #career-choice-modal {
   height: 100%;
 }
 
-.lb-shell {
+.lb-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.7rem;
   min-height: 0;
   flex: 1;
 }
 
-.lb-head {
+.lb-top {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  flex-shrink: 0;
-}
-
-.lb-head-row {
-  display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.6rem;
+  flex-shrink: 0;
 }
 
 .lb-title {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--bois);
+  line-height: 1.15;
 }
 
-.lb-refresh {
-  min-width: 44px;
-  min-height: 44px;
+.lb-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  opacity: 0.72;
+  line-height: 1.35;
 }
 
-.lb-sort {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.45rem;
-  align-items: center;
-}
-
-.lb-sort-lbl {
-  font-size: 0.78rem;
+.lb-subtitle strong {
+  color: var(--vert-foret);
   font-weight: 700;
-  opacity: 0.7;
-  white-space: nowrap;
 }
 
-.lb-sort-select {
-  min-height: 44px;
-  width: 100%;
-}
-
-.lb-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  min-height: 0;
-  flex: 1;
-  background: rgba(255, 253, 249, 0.75);
-  border: 1px solid rgba(74, 55, 40, 0.1);
+.lb-icon-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(74, 55, 40, 0.14);
   border-radius: 14px;
-  padding: 0.55rem 0.45rem 0.45rem;
+  background: linear-gradient(160deg, #fffdf9 0%, #f8e8ee 100%);
+  color: var(--bois);
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.08);
 }
 
-.lb-you-wrap {
-  flex-shrink: 0;
-  padding: 0 0.2rem 0.45rem;
-  border-bottom: 1px solid rgba(74, 55, 40, 0.1);
+.lb-icon-btn:active {
+  transform: scale(0.96);
 }
 
-.lb-you-wrap .lb-row {
-  background: rgba(45, 90, 39, 0.12);
-  border: 1px solid rgba(45, 90, 39, 0.28);
-  border-radius: 10px;
-  padding: 0.45rem 0.4rem;
-}
-
-.lb-hint {
-  margin: 0.35rem 0 0;
-  font-size: 0.75rem;
-  opacity: 0.75;
-}
-
-.lb-board {
+.lb-select-wrap {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  flex: 1;
-}
-
-.lb-board-top {
+  gap: 0.3rem;
   flex-shrink: 0;
-  padding: 0 0.2rem;
 }
 
-.lb-board-title {
-  margin: 0 0 0.35rem;
-  font-size: 0.7rem;
+.lb-select-lbl {
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   opacity: 0.55;
 }
 
-/* Grille partagée : rang | nom | perso | métier | saison | fortune | score */
-.lb-cols,
-.lb-row {
-  display: grid;
-  grid-template-columns:
-    2.1rem
-    minmax(4.5rem, 1.35fr)
-    minmax(2.6rem, 0.7fr)
-    minmax(2.6rem, 0.7fr)
-    minmax(2.2rem, 0.55fr)
-    minmax(2.8rem, 0.85fr)
-    minmax(3.2rem, 0.9fr);
-  gap: 0.25rem;
-  align-items: center;
+.lb-select {
+  min-height: 48px;
+  width: 100%;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(74, 55, 40, 0.14);
+  border-radius: 14px;
+  background: #fffdf9;
+  color: var(--bois);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(45, 90, 39, 0.06);
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--vert-foret) 50%),
+    linear-gradient(135deg, var(--vert-foret) 50%, transparent 50%),
+    linear-gradient(to right, #fffdf9, #fffdf9);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 12px) calc(50% - 2px),
+    0 0;
+  background-size: 6px 6px, 6px 6px, 100% 100%;
+  background-repeat: no-repeat;
+  padding-right: 2.2rem;
 }
 
-.lb-cols {
-  padding: 0.25rem 0.4rem;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  opacity: 0.55;
-  border-bottom: 1px solid rgba(74, 55, 40, 0.1);
+.lb-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
 }
 
-.lb-cols .is-hl,
-.lb-cols-score {
-  color: var(--vert-foret);
-  opacity: 1;
+.lb-loading,
+.lb-empty,
+.lb-note {
+  margin: 0;
+  font-size: 0.82rem;
+  opacity: 0.7;
 }
 
-.lb-cols-rank,
-.lb-row-rank {
+.lb-empty {
+  padding: 1.5rem 0.75rem;
   text-align: center;
+  font-style: italic;
 }
 
-.lb-cols-name,
-.lb-row-name {
-  text-align: left;
+.lb-me .lb-note {
+  margin-top: 0.4rem;
+  padding: 0 0.15rem;
+}
+
+.lb-section-lbl {
+  margin: 0 0 0.45rem;
+  padding: 0 0.1rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.lb-podium-list,
+.lb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+/* Carte joueur */
+.lb-card {
+  display: grid;
+  grid-template-columns: 2.1rem 2.6rem 1fr auto;
+  gap: 0.55rem;
+  align-items: center;
+  min-height: 56px;
+  padding: 0.55rem 0.7rem;
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255, 253, 249, 0.95) 0%, rgba(248, 232, 238, 0.55) 100%);
+  border: 1px solid rgba(74, 55, 40, 0.08);
+  box-shadow: 0 2px 12px rgba(45, 90, 39, 0.06);
+}
+
+.lb-card-feat {
+  min-height: 64px;
+  padding: 0.65rem 0.8rem;
+  background: linear-gradient(145deg, #fffdf9 0%, #f3e4ec 55%, #e8f0df 100%);
+  border-color: rgba(62, 107, 58, 0.18);
+  box-shadow: 0 4px 16px rgba(45, 90, 39, 0.1);
+}
+
+.lb-card.lb-rank-0 {
+  background: linear-gradient(145deg, #fff9e8 0%, #f8e8ee 50%, #fffdf9 100%);
+  border-color: rgba(212, 168, 60, 0.35);
+}
+
+.lb-card.lb-rank-1 {
+  background: linear-gradient(145deg, #f4f6f8 0%, #f8e8ee 60%, #fffdf9 100%);
+  border-color: rgba(140, 150, 165, 0.35);
+}
+
+.lb-card.lb-rank-2 {
+  background: linear-gradient(145deg, #f8efe6 0%, #f8e8ee 55%, #fffdf9 100%);
+  border-color: rgba(180, 120, 70, 0.3);
+}
+
+.lb-card-me {
+  background: linear-gradient(145deg, rgba(228, 240, 223, 0.95) 0%, rgba(248, 232, 238, 0.7) 100%);
+  border: 1.5px solid rgba(45, 90, 39, 0.35);
+  box-shadow: 0 3px 14px rgba(45, 90, 39, 0.12);
+}
+
+.lb-card-rank {
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--vert-foret);
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-card-feat .lb-card-rank {
+  font-size: 1.2rem;
+}
+
+.lb-card-avatar {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 1rem;
+  color: #fffdf9;
+  background: linear-gradient(145deg, var(--vert-bambou) 0%, var(--vert-foret) 100%);
+  box-shadow: 0 2px 8px rgba(45, 90, 39, 0.2);
+}
+
+.lb-card-feat .lb-card-avatar {
+  width: 2.85rem;
+  height: 2.85rem;
+  font-size: 1.1rem;
+  background: linear-gradient(145deg, #9b7a9e 0%, var(--vert-foret) 100%);
+}
+
+.lb-rank-0 .lb-card-avatar {
+  background: linear-gradient(145deg, #e8b84a 0%, #c48a2a 100%);
+}
+
+.lb-rank-1 .lb-card-avatar {
+  background: linear-gradient(145deg, #b8c0cc 0%, #7a8494 100%);
+}
+
+.lb-rank-2 .lb-card-avatar {
+  background: linear-gradient(145deg, #d4a06a 0%, #a06838 100%);
+}
+
+.lb-card-info {
+  min-width: 0;
+}
+
+.lb-card-name {
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.lb-cols-stat,
-.lb-row-stat,
-.lb-cols-score,
-.lb-row-score {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.lb-list {
-  list-style: none;
-  margin: 0;
-  padding: 0.15rem 0 0;
-  min-height: 0;
-  flex: 1;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.lb-row {
-  min-height: 40px;
-  padding: 0.35rem 0.4rem;
-  border-bottom: 1px solid rgba(74, 55, 40, 0.06);
-  font-size: 0.82rem;
-}
-
-.lb-row:last-child {
-  border-bottom: none;
-}
-
-.lb-row.is-me:not(.lb-you-wrap .lb-row) {
-  background: rgba(45, 90, 39, 0.08);
-  border-radius: 8px;
-}
-
-.lb-row.is-top .lb-row-rank {
-  font-size: 0.95rem;
-}
-
-.lb-row-rank {
-  font-weight: 800;
-  color: var(--vert-foret);
-  font-size: 0.8rem;
-}
-
-.lb-row-name {
-  font-weight: 700;
-}
-
-.lb-row-name em {
+.lb-badge-me {
   display: inline-block;
-  margin-left: 0.25rem;
-  font-style: normal;
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 0.05rem 0.3rem;
+  margin-left: 0.35rem;
+  padding: 0.08rem 0.4rem;
   border-radius: 999px;
-  background: rgba(45, 90, 39, 0.15);
-  color: var(--vert-foret);
+  font-size: 0.65rem;
+  font-weight: 800;
   vertical-align: middle;
-}
-
-.lb-row-stat {
-  opacity: 0.8;
-  font-size: 0.78rem;
-}
-
-.lb-row-stat.is-hl {
-  opacity: 1;
-  font-weight: 800;
+  background: rgba(45, 90, 39, 0.18);
   color: var(--vert-foret);
 }
 
-.lb-row-score {
+.lb-card-meta {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  opacity: 0.65;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-card-score {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.lb-card-score-val {
+  display: inline-block;
+  padding: 0.28rem 0.55rem;
+  border-radius: 10px;
   font-weight: 800;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
   color: var(--vert-foret);
-  font-size: 0.84rem;
+  background: rgba(45, 90, 39, 0.1);
+  white-space: nowrap;
 }
 
-.lb-empty {
-  padding: 1.25rem 0.5rem;
-  text-align: center;
-  opacity: 0.7;
-  font-style: italic;
-  list-style: none;
-}
-
-.lb-loading {
-  margin: 0.75rem;
-  opacity: 0.7;
+.lb-card-feat .lb-card-score-val {
+  font-size: 0.95rem;
+  padding: 0.35rem 0.65rem;
+  background: rgba(45, 90, 39, 0.14);
 }
 
 .view-container:has(.lb-page) {
-  padding-top: 0.5rem;
-  padding-bottom: 0.65rem;
+  padding-top: 0.45rem;
+  padding-bottom: 0.55rem;
 }
 
-/* Mobile étroit : masquer Fortune, garder score */
-@media (max-width: 420px) {
-  .lb-cols,
-  .lb-row {
-    grid-template-columns:
-      1.9rem
-      minmax(3.8rem, 1.2fr)
-      minmax(2.4rem, 0.7fr)
-      minmax(2.4rem, 0.7fr)
-      minmax(2rem, 0.55fr)
-      minmax(3rem, 0.85fr);
-  }
-
-  .lb-cols-stat:nth-child(6),
-  .lb-row-stat[data-col="total_earned"] {
-    display: none;
-  }
-}
-
-html[data-theme="dark"] .lb-body {
-  background: #141820 !important;
-  border-color: rgba(243, 235, 224, 0.12) !important;
-}
-
-html[data-theme="dark"] .lb-you-wrap {
-  border-bottom-color: rgba(243, 235, 224, 0.12);
-}
-
-html[data-theme="dark"] .lb-you-wrap .lb-row {
-  background: rgba(106, 173, 98, 0.18) !important;
-  border-color: rgba(143, 212, 138, 0.35) !important;
-}
-
-html[data-theme="dark"] .lb-row {
-  border-bottom-color: rgba(243, 235, 224, 0.08);
+/* Dark mode classement */
+html[data-theme="dark"] .lb-title {
   color: var(--bois, #f3ebe0);
 }
 
-html[data-theme="dark"] .lb-row.is-me:not(.lb-you-wrap .lb-row) {
-  background: rgba(106, 173, 98, 0.12) !important;
+html[data-theme="dark"] .lb-subtitle strong {
+  color: var(--vert-clair, #a8e0a2);
 }
 
-html[data-theme="dark"] .lb-row-rank,
-html[data-theme="dark"] .lb-row-score,
-html[data-theme="dark"] .lb-row-stat.is-hl,
-html[data-theme="dark"] .lb-cols .is-hl,
-html[data-theme="dark"] .lb-cols-score {
+html[data-theme="dark"] .lb-icon-btn {
+  background: #1a1f2c !important;
+  border-color: rgba(243, 235, 224, 0.14) !important;
+  color: var(--bois, #f3ebe0) !important;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .lb-select {
+  background-color: #1a1f2c !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--vert-clair, #a8e0a2) 50%),
+    linear-gradient(135deg, var(--vert-clair, #a8e0a2) 50%, transparent 50%),
+    linear-gradient(to right, #1a1f2c, #1a1f2c) !important;
+  color: var(--bois, #f3ebe0) !important;
+  border-color: rgba(243, 235, 224, 0.14) !important;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .lb-card {
+  background: linear-gradient(145deg, #1a1f2c 0%, #161b26 100%) !important;
+  border-color: rgba(243, 235, 224, 0.1) !important;
+  box-shadow: none;
+  color: var(--bois, #f3ebe0);
+}
+
+html[data-theme="dark"] .lb-card-feat {
+  background: linear-gradient(145deg, #1e2533 0%, #1a1f2c 100%) !important;
+  border-color: rgba(106, 173, 98, 0.25) !important;
+}
+
+html[data-theme="dark"] .lb-card.lb-rank-0 {
+  border-color: rgba(232, 184, 74, 0.4) !important;
+}
+
+html[data-theme="dark"] .lb-card-me {
+  background: linear-gradient(145deg, rgba(106, 173, 98, 0.22) 0%, #1a1f2c 100%) !important;
+  border-color: rgba(143, 212, 138, 0.4) !important;
+}
+
+html[data-theme="dark"] .lb-card-rank,
+html[data-theme="dark"] .lb-card-score-val {
   color: var(--vert-clair, #a8e0a2) !important;
 }
 
-html[data-theme="dark"] .lb-sort-select {
-  background: #1a1f2c !important;
-  color: var(--bois, #f3ebe0) !important;
-  border-color: rgba(243, 235, 224, 0.14) !important;
+html[data-theme="dark"] .lb-card-score-val {
+  background: rgba(106, 173, 98, 0.18) !important;
 }
 
-html[data-theme="dark"] .lb-row-name em {
-  background: rgba(106, 173, 98, 0.25);
+html[data-theme="dark"] .lb-badge-me {
+  background: rgba(106, 173, 98, 0.28);
   color: var(--vert-clair, #a8e0a2);
+}
+
+html[data-theme="dark"] .lb-card-meta {
+  opacity: 0.55;
 }
 
 .hdv-p2p-tabs {

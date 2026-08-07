@@ -25,12 +25,9 @@ function fmtNum(n) {
   return Number(n || 0).toLocaleString('fr-FR');
 }
 
-function rankLabel(i) {
-  if (i < 0) return '—';
-  if (i === 0) return '🥇';
-  if (i === 1) return '🥈';
-  if (i === 2) return '🥉';
-  return String(i + 1);
+function initial(name) {
+  const s = String(name || '?').trim();
+  return (s.charAt(0) || '?').toUpperCase();
 }
 
 function sortMeta(sortKey) {
@@ -53,65 +50,42 @@ function primaryScore(sortKey, row) {
   switch (sortKey) {
     case 'char_level': return `Nv.${row.char_level || 1}`;
     case 'max_job_level': return `Nv.${row.max_job_level || 1}`;
-    case 'total_earned': return `${fmtNum(row.total_earned)}`;
-    case 'seasons_completed': return `${fmtNum(row.seasons_completed)}`;
-    case 'total_harvests': return fmtNum(row.total_harvests);
-    case 'total_discoveries': return fmtNum(row.total_discoveries);
-    case 'boss_kills_total': return fmtNum(row.boss_kills_total);
+    case 'total_earned': return `${fmtNum(row.total_earned)} 💰`;
+    case 'seasons_completed': return `${fmtNum(row.seasons_completed)} ren.`;
+    case 'total_harvests': return `${fmtNum(row.total_harvests)}`;
+    case 'total_discoveries': return `${fmtNum(row.total_discoveries)}`;
+    case 'boss_kills_total': return `${fmtNum(row.boss_kills_total)}`;
     default: return `Nv.${row.char_level || 1}`;
   }
 }
 
-function primarySuffix(sortKey) {
-  if (sortKey === 'total_earned') return '💰';
-  return '';
+function metaLine(row) {
+  return `Perso Nv.${row.char_level || 1} · Métier Nv.${row.max_job_level || 1} · S${row.season || 1}`;
 }
 
-/** Colonnes fixes affichées (hors score de tri). */
-function sideStats(row) {
-  return [
-    { key: 'char_level', short: `Nv.${row.char_level || 1}` },
-    { key: 'max_job_level', short: `Nv.${row.max_job_level || 1}` },
-    { key: 'season', short: `S${row.season || 1}` },
-    { key: 'total_earned', short: `${fmtNum(row.total_earned)}` },
-  ];
+function medal(i) {
+  if (i < 0) return '—';
+  if (i === 0) return '🥇';
+  if (i === 1) return '🥈';
+  if (i === 2) return '🥉';
+  return String(i + 1);
 }
 
-function colsHeadHtml(sortKey) {
-  const scoreLabel = sortMeta(sortKey).label;
+function playerRow(row, rankIndex, sortKey, { isMe = false, featured = false } = {}) {
+  const name = row.display_name || 'Voyageur';
+  const rankCls = rankIndex >= 0 && rankIndex <= 2 ? ` lb-rank-${rankIndex}` : '';
   return `
-    <div class="lb-cols" aria-hidden="true">
-      <span class="lb-cols-rank">#</span>
-      <span class="lb-cols-name">Joueur</span>
-      <span class="lb-cols-stat${sortKey === 'char_level' ? ' is-hl' : ''}">Perso</span>
-      <span class="lb-cols-stat${sortKey === 'max_job_level' ? ' is-hl' : ''}">Métier</span>
-      <span class="lb-cols-stat">Saison</span>
-      <span class="lb-cols-stat${sortKey === 'total_earned' ? ' is-hl' : ''}">Fortune</span>
-      <span class="lb-cols-score is-hl">${esc(scoreLabel)}</span>
-    </div>
-  `;
-}
-
-function rowHtml(row, rankIndex, sortKey, { isMe = false, tag = 'li' } = {}) {
-  const name = esc(row.display_name || 'Voyageur');
-  const stats = sideStats(row);
-  const score = primaryScore(sortKey, row);
-  const suffix = primarySuffix(sortKey);
-  const cls = [
-    'lb-row',
-    isMe ? 'is-me' : '',
-    rankIndex >= 0 && rankIndex < 3 ? 'is-top' : '',
-  ].filter(Boolean).join(' ');
-
-  return `
-    <${tag} class="${cls}">
-      <span class="lb-row-rank">${rankLabel(rankIndex)}</span>
-      <span class="lb-row-name">${name}${isMe ? '<em>toi</em>' : ''}</span>
-      ${stats.map((s) => `
-        <span class="lb-row-stat${s.key === sortKey ? ' is-hl' : ''}" data-col="${s.key}">${esc(s.short)}</span>
-      `).join('')}
-      <span class="lb-row-score">${esc(score)}${suffix ? ` ${suffix}` : ''}</span>
-    </${tag}>
+    <article class="lb-card${isMe ? ' lb-card-me' : ''}${featured ? ' lb-card-feat' : ''}${rankCls}">
+      <div class="lb-card-rank" aria-label="Rang">${medal(rankIndex)}</div>
+      <div class="lb-card-avatar" aria-hidden="true">${esc(initial(name))}</div>
+      <div class="lb-card-info">
+        <div class="lb-card-name">${esc(name)}${isMe ? '<span class="lb-badge-me">toi</span>' : ''}</div>
+        <div class="lb-card-meta">${esc(metaLine(row))}</div>
+      </div>
+      <div class="lb-card-score">
+        <span class="lb-card-score-val">${esc(primaryScore(sortKey, row))}</span>
+      </div>
+    </article>
   `;
 }
 
@@ -144,22 +118,25 @@ export async function renderLeaderboard(game, el) {
 
   el.classList.add('lb-page');
   el.innerHTML = `
-    <div class="lb-shell">
-      <header class="lb-head">
-        <div class="lb-head-row">
-          <h2 class="lb-title">🏆 Classement</h2>
-          <button type="button" class="btn btn-muted btn-sm lb-refresh" id="lb-refresh" aria-label="Actualiser">↻</button>
+    <div class="lb-wrap">
+      <header class="lb-top">
+        <div class="lb-top-left">
+          <h2 class="lb-title">Classement</h2>
+          <p class="lb-subtitle">Qui mène selon <strong>${esc(meta.label)}</strong></p>
         </div>
-        <label class="lb-sort">
-          <span class="lb-sort-lbl">Classer par</span>
-          <select class="auth-input lb-sort-select" id="lb-sort">
-            ${LEADERBOARD_TABS.map((t) => `
-              <option value="${t.sortKey}" ${t.sortKey === activeSortKey ? 'selected' : ''}>${t.label}</option>
-            `).join('')}
-          </select>
-        </label>
+        <button type="button" class="lb-icon-btn" id="lb-refresh" aria-label="Actualiser" title="Actualiser">↻</button>
       </header>
-      <div class="lb-body" id="lb-body">
+
+      <label class="lb-select-wrap">
+        <span class="lb-select-lbl">Critère</span>
+        <select class="lb-select" id="lb-sort">
+          ${LEADERBOARD_TABS.map((t) => `
+            <option value="${t.sortKey}" ${t.sortKey === activeSortKey ? 'selected' : ''}>${t.label}</option>
+          `).join('')}
+        </select>
+      </label>
+
+      <div class="lb-main" id="lb-main">
         <p class="lb-loading">Chargement…</p>
       </div>
     </div>
@@ -181,34 +158,49 @@ export async function renderLeaderboard(game, el) {
   };
   const rows = result.rows || [];
   const myRank = rows.findIndex((r) => r.user_id === auth.userId);
-  const body = el.querySelector('#lb-body');
-  if (!body) return;
+  const main = el.querySelector('#lb-main');
+  if (!main) return;
+
+  const top = rows.slice(0, 3);
+  const rest = rows.slice(3);
 
   const errors = [];
   if (!sync.ok && rows.length === 0) errors.push(`Sync : ${sync.reason || 'échec'}`);
   if (!result.ok) errors.push(result.reason || 'Chargement impossible.');
 
-  body.innerHTML = `
-    <div class="lb-you-wrap">
-      ${rowHtml(mySnap, myRank, activeSortKey, { isMe: true, tag: 'div' })}
+  main.innerHTML = `
+    <section class="lb-me" aria-label="Ton rang">
+      ${playerRow(mySnap, myRank, activeSortKey, { isMe: true })}
       ${myRank < 0 && result.ok
-        ? `<p class="lb-hint">Pas encore dans le top ${LB_LIMIT} pour « ${esc(meta.label)} ».</p>`
-        : ''}
-    </div>
-    ${errors.map((m) => `<p class="auth-error lb-hint">${esc(m)}</p>`).join('')}
-    <div class="lb-board">
-      <div class="lb-board-top">
-        <p class="lb-board-title">Top ${rows.length || 0}</p>
-        ${colsHeadHtml(activeSortKey)}
-      </div>
-      <ol class="lb-list">
-        ${rows.length
-          ? rows.map((row, i) => rowHtml(row, i, activeSortKey, {
+        ? `<p class="lb-note">Pas encore dans le top ${LB_LIMIT}.</p>`
+        : myRank >= 0
+          ? `<p class="lb-note">Tu es <strong>#${myRank + 1}</strong> sur ${rows.length}.</p>`
+          : ''}
+    </section>
+
+    ${errors.map((m) => `<p class="auth-error lb-note">${esc(m)}</p>`).join('')}
+
+    ${top.length ? `
+      <section class="lb-podium" aria-label="Podium">
+        <h3 class="lb-section-lbl">Podium</h3>
+        <div class="lb-podium-list">
+          ${top.map((row, i) => playerRow(row, i, activeSortKey, {
+            featured: true,
+            isMe: row.user_id === auth.userId,
+          })).join('')}
+        </div>
+      </section>
+    ` : ''}
+
+    <section class="lb-rest" aria-label="Suite du classement">
+      <h3 class="lb-section-lbl">${rest.length ? `Suite · ${rest.length} joueurs` : (rows.length ? '' : 'Classement')}</h3>
+      <div class="lb-list">
+        ${rest.length
+          ? rest.map((row, i) => playerRow(row, i + 3, activeSortKey, {
               isMe: row.user_id === auth.userId,
-              tag: 'li',
             })).join('')
-          : `<li class="lb-empty">${emptyHint(activeSortKey)}</li>`}
-      </ol>
-    </div>
+          : (!rows.length ? `<p class="lb-empty">${emptyHint(activeSortKey)}</p>` : '')}
+      </div>
+    </section>
   `;
 }

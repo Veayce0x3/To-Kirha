@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "buildId": "20260807-2245",
+      "date": "2026-08-07",
+      "title": "Classement : design cartes + podium",
+      "highlights": [
+        "Plus de tableau : cartes avec avatar, méta (perso/métier/saison) et score",
+        "Podium top 3 mis en avant, bandeau « toi », liste scrollable",
+        "Menu critère conservé — dark mode soigné"
+      ]
+    },
+    {
       "buildId": "20260807-2235",
       "date": "2026-08-07",
       "title": "Classement façon tableau",
