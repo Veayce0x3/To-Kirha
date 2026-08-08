@@ -1096,8 +1096,12 @@
   gap: 0.85rem;
 }
 
-.cuisine-tabs {
+.cuisine-tabs,
+.lore-tabs,
+.school-branch-tabs {
   margin: 0.5rem 0 0.75rem;
+  flex-wrap: wrap;
+  overflow-x: visible;
 }
 
 .cuisine-tabs .char-tab-btn.locked {
@@ -1297,20 +1301,23 @@
 }
 
 .journal-book-dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(74, 55, 40, 0.22);
+  background: rgba(74, 55, 40, 0.28);
   cursor: pointer;
-  min-width: 10px;
-  min-height: 10px;
+  min-width: 12px;
+  min-height: 12px;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(74, 55, 40, 0.12);
 }
 
 .journal-book-dot.active {
   background: var(--vert-foret, #2D5A27);
-  transform: scale(1.2);
+  transform: scale(1.25);
+  box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.25);
 }
 
 .journal-sealed {
@@ -5109,6 +5116,15 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 .harvest-bulk-bar .btn {
   width: 100%;
   min-height: 48px;
+}
+
+.production-line-meta-clear .btn-harvest-all {
+  min-height: 36px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 .harvest-weather-chip {
@@ -10314,12 +10330,12 @@ body.has-job-switcher .footer {
   font-weight: 700;
 }
 
-.char-tabs {
+/* Sticky réservé à la page Perso — ne pas casser Cuisine / Carnet / École */
+.char-page .char-tabs {
   position: sticky;
   top: 0;
   z-index: 8;
   background: var(--rose-tres-pale, #F8E8EE);
-  padding: 0.15rem 0;
 }
 
 .char-tab-panel {
@@ -11683,6 +11699,22 @@ html[data-theme="dark"] .combat-heal-panel,
 html[data-theme="dark"] .journal-book {
   background: var(--surface, #1a1f2c) !important;
   background-color: var(--surface, #1a1f2c) !important;
+}
+
+html[data-theme="dark"] .char-tabs,
+html[data-theme="dark"] .char-page .char-tabs {
+  background: var(--surface, #1a1f2c) !important;
+  border-color: rgba(243, 235, 224, 0.12) !important;
+}
+
+html[data-theme="dark"] .journal-book-dot {
+  background: rgba(243, 235, 224, 0.35) !important;
+  box-shadow: inset 0 0 0 1px rgba(243, 235, 224, 0.15);
+}
+
+html[data-theme="dark"] .journal-book-dot.active {
+  background: var(--vert-clair, #a8e0a2) !important;
+  box-shadow: 0 0 0 2px rgba(106, 173, 98, 0.35);
 }
 
 html[data-theme="dark"] .nav-btn.active,

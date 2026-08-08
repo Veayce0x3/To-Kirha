@@ -2,7 +2,7 @@
  * Vue École du Village — branches en onglets + liste verticale un-par-un.
  */
 
-import { formatResearchDuration } from '../systems/villageSchool.js';
+import { formatResearchDuration, checkHarvestUnitsPairProgress } from '../systems/villageSchool.js';
 import { renderResourceIcon } from '../systems/resourceVisual.js';
 import { getView } from './router.js';
 
@@ -32,7 +32,7 @@ function statusLabel(status) {
   }
 }
 
-function formatBonusSummary(bonuses) {
+function formatBonusSummary(bonuses, state = null) {
   const lines = [];
   if (bonuses.cuisineJobXp) lines.push(`+${Math.round(bonuses.cuisineJobXp * 100)} % XP Cuisine`);
   if (bonuses.mealSellBonus) lines.push(`+${Math.round(bonuses.mealSellBonus * 100)} % vente repas`);
@@ -42,6 +42,7 @@ function formatBonusSummary(bonuses) {
   if (bonuses.merchantChanceBonus) lines.push(`Marchand +${Math.round(bonuses.merchantChanceBonus * 100)} pts`);
   if (bonuses.extraHarvestSlot) lines.push(`+${bonuses.extraHarvestSlot} emplacement récolte`);
   if (bonuses.extraWellUnits) lines.push(`+${bonuses.extraWellUnits} emplacement(s) Puits`);
+  if (state?.villageSchool?.unlockedHarvestAll) lines.push('Tout récolter (récolte)');
   if (bonuses.combatMpFlat) lines.push(`+${bonuses.combatMpFlat} PM`);
   if (bonuses.combatHpFlat) lines.push(`+${bonuses.combatHpFlat} PV`);
   if (bonuses.combatHp) lines.push(`+${Math.round(bonuses.combatHp * 100)} % PV`);
@@ -178,13 +179,32 @@ function formatMissingPrereqs(research, game, catalog) {
   return lines;
 }
 
+function formatProgressPrereq(research, game) {
+  const p = research?.requiresProgress;
+  if (!p) return null;
+  if (p.type === 'harvestUnitsPair') {
+    const check = checkHarvestUnitsPairProgress(
+      game.state,
+      game.resources,
+      Number(p.currentUnits) || 6,
+      Number(p.nextUnits) || 3
+    );
+    if (check.ok) return null;
+    return p.hint || check.hint || 'Progression récolte insuffisante';
+  }
+  return p.hint || null;
+}
+
 function renderTreeNode(game, item, catalog) {
   const { research, status, ingredients, canStart } = item;
 
   if (status === 'locked') {
     const missing = formatMissingPrereqs(research, game, catalog);
-    const prereqHtml = missing.length
-      ? `<p class="school-prereq">🔒 Prérequis : <strong>${missing.join(' · ')}</strong></p>`
+    const progressHint = formatProgressPrereq(research, game);
+    const bits = [...missing];
+    if (progressHint) bits.push(progressHint);
+    const prereqHtml = bits.length
+      ? `<p class="school-prereq">🔒 Prérequis : <strong>${bits.join(' · ')}</strong></p>`
       : `<p class="school-prereq">🔒 Prérequis : termine l’étude précédente</p>`;
     const costPreview = [
       research.kirhaCost ? `${research.kirhaCost} 💰` : null,
@@ -271,7 +291,7 @@ export function renderVillageSchool(game, el) {
     schoolBranchTab = branches[0]?.branch?.id || null;
   }
 
-  const bonusLines = formatBonusSummary(vm.bonuses || {});
+  const bonusLines = formatBonusSummary(vm.bonuses || {}, game.state);
   const active = vm.active;
   const pct = active ? Math.round(active.progress * 100) : 0;
   const activeHtml = active

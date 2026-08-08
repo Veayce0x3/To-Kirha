@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260808-0930",
+      "date": "2026-08-08",
+      "title": "Onglets Carnet/Cuisine + Tout récolter école",
+      "highlights": [
+        "Fix affichage onglets Carnet / Cuisine / École (sticky Perso ne casse plus les autres)",
+        "Points de page du carnet visibles en mode sombre",
+        "Connaissance permanente « Cueillette organisée » : Tout récolter (gate 6+3 emplacements)",
+        "Routes commerciales un peu plus chères ; ferme Tout collecter plus tard (autre recherche)"
+      ]
+    },
+    {
       "buildId": "20260807-2255",
       "date": "2026-08-07",
       "title": "Classement général",

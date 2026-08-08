@@ -622,17 +622,18 @@
       "tier": "permanent",
       "order": 2,
       "name": "Routes commerciales",
-      "description": "Les caravanes croisent plus souvent le village — pour toujours.",
+      "description": "Les caravanes croisent plus souvent le village — pour toujours. Exige une vraie base économique.",
       "requires": [
         "roadmap_village_board"
       ],
-      "kirhaCost": 900,
+      "kirhaCost": 1600,
       "ingredients": {
-        "ble": 120,
-        "dorade": 40,
-        "pierre": 40
+        "ble": 180,
+        "dorade": 60,
+        "pierre": 70,
+        "frene": 50
       },
-      "durationMs": 3600000,
+      "durationMs": 5400000,
       "effect": {
         "permanent": {
           "merchantChanceBonus": 0.04
@@ -640,11 +641,40 @@
       },
       "effectLabel": "Permanent : marchand itinérant un peu plus fréquent"
     },
+    "knowledge_harvest_all": {
+      "id": "knowledge_harvest_all",
+      "branch": "village",
+      "tier": "permanent",
+      "order": 3,
+      "name": "Cueillette organisée",
+      "description": "Technique du Conseil : récolter toute une ressource d’un geste. Il faut d’abord maximiser une plante (6 emplacements) et bien avancer la suivante (3).",
+      "requires": [
+        "knowledge_routes"
+      ],
+      "requiresProgress": {
+        "type": "harvestUnitsPair",
+        "currentUnits": 6,
+        "nextUnits": 3,
+        "hint": "6 emplacements sur une ressource + 3 sur la suivante (même métier)"
+      },
+      "kirhaCost": 2200,
+      "ingredients": {
+        "ble": 200,
+        "frene": 120,
+        "dorade": 50,
+        "ortie": 40
+      },
+      "durationMs": 7200000,
+      "effect": {
+        "unlockHarvestAll": true
+      },
+      "effectLabel": "Permanent : bouton « Tout récolter » sur chaque ressource"
+    },
     "knowledge_warehouse": {
       "id": "knowledge_warehouse",
       "branch": "village",
       "tier": "permanent",
-      "order": 3,
+      "order": 4,
       "name": "Entrepôt du village",
       "description": "Un emplacement de récolte supplémentaire, durable.",
       "requires": [

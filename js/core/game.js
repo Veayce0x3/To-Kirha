@@ -135,6 +135,7 @@ import {
   getVillageSchoolViewModel,
   getSchoolBonusesFromState,
   getSchoolUnlockedSpells,
+  hasHarvestAllUnlock,
 } from '../systems/villageSchool.js';
 import { isCraftJobUnlocked, isCombatUnlocked } from '../systems/jobUnlock.js';
 import {
@@ -1134,7 +1135,8 @@ export class Game {
       this.state,
       this.villageSchoolData,
       this.balance,
-      researchId
+      researchId,
+      this.resources
     );
     if (result.ok) {
       emit('villageSchoolStart', result);
@@ -1158,6 +1160,10 @@ export class Game {
 
   getSchoolBonuses() {
     return getSchoolBonusesFromState(this.state);
+  }
+
+  hasHarvestAll() {
+    return hasHarvestAllUnlock(this.state);
   }
 
   /** Multiplicateur vente repas (École). */

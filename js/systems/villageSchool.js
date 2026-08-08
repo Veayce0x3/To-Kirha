@@ -19,6 +19,7 @@ export function emptyVillageSchoolState() {
     unlockedCombat: false,
     unlockedVillageBoard: false,
     unlockedCraftJobs: [],
+    unlockedHarvestAll: false,
   };
 }
 
@@ -36,6 +37,7 @@ export function ensureVillageSchoolState(state) {
   if (!Array.isArray(s.unlockedCraftJobs)) s.unlockedCraftJobs = [];
   if (typeof s.unlockedCombat !== 'boolean') s.unlockedCombat = false;
   if (typeof s.unlockedVillageBoard !== 'boolean') s.unlockedVillageBoard = false;
+  if (typeof s.unlockedHarvestAll !== 'boolean') s.unlockedHarvestAll = false;
   if (!s.seasonFlags || typeof s.seasonFlags !== 'object') s.seasonFlags = {};
   return s;
 }
@@ -73,6 +75,56 @@ export function hasSchoolCraftUnlock(state, craftJobId) {
   return ensureVillageSchoolState(state).unlockedCraftJobs.includes(craftJobId);
 }
 
+/** Bouton « Tout récolter » (connaissance permanente). */
+export function hasHarvestAllUnlock(state) {
+  const s = ensureVillageSchoolState(state);
+  return !!s.unlockedHarvestAll || s.completedPermanent.includes('knowledge_harvest_all');
+}
+
+/**
+ * 6 emplacements sur une ressource + 3 sur la suivante (même métier).
+ * @returns {{ ok: boolean, hint?: string }}
+ */
+export function checkHarvestUnitsPairProgress(state, resources, currentUnits = 6, nextUnits = 3) {
+  const harvest = state?.productionLines?.harvest || {};
+  for (const [jobId, lines] of Object.entries(harvest)) {
+    const tiers = Object.values(resources || {})
+      .filter((r) =>
+        r.job === jobId
+        && !r.craftOnly
+        && !r.combatOnly
+        && !r.farmOnly
+        && !r.notHarvestable
+      )
+      .sort((a, b) => (a.requiredJobLevel || 1) - (b.requiredJobLevel || 1) || a.id.localeCompare(b.id));
+    for (let i = 0; i < tiers.length - 1; i++) {
+      const cur = Number(lines[tiers[i].id]?.units) || 0;
+      const nxt = Number(lines[tiers[i + 1].id]?.units) || 0;
+      if (cur >= currentUnits && nxt >= nextUnits) {
+        return { ok: true };
+      }
+    }
+  }
+  return {
+    ok: false,
+    hint: `${currentUnits} emplacements sur une ressource + ${nextUnits} sur la suivante (même métier)`,
+  };
+}
+
+export function meetsProgressRequirements(state, research, resources = null) {
+  const p = research?.requiresProgress;
+  if (!p) return true;
+  if (p.type === 'harvestUnitsPair') {
+    return checkHarvestUnitsPairProgress(
+      state,
+      resources,
+      Number(p.currentUnits) || 6,
+      Number(p.nextUnits) || 3
+    ).ok;
+  }
+  return true;
+}
+
 export function isVillageBoardUnlocked(state, _balance) {
   return hasSchoolVillageBoardUnlock(state);
 }
@@ -88,12 +140,15 @@ export function isResearchCompleted(state, research) {
   return s.completedSeasonal.includes(research.id);
 }
 
-export function areRequirementsMet(state, research) {
-  if (!research?.requires?.length) return true;
-  return research.requires.every((id) => {
+export function areRequirementsMet(state, research, resources = null) {
+  if (!research?.requires?.length) {
+    return meetsProgressRequirements(state, research, resources);
+  }
+  const reqOk = research.requires.every((id) => {
     const s = ensureVillageSchoolState(state);
     return s.completedSeasonal.includes(id) || s.completedPermanent.includes(id);
   });
+  return reqOk && meetsProgressRequirements(state, research, resources);
 }
 
 function invHave(state, resId) {
@@ -109,12 +164,12 @@ export function canAffordResearch(state, research) {
   return true;
 }
 
-export function getResearchStatus(state, research) {
+export function getResearchStatus(state, research, resources = null) {
   if (!research) return 'unknown';
   if (isResearchCompleted(state, research)) return 'done';
   const s = ensureVillageSchoolState(state);
   if (s.active?.researchId === research.id) return 'active';
-  if (!areRequirementsMet(state, research)) return 'locked';
+  if (!areRequirementsMet(state, research, resources)) return 'locked';
   if (s.active) return 'blocked';
   if (!canAffordResearch(state, research)) return 'unaffordable';
   return 'available';
@@ -148,15 +203,24 @@ function payResearchCost(state, research) {
   }
 }
 
-export function startVillageResearch(state, schoolData, balance, researchId) {
+export function startVillageResearch(state, schoolData, balance, researchId, resources = null) {
   if (!isVillageSchoolUnlocked(state, balance)) {
     return { ok: false, reason: 'École du Village indisponible.' };
   }
   const research = getResearchDef(schoolData, researchId);
   if (!research) return { ok: false, reason: 'Recherche inconnue.' };
-  const status = getResearchStatus(state, research);
+  const status = getResearchStatus(state, research, resources);
   if (status === 'done') return { ok: false, reason: 'Déjà terminée.' };
-  if (status === 'locked') return { ok: false, reason: 'Prérequis manquants.' };
+  if (status === 'locked') {
+    const progress = research.requiresProgress;
+    if (progress?.type === 'harvestUnitsPair' && !meetsProgressRequirements(state, research, resources)) {
+      return {
+        ok: false,
+        reason: progress.hint || 'Progression insuffisante (6 + 3 emplacements).',
+      };
+    }
+    return { ok: false, reason: 'Prérequis manquants.' };
+  }
   if (status === 'active') return { ok: false, reason: 'Déjà en cours.' };
   if (status === 'blocked') return { ok: false, reason: 'Une recherche est déjà en cours.' };
   if (!canAffordResearch(state, research)) return { ok: false, reason: 'Ressources ou Kirha insuffisants.' };
@@ -211,6 +275,12 @@ export function applyResearchUnlockEffects(state, research) {
   }
   if (effect.unlockCraftJob) {
     if (pushUnique(s.unlockedCraftJobs, effect.unlockCraftJob)) changed = true;
+  }
+  if (effect.unlockHarvestAll) {
+    if (!s.unlockedHarvestAll) {
+      s.unlockedHarvestAll = true;
+      changed = true;
+    }
   }
   if (effect.unlockSpell) {
     const spellId = effect.unlockSpell;
@@ -422,7 +492,7 @@ export function getVillageSchoolViewModel(state, schoolData, balance, resources,
         .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)
           || String(a.id).localeCompare(String(b.id)))
         .map((r) => {
-          const status = getResearchStatus(state, r);
+          const status = getResearchStatus(state, r, resources);
           const ingredients = Object.entries(r.ingredients || {}).map(([resId, need]) => ({
             resId,
             need: Number(need) || 0,

@@ -420,6 +420,7 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   const xpBonusTag = xpBonusPct > 0
     ? `<span class="bonus-tag" title="Bonus XP métiers (saison / succès / boost)">+${xpBonusPct}%</span>`
     : '';
+  const canHarvestAll = !!game.hasHarvestAll?.();
 
   const section = document.createElement('div');
   section.className = 'production-line-section production-line-focused';
@@ -435,6 +436,9 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
       </div>
       <div class="production-line-meta production-line-meta-clear">
         <span class="production-units" title="Emplacements débloqués pour cette ressource">📍 Emplacements ${line.units}/${maxUnits}</span>
+        ${canHarvestAll
+          ? `<button type="button" class="btn btn-craft btn-harvest-all" data-harvest-all="${jobId}" title="Récolter toutes les unités prêtes de ce métier">🌾 Tout récolter</button>`
+          : ''}
         <span class="production-harvest-time" title="Temps de récolte puis repousse">⏱ Récolte ${harvestMs}s · Repousse ${regrowthSec}s</span>
       </div>
     </div>
@@ -449,6 +453,19 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   const toolControls = buildToolStatusControls(game, jobId, resource, refreshLine);
   if (toolControls && toolSlot) toolSlot.replaceWith(toolControls);
   else toolSlot?.remove();
+
+  section.querySelector('[data-harvest-all]')?.addEventListener('click', () => {
+    const result = game.harvestAllReadyForJob(jobId);
+    const bits = [];
+    if (result.started) bits.push(`${result.started} lancée(s)`);
+    if (result.completed) bits.push(`${result.completed} terminée(s)`);
+    emit('farmBlocked', {
+      message: bits.length
+        ? `Tout récolter : ${bits.join(' · ')}`
+        : 'Rien à récolter pour le moment (outils / déjà en cours).',
+    });
+    refreshLine();
+  });
 
   const grid = section.querySelector('.production-units-grid');
   for (let i = 0; i < line.units; i++) {
@@ -506,11 +523,6 @@ export function renderJobProduction(game, el, jobId) {
         </div>
       ` : ''}
       <div id="harvest-resource-tabs"></div>
-      ${unlocked.length >= 6 ? `
-        <div class="harvest-bulk-bar">
-          <button type="button" class="btn btn-craft" id="harvest-all-btn">🌾 Tout récolter (${unlocked.length} plantes)</button>
-        </div>
-      ` : ''}
       <div id="production-lines"></div>
       <div id="production-unlock"></div>
       <div id="job-next-footer"></div>
@@ -528,19 +540,6 @@ export function renderJobProduction(game, el, jobId) {
   });
 
   bindWeatherMiniChip(el);
-
-  el.querySelector('#harvest-all-btn')?.addEventListener('click', () => {
-    const result = game.harvestAllReadyForJob(jobId);
-    const bits = [];
-    if (result.started) bits.push(`${result.started} lancée(s)`);
-    if (result.completed) bits.push(`${result.completed} terminée(s)`);
-    emit('farmBlocked', {
-      message: bits.length
-        ? `Tout récolter : ${bits.join(' · ')}`
-        : 'Rien à récolter pour le moment (outils / déjà en cours).',
-    });
-    renderJobProduction(game, el, jobId);
-  });
 
   const tabsEl = el.querySelector('#harvest-resource-tabs');
   if (tabsEl && unlocked.length) {
