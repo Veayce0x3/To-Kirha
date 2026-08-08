@@ -284,12 +284,22 @@ export function buyNextProductionUnlock(
 }
 
 function emptySlot() {
-  return { active: null };
+  return { active: null, pendingEvent: null };
+}
+
+function normalizeSlot(slot) {
+  if (!slot || typeof slot !== 'object') return emptySlot();
+  const next = { active: slot.active || null };
+  if (slot.pendingEvent && typeof slot.pendingEvent === 'object') {
+    next.pendingEvent = { ...slot.pendingEvent };
+  }
+  if (slot.eventChecked) next.eventChecked = true;
+  return next;
 }
 
 function normalizeLine(line, units) {
   const count = Math.max(1, Math.min(units, 99));
-  const slots = Array.isArray(line?.slots) ? line.slots.map((s) => ({ active: s?.active || null })) : [];
+  const slots = Array.isArray(line?.slots) ? line.slots.map(normalizeSlot) : [];
   while (slots.length < count) slots.push(emptySlot());
   return { units: count, slots: slots.slice(0, count) };
 }

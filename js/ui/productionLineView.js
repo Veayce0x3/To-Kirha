@@ -118,6 +118,31 @@ function syncSlotEventDom(card, slot) {
     glow?.remove();
   }
 
+  let sparkles = visual.querySelector('.slot-event-sparkles');
+  if (eventVis && !eventVis.reveal && !active) {
+    if (!sparkles) {
+      visual.insertAdjacentHTML('afterbegin', '<span class="slot-event-sparkles" aria-hidden="true"></span>');
+    }
+  } else {
+    sparkles?.remove();
+  }
+
+  let badge = visual.querySelector('.slot-event-badge');
+  if (eventVis && !eventVis.reveal && !active) {
+    const label = eventVis.kind === 'kirha' ? '✨ Kirha'
+      : eventVis.kind === 'jackpot' ? '⭐ Jackpot'
+        : '✨ Bonus';
+    if (!badge) {
+      visual.insertAdjacentHTML('afterbegin', `<span class="slot-event-badge slot-event-badge-${eventVis.kind}">${label}</span>`);
+    } else {
+      badge.className = `slot-event-badge slot-event-badge-${eventVis.kind}`;
+      badge.textContent = label;
+    }
+    visual.querySelector('.slot-ready-badge')?.remove();
+  } else {
+    badge?.remove();
+  }
+
   const html = eventVis?.reveal ? getEventRevealAnnounceHtml(eventVis.reveal) : '';
   const announce = visual.querySelector('.slot-event-announce');
   if (html) {
@@ -170,6 +195,13 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
   );
   const growingClass = isGrowingEvent ? ' slot-event-growing' : '';
   const announceHtml = eventVis?.reveal ? getEventRevealAnnounceHtml(eventVis.reveal) : '';
+  const eventBadge = (!active && eventVis && !eventVis.reveal)
+    ? `<span class="slot-event-badge slot-event-badge-${eventVis.kind}">${
+        eventVis.kind === 'kirha' ? '✨ Kirha'
+          : eventVis.kind === 'jackpot' ? '⭐ Jackpot'
+            : '✨ Bonus'
+      }</span>`
+    : '';
 
   const card = document.createElement('div');
   card.className = `harvest-slot production-unit production-unit-tap${active ? ' active-harvest' : ''}${canHarvest || canComplete ? ' slot-can-harvest' : ''}${eventClass}${growingClass}`;
@@ -178,8 +210,10 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
   card.dataset.unit = String(unitIndex);
   card.innerHTML = `
     <div class="slot-visual slot-visual-tap" role="button" tabindex="0" aria-label="${resource.name}${statusLabel ? ` — ${statusLabel}` : ''}${eventVis ? ` — ${eventVis.label}` : ''}">
-      ${canHarvest ? '<span class="slot-ready-badge">Prêt</span>' : ''}
+      ${canHarvest && !eventBadge ? '<span class="slot-ready-badge">Prêt</span>' : ''}
+      ${eventBadge}
       ${eventVis ? `<span class="slot-event-glow" aria-hidden="true"></span>` : ''}
+      ${eventVis && !eventVis.reveal ? '<span class="slot-event-sparkles" aria-hidden="true"></span>' : ''}
       ${spriteHtml}
       ${announceHtml}
       ${active ? slotProgressOverlayHtml(progressPct, remainingMs) : ''}

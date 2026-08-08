@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "buildId": "20260808-0945",
+      "date": "2026-08-08",
+      "title": "Brillance récolte : plus de disparition + look",
+      "highlights": [
+        "Fix : les bonus ✨ ne disparaissent plus au refresh (pendingEvent conservé)",
+        "Badge Bonus / Jackpot / Kirha + scintillement plus lisible"
+      ]
+    },
+    {
       "buildId": "20260808-0930",
       "date": "2026-08-08",
       "title": "Onglets Carnet/Cuisine + Tout récolter école",
