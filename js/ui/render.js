@@ -488,6 +488,16 @@ export function initUI(game, audio) {
       banner.classList.add('hidden');
       return;
     }
+    const curView = getView();
+    const objTarget = obj.hintView || (obj.hintJob ? (JOB_VIEW_MAP[obj.hintJob] || null) : null);
+    const isOnTarget = curView === objTarget;
+    const isHarvestView = !!VIEWS[curView]?.job || curView?.startsWith('farm_');
+
+    if (isOnTarget) {
+      banner.classList.add('hidden');
+      return;
+    }
+
     banner.classList.remove('hidden');
 
     if (obj.source !== lastObjectiveSource) {
@@ -495,8 +505,10 @@ export function initUI(game, audio) {
       lastObjectiveSource = obj.source;
     }
 
-    const stepsHtml = obj.steps?.length
-      ? `<ol class="obj-steps${objectiveBannerCollapsed ? ' hidden' : ''}">${obj.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`
+    const forceCollapse = isHarvestView || objectiveBannerCollapsed;
+
+    const stepsHtml = obj.steps?.length && !forceCollapse
+      ? `<ol class="obj-steps">${obj.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`
       : '';
 
     banner.innerHTML = `
@@ -504,11 +516,11 @@ export function initUI(game, audio) {
         <span class="obj-banner-icon">🎯</span>
         <div class="obj-banner-text">
           <strong class="obj-banner-title">${obj.title}</strong>
-          <span class="obj-banner-desc">${obj.description}</span>
+          ${!isHarvestView ? `<span class="obj-banner-desc">${obj.description}</span>` : ''}
         </div>
         <div class="obj-banner-actions">
           ${obj.hintView || obj.hintJob ? '<button type="button" class="btn btn-craft btn-small obj-go">Y aller →</button>' : ''}
-          ${obj.steps?.length ? `<button type="button" class="btn btn-muted btn-small obj-toggle" aria-label="Détails">${objectiveBannerCollapsed ? '▼' : '▲'}</button>` : ''}
+          ${obj.steps?.length && !isHarvestView ? `<button type="button" class="btn btn-muted btn-small obj-toggle" aria-label="Détails">${forceCollapse ? '▼' : '▲'}</button>` : ''}
         </div>
       </div>
       ${stepsHtml}

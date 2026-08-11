@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260811-1400",
+      "date": "2026-08-11",
+      "title": "Vue récolte compacte — plus d'espace pour farmer",
+      "highlights": [
+        "En-tête métier réduit à une seule ligne (nom + niveau + XP)",
+        "Infos ressource condensées : nom ×stock +XP emp. réc. rep. sur 1 ligne",
+        "Slots de récolte plus petits (-30% hauteur) pour voir plus de slots à l'écran",
+        "Bandeau objectif auto-réduit sur les vues récolte, masqué si déjà sur la cible"
+      ]
+    },
+    {
       "buildId": "20260811-1200",
       "date": "2026-08-11",
       "title": "Audit UX nouveau joueur — 30+ corrections",

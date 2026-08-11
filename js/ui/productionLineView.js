@@ -461,20 +461,19 @@ function buildHarvestLineSection(game, jobId, resourceId, resource, container) {
   section.className = 'production-line-section production-line-focused';
   section.dataset.resource = resourceId;
   section.innerHTML = `
-    <div class="production-line-head">
-      <div class="production-line-title">
-        ${renderResourceIcon(resource, 'tile-resource-icon')}
+    <div class="production-line-head production-line-head-compact">
+      <div class="production-line-compact-row">
+        ${renderResourceIcon(resource, 'tile-resource-icon-sm')}
         <strong>${resource.name}</strong>
-        <span class="production-stock">Stock : ${formatNumber(qty)}</span>
-        <span class="production-xp">+${formatNumber(baseXp)} XP${xpBonusTag}</span>
+        <span class="plc-stat">×${formatNumber(qty)}</span>
+        <span class="plc-stat">+${formatNumber(baseXp)}XP${xpBonusTag}</span>
+        <span class="plc-stat">emp.${line.units}/${maxUnits}</span>
+        <span class="plc-stat">réc${harvestMs}s</span>
+        <span class="plc-stat">rep${regrowthSec}s</span>
         <span class="production-tool-slot"></span>
-      </div>
-      <div class="production-line-meta production-line-meta-clear">
-        <span class="production-units" title="Emplacements débloqués pour cette ressource">📍 Emplacements ${line.units}/${maxUnits}</span>
         ${canHarvestAll
-          ? `<button type="button" class="btn btn-craft btn-harvest-all" data-harvest-all="${jobId}" title="Récolter toutes les unités prêtes de ce métier">🌾 Tout récolter</button>`
+          ? `<button type="button" class="btn btn-craft btn-harvest-all btn-harvest-all-sm" data-harvest-all="${jobId}" title="Tout récolter">🌾 Tout</button>`
           : ''}
-        <span class="production-harvest-time" title="Temps de récolte puis repousse">⏱ Récolte ${harvestMs}s · Repousse ${regrowthSec}s</span>
       </div>
     </div>
     <div class="slots-grid production-units-grid"></div>
@@ -537,17 +536,14 @@ export function renderJobProduction(game, el, jobId) {
   const selected = unlocked.find((r) => r.id === selectedId) || unlocked[0];
 
   el.innerHTML = `
-    <div class="skill-header">
+    <div class="skill-header skill-header-slim">
       <div class="skill-header-top job-nav-header">
         <button type="button" class="btn btn-muted btn-job-nav" id="job-prev" ${prevView ? '' : 'disabled'}>‹</button>
-        <div class="job-nav-center">
-          <div class="skill-header-title">${job.name}</div>
-          <div class="skill-header-meta">Niveau ${prog.level}${prog.seasonCap ? ` / ${prog.seasonCap}` : ''}</div>
-        </div>
+        <span class="skill-header-inline">${job.name} <span class="skill-level-chip">Nv.${prog.level}${prog.seasonCap ? `/${prog.seasonCap}` : ''}</span></span>
+        <span class="xp-text-inline">${prog.atSeasonCap ? `Plafond S${game.state.season || 1}` : `${formatNumber(prog.xp)}/${formatNumber(prog.needed)}`}</span>
         <button type="button" class="btn btn-muted btn-job-nav" id="job-next" ${nextView ? '' : 'disabled'}>›</button>
       </div>
-      <div class="xp-bar-container xp-large"><div class="xp-bar" style="width:${pct}%"></div></div>
-      <p class="xp-text">${prog.atSeasonCap ? `Plafond Saison ${game.state.season || 1}` : `${formatNumber(prog.xp)} / ${formatNumber(prog.needed)} XP`}</p>
+      <div class="xp-bar-container xp-slim"><div class="xp-bar" style="width:${pct}%"></div></div>
     </div>
     <div class="panel-inner">
       ${buildWeatherEventsBanner(game, jobId)}

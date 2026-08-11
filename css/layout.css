@@ -2634,6 +2634,41 @@ html[data-theme="dark"] .first-visit-hint {
   border: 1px solid rgba(232, 180, 203, 0.3);
 }
 
+.skill-header-slim {
+  padding: 0.4rem 0.75rem 0.3rem;
+  margin-bottom: 0.4rem;
+}
+
+.skill-header-slim .skill-header-top {
+  margin-bottom: 0.2rem;
+  align-items: center;
+}
+
+.skill-header-inline {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--violet-sakura);
+  flex: 1;
+  min-width: 0;
+}
+
+.skill-level-chip {
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.xp-text-inline {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.xp-bar-container.xp-slim {
+  height: 4px;
+  border-radius: 2px;
+}
+
 .skill-header-top {
   display: flex;
   justify-content: space-between;
@@ -4704,23 +4739,20 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 
 /* Lignes de production — sprites récolte agrandis */
 .production-units-grid {
-  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.35rem;
 }
 
 .production-units-grid .harvest-slot {
-  padding: 0.35rem;
+  padding: 0.25rem;
+  min-height: 120px;
 }
 
 .production-units-grid .slot-visual {
-  min-height: 120px;
-  height: 140px;
-  padding: 0.3rem;
+  min-height: 80px;
+  height: 90px;
+  padding: 0.2rem;
   cursor: default;
-}
-
-.production-units-grid .harvest-slot {
-  min-height: 180px;
 }
 
 .production-units-grid .slot-visual-tap {
@@ -4732,12 +4764,12 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
 }
 
 .production-units-grid .slot-visual-sprite {
-  max-height: 108px;
-  max-width: 108px;
+  max-height: 72px;
+  max-width: 72px;
 }
 
 .production-units-grid .slot-visual-emoji {
-  font-size: 2.75rem;
+  font-size: 2rem;
 }
 
 .harvest-resource-tabs {
@@ -5283,6 +5315,45 @@ body.char-equip-sheet-open .tutorial-spotlight-hole {
   justify-content: space-between;
   gap: 0.35rem 0.75rem;
   margin-bottom: 0.45rem;
+}
+
+.production-line-head-compact {
+  margin-bottom: 0.25rem;
+  gap: 0;
+}
+
+.production-line-compact-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  width: 100%;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--bois);
+}
+
+.production-line-compact-row strong {
+  font-size: 0.82rem;
+}
+
+.plc-stat {
+  opacity: 0.7;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.tile-resource-icon-sm {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.btn-harvest-all-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+  min-height: 28px;
+  margin-left: auto;
 }
 
 .production-line-meta-clear {
