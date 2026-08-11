@@ -1,6 +1,20 @@
 {
   "entries": [
     {
+      "buildId": "20260811-1030",
+      "date": "2026-08-11",
+      "title": "Polish UX : scroll, toasts, succès, badges",
+      "highlights": [
+        "Le scroll se conserve quand on navigue entre métiers de récolte",
+        "Slots de récolte à taille fixe — plus de « twerk » pendant le cycle",
+        "Toasts : plus longs, bouton ✕ pour fermer, durée adaptée",
+        "Succès : filtre pour masquer ou descendre les réussis",
+        "Badge « new » dans le menu sur les déblocages récents",
+        "Visuel mineur : caillou grisé + pulsation pendant la reformation",
+        "Nom unifié « Recherches » pour l'École du Village"
+      ]
+    },
+    {
       "buildId": "20260808-0945",
       "date": "2026-08-08",
       "title": "Brillance récolte : plus de disparition + look",

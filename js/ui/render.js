@@ -290,9 +290,11 @@ export function initUI(game, audio) {
       if (!knownUnlockedGathering.includes(id)) {
         const job = game.jobs[id];
         showToast(els, `🔓 ${job?.name || id} débloqué !`, 'levelup');
+        unseenViews.add(JOB_VIEW_MAP[id] || `job_${id}`);
         els.levelFlash?.classList.add('active');
         setTimeout(() => els.levelFlash?.classList.remove('active'), 600);
         buildNav();
+        updateNavActive();
       }
     }
     knownUnlockedGathering = [...current];
@@ -424,6 +426,12 @@ export function initUI(game, audio) {
         btn.classList.add(`nav-harvest-${status}`);
       }
 
+      if (unseenViews.has(vid)) {
+        btn.classList.add('nav-unseen');
+      } else {
+        btn.classList.remove('nav-unseen');
+      }
+
       if (vid === 'auction_house') {
         const tm = !!game.isTravelingMerchantActive?.();
         btn.classList.toggle('nav-tm-active', tm);
@@ -437,6 +445,7 @@ export function initUI(game, audio) {
     closeAllResourcePickers();
     closeCharEquipPickerSheet();
     const view = getView();
+    lastRenderedView = view;
     renderView(game, els.viewContainer, view);
     renderJobSwitcherDock(game, els.jobSwitcherDock, view);
     updateNavActive();
@@ -693,12 +702,29 @@ export function initUI(game, audio) {
     showCareerChoiceIfNeeded(game);
   });
 
+  const scrollMemory = {};
+  let lastRenderedView = null;
+  const unseenViews = new Set();
+  function getScrollContainer() {
+    return document.querySelector('.content-wrapper');
+  }
+
   on('navigate', () => {
+    const prevView = lastRenderedView;
+    const sw = getScrollContainer();
+    if (prevView && sw) scrollMemory[prevView] = sw.scrollTop;
     clearSchoolTimer();
     refreshView();
     refreshHeader(game.state);
     closeSidebar();
     updateNavActive();
+    const curView = getView();
+    unseenViews.delete(curView);
+    if (sw && scrollMemory[curView] != null) {
+      sw.scrollTop = scrollMemory[curView];
+    } else if (sw) {
+      sw.scrollTop = 0;
+    }
   });
   on('stateChange', (state) => {
     showCareerChoiceIfNeeded(game);
@@ -827,9 +853,11 @@ export function initUI(game, audio) {
   on('villageSchoolComplete', (result) => {
     const name = result?.research?.name || 'Recherche';
     showToast(els, `🏫 ${name} terminée !`, 'upgrade');
+    unseenViews.add('village_school');
     audio.playSfx('ready');
     refreshHeader(game.state);
     buildNav();
+    updateNavActive();
   });
   on('villageSchoolStart', (result) => {
     const name = result?.research?.name || 'Recherche';
@@ -998,6 +1026,8 @@ export function initUI(game, audio) {
   on('journalUnlock', ({ entry }) => {
     if (!entry) return;
     showToast(els, `📔 Nouvelle page : ${entry.emoji || ''} ${entry.title || 'Carnet'}`, 'upgrade');
+    unseenViews.add('traveler_journal');
+    updateNavActive();
     import('./travelerJournalView.js').then((m) => m.focusLatestJournalPage?.()).catch(() => {});
   });
   on('herbariumDiscover', ({ resource }) => {
@@ -1152,11 +1182,25 @@ export function initUI(game, audio) {
 function showToast(els, message, type = 'harvest', action = null) {
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
+
+  const body = document.createElement('span');
+  body.className = 'toast-body';
   if (typeof message === 'string' && message.includes('<')) {
-    toast.innerHTML = message;
+    body.innerHTML = message;
   } else {
-    toast.textContent = message;
+    body.textContent = message;
   }
+  toast.appendChild(body);
+
+  const dismiss = document.createElement('button');
+  dismiss.className = 'toast-dismiss';
+  dismiss.innerHTML = '✕';
+  dismiss.setAttribute('aria-label', 'Fermer');
+  dismiss.addEventListener('click', () => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  });
+  toast.appendChild(dismiss);
 
   if (action) {
     const btn = document.createElement('button');
@@ -1166,14 +1210,16 @@ function showToast(els, message, type = 'harvest', action = null) {
       action.onClick();
       toast.remove();
     });
-    toast.appendChild(document.createElement('br'));
-    toast.appendChild(btn);
+    body.appendChild(document.createElement('br'));
+    body.appendChild(btn);
   }
 
   els.toasts.appendChild(toast);
   requestAnimationFrame(() => toast.classList.add('show'));
+  const important = type === 'levelup' || type === 'prestige' || type === 'upgrade';
+  const duration = action ? 6000 : important ? 4000 : 2500;
   setTimeout(() => {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 300);
-  }, action ? 4000 : 2000);
+  }, duration);
 }

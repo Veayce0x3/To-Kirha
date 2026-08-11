@@ -418,6 +418,9 @@ body {
 }
 
 .toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
   padding: 0.6rem 1rem;
   border-radius: 10px;
   font-size: 0.85rem;
@@ -428,6 +431,28 @@ body {
   opacity: 0;
   transform: translateX(20px);
   transition: opacity 0.3s, transform 0.3s;
+  pointer-events: auto;
+}
+
+.toast-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-dismiss {
+  appearance: none;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 0.15rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.toast-dismiss:hover {
+  color: #fff;
 }
 
 .toast.show {

@@ -54,7 +54,7 @@ export const VIEWS = {
   achievements: { id: 'achievements', label: 'Succès', title: 'Succès' },
   missions: { id: 'achievements', label: 'Succès', title: 'Succès' },
   village: { id: 'village', label: 'Village', title: 'Village', emoji: '🏘️' },
-  village_school: { id: 'village_school', label: 'Recherches', title: 'École du Village — Recherches', emoji: '🏫' },
+  village_school: { id: 'village_school', label: 'Recherches', title: 'Recherches', emoji: '🏫' },
   traveler_journal: { id: 'traveler_journal', label: 'Carnet', title: 'Carnet du voyageur', emoji: '📔' },
   job_lumberjack: { id: 'job_lumberjack', label: 'Bûcheron', title: 'Bûcheron', job: 'lumberjack' },
   job_fisher: { id: 'job_fisher', label: 'Pêcheur', title: 'Pêcheur', job: 'fisher' },

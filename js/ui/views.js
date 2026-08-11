@@ -1814,6 +1814,8 @@ function formatAchievementBonusText(bonus) {
   return bits.length ? ` · Bonus : ${bits.join(' ')}` : '';
 }
 
+let achievementFilter = 'all'; // 'all' | 'bottom' | 'hide'
+
 function renderAchievements(game, el) {
   const chains = getAchievementChains(game.achievements);
   const bonuses = getAchievementBonuses(game.state);
@@ -1839,9 +1841,22 @@ function renderAchievements(game, el) {
         <button type="button" class="btn btn-craft" id="ach-claim-all">Récupérer tout (${claimable})</button>
       ` : ''}
       ${bonusLine}
+      <div class="ach-filter-bar">
+        <span class="ach-filter-label">Réussis :</span>
+        <button type="button" class="btn btn-small ${achievementFilter === 'all' ? 'btn-craft' : 'btn-muted'}" data-ach-filter="all">Afficher</button>
+        <button type="button" class="btn btn-small ${achievementFilter === 'bottom' ? 'btn-craft' : 'btn-muted'}" data-ach-filter="bottom">En bas</button>
+        <button type="button" class="btn btn-small ${achievementFilter === 'hide' ? 'btn-craft' : 'btn-muted'}" data-ach-filter="hide">Masquer</button>
+      </div>
     </div>
     <div id="achievements-list" class="panel-inner"></div>
   `;
+
+  el.querySelectorAll('[data-ach-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      achievementFilter = btn.dataset.achFilter;
+      renderAchievements(game, el);
+    });
+  });
 
   el.querySelector('#ach-claim-all')?.addEventListener('click', () => {
     let n = 0;
@@ -1879,11 +1894,20 @@ function renderAchievements(game, el) {
     const grid = document.createElement('div');
     grid.className = 'quest-list';
 
-    for (const chain of catChains) {
+    const sortedChains = achievementFilter === 'bottom'
+      ? [...catChains].sort((a, b) => {
+        const aD = isAchievementCompleted(game.state, getDisplayedAchievementForChain(a, game.state)?.id);
+        const bD = isAchievementCompleted(game.state, getDisplayedAchievementForChain(b, game.state)?.id);
+        return (aD ? 1 : 0) - (bD ? 1 : 0);
+      })
+      : catChains;
+
+    for (const chain of sortedChains) {
       const ach = getDisplayedAchievementForChain(chain, game.state);
       if (!ach) continue;
 
       const done = isAchievementCompleted(game.state, ach.id);
+      if (done && achievementFilter === 'hide') continue;
       const ready = !done && isAchievementReady(ach, game.state, game.recipes);
       const locked = !done && !isAchievementAvailable(ach, game.state, game.recipes);
       const stepLabel = getAchievementChainStepLabel(chain, ach);

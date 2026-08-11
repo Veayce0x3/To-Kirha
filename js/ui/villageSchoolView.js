@@ -333,7 +333,7 @@ export function renderVillageSchool(game, el) {
   el.innerHTML = `
     <div class="school-view">
       <header class="view-header">
-        <h2><span class="nav-emoji">🏫</span> École du Village</h2>
+        <h2><span class="nav-emoji">🏫</span> Recherches</h2>
         <p class="view-desc">Feuille de route : métiers, atelier, ferme et donjons. Les prérequis d’autres onglets sont indiqués clairement.</p>
       </header>
       <div class="school-summary panel-inner">

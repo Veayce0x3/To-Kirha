@@ -20,7 +20,7 @@ const JOB_FALLBACKS = {
   miner: {
     available: { emoji: '🪨', label: 'Prêt à récolter' },
     harvesting: { emoji: '⛏️', label: 'Récolte…' },
-    regrowing: { emoji: '⛰️', label: 'Repousse…' },
+    regrowing: { emoji: '🪨', label: 'Reformation…', cssClass: 'slot-regrowing-miner' },
   },
   fisher: {
     available: { emoji: '🎣', label: 'Prêt à récolter' },
@@ -88,6 +88,7 @@ export function getResourceVisual(resource, visualState) {
       label,
       state,
       sprite: null,
+      cssClass: fallback?.cssClass || null,
     };
   }
 

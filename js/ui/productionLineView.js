@@ -204,7 +204,8 @@ function buildLineUnitCard(game, jobId, resourceId, unitIndex, resource) {
     : '';
 
   const card = document.createElement('div');
-  card.className = `harvest-slot production-unit production-unit-tap${active ? ' active-harvest' : ''}${canHarvest || canComplete ? ' slot-can-harvest' : ''}${eventClass}${growingClass}`;
+  const visCssClass = vis.cssClass ? ` ${vis.cssClass}` : '';
+  card.className = `harvest-slot production-unit production-unit-tap${active ? ' active-harvest' : ''}${canHarvest || canComplete ? ' slot-can-harvest' : ''}${eventClass}${growingClass}${visCssClass}`;
   card.dataset.job = jobId;
   card.dataset.resource = resourceId;
   card.dataset.unit = String(unitIndex);
