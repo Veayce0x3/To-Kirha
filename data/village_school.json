@@ -632,14 +632,14 @@
         "nextUnits": 3,
         "hint": "6 emplacements sur une ressource + 3 sur la suivante (même métier)"
       },
-      "kirhaCost": 2200,
+      "kirhaCost": 1200,
       "ingredients": {
-        "ble": 200,
-        "frene": 120,
-        "dorade": 50,
-        "ortie": 40
+        "ble": 120,
+        "frene": 80,
+        "dorade": 40,
+        "ortie": 30
       },
-      "durationMs": 7200000,
+      "durationMs": 3600000,
       "effect": {
         "unlockHarvestAll": true
       },
@@ -655,14 +655,14 @@
       "requires": [
         "roadmap_village_board"
       ],
-      "kirhaCost": 1600,
+      "kirhaCost": 2800,
       "ingredients": {
-        "ble": 180,
-        "dorade": 60,
-        "pierre": 70,
-        "frene": 50
+        "ble": 250,
+        "dorade": 100,
+        "pierre": 120,
+        "frene": 90
       },
-      "durationMs": 5400000,
+      "durationMs": 7200000,
       "effect": {
         "permanent": {
           "merchantChanceBonus": 0.04
