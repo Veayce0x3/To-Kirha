@@ -71,7 +71,7 @@ function renderCareerModal() {
   const welcomeTitle = season > 1 ? `🌸 Saison ${season}` : '🌸 Bienvenue à To-Kirha';
   const welcomeDesc = season > 1
     ? `Nouvelle saison ! Tu repars Paysan avec le Blé. Tes bonus permanents sont conservés (+Kirha / +XP). Choisis ton arme de départ.`
-    : `Tu arrives au <strong>village de To-Kirha</strong>, presque vide. Le Conseil te confie de le faire revivre. Tu commences <strong>Paysan</strong> avec le Blé — le reste s’achète à la Place marchande. Ton <strong>Carnet du voyageur</strong> (Monde) se remplira au fil de tes gestes.`;
+    : `Tu arrives au <strong>village de To-Kirha</strong>, presque vide. Le Conseil te confie de le faire revivre. Tu commences <strong>Paysan</strong> avec le Blé — récolte, vends et progresse pour débloquer la suite !`;
 
   body.innerHTML = `
     <h2>${welcomeTitle}</h2>
@@ -79,7 +79,7 @@ function renderCareerModal() {
     ${nicknameHtml}
     <section class="career-section">
       <h3>Arme de départ</h3>
-      <p class="view-desc">Ton héros et tes équipiers recevront automatiquement les trois rôles (Guerrier, Archer, Mage).</p>
+      <p class="view-desc">Choisis une arme — elle détermine ton style de combat. Tu pourras en changer plus tard.</p>
       <div class="career-weapon-grid">${weaponHtml}</div>
     </section>
     <p class="career-status">${canConfirm ? '✅ Tu peux commencer !' : (check.reason || nicknameCheck.reason || 'Choisis ton arme.')}</p>
@@ -87,7 +87,7 @@ function renderCareerModal() {
     <div class="career-actions">
       <button type="button" class="btn btn-prestige" id="career-confirm" ${canConfirm ? '' : 'disabled'}>${season > 1 ? 'Commencer la saison' : "Commencer l'aventure"}</button>
       <button type="button" class="btn btn-muted" id="career-reload">Actualiser</button>
-      <button type="button" class="btn btn-muted" id="career-reset">Réinitialiser</button>
+      ${season > 1 ? '<button type="button" class="btn btn-muted" id="career-reset">Réinitialiser</button>' : ''}
     </div>
   `;
 }
@@ -139,6 +139,11 @@ async function confirmCareerChoice() {
     gameRef.syncTravelerJournal?.();
     emit('nicknameChange', { name: gameRef.getCharacterDisplayName(), renamed: false });
     emit('navRefresh');
+    const season = gameRef.state?.season || 1;
+    if (season <= 1) {
+      emit('uiToast', { message: '🌸 C\'est parti ! Commence par récolter du blé.', type: 'prestige' });
+      import('./router.js').then(({ navigate }) => navigate('job_farmer')).catch(() => {});
+    }
   } catch (err) {
     console.error('Onboarding failed:', err);
     setCareerError('Erreur pendant la validation. Actualise la page.');

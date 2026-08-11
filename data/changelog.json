@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "buildId": "20260811-1200",
+      "date": "2026-08-11",
+      "title": "Audit UX nouveau joueur — 30+ corrections",
+      "highlights": [
+        "Burger menu pulse vert + 🎯 sur l'entrée de l'objectif en cours",
+        "Onboarding simplifié : texte clair, bouton Réinitialiser masqué, redirection auto vers Paysan",
+        "Bulles de première visite enrichies : ferme, mineur, pêcheur, guide",
+        "École : explication Permanent vs Saison + badge ✨ Recommandé",
+        "Boutons mobile agrandis à 44px, theme-color corrigé, scroll fluide"
+      ]
+    },
+    {
       "buildId": "20260811-1130",
       "date": "2026-08-11",
       "title": "Guidage joueur : bandeau objectif + bulles + Guide",

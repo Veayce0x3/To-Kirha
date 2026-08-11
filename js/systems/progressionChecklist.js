@@ -28,7 +28,7 @@ const MILESTONES = [
     title: 'Première vente',
     desc: 'Vends des ressources à la Place marchande.',
     hint: 'Menu → Place marchande',
-    check: (s) => (s.kirha || 0) > (s.startingKirha ?? 45),
+    check: (s) => (s.stats?.totalSales || 0) > 0 || (s.lifetimeStats?.totalSales || 0) > 0 || (s.kirha || 0) > 60,
     category: 'debut',
   },
   {
@@ -84,7 +84,7 @@ const MILESTONES = [
     title: 'Première victoire',
     desc: 'Bats un monstre en combat.',
     hint: 'Menu → Combat → choisis un donjon',
-    check: (s) => (s.character?.level || 1) >= 2,
+    check: (s) => (s.stats?.combatVictories || 0) > 0 || (s.lifetimeStats?.combatVictories || 0) > 0 || (s.character?.level || 1) >= 3,
     category: 'combat',
   },
   {

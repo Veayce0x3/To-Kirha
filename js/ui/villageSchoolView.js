@@ -195,6 +195,7 @@ function formatProgressPrereq(research, game) {
   return p.hint || null;
 }
 
+let recommendedShown = false;
 function renderTreeNode(game, item, catalog) {
   const { research, status, ingredients, canStart } = item;
 
@@ -261,9 +262,11 @@ function renderTreeNode(game, item, catalog) {
       <p class="school-card-effect">${research.effectLabel || ''}</p>
       <p class="school-card-meta">${formatResearchDuration(research.durationMs)} · ${statusLabel(status)}</p>
       <div class="school-card-cost">${costParts.join(' · ')}</div>
-      ${canStart
-        ? `<button type="button" class="btn btn-craft school-start-btn" data-start="${research.id}">Lancer</button>`
-        : ''}
+      ${canStart && !recommendedShown
+        ? (() => { recommendedShown = true; return `<span class="school-recommended-badge">✨ Recommandé</span><button type="button" class="btn btn-craft school-start-btn" data-start="${research.id}">Lancer</button>`; })()
+        : canStart
+          ? `<button type="button" class="btn btn-craft school-start-btn" data-start="${research.id}">Lancer</button>`
+          : ''}
     </article>`;
 }
 
@@ -327,6 +330,7 @@ export function renderVillageSchool(game, el) {
   const current = branches.find((b) => b.branch.id === schoolBranchTab) || branches[0];
   const catalog = getSchoolCatalog(game);
   const displayItems = current ? filterBranchItemsForDisplay(current.items) : [];
+  recommendedShown = false;
   const listHtml = displayItems.map((it) => renderTreeNode(game, it, catalog)).join('')
     || '<p class="view-desc">Aucune recherche dans cette branche.</p>';
 
@@ -334,7 +338,7 @@ export function renderVillageSchool(game, el) {
     <div class="school-view">
       <header class="view-header">
         <h2><span class="nav-emoji">🏫</span> École du Village</h2>
-        <p class="view-desc">Feuille de route : métiers, atelier, ferme et donjons. Les prérequis d’autres onglets sont indiqués clairement.</p>
+        <p class="view-desc">Feuille de route : métiers, atelier, ferme et donjons. <strong>Permanent</strong> = gardé pour toujours. <strong>Saison</strong> = à refaire chaque nouvelle saison.</p>
       </header>
       <div class="school-summary panel-inner">
         <span>${vm.seasonalCount} saisonnière(s) · ${vm.permanentCount} permanente(s)</span>

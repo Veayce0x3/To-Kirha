@@ -385,13 +385,21 @@ export function initUI(game, audio) {
   function updateNavActive() {
     const view = getView();
     const claimable = game.getClaimableAchievementCount?.() || 0;
+    const currentObj = game.getCurrentObjective?.();
+    const objTargetView = currentObj?.hintView
+      || (currentObj?.hintJob ? (JOB_VIEW_MAP[currentObj.hintJob] || null) : null);
 
     if (els.burgerBtn) {
       const ready = claimable > 0;
+      const hasObj = !!objTargetView && objTargetView !== view;
       els.burgerBtn.classList.toggle('burger-achievement-ready', ready);
+      els.burgerBtn.classList.toggle('burger-objective-pulse', hasObj && !ready);
       if (ready) {
         els.burgerBtn.title = `Menu — ${claimable} succès à récupérer`;
         els.burgerBtn.setAttribute('aria-label', `Menu, ${claimable} succès à récupérer`);
+      } else if (hasObj) {
+        els.burgerBtn.title = `Menu — Objectif : ${currentObj.title}`;
+        els.burgerBtn.setAttribute('aria-label', `Menu, objectif en cours`);
       } else {
         els.burgerBtn.title = 'Menu';
         els.burgerBtn.setAttribute('aria-label', 'Menu');
@@ -433,6 +441,8 @@ export function initUI(game, audio) {
       } else {
         btn.classList.remove('nav-unseen');
       }
+
+      btn.classList.toggle('nav-objective-target', vid === objTargetView && vid !== view);
 
       if (vid === 'auction_house') {
         const tm = !!game.isTravelingMerchantActive?.();
