@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "buildId": "20260811-1130",
+      "date": "2026-08-11",
+      "title": "Guidage joueur : bandeau objectif + bulles + Guide",
+      "highlights": [
+        "Bandeau objectif persistant en haut de l'écran avec étapes détaillées et bouton Y aller",
+        "Bulles de première visite : explication contextuelle la première fois qu'on ouvre une section",
+        "Nouvel onglet Guide 📖 avec checklist de progression complète",
+        "Nom « École du Village » rétabli partout"
+      ]
+    },
+    {
       "buildId": "20260811-1030",
       "date": "2026-08-11",
       "title": "Polish UX : scroll, toasts, succès, badges",

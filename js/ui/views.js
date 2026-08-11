@@ -2,6 +2,7 @@ import { resolveItem, getSkillTargetMode, getLivingEnemies, getActiveEnemy, canE
 import { getCraftSellBonus, getRecipeRequiredLevel } from '../systems/crafting.js';
 import { getPrestigeBonuses, applyMultiplierBonus, getSeasonBonusPercents, getJobXpBonusPercent, hasSeasonBonus, getSeasonBoostMult, isSeasonBoostActive, canActivateSeasonBoost, getSeasonBoostLevelCaps, getLifetimeRenaissances } from '../systems/prestige.js';
 import { mountCraftWorkshop } from './craftView.js';
+import { getChecklistByCategory, getChecklistProgress } from '../systems/progressionChecklist.js';
 import { isResourceUnlockedByJob } from '../systems/zones.js';
 import { getEquippedLabel, getOwnedGatheringEquipment, isRecipeEquipped } from '../systems/equipment.js';
 import { formatOfflineDuration } from '../systems/offline.js';
@@ -423,6 +424,7 @@ export function renderView(game, container, viewId) {
     village: renderVillage,
     traveler_journal: renderTravelerJournal,
     village_school: renderVillageSchool,
+    guide: renderGuide,
     job_lumberjack: () => renderJob(game, container, 'lumberjack'),
     job_fisher: () => renderJob(game, container, 'fisher'),
     job_miner: () => renderJob(game, container, 'miner'),
@@ -2007,6 +2009,57 @@ function renderAchievements(game, el) {
 
 function renderMissions(game, el) {
   renderAchievements(game, el);
+}
+
+function renderGuide(game, el) {
+  const progress = getChecklistProgress(game.state);
+  const groups = getChecklistByCategory(game.state);
+
+  el.innerHTML = `
+    <div class="view-header">
+      <h2>📖 Guide de progression</h2>
+      <p class="view-desc">Toutes les étapes du jeu, dans l'ordre. Coche-les naturellement en jouant !</p>
+      <div class="guide-progress-bar">
+        <div class="xp-bar-container xp-large">
+          <div class="xp-bar" style="width:${progress.percent}%"></div>
+        </div>
+        <p class="xp-text">${progress.done} / ${progress.total} étapes (${progress.percent}%)</p>
+      </div>
+    </div>
+    <div id="guide-list" class="panel-inner"></div>
+  `;
+
+  const list = el.querySelector('#guide-list');
+  for (const group of groups) {
+    const doneCount = group.items.filter((m) => m.done).length;
+    const section = document.createElement('section');
+    section.className = 'guide-category';
+    section.innerHTML = `
+      <h3>${group.label} <span class="guide-cat-count">${doneCount}/${group.items.length}</span></h3>
+    `;
+    const grid = document.createElement('div');
+    grid.className = 'guide-list';
+
+    for (const milestone of group.items) {
+      const row = document.createElement('div');
+      row.className = `guide-row${milestone.done ? ' guide-done' : ''}`;
+      row.innerHTML = `
+        <span class="guide-check">${milestone.done ? '✅' : '🔲'}</span>
+        <div class="guide-row-text">
+          <strong>${milestone.title}</strong>
+          <span class="guide-row-desc">${milestone.desc}</span>
+          ${!milestone.done && milestone.hint ? `<span class="guide-row-hint">→ ${milestone.hint}</span>` : ''}
+        </div>
+      `;
+      grid.appendChild(row);
+    }
+    section.appendChild(grid);
+    list.appendChild(section);
+  }
+
+  if (!list.children.length) {
+    list.innerHTML = '<p class="empty-text">Aucune étape pour le moment.</p>';
+  }
 }
 
 /* ── Monde ── */

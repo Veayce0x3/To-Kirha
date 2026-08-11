@@ -5,6 +5,7 @@ import { getRecipeRequiredLevel } from './craft.js';
 import { getJobEquippedTool } from './equipment.js';
 import { getCombatStats } from './character.js';
 import { resolveItemId } from './combat.js';
+import { hasSchoolJobUnlock } from './villageSchool.js';
 
 const ZONE_ORDER = ['village_sakura', 'petal_forest', 'mist_river', 'jade_mountains', 'lotus_sanctuary'];
 
@@ -23,6 +24,7 @@ function objective(title, description, opts = {}) {
     openPrestige: opts.openPrestige || false,
     priority: opts.priority ?? 5,
     source: opts.source || 'guidance',
+    steps: opts.steps || null,
   };
 }
 
@@ -85,6 +87,42 @@ export function getCurrentObjective(ctx) {
     jobs,
   } = ctx;
 
+  // ── Early game: guide toward first job unlock ──
+  const hasLumberjack = hasSchoolJobUnlock(state, 'lumberjack');
+  const farmerLevel = state.jobs?.farmer?.level || 1;
+
+  if (!hasLumberjack && farmerLevel < 3) {
+    return objective(
+      'Premières récoltes',
+      'Récolte du blé pour gagner de l\'XP et monter Paysan.',
+      {
+        hintJob: 'farmer', priority: 0, source: 'early_harvest',
+        steps: [
+          'Ouvre le menu → Paysan',
+          'Touche une plante 🌾 pour récolter',
+          'Vends ta récolte à la Place marchande 💰',
+          'Recommence pour monter en niveau',
+        ],
+      }
+    );
+  }
+
+  if (!hasLumberjack && farmerLevel >= 3) {
+    return objective(
+      'Débloquer Bûcheron',
+      'Tu as atteint le niveau requis — débloque ton prochain métier à l\'École du Village.',
+      {
+        hintView: 'village_school', priority: 0, source: 'early_school',
+        steps: [
+          'Ouvre le menu → École du Village 🏫',
+          'Choisis l\'onglet « Récolte »',
+          'Lance l\'étude « Sentiers du bûcheron »',
+          'Attends la fin de la recherche',
+        ],
+      }
+    );
+  }
+
   const nextQuest = areQuestsEnabled(balance) ? getNextQuest(quests, state, recipes) : null;
   if (nextQuest && !isQuestCompleted(state, nextQuest.id)) {
     return objective(nextQuest.title, nextQuest.description, {
@@ -98,8 +136,15 @@ export function getCurrentObjective(ctx) {
   if (!state.combatEquipment?.weapon) {
     return objective(
       'Équiper une arme',
-      'Récupère une arme de combat, puis équipe-la sur ton personnage avant les zones difficiles.',
-      { hintView: 'combat', priority: 2, source: 'weapon' }
+      'Récupère une arme de combat, puis équipe-la sur ton personnage.',
+      {
+        hintView: 'combat', priority: 2, source: 'weapon',
+        steps: [
+          'Ouvre le menu → Combat ⚔️',
+          'Choisis un donjon accessible',
+          'Équipe ton arme depuis Perso → Équipement',
+        ],
+      }
     );
   }
 
@@ -107,10 +152,19 @@ export function getCurrentObjective(ctx) {
   const zoneId = state.zone || 'village_sakura';
   const missingTool = gatherJobs.find((jobId) => !getJobEquippedTool(state, jobId));
   if (missingTool && (state.jobs?.[missingTool]?.level || 1) >= 1) {
+    const toolJobName = jobs[missingTool]?.name || 'métier';
     return objective(
       'Outil de récolte',
-      `Fabrique un outil de ${jobs[missingTool]?.name || 'métier'} à l'Outilleur pour récolter plus efficacement.`,
-      { hintView: 'workshop', priority: 2, source: 'tool' }
+      `Fabrique un outil de ${toolJobName} pour récolter plus vite.`,
+      {
+        hintView: 'workshop', priority: 2, source: 'tool',
+        steps: [
+          'Ouvre le menu → Atelier 🛠️',
+          `Choisis un outil pour ${toolJobName}`,
+          'Fabrique-le avec tes ressources',
+          'Il s\'équipe automatiquement',
+        ],
+      }
     );
   }
 
@@ -121,15 +175,30 @@ export function getCurrentObjective(ctx) {
     if (jobLv >= jobsCap) {
       return objective(
         'Plafond de saison',
-        `Plafond métiers Nv.${jobsCap} atteint — passe à la Saison ${(state.season || 1) + 1} pour progresser.`,
-        { hintView: 'season', openPrestige: true, priority: 3, source: 'season_cap' }
+        `Plafond métiers Nv.${jobsCap} atteint — passe à la saison suivante.`,
+        {
+          hintView: 'season', openPrestige: true, priority: 3, source: 'season_cap',
+          steps: [
+            'Ouvre le menu → Saison 🌸',
+            'Vérifie les prérequis de saison',
+            'Lance la nouvelle saison quand tout est prêt',
+          ],
+        }
       );
     }
     const jobName = jobs[lockedRes.job]?.name || lockedRes.job;
     return objective(
       `Monter ${jobName}`,
-      `Atteins ${jobName} Nv.${lockedRes.requiredJobLevel} pour débloquer ${lockedRes.name} en ${balance.zones[zoneId]?.name || 'cette zone'}.`,
-      { hintJob: lockedRes.job, priority: 3, source: 'job_level' }
+      `Atteins ${jobName} Nv.${lockedRes.requiredJobLevel} pour débloquer ${lockedRes.name}.`,
+      {
+        hintJob: lockedRes.job, priority: 3, source: 'job_level',
+        steps: [
+          `Ouvre le menu → ${jobName}`,
+          'Récolte pour gagner de l\'XP métier',
+          'Vends à la Place marchande',
+          `Objectif : Nv.${lockedRes.requiredJobLevel}`,
+        ],
+      }
     );
   }
 
@@ -142,7 +211,14 @@ export function getCurrentObjective(ctx) {
       return objective(
         'Débloquer une zone',
         check.reason || `Vaincs le boss pour ouvrir ${balance.zones[zId]?.name || zId}.`,
-        { hintView: 'combat', priority: 4, source: 'zone_boss' }
+        {
+          hintView: 'combat', priority: 4, source: 'zone_boss',
+          steps: [
+            'Ouvre le menu → Combat ⚔️',
+            'Choisis la zone avec le boss',
+            'Bats le boss pour débloquer la suite',
+          ],
+        }
       );
     }
   }
@@ -179,8 +255,14 @@ export function getCurrentObjective(ctx) {
   if (canPrestige(state, balance, quests, combatZones)) {
     return objective(
       'Nouvelle saison',
-      `Tout est prêt — lance la Saison ${(state.season || 1) + 1} dans l'onglet Saison.`,
-      { hintView: 'season', openPrestige: true, priority: 6, source: 'prestige' }
+      `Tout est prêt — lance la Saison ${(state.season || 1) + 1} !`,
+      {
+        hintView: 'season', openPrestige: true, priority: 6, source: 'prestige',
+        steps: [
+          'Ouvre le menu → Saison 🌸',
+          'Appuie sur « Nouvelle saison »',
+        ],
+      }
     );
   }
 

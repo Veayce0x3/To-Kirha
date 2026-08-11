@@ -61,6 +61,7 @@ import {
   refreshAuctionHouseLight,
 } from './views.js';
 import { clearSchoolTimer } from './villageSchoolView.js';
+import { showFirstVisitHint } from './firstVisitHints.js';
 import { syncSakuraWindVisual } from './villageView.js';
 import { patchFarmUnitCard } from './productionLineView.js';
 
@@ -100,6 +101,7 @@ export function initUI(game, audio) {
     sidebarOverlay: document.getElementById('sidebar-overlay'),
     burgerBtn: document.getElementById('burger-btn'),
     quickOptions: document.getElementById('quick-options'),
+    objectiveBanner: document.getElementById('objective-banner'),
     toasts: document.getElementById('toasts'),
     levelFlash: document.getElementById('level-flash'),
     offlineModal: document.getElementById('offline-modal'),
@@ -195,7 +197,7 @@ export function initUI(game, audio) {
       return {
         featureId: 'village_school',
         viewId: 'village_school',
-        label: 'Recherches',
+        label: 'École du Village',
         emoji: '🏫',
         ready: false,
         progress: 0,
@@ -457,6 +459,61 @@ export function initUI(game, audio) {
     }
   }
 
+  let objectiveBannerCollapsed = false;
+  let lastObjectiveSource = null;
+
+  function refreshObjectiveBanner() {
+    const banner = els.objectiveBanner;
+    if (!banner) return;
+    if (!game.state?.careerChoice?.confirmed) {
+      banner.classList.add('hidden');
+      return;
+    }
+    if (game.state.settings?.hideObjectiveBanner) {
+      banner.classList.add('hidden');
+      return;
+    }
+    const obj = game.getCurrentObjective();
+    if (!obj) {
+      banner.classList.add('hidden');
+      return;
+    }
+    banner.classList.remove('hidden');
+
+    if (obj.source !== lastObjectiveSource) {
+      objectiveBannerCollapsed = false;
+      lastObjectiveSource = obj.source;
+    }
+
+    const stepsHtml = obj.steps?.length
+      ? `<ol class="obj-steps${objectiveBannerCollapsed ? ' hidden' : ''}">${obj.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`
+      : '';
+
+    banner.innerHTML = `
+      <div class="obj-banner-head">
+        <span class="obj-banner-icon">🎯</span>
+        <div class="obj-banner-text">
+          <strong class="obj-banner-title">${obj.title}</strong>
+          <span class="obj-banner-desc">${obj.description}</span>
+        </div>
+        <div class="obj-banner-actions">
+          ${obj.hintView || obj.hintJob ? '<button type="button" class="btn btn-craft btn-small obj-go">Y aller →</button>' : ''}
+          ${obj.steps?.length ? `<button type="button" class="btn btn-muted btn-small obj-toggle" aria-label="Détails">${objectiveBannerCollapsed ? '▼' : '▲'}</button>` : ''}
+        </div>
+      </div>
+      ${stepsHtml}
+    `;
+
+    banner.querySelector('.obj-go')?.addEventListener('click', () => {
+      if (obj.hintView) navigate(obj.hintView === 'workshop' ? 'workshop' : obj.hintView);
+      else if (obj.hintJob) navigate(JOB_VIEW_MAP[obj.hintJob] || 'world');
+    });
+    banner.querySelector('.obj-toggle')?.addEventListener('click', () => {
+      objectiveBannerCollapsed = !objectiveBannerCollapsed;
+      refreshObjectiveBanner();
+    });
+  }
+
   function refreshHeader(state) {
     if (state.kirha !== lastKirha) {
       els.kirha.classList.add('pulse');
@@ -716,6 +773,7 @@ export function initUI(game, audio) {
     clearSchoolTimer();
     refreshView();
     refreshHeader(game.state);
+    refreshObjectiveBanner();
     closeSidebar();
     updateNavActive();
     const curView = getView();
@@ -725,10 +783,12 @@ export function initUI(game, audio) {
     } else if (sw) {
       sw.scrollTop = 0;
     }
+    showFirstVisitHint(game.state, curView, () => game.scheduleSave?.());
   });
   on('stateChange', (state) => {
     showCareerChoiceIfNeeded(game);
     refreshHeader(state);
+    refreshObjectiveBanner();
     const view = getView();
     const jobId = VIEWS[view]?.job;
     if (isFarmView(view)) {
@@ -1175,6 +1235,7 @@ export function initUI(game, audio) {
   cleanupPullRefreshArtifacts();
   syncSakuraWindVisual(game);
   updateNavActive();
+  refreshObjectiveBanner();
   maybeShowTravelingMerchantPopup();
   tickHarvestUI();
 }
