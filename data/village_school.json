@@ -616,40 +616,15 @@
       },
       "effectLabel": "Débloque le Village et les quêtes quotidiennes"
     },
-    "knowledge_routes": {
-      "id": "knowledge_routes",
-      "branch": "village",
-      "tier": "permanent",
-      "order": 2,
-      "name": "Routes commerciales",
-      "description": "Les caravanes croisent plus souvent le village — pour toujours. Exige une vraie base économique.",
-      "requires": [
-        "roadmap_village_board"
-      ],
-      "kirhaCost": 1600,
-      "ingredients": {
-        "ble": 180,
-        "dorade": 60,
-        "pierre": 70,
-        "frene": 50
-      },
-      "durationMs": 5400000,
-      "effect": {
-        "permanent": {
-          "merchantChanceBonus": 0.04
-        }
-      },
-      "effectLabel": "Permanent : marchand itinérant un peu plus fréquent"
-    },
     "knowledge_harvest_all": {
       "id": "knowledge_harvest_all",
       "branch": "village",
       "tier": "permanent",
-      "order": 3,
+      "order": 2,
       "name": "Cueillette organisée",
       "description": "Technique du Conseil : récolter toute une ressource d’un geste. Il faut d’abord maximiser une plante (6 emplacements) et bien avancer la suivante (3).",
       "requires": [
-        "knowledge_routes"
+        "roadmap_village_board"
       ],
       "requiresProgress": {
         "type": "harvestUnitsPair",
@@ -669,6 +644,31 @@
         "unlockHarvestAll": true
       },
       "effectLabel": "Permanent : bouton « Tout récolter » sur chaque ressource"
+    },
+    "knowledge_routes": {
+      "id": "knowledge_routes",
+      "branch": "village",
+      "tier": "permanent",
+      "order": 3,
+      "name": "Routes commerciales",
+      "description": "Les caravanes croisent plus souvent le village — pour toujours. Exige une vraie base économique.",
+      "requires": [
+        "roadmap_village_board"
+      ],
+      "kirhaCost": 1600,
+      "ingredients": {
+        "ble": 180,
+        "dorade": 60,
+        "pierre": 70,
+        "frene": 50
+      },
+      "durationMs": 5400000,
+      "effect": {
+        "permanent": {
+          "merchantChanceBonus": 0.04
+        }
+      },
+      "effectLabel": "Permanent : marchand itinérant un peu plus fréquent"
     },
     "knowledge_warehouse": {
       "id": "knowledge_warehouse",
